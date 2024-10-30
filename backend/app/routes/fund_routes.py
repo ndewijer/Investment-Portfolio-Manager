@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from ..models import Fund, PortfolioFund, db
+from ..models import Fund, PortfolioFund, Transaction, db
 from ..services.fund_service import FundService
 from sqlalchemy.exc import IntegrityError
 
@@ -68,26 +68,40 @@ def update_fund(fund_id):
 def check_fund_usage(fund_id):
     portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
     if portfolio_funds:
-        portfolios = [{'id': pf.portfolio.id, 'name': pf.portfolio.name} 
-                     for pf in portfolio_funds]
-        return jsonify({
-            'in_use': True,
-            'portfolios': portfolios
-        })
+        # Get portfolios and their transaction counts
+        portfolio_data = []
+        for pf in portfolio_funds:
+            transaction_count = Transaction.query.filter_by(portfolio_fund_id=pf.id).count()
+            if transaction_count > 0:
+                portfolio_data.append({
+                    'id': pf.portfolio.id, 
+                    'name': pf.portfolio.name,
+                    'transaction_count': transaction_count
+                })
+        
+        if portfolio_data:
+            return jsonify({
+                'in_use': True,
+                'portfolios': portfolio_data
+            })
     return jsonify({'in_use': False})
 
 @funds.route('/funds/<int:fund_id>', methods=['DELETE'])
 def delete_fund(fund_id):
     fund = Fund.query.get_or_404(fund_id)
     
-    # Check if fund is in use
+    # Check if fund has any transactions
     portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
-    if portfolio_funds:
-        portfolios = [pf.portfolio.name for pf in portfolio_funds]
-        return jsonify({
-            'error': 'Cannot delete fund that is in use',
-            'portfolios': portfolios
-        }), 400
+    for pf in portfolio_funds:
+        transaction_count = Transaction.query.filter_by(portfolio_fund_id=pf.id).count()
+        if transaction_count > 0:
+            return jsonify({
+                'error': 'Cannot delete fund that has transactions',
+                'portfolios': [{
+                    'name': pf.portfolio.name,
+                    'transaction_count': transaction_count
+                } for pf in portfolio_funds if Transaction.query.filter_by(portfolio_fund_id=pf.id).count() > 0]
+            }), 400
     
     try:
         db.session.delete(fund)

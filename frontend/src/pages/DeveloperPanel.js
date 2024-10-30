@@ -122,23 +122,39 @@ const DeveloperPanel = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('portfolio_id', selectedPortfolioId);
-    formData.append('fund_id', selectedFundId);
+    // Check file content for headers
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const content = event.target.result;
+      const firstLine = content.split('\n')[0].trim();
+      const headers = firstLine.split(',').map(h => h.trim());
 
-    try {
-      const response = await axios.post(`${API_BASE_URL}/import-transactions`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      setMessage(response.data.message);
-      setError('');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Error importing transactions');
-      console.error(err);
-    }
+      // Check if this is a fund price file
+      if (headers.length === 2 && headers.includes('date') && headers.includes('price')) {
+        setError('This appears to be a fund price file. Please use the "Import Fund Prices" section below to import fund prices.');
+        return;
+      }
+
+      // If it's a transaction file, proceed with upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fund_id', selectedFundId);
+
+      try {
+        const response = await axios.post(`${API_BASE_URL}/import-transactions`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        setMessage(response.data.message);
+        setError('');
+      } catch (err) {
+        setError(err.response?.data?.error || 'Error importing transactions');
+        console.error(err);
+      }
+    };
+
+    reader.readAsText(file);
   };
 
   const handleFundPriceFileUpload = async (e) => {

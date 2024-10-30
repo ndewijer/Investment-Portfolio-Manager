@@ -60,10 +60,10 @@ const Funds = () => {
     try {
       const usageResponse = await axios.get(`${API_BASE_URL}/funds/${id}/check-usage`);
       if (usageResponse.data.in_use) {
-        const portfolios = usageResponse.data.portfolios
-          .map(p => p.name)
-          .join(', ');
-        alert(`Cannot delete fund because it is used in the following portfolios: ${portfolios}`);
+        const portfolioInfo = usageResponse.data.portfolios
+          .map(p => `${p.name} (${p.transaction_count} transactions)`)
+          .join('\n');
+        alert(`Cannot delete fund because it has transactions in the following portfolios:\n\n${portfolioInfo}`);
         return;
       }
 

@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from ..services.developer_service import DeveloperService
 from datetime import datetime
+from ..models import PortfolioFund
 
 developer = Blueprint('developer', __name__)
 
@@ -35,17 +36,49 @@ def import_transactions():
         return jsonify({'error': 'No file provided'}), 400
         
     file = request.files['file']
-    portfolio_id = request.form.get('portfolio_id')
-    fund_id = request.form.get('fund_id')
+    portfolio_fund_id = request.form.get('fund_id')
+    
+    if not portfolio_fund_id:
+        return jsonify({'error': 'No portfolio_fund_id provided'}), 400
     
     if not file.filename.endswith('.csv'):
         return jsonify({'error': 'File must be CSV'}), 400
-        
+    
     try:
-        count = DeveloperService.import_transactions_csv(file.read(), portfolio_id, fund_id)
-        return jsonify({'message': f'Successfully imported {count} transactions'})
+        # Read and decode the file content
+        file_content = file.read()
+        decoded_content = file_content.decode('utf-8')
+        print(f"File content preview: {decoded_content[:200]}")
+        
+        # Check if the file has the correct headers for transactions
+        first_line = decoded_content.split('\n')[0].strip()
+        expected_headers = {'date', 'type', 'shares', 'cost_per_share'}
+        found_headers = set(h.strip() for h in first_line.split(','))
+        
+        if not expected_headers.issubset(found_headers):
+            return jsonify({
+                'error': f'Invalid CSV format. Expected headers: {", ".join(expected_headers)}. '
+                        f'Found headers: {", ".join(found_headers)}'
+            }), 400
+        
+        portfolio_fund = PortfolioFund.query.get(portfolio_fund_id)
+        if not portfolio_fund:
+            return jsonify({
+                'error': f'Portfolio-fund relationship not found for ID {portfolio_fund_id}. '
+                        f'Please ensure you have selected a valid fund for this portfolio.'
+            }), 400
+        
+        count = DeveloperService.import_transactions_csv(file_content, portfolio_fund_id)
+        
+        return jsonify({
+            'message': f'Successfully imported {count} transactions',
+            'portfolio_name': portfolio_fund.portfolio.name,
+            'fund_name': portfolio_fund.fund.name
+        })
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 @developer.route('/fund-price', methods=['POST'])
 def set_fund_price():
@@ -73,11 +106,38 @@ def import_fund_prices():
     file = request.files['file']
     fund_id = request.form.get('fund_id')
     
+    if not fund_id:
+        return jsonify({'error': 'No fund_id provided'}), 400
+    
     if not file.filename.endswith('.csv'):
         return jsonify({'error': 'File must be CSV'}), 400
         
     try:
-        count = DeveloperService.import_fund_prices_csv(file.read(), fund_id)
+        # Read and decode the file content
+        file_content = file.read()
+        decoded_content = file_content.decode('utf-8')
+        
+        # Check if the file has the correct headers for fund prices
+        first_line = decoded_content.split('\n')[0].strip()
+        expected_headers = {'date', 'price'}
+        found_headers = set(h.strip() for h in first_line.split(','))
+        
+        if not expected_headers.issubset(found_headers):
+            return jsonify({
+                'error': f'Invalid CSV format. Expected headers: {", ".join(expected_headers)}. '
+                        f'Found headers: {", ".join(found_headers)}'
+            }), 400
+        
+        # Check if this is a transaction file
+        if 'type' in found_headers and 'shares' in found_headers:
+            return jsonify({
+                'error': 'This appears to be a transaction file. Please use the "Import Transactions" section above to import transactions.'
+            }), 400
+        
+        count = DeveloperService.import_fund_prices_csv(file_content, fund_id)
         return jsonify({'message': f'Successfully imported {count} fund prices'})
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        print(f"Unexpected error during fund price import: {str(e)}")
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500

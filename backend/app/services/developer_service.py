@@ -109,51 +109,77 @@ class DeveloperService:
             raise ValueError(f"File is not UTF-8 encoded. Please save the file in UTF-8 format. Error: {str(e)}")
 
     @staticmethod
-    def import_transactions_csv(file_content, portfolio_id, fund_id):
+    def import_transactions_csv(file_content, portfolio_fund_id):
         """Import transactions from CSV file"""
         try:
             # Validate UTF-8 encoding first and remove BOM if present
-            content = file_content.decode('utf-8-sig')  # Changed from utf-8 to utf-8-sig
+            content = file_content.decode('utf-8-sig')
             
-            portfolio_id = int(str(portfolio_id).strip())
-            fund_id = int(str(fund_id).strip())
-        except ValueError as e:
-            raise ValueError(str(e))
+            try:
+                portfolio_fund_id = int(str(portfolio_fund_id).strip())
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Invalid portfolio_fund_id: {portfolio_fund_id}. Error: {str(e)}")
 
-        portfolio_fund = PortfolioFund.query.filter_by(
-            portfolio_id=portfolio_id,
-            fund_id=fund_id
-        ).first()
-        
-        if not portfolio_fund:
-            portfolio_fund = PortfolioFund(
-                portfolio_id=portfolio_id,
-                fund_id=fund_id
-            )
-            db.session.add(portfolio_fund)
-            db.session.commit()
+            # Get the portfolio_fund record with related portfolio and fund
+            portfolio_fund = PortfolioFund.query.join(
+                Portfolio, PortfolioFund.portfolio_id == Portfolio.id
+            ).join(
+                Fund, PortfolioFund.fund_id == Fund.id
+            ).filter(
+                PortfolioFund.id == portfolio_fund_id
+            ).first()
+            
+            if not portfolio_fund:
+                raise ValueError(f"No relationship found between portfolio and fund with ID {portfolio_fund_id}")
+            
+            if not portfolio_fund.portfolio or not portfolio_fund.fund:
+                raise ValueError(
+                    f"Invalid portfolio-fund relationship: Portfolio "
+                    f"'{portfolio_fund.portfolio.name if portfolio_fund.portfolio else 'Unknown'}' "
+                    f"and Fund '{portfolio_fund.fund.name if portfolio_fund.fund else 'Unknown'}'"
+                )
 
-        transactions = []
-        try:
+            transactions = []
             # Split content into lines and create CSV reader
             lines = content.splitlines()
+            if not lines:
+                raise ValueError("CSV file is empty")
+            
             csv_reader = csv.DictReader(lines)
+            if not csv_reader.fieldnames:
+                raise ValueError("CSV file has no headers")
+            
+            # Convert fieldnames to lowercase for case-insensitive comparison
+            fieldnames_lower = [field.lower().strip() for field in csv_reader.fieldnames]
             
             # Verify all required fields are present in the header
             required_fields = {'date', 'type', 'shares', 'cost_per_share'}
-            header_fields = set(csv_reader.fieldnames)
+            header_fields = set(fieldnames_lower)
             if not required_fields.issubset(header_fields):
                 missing = required_fields - header_fields
-                raise ValueError(f"Missing required columns in CSV header: {', '.join(missing)}")
+                raise ValueError(f"Missing required columns in CSV header: {', '.join(missing)}\nFound headers: {', '.join(fieldnames_lower)}")
             
+            # Create a mapping of actual header names to standardized names
+            header_mapping = {}
+            for std_name in required_fields:
+                for actual_name in csv_reader.fieldnames:
+                    if actual_name.lower().strip() == std_name:
+                        header_mapping[actual_name] = std_name
+
             for row_num, row in enumerate(csv_reader, start=2):
                 try:
+                    # Map the headers to standardized names
+                    mapped_row = {}
+                    for actual_name, value in row.items():
+                        if actual_name in header_mapping:
+                            mapped_row[header_mapping[actual_name]] = value
+
                     # Sanitize each field
-                    date = DeveloperService.sanitize_date(row['date'])
+                    date = DeveloperService.sanitize_date(mapped_row['date'])
                     if not date:
                         raise ValueError(f"Invalid or missing date in row {row_num}")
 
-                    transaction_type = DeveloperService.sanitize_string(row['type'])
+                    transaction_type = DeveloperService.sanitize_string(mapped_row['type'])
                     if not transaction_type:
                         raise ValueError(f"Invalid or missing transaction type in row {row_num}")
 
@@ -162,18 +188,18 @@ class DeveloperService:
                         raise ValueError(f"Invalid transaction type in row {row_num}: {transaction_type}. Must be 'buy' or 'sell'")
 
                     try:
-                        shares = DeveloperService.sanitize_float(row['shares'])
+                        shares = DeveloperService.sanitize_float(mapped_row['shares'])
                         if shares is None or shares <= 0:
                             raise ValueError(f"Shares must be a positive number in row {row_num}")
                     except (ValueError, TypeError):
-                        raise ValueError(f"Invalid shares value in row {row_num}: {row['shares']}")
+                        raise ValueError(f"Invalid shares value in row {row_num}: {mapped_row['shares']}")
 
                     try:
-                        cost_per_share = DeveloperService.sanitize_float(row['cost_per_share'])
+                        cost_per_share = DeveloperService.sanitize_float(mapped_row['cost_per_share'])
                         if cost_per_share is None or cost_per_share <= 0:
                             raise ValueError(f"Cost per share must be a positive number in row {row_num}")
                     except (ValueError, TypeError):
-                        raise ValueError(f"Invalid cost per share value in row {row_num}: {row['cost_per_share']}")
+                        raise ValueError(f"Invalid cost per share value in row {row_num}: {mapped_row['cost_per_share']}")
 
                     transaction = Transaction(
                         portfolio_fund_id=portfolio_fund.id,
@@ -190,17 +216,21 @@ class DeveloperService:
             if not transactions:
                 raise ValueError("No valid transactions found in CSV file")
 
-            db.session.add_all(transactions)
-            db.session.commit()
-            
-            return len(transactions)
+            try:
+                db.session.add_all(transactions)
+                db.session.commit()
+                return len(transactions)
+            except Exception as e:
+                db.session.rollback()
+                raise ValueError(f"Database error while saving transactions: {str(e)}")
 
         except UnicodeDecodeError:
             raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.")
         except csv.Error as e:
             raise ValueError(f"CSV file error: {str(e)}")
         except Exception as e:
-            db.session.rollback()
+            if 'transactions' in locals():
+                db.session.rollback()
             raise ValueError(f"Error processing CSV file: {str(e)}")
 
     @staticmethod
