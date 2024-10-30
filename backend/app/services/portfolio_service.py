@@ -173,3 +173,65 @@ class PortfolioService:
             'portfolio_name': pf.portfolio.name,
             'fund_name': pf.fund.name
         } for pf in portfolio_funds]
+
+    @staticmethod
+    def get_portfolio_fund_history(portfolio_id):
+        portfolio = Portfolio.query.get_or_404(portfolio_id)
+        history = []
+        
+        # Get the earliest transaction date for this portfolio
+        earliest_transaction = Transaction.query.join(
+            PortfolioFund
+        ).filter(
+            PortfolioFund.portfolio_id == portfolio_id
+        ).order_by(Transaction.date).first()
+        
+        if not earliest_transaction:
+            return []
+        
+        start_date = earliest_transaction.date
+        current_date = start_date
+        today = datetime.now().date()
+        
+        while current_date <= today:
+            daily_values = {
+                'date': current_date.isoformat(),
+                'funds': []
+            }
+            
+            for pf in portfolio.funds:
+                shares = 0
+                cost = 0
+                
+                # Calculate shares and cost up to current_date
+                for transaction in pf.transactions:
+                    if transaction.date <= current_date:
+                        if transaction.type == 'buy':
+                            shares += transaction.shares
+                            cost += transaction.shares * transaction.cost_per_share
+                        else:
+                            shares -= transaction.shares
+                            cost = (cost / (shares + transaction.shares)) * shares if shares > 0 else 0
+                
+                # Get the price for this date
+                price = FundPrice.query.filter(
+                    FundPrice.fund_id == pf.fund_id,
+                    FundPrice.date <= current_date
+                ).order_by(FundPrice.date.desc()).first()
+                
+                if price and shares > 0:
+                    value = shares * price.price
+                    daily_values['funds'].append({
+                        'fund_id': pf.fund.id,
+                        'fund_name': pf.fund.name,
+                        'value': value,
+                        'cost': cost,
+                        'shares': shares,
+                        'price': price.price
+                    })
+            
+            if daily_values['funds']:
+                history.append(daily_values)
+            current_date += timedelta(days=1)
+        
+        return history

@@ -132,3 +132,10 @@ def handle_portfolio_funds():
             'portfolio_id': portfolio_fund.portfolio_id,
             'fund_id': portfolio_fund.fund_id
         })
+
+# Add this new route
+@portfolios.route('/portfolios/<int:portfolio_id>/fund-history', methods=['GET'])
+def get_portfolio_fund_history(portfolio_id):
+    service = PortfolioService()
+    history = service.get_portfolio_fund_history(portfolio_id)
+    return jsonify(history)

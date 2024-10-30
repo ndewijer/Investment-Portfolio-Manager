@@ -9,6 +9,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons';
 import { MultiSelect } from "react-multi-select-component";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const TYPE_OPTIONS = [
   { label: 'All', value: '' },
@@ -46,6 +47,7 @@ const PortfolioDetail = () => {
   const [filterPosition, setFilterPosition] = useState({ top: 0, right: 0 });
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isTransactionEditModalOpen, setIsTransactionEditModalOpen] = useState(false);
+  const [fundHistory, setFundHistory] = useState([]);
 
   const fetchPortfolioData = useCallback(async () => {
     try {
@@ -232,6 +234,34 @@ const PortfolioDetail = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchFundHistory = async () => {
+      try {
+        const response = await api.get(`/portfolios/${id}/fund-history`);
+        setFundHistory(response.data);
+      } catch (error) {
+        console.error('Error fetching fund history:', error);
+      }
+    };
+
+    if (portfolio) {
+      fetchFundHistory();
+    }
+  }, [portfolio, id]);
+
+  const getFundColor = (index) => {
+    const colors = [
+      '#8884d8', // Purple
+      '#82ca9d', // Green
+      '#ff7300', // Orange
+      '#0088fe', // Blue
+      '#00c49f', // Teal
+      '#ffbb28', // Yellow
+      '#ff8042', // Coral
+    ];
+    return colors[index % colors.length];
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!portfolio) return <div>Portfolio not found</div>;
@@ -259,6 +289,54 @@ const PortfolioDetail = () => {
           </p>
         </div>
       </div>
+
+      <section className="portfolio-chart">
+        <h2>Fund Values Over Time</h2>
+        <div className="chart-container">
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={fundHistory}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="date"
+                tick={{ fontSize: 12 }}
+                interval="preserveStartEnd"
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
+              />
+              <Tooltip 
+                formatter={(value) => formatCurrency(value)}
+                labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
+              />
+              <Legend />
+              {portfolioFunds.map((pf, index) => (
+                <React.Fragment key={pf.id}>
+                  <Line
+                    type="monotone"
+                    dataKey={`funds[${index}].value`}
+                    name={`${pf.fund_name} Value`}
+                    stroke={getFundColor(index)}
+                    dot={false}
+                    strokeWidth={2}
+                    connectNulls={true}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey={`funds[${index}].cost`}
+                    name={`${pf.fund_name} Cost`}
+                    stroke={getFundColor(index)}
+                    dot={false}
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    connectNulls={true}
+                  />
+                </React.Fragment>
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </section>
 
       <section className="portfolio-funds">
         <div className="section-header">
