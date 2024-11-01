@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask.views import MethodView
 from datetime import datetime
-from ..models import Portfolio, PortfolioFund, db
+from ..models import Portfolio, PortfolioFund, Transaction, Dividend, db
 from ..services.portfolio_service import PortfolioService
 
 portfolios = Blueprint('portfolios', __name__)
@@ -61,7 +61,7 @@ class PortfolioAPI(MethodView):
         db.session.commit()
         return '', 204
 
-@portfolios.route('/portfolios/<int:portfolio_id>/archive', methods=['POST'])
+@portfolios.route('/portfolios/<string:portfolio_id>/archive', methods=['POST'])
 def archive_portfolio(portfolio_id):
     portfolio = Portfolio.query.get_or_404(portfolio_id)
     portfolio.is_archived = True
@@ -73,7 +73,7 @@ def archive_portfolio(portfolio_id):
         'is_archived': portfolio.is_archived
     })
 
-@portfolios.route('/portfolios/<int:portfolio_id>/unarchive', methods=['POST'])
+@portfolios.route('/portfolios/<string:portfolio_id>/unarchive', methods=['POST'])
 def unarchive_portfolio(portfolio_id):
     portfolio = Portfolio.query.get_or_404(portfolio_id)
     portfolio.is_archived = False
@@ -90,7 +90,7 @@ portfolio_view = PortfolioAPI.as_view('portfolio_api')
 portfolios.add_url_rule('/portfolios', defaults={'portfolio_id': None},
                      view_func=portfolio_view, methods=['GET'])
 portfolios.add_url_rule('/portfolios', view_func=portfolio_view, methods=['POST'])
-portfolios.add_url_rule('/portfolios/<int:portfolio_id>',
+portfolios.add_url_rule('/portfolios/<string:portfolio_id>',
                      view_func=portfolio_view, methods=['GET', 'PUT', 'DELETE'])
 
 # Summary and History endpoints
@@ -134,8 +134,42 @@ def handle_portfolio_funds():
         })
 
 # Add this new route
-@portfolios.route('/portfolios/<int:portfolio_id>/fund-history', methods=['GET'])
+@portfolios.route('/portfolios/<string:portfolio_id>/fund-history', methods=['GET'])
 def get_portfolio_fund_history(portfolio_id):
     service = PortfolioService()
     history = service.get_portfolio_fund_history(portfolio_id)
     return jsonify(history)
+
+@portfolios.route('/portfolio-funds/<string:portfolio_fund_id>', methods=['DELETE'])
+def delete_portfolio_fund(portfolio_fund_id):
+    portfolio_fund = PortfolioFund.query.get_or_404(portfolio_fund_id)
+    
+    # Count associated transactions and dividends
+    transaction_count = Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).count()
+    dividend_count = Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id).count()
+    
+    # If there are associated records and no confirmation, return count for confirmation
+    if (transaction_count > 0 or dividend_count > 0) and request.args.get('confirm') != 'true':
+        return jsonify({
+            'requires_confirmation': True,
+            'transaction_count': transaction_count,
+            'dividend_count': dividend_count,
+            'fund_name': portfolio_fund.fund.name,
+            'portfolio_name': portfolio_fund.portfolio.name
+        }), 409  # Conflict status code
+    
+    try:
+        # Delete associated records if they exist
+        if transaction_count > 0:
+            Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).delete()
+        if dividend_count > 0:
+            Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id).delete()
+        
+        # Delete the portfolio-fund relationship
+        db.session.delete(portfolio_fund)
+        db.session.commit()
+        return '', 204
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400

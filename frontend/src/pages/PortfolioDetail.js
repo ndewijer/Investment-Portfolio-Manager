@@ -7,15 +7,30 @@ import './PortfolioDetail.css';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faSort, faPlus, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { MultiSelect } from "react-multi-select-component";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const TYPE_OPTIONS = [
-  { label: 'All', value: '' },
   { label: 'Buy', value: 'buy' },
-  { label: 'Sell', value: 'sell' }
-];
+  { label: 'Sell', value: 'sell' },
+  { label: 'Dividend', value: 'dividend' }
+].sort((a, b) => a.label.localeCompare(b.label));
+
+// Update the isDateInFuture helper function
+const isDateInFuture = (dateString) => {
+  if (!dateString) return true;  // If no date is selected, treat as future date
+  
+  const date = new Date(dateString);
+  const today = new Date();
+  
+  // Set both dates to start of day for comparison
+  date.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  
+  // Return true only if date is strictly greater than today
+  return date > today;
+};
 
 const PortfolioDetail = () => {
   const { id } = useParams();
@@ -48,6 +63,19 @@ const PortfolioDetail = () => {
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isTransactionEditModalOpen, setIsTransactionEditModalOpen] = useState(false);
   const [fundHistory, setFundHistory] = useState([]);
+  const [dividends, setDividends] = useState([]);
+  const [isDividendModalOpen, setIsDividendModalOpen] = useState(false);
+  const [newDividend, setNewDividend] = useState({
+    portfolio_fund_id: '',
+    record_date: new Date().toISOString().split('T')[0],
+    ex_dividend_date: new Date().toISOString().split('T')[0],
+    dividend_per_share: '',
+    reinvestment_shares: '',  // Only for stock dividends
+    reinvestment_price: ''    // Only for stock dividends
+  });
+  const [selectedFund, setSelectedFund] = useState(null);
+  const [editingDividend, setEditingDividend] = useState(null);
+  const [isDividendEditModalOpen, setIsDividendEditModalOpen] = useState(false);
 
   const fetchPortfolioData = useCallback(async () => {
     try {
@@ -249,6 +277,21 @@ const PortfolioDetail = () => {
     }
   }, [portfolio, id]);
 
+  useEffect(() => {
+    const fetchDividends = async () => {
+      try {
+        const response = await api.get(`/dividends/portfolio/${id}`);
+        setDividends(response.data);
+      } catch (error) {
+        console.error('Error fetching dividends:', error);
+      }
+    };
+
+    if (portfolio) {
+      fetchDividends();
+    }
+  }, [portfolio, id]);
+
   const getFundColor = (index) => {
     const colors = [
       '#8884d8', // Purple
@@ -260,6 +303,238 @@ const PortfolioDetail = () => {
       '#ff8042', // Coral
     ];
     return colors[index % colors.length];
+  };
+
+  const handleCreateDividend = async (e) => {
+    e.preventDefault();
+    try {
+      // Validate stock dividend fields
+      if (selectedFund?.dividend_type === 'stock') {
+        const isFutureOrder = isDateInFuture(newDividend.buy_order_date);
+        
+        if (!isFutureOrder && (!newDividend.reinvestment_shares || !newDividend.reinvestment_price)) {
+          alert('Please fill in both reinvestment shares and price for completed stock dividends');
+          return;
+        }
+
+        if (!newDividend.buy_order_date) {
+          alert('Please specify a buy order date for stock dividends');
+          return;
+        }
+      }
+
+      const dividendData = {
+        ...newDividend,
+        reinvestment_shares: selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date) 
+          ? newDividend.reinvestment_shares 
+          : undefined,
+        reinvestment_price: selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date)
+          ? newDividend.reinvestment_price 
+          : undefined,
+        buy_order_date: selectedFund?.dividend_type === 'stock' ? newDividend.buy_order_date : undefined
+      };
+
+      const response = await api.post('/dividends', dividendData);
+      setDividends([...dividends, response.data]);
+      setIsDividendModalOpen(false);
+      setNewDividend({
+        portfolio_fund_id: '',
+        record_date: new Date().toISOString().split('T')[0],
+        ex_dividend_date: new Date().toISOString().split('T')[0],
+        dividend_per_share: '',
+        buy_order_date: '',
+        reinvestment_shares: '',
+        reinvestment_price: ''
+      });
+      setSelectedFund(null);
+      fetchPortfolioData();
+    } catch (error) {
+      console.error('Error creating dividend:', error);
+      alert(error.response?.data?.error || 'Error creating dividend');
+    }
+  };
+
+  const handleDividendFundChange = async (portfolioFundId) => {
+    console.log('handleDividendFundChange called with portfolioFundId:', portfolioFundId);
+    
+    try {
+      if (!portfolioFundId) {
+        console.log('No portfolioFundId provided, clearing selected fund');
+        setSelectedFund(null);
+        setNewDividend({
+          ...newDividend,
+          portfolio_fund_id: ''
+        });
+        return;
+      }
+
+      // Find the portfolio fund
+      const portfolioFund = portfolioFunds.find(pf => pf.id === parseInt(portfolioFundId));
+      console.log('Found portfolio fund:', portfolioFund);
+      
+      if (portfolioFund) {
+        try {
+          console.log('Fetching fund details for fund_id:', portfolioFund.fund_id);
+          // Get the fund details using fund_id from portfolioFund
+          const response = await api.get(`/funds/${portfolioFund.fund_id}`);
+          const fundData = response.data;
+          console.log('Received fund data:', fundData);
+          
+          setSelectedFund({
+            ...fundData,
+            id: fundData.id  // This is the actual fund ID
+          });
+          
+          setNewDividend({
+            ...newDividend,
+            portfolio_fund_id: portfolioFundId
+          });
+        } catch (error) {
+          console.error('Error fetching fund details:', error);
+          setSelectedFund(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleDividendFundChange:', error);
+      setSelectedFund(null);
+    }
+  };
+
+  const handleTransactionFundChange = (portfolioFundId) => {
+    setNewTransaction({
+      ...newTransaction,
+      portfolio_fund_id: portfolioFundId
+    });
+  };
+
+  const handleEditDividend = async (dividend) => {
+    try {
+      // Get the fund details to check dividend type
+      const fundResponse = await api.get(`/funds/${dividend.fund_id}`);
+      const fundData = fundResponse.data;
+      setSelectedFund(fundData);
+
+      // Create base editing dividend data
+      const editData = {
+        ...dividend,
+        record_date: dividend.record_date.split('T')[0],
+        ex_dividend_date: dividend.ex_dividend_date.split('T')[0]
+      };
+
+      // If it's a stock dividend and has a transaction, fetch the transaction details
+      if (fundData.dividend_type === 'stock' && dividend.reinvestment_transaction_id) {
+        try {
+          const transactionResponse = await api.get(`/transactions/${dividend.reinvestment_transaction_id}`);
+          const transactionData = transactionResponse.data;
+          
+          // Add reinvestment data from the transaction
+          editData.reinvestment_shares = transactionData.shares;
+          editData.reinvestment_price = transactionData.cost_per_share;
+        } catch (error) {
+          console.error('Error fetching reinvestment transaction:', error);
+        }
+      }
+
+      setEditingDividend(editData);
+      setIsDividendEditModalOpen(true);
+    } catch (error) {
+      console.error('Error preparing dividend edit:', error);
+      alert('Error loading dividend details');
+    }
+  };
+
+  const handleUpdateDividend = async (e) => {
+    e.preventDefault();
+    try {
+      // Validate stock dividend fields
+      if (selectedFund?.dividend_type === 'stock' && 
+          (!editingDividend.reinvestment_shares || !editingDividend.reinvestment_price)) {
+        alert('Please fill in both reinvestment shares and price for stock dividends');
+        return;
+      }
+
+      const response = await api.put(`/dividends/${editingDividend.id}`, {
+        ...editingDividend,
+        reinvestment_transaction_id: editingDividend.reinvestment_transaction_id
+      });
+
+      setDividends(dividends.map(d => d.id === editingDividend.id ? response.data : d));
+      setIsDividendEditModalOpen(false);
+      setEditingDividend(null);
+      setSelectedFund(null);
+      fetchPortfolioData(); // Refresh portfolio data
+    } catch (error) {
+      console.error('Error updating dividend:', error);
+      alert(error.response?.data?.error || 'Error updating dividend');
+    }
+  };
+
+  const handleDeleteDividend = async (dividendId) => {
+    if (window.confirm('Are you sure you want to delete this dividend?')) {
+      try {
+        await api.delete(`/dividends/${dividendId}`);
+        setDividends(dividends.filter(d => d.id !== dividendId));
+        fetchPortfolioData(); // Refresh portfolio data
+      } catch (error) {
+        console.error('Error deleting dividend:', error);
+        alert(error.response?.data?.error || 'Error deleting dividend');
+      }
+    }
+  };
+
+  // Add this function to handle opening the dividend modal
+  const handleAddDividend = async (fund) => {
+    try {
+      // Get the fund details including dividend type
+      const response = await api.get(`/funds/${fund.fund_id}`);
+      const fundData = response.data;
+      
+      setSelectedFund(fundData);
+      setNewDividend({
+        portfolio_fund_id: fund.id,
+        record_date: new Date().toISOString().split('T')[0],
+        ex_dividend_date: new Date().toISOString().split('T')[0],
+        dividend_per_share: '',
+        reinvestment_shares: '',
+        reinvestment_price: ''
+      });
+      setIsDividendModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching fund details:', error);
+    }
+  };
+
+  // Add this function to handle fund removal
+  const handleRemoveFund = async (fund) => {
+    try {
+      await api.delete(`/portfolio-funds/${fund.id}`);
+      fetchPortfolioData(); // Refresh the data if deletion was successful
+    } catch (error) {
+      // Check if this is a 409 Conflict response with confirmation data
+      if (error.response && error.response.status === 409) {
+        const data = error.response.data;
+        const confirmMessage = 
+          `Are you sure you want to remove ${data.fund_name} from this portfolio?\n\n` +
+          `This will also delete:\n` +
+          `- ${data.transaction_count} transaction(s)\n` +
+          `- ${data.dividend_count} dividend(s)\n\n` +
+          `This action cannot be undone.`;
+        
+        if (window.confirm(confirmMessage)) {
+          try {
+            // Send delete request with confirmation
+            await api.delete(`/portfolio-funds/${fund.id}?confirm=true`);
+            fetchPortfolioData(); // Refresh the data
+          } catch (confirmError) {
+            console.error('Error removing fund after confirmation:', confirmError);
+            alert('Error removing fund from portfolio');
+          }
+        }
+      } else {
+        console.error('Error removing fund:', error);
+        alert('Error removing fund from portfolio');
+      }
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -340,42 +615,49 @@ const PortfolioDetail = () => {
 
       <section className="portfolio-funds">
         <div className="section-header">
-          <h2>Portfolio Funds</h2>
-          <button onClick={() => setIsAddFundModalOpen(true)}>Add Fund</button>
+          <h2>Funds</h2>
+          <button onClick={() => setIsAddFundModalOpen(true)}>
+            <FontAwesomeIcon icon={faPlus} /> Add Fund
+          </button>
         </div>
         <table>
           <thead>
             <tr>
-              <th>Fund Name</th>
-              <th>Shares</th>
+              <th>Fund</th>
+              <th>Total Shares</th>
               <th>Average Cost</th>
               <th>Current Value</th>
-              <th>Gain/Loss</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {portfolioFunds.map(pf => (
-              <tr key={pf.id}>
-                <td>{pf.fund_name}</td>
-                <td>{formatNumber(pf.total_shares, 6)}</td>
-                <td>{formatCurrency(pf.average_cost)}</td>
-                <td>{formatCurrency(pf.current_value)}</td>
-                <td className={`${(pf.current_value - (pf.average_cost * pf.total_shares)) >= 0 ? 'positive' : 'negative'}`}>
-                  {formatCurrency(pf.current_value - (pf.average_cost * pf.total_shares))}
-                </td>
-                <td>
-                  <button 
-                    className="action-button"
-                    onClick={() => {
-                      setNewTransaction({
-                        ...newTransaction,
-                        portfolio_fund_id: pf.id
-                      });
-                      setIsTransactionModalOpen(true);
-                    }}
-                  >
+            {portfolioFunds.map(fund => (
+              <tr key={fund.id}>
+                <td>{fund.fund_name}</td>
+                <td>{formatNumber(fund.total_shares, 6)}</td>
+                <td>{formatCurrency(fund.average_cost)}</td>
+                <td>{formatCurrency(fund.current_value)}</td>
+                <td className="portfolio-funds-actions">
+                  <button className="transaction-button" onClick={() => {
+                    setNewTransaction({
+                      portfolio_fund_id: fund.id,
+                      date: new Date().toISOString().split('T')[0],
+                      type: 'buy',
+                      shares: '',
+                      cost_per_share: ''
+                    });
+                    setIsTransactionModalOpen(true);
+                  }}>
                     Add Transaction
+                  </button>
+                  <button className="dividend-button" onClick={() => handleAddDividend(fund)}>
+                    Add Dividend
+                  </button>
+                  <button 
+                    className="remove-button" 
+                    onClick={() => handleRemoveFund(fund)}
+                  >
+                    Remove Fund
                   </button>
                 </td>
               </tr>
@@ -516,7 +798,7 @@ const PortfolioDetail = () => {
                         }));
                       }}
                       labelledBy="Select transaction types"
-                      hasSelectAll={false}
+                      hasSelectAll={true}
                       disableSearch={true}
                       className="multi-select"
                       isCreatable={false}
@@ -559,21 +841,95 @@ const PortfolioDetail = () => {
                 <td>{formatCurrency(transaction.cost_per_share)}</td>
                 <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
                 <td className="transaction-actions">
-                  <button 
-                    className="edit-button"
-                    onClick={() => handleEditTransaction(transaction)}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    className="delete-button"
-                    onClick={() => handleDeleteTransaction(transaction.id)}
-                  >
-                    Delete
-                  </button>
+                  {transaction.type !== 'dividend' && (  // Only show actions if not a dividend transaction
+                    <>
+                      <button 
+                        className="edit-button"
+                        onClick={() => handleEditTransaction(transaction)}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className="delete-button"
+                        onClick={() => handleDeleteTransaction(transaction.id)}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="portfolio-dividends">
+        <div className="section-header">
+          <h2>Dividends</h2>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Record Date</th>
+              <th>Ex-Dividend Date</th>
+              <th>Fund</th>
+              <th>Type</th>
+              <th>Shares Owned</th>
+              <th>Dividend per Share</th>
+              <th>Total Amount</th>
+              <th>Dividend Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dividends.map(dividend => {
+              // Determine dividend status based on type and transaction
+              let status;
+              if (dividend.dividend_type === 'cash') {
+                status = 'PAID OUT';
+              } else {
+                status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
+              }
+              
+              return (
+                <tr key={dividend.id}>
+                  <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
+                  <td>{new Date(dividend.ex_dividend_date).toLocaleDateString()}</td>
+                  <td>{dividend.fund_name}</td>
+                  <td>
+                    {dividend.dividend_type === 'stock' ? (
+                      <><FontAwesomeIcon icon={faChartLine} /> Stock</>
+                    ) : (
+                      <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
+                    )}
+                  </td>
+                  <td>{formatNumber(dividend.shares_owned, 6)}</td>
+                  <td>{formatCurrency(dividend.dividend_per_share)}</td>
+                  <td>{formatCurrency(dividend.total_amount)}</td>
+                  <td>
+                    <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>
+                      {status}
+                    </span>
+                  </td>
+                  <td className="dividend-actions">
+                    <button 
+                      className="edit-button"
+                      onClick={() => handleEditDividend(dividend)}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="delete-button"
+                      onClick={() => handleDeleteDividend(dividend.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
@@ -612,6 +968,12 @@ const PortfolioDetail = () => {
         title="Add Transaction"
       >
         <form onSubmit={handleCreateTransaction}>
+          <div className="form-group">
+            <label>Fund:</label>
+            <div className="static-field">
+              {portfolioFunds.find(pf => pf.id === newTransaction.portfolio_fund_id)?.fund_name}
+            </div>
+          </div>
           <div className="form-group">
             <label>Date:</label>
             <input
@@ -740,6 +1102,265 @@ const PortfolioDetail = () => {
               <button type="button" onClick={() => {
                 setIsTransactionEditModalOpen(false);
                 setEditingTransaction(null);
+              }}>Cancel</button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={isDividendModalOpen}
+        onClose={() => {
+          console.log('Closing dividend modal');
+          setIsDividendModalOpen(false);
+          setSelectedFund(null);
+        }}
+        title="Add Dividend"
+      >
+        <form onSubmit={handleCreateDividend}>
+          <div className="form-group">
+            <label>Fund:</label>
+            <div className="static-field">
+              {portfolioFunds.find(pf => pf.id === newDividend.portfolio_fund_id)?.fund_name}
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Dividend Type:</label>
+            <div className="static-field">
+              {selectedFund?.dividend_type === 'stock' ? (
+                <><FontAwesomeIcon icon={faChartLine} /> Stock Dividend</>
+              ) : selectedFund?.dividend_type === 'cash' ? (
+                <><FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend</>
+              ) : (
+                'No Dividend'
+              )}
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Record Date:</label>
+            <input
+              type="date"
+              value={newDividend.record_date}
+              onChange={(e) => setNewDividend({
+                ...newDividend,
+                record_date: e.target.value
+              })}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Ex-Dividend Date:</label>
+            <input
+              type="date"
+              value={newDividend.ex_dividend_date}
+              onChange={(e) => setNewDividend({
+                ...newDividend,
+                ex_dividend_date: e.target.value
+              })}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label>Dividend per Share:</label>
+            <input
+              type="number"
+              step="0.0001"
+              value={newDividend.dividend_per_share}
+              onChange={(e) => setNewDividend({
+                ...newDividend,
+                dividend_per_share: e.target.value
+              })}
+              required
+            />
+          </div>
+          {selectedFund?.dividend_type === 'stock' && (
+            <div className="reinvestment-fields">
+              <h3>Reinvestment Details</h3>
+              <div className="form-group">
+                <label>Buy Order Date:</label>
+                <input
+                  type="date"
+                  value={newDividend.buy_order_date || ''}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    const isFutureDate = isDateInFuture(newDate);
+                    console.log('Date changed:', newDate, 'Is future:', isFutureDate);
+                    
+                    setNewDividend({
+                      ...newDividend,
+                      buy_order_date: newDate,
+                      // Only clear fields if moving to a future date
+                      reinvestment_shares: isFutureDate ? '' : newDividend.reinvestment_shares,
+                      reinvestment_price: isFutureDate ? '' : newDividend.reinvestment_price
+                    });
+                  }}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Reinvestment Shares:</label>
+                <input
+                  type="number"
+                  step="0.000001"
+                  value={newDividend.reinvestment_shares || ''}
+                  onChange={(e) => setNewDividend({
+                    ...newDividend,
+                    reinvestment_shares: e.target.value
+                  })}
+                  disabled={isDateInFuture(newDividend.buy_order_date)}
+                  required={!isDateInFuture(newDividend.buy_order_date)}
+                  className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
+                />
+              </div>
+              <div className="form-group">
+                <label>Reinvestment Price per Share:</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newDividend.reinvestment_price || ''}
+                  onChange={(e) => setNewDividend({
+                    ...newDividend,
+                    reinvestment_price: e.target.value
+                  })}
+                  disabled={isDateInFuture(newDividend.buy_order_date)}
+                  required={!isDateInFuture(newDividend.buy_order_date)}
+                  className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
+                />
+              </div>
+            </div>
+          )}
+          <div className="modal-actions">
+            <button type="submit">Create Dividend</button>
+            <button type="button" onClick={() => {
+              setIsDividendModalOpen(false);
+              setSelectedFund(null);
+            }}>Cancel</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isDividendEditModalOpen}
+        onClose={() => {
+          setIsDividendEditModalOpen(false);
+          setEditingDividend(null);
+          setSelectedFund(null);
+        }}
+        title="Edit Dividend"
+      >
+        {editingDividend && (
+          <form onSubmit={handleUpdateDividend}>
+            <div className="form-group">
+              <label>Fund:</label>
+              <div className="static-field">
+                {editingDividend.fund_name}
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Record Date:</label>
+              <input
+                type="date"
+                value={editingDividend.record_date}
+                onChange={(e) => setEditingDividend({
+                  ...editingDividend,
+                  record_date: e.target.value
+                })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Ex-Dividend Date:</label>
+              <input
+                type="date"
+                value={editingDividend.ex_dividend_date}
+                onChange={(e) => setEditingDividend({
+                  ...editingDividend,
+                  ex_dividend_date: e.target.value
+                })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Dividend per Share:</label>
+              <input
+                type="number"
+                step="0.0001"
+                value={editingDividend.dividend_per_share}
+                onChange={(e) => setEditingDividend({
+                  ...editingDividend,
+                  dividend_per_share: e.target.value
+                })}
+                required
+              />
+            </div>
+            {selectedFund?.dividend_type === 'stock' && (
+              <div className="reinvestment-fields">
+                <h3>Reinvestment Details</h3>
+                <div className="form-group">
+                  <label>Buy Order Date:</label>
+                  <input
+                    type="date"
+                    value={editingDividend.buy_order_date || ''}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      const isFutureDate = isDateInFuture(newDate);
+                      console.log('Date changed:', newDate, 'Is future:', isFutureDate);
+                      
+                      setEditingDividend({
+                        ...editingDividend,
+                        buy_order_date: newDate
+                      });
+                    }}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Reinvestment Shares:</label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={editingDividend.reinvestment_shares || ''}
+                    onChange={(e) => setEditingDividend({
+                      ...editingDividend,
+                      reinvestment_shares: e.target.value
+                    })}
+                    disabled={isDateInFuture(editingDividend.buy_order_date)}
+                    required={!isDateInFuture(editingDividend.buy_order_date)}
+                    className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Reinvestment Price:</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingDividend.reinvestment_price || ''}
+                    onChange={(e) => setEditingDividend({
+                      ...editingDividend,
+                      reinvestment_price: e.target.value
+                    })}
+                    disabled={isDateInFuture(editingDividend.buy_order_date)}
+                    required={!isDateInFuture(editingDividend.buy_order_date)}
+                    className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="modal-actions">
+              <button 
+                type="submit"
+                disabled={
+                  selectedFund?.dividend_type === 'stock' && 
+                  isDateInFuture(editingDividend.buy_order_date) && 
+                  (editingDividend.reinvestment_shares || editingDividend.reinvestment_price)
+                }
+              >
+                Update
+              </button>
+              <button type="button" onClick={() => {
+                setIsDividendEditModalOpen(false);
+                setEditingDividend(null);
+                setSelectedFund(null);
               }}>Cancel</button>
             </div>
           </form>

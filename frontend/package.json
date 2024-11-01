@@ -18,13 +18,16 @@
     "recharts": "^2.13.1",
     "web-vitals": "^4.2.4"
   },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+  },
   "overrides": {
     "nth-check": "2.0.1",
     "resolve-url-loader": "5.0.0"
   },
   "scripts": {
-    "start": "BROWSER=none react-scripts start",
-    "build": "react-scripts build",
+    "start": "BROWSER=none GENERATE_SOURCEMAP=false react-scripts start",
+    "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

@@ -155,6 +155,7 @@ class PortfolioService:
             
             result.append({
                 'id': pf.id,
+                'fund_id': pf.fund_id,
                 'fund_name': pf.fund.name,
                 'total_shares': shares,
                 'average_cost': cost / shares if shares > 0 else 0,

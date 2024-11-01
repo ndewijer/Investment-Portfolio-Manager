@@ -52,7 +52,8 @@
 }
 
 .portfolio-funds,
-.portfolio-transactions {
+.portfolio-transactions,
+.portfolio-dividends {
   background-color: white;
   border-radius: 8px;
   padding: 20px;
@@ -61,26 +62,30 @@
 }
 
 .portfolio-funds table,
-.portfolio-transactions table {
+.portfolio-transactions table,
+.portfolio-dividends table {
   width: 100%;
   margin: 0;
 }
 
 .portfolio-funds th,
-.portfolio-transactions th {
+.portfolio-transactions th,
+.portfolio-dividends th {
   background-color: #f5f5f5;
   padding: 12px;
   text-align: left;
 }
 
 .portfolio-funds td,
-.portfolio-transactions td {
+.portfolio-transactions td,
+.portfolio-dividends td {
   padding: 12px;
   border-bottom: 1px solid #eee;
 }
 
 .portfolio-funds tr:last-child td,
-.portfolio-transactions tr:last-child td {
+.portfolio-transactions tr:last-child td,
+.portfolio-dividends tr:last-child td {
   border-bottom: none;
 }
 
@@ -111,8 +116,6 @@
   cursor: pointer;
   user-select: none;
   position: relative;
-  padding-right: 30px !important;
-  padding-left: 30px !important;
 }
 
 .table-header .filter-icon {
@@ -145,17 +148,6 @@
 
 .transactions-section {
   position: relative;
-}
-
-.filter-row {
-  display: grid;
-  grid-template-columns: 150px 380px 100px 120px 120px 120px;
-  gap: 10px;
-  background-color: #f8f9fa;
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  align-items: start;
 }
 
 .date-range-filter {
@@ -250,7 +242,7 @@
 
 .portfolio-transactions th,
 .portfolio-transactions td {
-  padding: 12px;
+  padding: 5px;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -259,7 +251,7 @@
 
 .portfolio-transactions th:nth-child(1), /* Date */
 .portfolio-transactions td:nth-child(1) {
-  width: 150px;
+  width: 70px;
 }
 
 .portfolio-transactions th:nth-child(2), /* Fund */
@@ -269,7 +261,7 @@
 
 .portfolio-transactions th:nth-child(3), /* Type */
 .portfolio-transactions td:nth-child(3) {
-  width: 100px;
+  width: 70px;
 }
 
 .portfolio-transactions th:nth-child(4), /* Shares */
@@ -368,15 +360,6 @@
 .table-header {
   position: relative;
 }
-
-.header-content {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 8px;
-}
-
 /* Multi-select styles */
 .multi-select {
   width: 100%;
@@ -482,8 +465,180 @@
 }
 
 .chart-container {
-  width: 100%;
+  width: 95%;
   height: 400px;
   margin: 0 auto;
   padding: 20px 20px 20px 40px;
+}
+
+.fund-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.fund-actions button {
+  padding: 6px 12px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.portfolio-funds-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Add Transaction button - Green */
+.portfolio-funds-actions .transaction-button {
+  background-color: #4CAF50;  /* Green */
+}
+
+.portfolio-funds-actions .transaction-button:hover {
+  background-color: #45a049;
+}
+
+/* Add Dividend button - Blue */
+.portfolio-funds-actions .dividend-button {
+  background-color: #2196F3;  /* Blue */
+}
+
+.portfolio-funds-actions .dividend-button:hover {
+  background-color: #1c7dcb;
+}
+
+.fund-actions button:hover {
+  opacity: 0.9;
+}
+
+.static-field {
+  padding: 8px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  font-weight: 500;
+}
+
+.reinvestment-fields {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.reinvestment-fields h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.static-field {
+  padding: 8px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  font-weight: 500;
+}
+
+.static-field svg {
+  margin-right: 8px;
+}
+
+.dividend-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.dividend-actions button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s;
+}
+
+.dividend-actions .edit-button {
+  background-color: #FFC107;
+  color: black;
+}
+
+.dividend-actions .delete-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.dividend-actions .edit-button:hover {
+  background-color: #FFA000;
+}
+
+.dividend-actions .delete-button:hover {
+  background-color: #D32F2F;
+}
+
+.disabled-input {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.reinvestment-fields .form-group {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.reinvestment-fields .form-group.disabled {
+  opacity: 0.6;
+}
+
+.modal-actions button[disabled] {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.modal-actions button[disabled]:hover {
+  background-color: #cccccc;
+}
+
+/* Update status styles */
+.status-paid-out {
+  color: #2e7d32;
+  background-color: #e8f5e9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.status-reinvested {
+  color: #1976d2;
+  background-color: #e3f2fd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.status-pending {
+  color: #f57c00;
+  background-color: #fff3e0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.portfolio-funds-actions .remove-button {
+  background-color: #dc3545;  /* Red */
+  color: white;
+}
+
+.portfolio-funds-actions .remove-button:hover {
+  background-color: #c82333;
 }

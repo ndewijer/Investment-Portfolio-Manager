@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
-from .models import db, Portfolio, Fund, PortfolioFund, Transaction, FundPrice
+from .models import db, Portfolio, Fund, PortfolioFund, Transaction, FundPrice, DividendType, Dividend
 
 def seed_database():
     """Seed the database with initial data"""
     
     # Clear existing data
     Transaction.query.delete()
+    Dividend.query.delete()
     PortfolioFund.query.delete()
     FundPrice.query.delete()
     Fund.query.delete()
@@ -43,25 +44,28 @@ def seed_database():
     db.session.add_all(portfolios)
     db.session.commit()
 
-    # Create Funds
+    # Create Funds with dividend types
     funds = [
         Fund(
             name="Goldman Sachs Enhanced Index Sustainable Equity",
             isin="NL0012125736",
             currency="EUR",
-            exchange="XAMS"
+            exchange="XAMS",
+            dividend_type=DividendType.NONE  # Update dividend type
         ),
         Fund(
             name="Goldman Sachs Enhanced Index Sustainable EM Equity",
             isin="NL0006311771",
             currency="EUR",
-            exchange="XAMS"
+            exchange="XAMS",
+            dividend_type=DividendType.CASH   # Update dividend type
         ),
         Fund(
             name="Test Fund",
             isin="TEST000TEST",
             currency="USD",
-            exchange="NYSE"
+            exchange="NYSE",
+            dividend_type=DividendType.NONE   # Update dividend type
         )
     ]
     db.session.add_all(funds)
@@ -111,8 +115,8 @@ def seed_database():
 
     #     for days_ago in range(30, -1, -1):
     #         date = today - timedelta(days=days_ago)
-    #         # Create some price variation (more realistic)
-    #         daily_change = base_price * (0.002 * (days_ago % 5 - 2))  # 0.2% daily variation
+    #         # Create some price variation
+    #         daily_change = base_price * (0.002 * (days_ago % 5 - 2))
     #         price = base_price + daily_change
             
     #         fund_price = FundPrice(
@@ -159,16 +163,35 @@ def seed_database():
     #         type='buy',
     #         shares=18.765432,
     #         cost_per_share=31.78
-    #     ),
-
-    #     # Archived Portfolio transactions
-    #     Transaction(
-    #         portfolio_fund_id=portfolio_funds[4].id,
-    #         date=(today - timedelta(days=5)),
-    #         type='buy',
-    #         shares=10.0,
-    #         cost_per_share=35.00
     #     )
     # ]
     # db.session.add_all(transactions)
+    # db.session.commit()
+
+    # # Create sample dividends
+    # dividends = [
+    #     # Stock dividend for Marit's Portfolio
+    #     Dividend(
+    #         fund_id=funds[0].id,
+    #         portfolio_fund_id=portfolio_funds[0].id,
+    #         record_date=(today - timedelta(days=15)),
+    #         ex_dividend_date=(today - timedelta(days=14)),
+    #         shares_owned=15.787812,
+    #         dividend_per_share=0.50,
+    #         total_amount=7.89,
+    #         transaction_id=transactions[0].id  # Link to reinvestment transaction
+    #     ),
+        
+    #     # Cash dividend for PytNick's Portfolio
+    #     Dividend(
+    #         fund_id=funds[1].id,
+    #         portfolio_fund_id=portfolio_funds[3].id,
+    #         record_date=(today - timedelta(days=8)),
+    #         ex_dividend_date=(today - timedelta(days=7)),
+    #         shares_owned=18.765432,
+    #         dividend_per_share=0.75,
+    #         total_amount=14.07
+    #     )
+    # ]
+    # db.session.add_all(dividends)
     db.session.commit() 

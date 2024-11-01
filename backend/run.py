@@ -5,6 +5,7 @@ from app.routes.portfolio_routes import portfolios
 from app.routes.fund_routes import funds
 from app.routes.transaction_routes import transactions
 from app.routes.developer_routes import developer
+from app.routes.dividend_routes import dividends
 from app.seed_data import seed_database
 import click
 from dotenv import load_dotenv
@@ -48,6 +49,7 @@ def create_app():
     app.register_blueprint(funds, url_prefix='/api')
     app.register_blueprint(transactions, url_prefix='/api')
     app.register_blueprint(developer, url_prefix='/api')
+    app.register_blueprint(dividends, url_prefix='/api')
     
     # CLI commands
     @app.cli.command("seed-db")

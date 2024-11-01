@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from '../components/Modal';
 import './Funds.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -77,6 +79,18 @@ const Funds = () => {
     }
   };
 
+  const getDividendTypeDisplay = (type) => {
+    switch(type) {
+      case 'cash':
+        return <><FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend</>;
+      case 'stock':
+        return <><FontAwesomeIcon icon={faChartLine} /> Stock Dividend</>;
+      case 'none':
+      default:
+        return 'No Dividend';
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -95,6 +109,10 @@ const Funds = () => {
               <p><strong>ISIN:</strong> {fund.isin}</p>
               <p><strong>Currency:</strong> {fund.currency}</p>
               <p><strong>Exchange:</strong> {fund.exchange}</p>
+              <p>
+                <strong>Dividend Type: </strong>
+                {getDividendTypeDisplay(fund.dividend_type)}
+              </p>
             </div>
             <div className="fund-actions">
               <button onClick={() => {
@@ -176,6 +194,28 @@ const Funds = () => {
               required
             />
           </div>
+          {editingFund && (
+            <div className="form-group">
+              <label>Dividend Type:</label>
+              <select
+                value={editingFund.dividend_type || 'none'}
+                onChange={(e) => {
+                  setEditingFund({
+                    ...editingFund,
+                    dividend_type: e.target.value
+                  });
+                }}
+              >
+                <option value="none">No Dividend</option>
+                <option value="cash">
+                  <FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend
+                </option>
+                <option value="stock">
+                  <FontAwesomeIcon icon={faChartLine} /> Stock Dividend
+                </option>
+              </select>
+            </div>
+          )}
           <div className="modal-actions">
             <button type="submit">{editingFund ? "Update" : "Create"}</button>
             <button type="button" onClick={() => {

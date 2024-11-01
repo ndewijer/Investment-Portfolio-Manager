@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from ..models import Fund, PortfolioFund, Transaction, db
+from ..models import Fund, PortfolioFund, Transaction, db, DividendType
 from ..services.fund_service import FundService
 from sqlalchemy.exc import IntegrityError
 
@@ -13,7 +13,8 @@ def get_funds():
         'name': f.name,
         'isin': f.isin,
         'currency': f.currency,
-        'exchange': f.exchange
+        'exchange': f.exchange,
+        'dividend_type': f.dividend_type.value
     } for f in funds])
 
 @funds.route('/funds', methods=['POST'])
@@ -23,7 +24,8 @@ def create_fund():
         name=data['name'],
         isin=data['isin'],
         currency=data['currency'],
-        exchange=data['exchange']
+        exchange=data['exchange'],
+        dividend_type=DividendType.NONE
     )
     db.session.add(fund)
     db.session.commit()
@@ -32,10 +34,11 @@ def create_fund():
         'name': fund.name,
         'isin': fund.isin,
         'currency': fund.currency,
-        'exchange': fund.exchange
+        'exchange': fund.exchange,
+        'dividend_type': fund.dividend_type.value
     })
 
-@funds.route('/funds/<int:fund_id>', methods=['GET'])
+@funds.route('/funds/<string:fund_id>', methods=['GET'])
 def get_fund(fund_id):
     fund = Fund.query.get_or_404(fund_id)
     return jsonify({
@@ -43,10 +46,11 @@ def get_fund(fund_id):
         'name': fund.name,
         'isin': fund.isin,
         'currency': fund.currency,
-        'exchange': fund.exchange
+        'exchange': fund.exchange,
+        'dividend_type': fund.dividend_type.value
     })
 
-@funds.route('/funds/<int:fund_id>', methods=['PUT'])
+@funds.route('/funds/<string:fund_id>', methods=['PUT'])
 def update_fund(fund_id):
     data = request.json
     fund = Fund.query.get_or_404(fund_id)
@@ -54,6 +58,8 @@ def update_fund(fund_id):
     fund.isin = data['isin']
     fund.currency = data['currency']
     fund.exchange = data['exchange']
+    if 'dividend_type' in data:
+        fund.dividend_type = DividendType(data['dividend_type'])
     db.session.add(fund)
     db.session.commit()
     return jsonify({
@@ -61,10 +67,11 @@ def update_fund(fund_id):
         'name': fund.name,
         'isin': fund.isin,
         'currency': fund.currency,
-        'exchange': fund.exchange
+        'exchange': fund.exchange,
+        'dividend_type': fund.dividend_type.value
     })
 
-@funds.route('/funds/<int:fund_id>/check-usage', methods=['GET'])
+@funds.route('/funds/<string:fund_id>/check-usage', methods=['GET'])
 def check_fund_usage(fund_id):
     portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
     if portfolio_funds:
@@ -86,7 +93,7 @@ def check_fund_usage(fund_id):
             })
     return jsonify({'in_use': False})
 
-@funds.route('/funds/<int:fund_id>', methods=['DELETE'])
+@funds.route('/funds/<string:fund_id>', methods=['DELETE'])
 def delete_fund(fund_id):
     fund = Fund.query.get_or_404(fund_id)
     

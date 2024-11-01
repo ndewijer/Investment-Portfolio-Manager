@@ -23,20 +23,20 @@ def create_transaction():
     transaction = service.create_transaction(data)
     return jsonify(service.format_transaction(transaction))
 
-@transactions.route('/transactions/<int:transaction_id>', methods=['GET'])
+@transactions.route('/transactions/<string:transaction_id>', methods=['GET'])
 def get_transaction(transaction_id):
     transaction = Transaction.query.get_or_404(transaction_id)
     service = TransactionService()
     return jsonify(service.format_transaction(transaction))
 
-@transactions.route('/transactions/<int:transaction_id>', methods=['PUT'])
+@transactions.route('/transactions/<string:transaction_id>', methods=['PUT'])
 def update_transaction(transaction_id):
     data = request.json
     service = TransactionService()
     transaction = service.update_transaction(transaction_id, data)
     return jsonify(service.format_transaction(transaction))
 
-@transactions.route('/transactions/<int:transaction_id>', methods=['DELETE'])
+@transactions.route('/transactions/<string:transaction_id>', methods=['DELETE'])
 def delete_transaction(transaction_id):
     service = TransactionService()
     service.delete_transaction(transaction_id)
