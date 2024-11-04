@@ -536,8 +536,128 @@ const PortfolioDetail = () => {
       }
     }
   };
-  // Update the dividends section to only show if there are funds with dividends
-  const hasDividendFunds = portfolioFunds.some(pf => pf.dividend_type !== 'none') ?? false;
+
+  // Add console logging for portfolio funds and their dividend types
+  useEffect(() => {
+    const fetchPortfolioData = async () => {
+      try {
+        const [portfolioRes, fundsRes, transactionsRes, dividendsRes] = await Promise.all([
+          api.get(`/portfolios/${id}`),
+          api.get(`/portfolio-funds?portfolio_id=${id}`),
+          api.get(`/transactions?portfolio_id=${id}`),
+          api.get(`/dividends/portfolio/${id}`)
+        ]);
+
+        setPortfolio(portfolioRes.data);
+        setPortfolioFunds(fundsRes.data);
+        setTransactions(transactionsRes.data);
+        setDividends(dividendsRes.data);
+
+        // Debug logging
+        console.log('Portfolio Funds:', fundsRes.data);
+        console.log('Portfolio Funds with dividend types:', fundsRes.data.map(pf => ({
+          fund_name: pf.fund_name,
+          dividend_type: pf.dividend_type
+        })));
+      } catch (error) {
+        setError('Error fetching portfolio data');
+        console.error('Error:', error);
+      }
+      setLoading(false);
+    };
+
+    fetchPortfolioData();
+  }, [id]);
+
+  // Debug logging for hasDividendFunds calculation
+  const hasDividendFunds = portfolio?.funds?.some(pf => pf.fund?.dividend_type !== 'none') ?? false;
+  console.log('Has Dividend Funds check:', {
+    portfolioFunds: portfolio?.funds,
+    dividendTypes: portfolio?.funds?.map(pf => pf.fund?.dividend_type),
+    hasDividendFunds: hasDividendFunds
+  });
+
+  // Add logging before rendering the dividends section
+  {hasDividendFunds && (() => {
+    console.log('Rendering dividend section with:', {
+      hasDividendFunds,
+      dividends,
+      portfolioFunds: portfolioFunds.map(pf => ({
+        fund_name: pf.fund_name,
+        dividend_type: pf.dividend_type
+      }))
+    });
+    return (
+      <section className="portfolio-dividends">
+        <div className="section-header">
+          <h2>Dividends</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Record Date</th>
+              <th>Ex-Dividend Date</th>
+              <th>Fund</th>
+              <th>Type</th>
+              <th>Shares Owned</th>
+              <th>Dividend per Share</th>
+              <th>Total Amount</th>
+              <th>Dividend Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dividends.map(dividend => {
+              // Determine dividend status based on type and transaction
+              let status;
+              if (dividend.dividend_type === 'cash') {
+                status = 'PAID OUT';
+              } else {
+                status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
+              }
+              
+              return (
+                <tr key={dividend.id}>
+                  <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
+                  <td>{new Date(dividend.ex_dividend_date).toLocaleDateString()}</td>
+                  <td>{dividend.fund_name}</td>
+                  <td>
+                    {dividend.dividend_type === 'stock' ? (
+                      <><FontAwesomeIcon icon={faChartLine} /> Stock</>
+                    ) : (
+                      <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
+                    )}
+                  </td>
+                  <td>{formatNumber(dividend.shares_owned, 6)}</td>
+                  <td>{formatCurrency(dividend.dividend_per_share)}</td>
+                  <td>{formatCurrency(dividend.total_amount)}</td>
+                  <td>
+                    <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>
+                      {status}
+                    </span>
+                  </td>
+                  <td className="dividend-actions">
+                    <button 
+                      className="edit-button"
+                      onClick={() => handleEditDividend(dividend)}
+                    >
+                      Edit
+                    </button>
+                    <button 
+                      className="delete-button"
+                      onClick={() => handleDeleteDividend(dividend.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+    );
+  })()}
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -867,77 +987,6 @@ const PortfolioDetail = () => {
           </tbody>
         </table>
       </section>
-      {hasDividendFunds && (
-        
-        <section className="portfolio-dividends">
-          <div className="section-header">
-            <h2>Dividends</h2>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Record Date</th>
-                <th>Ex-Dividend Date</th>
-                <th>Fund</th>
-                <th>Type</th>
-                <th>Shares Owned</th>
-                <th>Dividend per Share</th>
-                <th>Total Amount</th>
-                <th>Dividend Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dividends.map(dividend => {
-                // Determine dividend status based on type and transaction
-                let status;
-                if (dividend.dividend_type === 'cash') {
-                  status = 'PAID OUT';
-                } else {
-                  status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
-                }
-                
-                return (
-                  <tr key={dividend.id}>
-                    <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
-                    <td>{new Date(dividend.ex_dividend_date).toLocaleDateString()}</td>
-                    <td>{dividend.fund_name}</td>
-                    <td>
-                      {dividend.dividend_type === 'stock' ? (
-                        <><FontAwesomeIcon icon={faChartLine} /> Stock</>
-                      ) : (
-                        <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
-                      )}
-                    </td>
-                    <td>{formatNumber(dividend.shares_owned, 6)}</td>
-                    <td>{formatCurrency(dividend.dividend_per_share)}</td>
-                    <td>{formatCurrency(dividend.total_amount)}</td>
-                    <td>
-                      <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>
-                        {status}
-                      </span>
-                    </td>
-                    <td className="dividend-actions">
-                      <button 
-                        className="edit-button"
-                        onClick={() => handleEditDividend(dividend)}
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        className="delete-button"
-                        onClick={() => handleDeleteDividend(dividend.id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </section>
-      )}
 
       <Modal
         isOpen={isAddFundModalOpen}

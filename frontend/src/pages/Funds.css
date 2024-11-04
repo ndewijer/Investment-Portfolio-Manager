@@ -107,3 +107,87 @@
   color: white;
 }
 
+.funds-page .symbol-info {
+  position: relative;
+  cursor: help;
+  border-bottom: 1px dotted #666;
+  margin-left: 5px;
+}
+
+.funds-page .symbol-info:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background-color: #333;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+.funds-page .lookup-error {
+  color: #f44336;
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
+.funds-page .modal-actions button {
+  background-color: #2196F3;
+  color: white;
+}
+
+.funds-page .symbol-group {
+  margin-bottom: 20px;
+}
+
+.funds-page .symbol-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.funds-page .symbol-validation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.funds-page .symbol-validation input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.funds-page .symbol-validation label {
+  font-size: 0.9em;
+  color: #666;
+  cursor: pointer;
+}
+
+.funds-page .lookup-error {
+  color: #f44336;
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
+.funds-page .error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+}
+
+.funds-page .success-message {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+}

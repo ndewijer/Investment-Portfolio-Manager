@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from app.models import db, Portfolio
+from app.models import db, Portfolio, SystemSetting, SystemSettingKey, LogLevel
 from app.routes.portfolio_routes import portfolios
 from app.routes.fund_routes import funds
 from app.routes.transaction_routes import transactions
@@ -51,6 +51,27 @@ def create_app():
     app.register_blueprint(developer, url_prefix='/api')
     app.register_blueprint(dividends, url_prefix='/api')
     
+    # Create database tables and set default settings
+    with app.app_context():
+        db.create_all()
+        
+        # Set default system settings if they don't exist
+        if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_ENABLED).first():
+            logging_enabled = SystemSetting(
+                key=SystemSettingKey.LOGGING_ENABLED,
+                value='true'
+            )
+            db.session.add(logging_enabled)
+
+        if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_LEVEL).first():
+            logging_level = SystemSetting(
+                key=SystemSettingKey.LOGGING_LEVEL,
+                value=LogLevel.ERROR.value
+            )
+            db.session.add(logging_level)
+
+        db.session.commit()
+
     # CLI commands
     @app.cli.command("seed-db")
     def seed_db_command():

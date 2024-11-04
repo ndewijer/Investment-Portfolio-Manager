@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from flask_sqlalchemy import SQLAlchemy
 from enum import Enum
 import uuid
@@ -28,6 +28,10 @@ class ReinvestmentStatus(Enum):
     COMPLETED = 'completed'
     PARTIAL = 'partial'
 
+class InvestmentType(Enum):
+    FUND = 'fund'
+    STOCK = 'stock'
+
 class Portfolio(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(100), nullable=False)
@@ -40,8 +44,10 @@ class Fund(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(100), nullable=False)
     isin = db.Column(db.String(12), unique=True, nullable=False)
+    symbol = db.Column(db.String(10), nullable=True)
     currency = db.Column(db.String(3), nullable=False)
     exchange = db.Column(db.String(50), nullable=False)
+    investment_type = db.Column(db.Enum(InvestmentType), nullable=False, default=InvestmentType.FUND)
     historical_prices = db.relationship('FundPrice', backref='fund', lazy=True)
     portfolios = db.relationship('PortfolioFund', backref='fund', lazy=True)
     dividend_type = db.Column(db.Enum(DividendType), nullable=False, default=DividendType.NONE)
@@ -65,7 +71,7 @@ class Transaction(db.Model):
     type = db.Column(db.String(10), nullable=False)  # 'buy', 'sell', or 'dividend'
     shares = db.Column(db.Float, nullable=False)
     cost_per_share = db.Column(db.Float, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
 
 class FundPrice(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
@@ -79,7 +85,7 @@ class ExchangeRate(db.Model):
     to_currency = db.Column(db.String(3), nullable=False)
     rate = db.Column(db.Float, nullable=False)
     date = db.Column(db.Date, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
 
     __table_args__ = (
         db.UniqueConstraint('from_currency', 'to_currency', 'date', name='unique_exchange_rate'),
@@ -97,7 +103,7 @@ class Dividend(db.Model):
     reinvestment_status = db.Column(db.Enum(ReinvestmentStatus), nullable=False, default=ReinvestmentStatus.PENDING)
     buy_order_date = db.Column(db.Date, nullable=True)
     reinvestment_transaction_id = db.Column(db.String(36), db.ForeignKey('transaction.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
 
 class LogLevel(Enum):
     DEBUG = 'debug'
@@ -117,7 +123,7 @@ class LogCategory(Enum):
 
 class Log(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.now(UTC))
     level = db.Column(db.Enum(LogLevel), nullable=False)
     category = db.Column(db.Enum(LogCategory), nullable=False)
     message = db.Column(db.Text, nullable=False)
@@ -141,9 +147,24 @@ class SystemSetting(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     key = db.Column(db.Enum(SystemSettingKey), nullable=False, unique=True)
     value = db.Column(db.String(255), nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
 
     @staticmethod
     def get_value(key: SystemSettingKey, default=None):
         setting = SystemSetting.query.filter_by(key=key).first()
         return setting.value if setting else default
+
+class SymbolInfo(db.Model):
+    """Cache table for symbol information from external sources"""
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    symbol = db.Column(db.String(10), unique=True, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    exchange = db.Column(db.String(50))
+    currency = db.Column(db.String(3))
+    isin = db.Column(db.String(12), unique=True)  # ISIN if available
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    data_source = db.Column(db.String(50))  # e.g., 'yfinance', 'manual'
+    is_valid = db.Column(db.Boolean, default=True)  # Flag for valid/invalid symbols
+
+    def __repr__(self):
+        return f'<SymbolInfo {self.symbol} ({self.name})>'
