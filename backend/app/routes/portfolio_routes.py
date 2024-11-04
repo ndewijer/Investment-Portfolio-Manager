@@ -1,8 +1,9 @@
 from flask import Blueprint, jsonify, request
 from flask.views import MethodView
 from datetime import datetime
-from ..models import Portfolio, PortfolioFund, Transaction, Dividend, db
+from ..models import Portfolio, PortfolioFund, Transaction, Dividend, db, LogLevel, LogCategory
 from ..services.portfolio_service import PortfolioService
+from ..services.logging_service import logger, track_request
 
 portfolios = Blueprint('portfolios', __name__)
 
@@ -141,6 +142,7 @@ def get_portfolio_fund_history(portfolio_id):
     return jsonify(history)
 
 @portfolios.route('/portfolio-funds/<string:portfolio_fund_id>', methods=['DELETE'])
+@track_request
 def delete_portfolio_fund(portfolio_fund_id):
     portfolio_fund = PortfolioFund.query.get_or_404(portfolio_fund_id)
     
@@ -150,13 +152,21 @@ def delete_portfolio_fund(portfolio_fund_id):
     
     # If there are associated records and no confirmation, return count for confirmation
     if (transaction_count > 0 or dividend_count > 0) and request.args.get('confirm') != 'true':
-        return jsonify({
-            'requires_confirmation': True,
-            'transaction_count': transaction_count,
-            'dividend_count': dividend_count,
-            'fund_name': portfolio_fund.fund.name,
-            'portfolio_name': portfolio_fund.portfolio.name
-        }), 409  # Conflict status code
+        response, status = logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.PORTFOLIO,
+            message=f"Deletion of portfolio fund {portfolio_fund_id} requires confirmation",
+            details={
+                'user_message': 'Confirmation required for deletion',
+                'requires_confirmation': True,
+                'transaction_count': transaction_count,
+                'dividend_count': dividend_count,
+                'fund_name': portfolio_fund.fund.name,
+                'portfolio_name': portfolio_fund.portfolio.name
+            },
+            http_status=409
+        )
+        return jsonify(response), status
     
     try:
         # Delete associated records if they exist
@@ -168,8 +178,32 @@ def delete_portfolio_fund(portfolio_fund_id):
         # Delete the portfolio-fund relationship
         db.session.delete(portfolio_fund)
         db.session.commit()
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.PORTFOLIO,
+            message=f"Successfully deleted portfolio fund {portfolio_fund_id}",
+            details={
+                'transactions_deleted': transaction_count,
+                'dividends_deleted': dividend_count,
+                'fund_name': portfolio_fund.fund.name,
+                'portfolio_name': portfolio_fund.portfolio.name
+            }
+        )
+        
         return '', 204
             
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.PORTFOLIO,
+            message=f"Error deleting portfolio fund: {str(e)}",
+            details={
+                'user_message': 'Error deleting fund from portfolio',
+                'error': str(e),
+                'portfolio_fund_id': portfolio_fund_id
+            },
+            http_status=400
+        )
+        return jsonify(response), status

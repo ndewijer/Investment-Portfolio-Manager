@@ -1,7 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import './FilterPopup.css';
-import "react-datepicker/dist/react-datepicker.css";
 
 const FilterPopup = ({ 
   type, 
@@ -9,13 +8,14 @@ const FilterPopup = ({
   onClose, 
   position, 
   value, 
-  onChange, 
+  onChange,
   options = [],
   dateRange = false,
   fromDate,
   toDate,
   onFromDateChange,
-  onToDateChange
+  onToDateChange,
+  Component
 }) => {
   const popupRef = useRef(null);
 
@@ -26,12 +26,20 @@ const FilterPopup = ({
       }
     };
 
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [isOpen, onClose]);
 
@@ -64,20 +72,19 @@ const FilterPopup = ({
           </div>
         );
 
-      case 'select':
-        return (
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          >
-            <option value="">All</option>
-            {options.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        );
-
       case 'multiselect':
+        if (Component) {
+          return (
+            <Component
+              options={options}
+              value={value}
+              onChange={onChange}
+              labelledBy="Select options"
+              hasSelectAll={true}
+              disableSearch={true}
+            />
+          );
+        }
         return (
           <select
             multiple
@@ -88,9 +95,57 @@ const FilterPopup = ({
             }}
           >
             {options.map(option => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
+        );
+
+      case 'text':
+        return (
+          <input
+            type="text"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Filter..."
+            autoFocus
+          />
+        );
+
+      case 'datetime':
+        return (
+          <div className="date-range-inputs">
+            <div className="date-input">
+              <label>From (UTC):</label>
+              <DatePicker
+                selected={fromDate}
+                onChange={onFromDateChange}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="yyyy-MM-dd HH:mm"
+                //timeCaption="Time (UTC)"
+                isClearable
+                //utcOffset={0}
+              />
+            </div>
+            <div className="date-input">
+              <label>To (UTC):</label>
+              <DatePicker
+                selected={toDate}
+                onChange={onToDateChange}
+                showTimeSelect
+                timeFormat="HH:mm"
+                timeIntervals={15}
+                dateFormat="yyyy-MM-dd HH:mm"
+                //timeCaption="Time (UTC)"
+                minDate={fromDate}
+                isClearable
+                //utcOffset={0}
+              />
+            </div>
+          </div>
         );
 
       default:

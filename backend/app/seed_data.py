@@ -1,16 +1,72 @@
 from datetime import datetime, timedelta
-from .models import db, Portfolio, Fund, PortfolioFund, Transaction, FundPrice, DividendType, Dividend
+from .models import (
+    db, Portfolio, Fund, PortfolioFund, Transaction, FundPrice, 
+    DividendType, Dividend, Log, LogLevel, LogCategory
+)
+import uuid
 
 def seed_database():
     """Seed the database with initial data"""
     
     # Clear existing data
+    Log.query.delete()
     Transaction.query.delete()
     Dividend.query.delete()
     PortfolioFund.query.delete()
     FundPrice.query.delete()
     Fund.query.delete()
     Portfolio.query.delete()
+    db.session.commit()
+
+    # Create sample logs
+    logs = [
+        Log(
+            id=str(uuid.uuid4()),
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM,
+            message="Application started",
+            details='{"startup_time": "2024-01-01T00:00:00Z"}',
+            source="seed_database",
+            http_status=200
+        ),
+        Log(
+            id=str(uuid.uuid4()),
+            level=LogLevel.WARNING,
+            category=LogCategory.DATABASE,
+            message="Database connection pool reaching capacity",
+            details='{"pool_size": 80, "max_size": 100}',
+            source="connection_pool_monitor",
+            http_status=None
+        ),
+        Log(
+            id=str(uuid.uuid4()),
+            level=LogLevel.ERROR,
+            category=LogCategory.SECURITY,
+            message="Failed login attempt",
+            details='{"ip_address": "192.168.1.1", "attempt_count": 3}',
+            source="auth_service",
+            http_status=401
+        ),
+        Log(
+            id=str(uuid.uuid4()),
+            level=LogLevel.INFO,
+            category=LogCategory.PORTFOLIO,
+            message="Portfolio created",
+            details='{"portfolio_name": "Test Portfolio", "user_id": "123"}',
+            source="portfolio_service",
+            http_status=201
+        ),
+        Log(
+            id=str(uuid.uuid4()),
+            level=LogLevel.DEBUG,
+            category=LogCategory.TRANSACTION,
+            message="Transaction validation",
+            details='{"validation_rules": ["date_check", "balance_check"]}',
+            source="transaction_validator",
+            http_status=None
+        )
+    ]
+    db.session.add_all(logs)
     db.session.commit()
 
     # Create Portfolios
@@ -51,7 +107,7 @@ def seed_database():
             isin="NL0012125736",
             currency="EUR",
             exchange="XAMS",
-            dividend_type=DividendType.NONE  # Update dividend type
+            dividend_type=DividendType.STOCK  # Update dividend type
         ),
         Fund(
             name="Goldman Sachs Enhanced Index Sustainable EM Equity",
@@ -104,94 +160,15 @@ def seed_database():
     db.session.add_all(portfolio_funds)
     db.session.commit()
 
-    # # Create historical prices for the last 30 days
-    # today = datetime.now().date()
-    # for fund in funds:
-    #     # Different base prices for different funds
-    #     if fund.currency == 'EUR':
-    #         base_price = 31.67  # Example EUR price
-    #     else:
-    #         base_price = 35.00  # Example USD price
-
-    #     for days_ago in range(30, -1, -1):
-    #         date = today - timedelta(days=days_ago)
-    #         # Create some price variation
-    #         daily_change = base_price * (0.002 * (days_ago % 5 - 2))
-    #         price = base_price + daily_change
-            
-    #         fund_price = FundPrice(
-    #             fund_id=fund.id,
-    #             date=date,
-    #             price=price
-    #         )
-    #         db.session.add(fund_price)
-    #         base_price = price  # Use this as the base for the next day
-    
-    # db.session.commit()
-
-    # # Create sample transactions
-    # transactions = [
-    #     # Marit's Portfolio transactions
-    #     Transaction(
-    #         portfolio_fund_id=portfolio_funds[0].id,
-    #         date=(today - timedelta(days=25)),
-    #         type='buy',
-    #         shares=15.787812,
-    #         cost_per_share=31.67
-    #     ),
-        
-    #     # Tobias's Portfolio transactions
-    #     Transaction(
-    #         portfolio_fund_id=portfolio_funds[1].id,
-    #         date=(today - timedelta(days=20)),
-    #         type='buy',
-    #         shares=12.345678,
-    #         cost_per_share=31.89
-    #     ),
-
-    #     # PytNick's Portfolio transactions
-    #     Transaction(
-    #         portfolio_fund_id=portfolio_funds[2].id,  # Enhanced Index Sustainable Equity
-    #         date=(today - timedelta(days=15)),
-    #         type='buy',
-    #         shares=20.123456,
-    #         cost_per_share=31.95
-    #     ),
-    #     Transaction(
-    #         portfolio_fund_id=portfolio_funds[3].id,  # Enhanced Index Sustainable EM Equity
-    #         date=(today - timedelta(days=10)),
-    #         type='buy',
-    #         shares=18.765432,
-    #         cost_per_share=31.78
-    #     )
-    # ]
-    # db.session.add_all(transactions)
-    # db.session.commit()
-
-    # # Create sample dividends
-    # dividends = [
-    #     # Stock dividend for Marit's Portfolio
-    #     Dividend(
-    #         fund_id=funds[0].id,
-    #         portfolio_fund_id=portfolio_funds[0].id,
-    #         record_date=(today - timedelta(days=15)),
-    #         ex_dividend_date=(today - timedelta(days=14)),
-    #         shares_owned=15.787812,
-    #         dividend_per_share=0.50,
-    #         total_amount=7.89,
-    #         transaction_id=transactions[0].id  # Link to reinvestment transaction
-    #     ),
-        
-    #     # Cash dividend for PytNick's Portfolio
-    #     Dividend(
-    #         fund_id=funds[1].id,
-    #         portfolio_fund_id=portfolio_funds[3].id,
-    #         record_date=(today - timedelta(days=8)),
-    #         ex_dividend_date=(today - timedelta(days=7)),
-    #         shares_owned=18.765432,
-    #         dividend_per_share=0.75,
-    #         total_amount=14.07
-    #     )
-    # ]
-    # db.session.add_all(dividends)
+    # Log the seeding completion
+    completion_log = Log(
+        id=str(uuid.uuid4()),
+        level=LogLevel.INFO,
+        category=LogCategory.SYSTEM,
+        message="Database seeding completed",
+        details=f'{{"portfolios": {len(portfolios)}, "funds": {len(funds)}, "portfolio_funds": {len(portfolio_funds)}}}',
+        source="seed_database",
+        http_status=None
+    )
+    db.session.add(completion_log)
     db.session.commit() 

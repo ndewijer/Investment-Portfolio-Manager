@@ -44,3 +44,6 @@ instance/
 *.swp
 *.swo
 .DS_Store 
+
+# Logging directory
+**/logs/*

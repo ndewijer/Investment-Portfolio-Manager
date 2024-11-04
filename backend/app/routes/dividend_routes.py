@@ -1,45 +1,121 @@
 from flask import Blueprint, jsonify, request
 from ..services.dividend_service import DividendService
-from ..models import Fund, DividendType, Dividend, Transaction, db, ReinvestmentStatus
+from ..models import Fund, DividendType, Dividend, Transaction, db, ReinvestmentStatus, LogLevel, LogCategory
+from ..services.logging_service import logger, track_request
 from datetime import datetime
 import uuid
 
 dividends = Blueprint('dividends', __name__)
 
 @dividends.route('/dividends', methods=['POST'])
+@track_request
 def create_dividend():
-    data = request.json
-    dividend = DividendService.create_dividend(data)
-    return jsonify(DividendService.format_dividend(dividend))
+    try:
+        data = request.json
+        dividend = DividendService.create_dividend(data)
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.DIVIDEND,
+            message=f"Successfully created dividend",
+            details={
+                'dividend_id': dividend.id,
+                'fund_name': dividend.fund.name,
+                'total_amount': dividend.total_amount,
+                'dividend_type': dividend.fund.dividend_type.value
+            }
+        )
+
+        return jsonify(DividendService.format_dividend(dividend))
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.DIVIDEND,
+            message=f"Error creating dividend: {str(e)}",
+            details={
+                'user_message': 'Error creating dividend',
+                'error': str(e),
+                'request_data': data
+            },
+            http_status=400
+        )
+        return jsonify(response), status
 
 @dividends.route('/dividends/fund/<string:fund_id>', methods=['GET'])
+@track_request
 def get_fund_dividends(fund_id):
-    dividends = DividendService.get_fund_dividends(fund_id)
-    return jsonify([DividendService.format_dividend(d) for d in dividends])
+    try:
+        dividends = DividendService.get_fund_dividends(fund_id)
+        
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.DIVIDEND,
+            message=f"Successfully retrieved fund dividends",
+            details={
+                'fund_id': fund_id,
+                'dividend_count': len(dividends)
+            }
+        )
+
+        return jsonify([DividendService.format_dividend(d) for d in dividends])
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.DIVIDEND,
+            message=f"Error retrieving fund dividends: {str(e)}",
+            details={
+                'fund_id': fund_id,
+                'error': str(e)
+            },
+            http_status=500
+        )
+        return jsonify(response), status
 
 @dividends.route('/dividends/portfolio/<string:portfolio_id>', methods=['GET'])
+@track_request
 def get_portfolio_dividends(portfolio_id):
-    dividends = DividendService.get_portfolio_dividends(portfolio_id)
-    return jsonify([DividendService.format_dividend(d) for d in dividends])
+    try:
+        dividends = DividendService.get_portfolio_dividends(portfolio_id)
+        
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.DIVIDEND,
+            message=f"Successfully retrieved portfolio dividends",
+            details={
+                'portfolio_id': portfolio_id,
+                'dividend_count': len(dividends)
+            }
+        )
 
-@dividends.route('/funds/<string:fund_id>/dividend-type', methods=['PUT'])
-def update_fund_dividend_type(fund_id):
-    data = request.json
-    fund = Fund.query.get_or_404(fund_id)
-    fund.dividend_type = DividendType(data['dividend_type'])
-    db.session.commit()
-    return jsonify({
-        'id': fund.id,
-        'name': fund.name,
-        'dividend_type': fund.dividend_type.value
-    })
+        return jsonify([DividendService.format_dividend(d) for d in dividends])
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.DIVIDEND,
+            message=f"Error retrieving portfolio dividends: {str(e)}",
+            details={
+                'portfolio_id': portfolio_id,
+                'error': str(e)
+            },
+            http_status=500
+        )
+        return jsonify(response), status
 
 @dividends.route('/dividends/<string:dividend_id>', methods=['PUT'])
+@track_request
 def update_dividend(dividend_id):
-    data = request.json
-    dividend = Dividend.query.get_or_404(dividend_id)
-    
     try:
+        data = request.json
+        dividend = Dividend.query.get_or_404(dividend_id)
+        
+        # Store original values for logging
+        original_values = {
+            'record_date': dividend.record_date,
+            'ex_dividend_date': dividend.ex_dividend_date,
+            'dividend_per_share': dividend.dividend_per_share,
+            'reinvestment_status': dividend.reinvestment_status.value
+        }
+
         # Update basic dividend information
         dividend.record_date = datetime.strptime(data['record_date'], '%Y-%m-%d').date()
         dividend.ex_dividend_date = datetime.strptime(data['ex_dividend_date'], '%Y-%m-%d').date()
@@ -90,17 +166,82 @@ def update_dividend(dividend_id):
             dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
         
         db.session.commit()
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.DIVIDEND,
+            message=f"Successfully updated dividend {dividend_id}",
+            details={
+                'original_values': original_values,
+                'new_values': {
+                    'record_date': dividend.record_date.isoformat(),
+                    'ex_dividend_date': dividend.ex_dividend_date.isoformat(),
+                    'dividend_per_share': dividend.dividend_per_share,
+                    'reinvestment_status': dividend.reinvestment_status.value
+                }
+            }
+        )
+
         return jsonify(DividendService.format_dividend(dividend))
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.DIVIDEND,
+            message=f"Error updating dividend: {str(e)}",
+            details={
+                'dividend_id': dividend_id,
+                'error': str(e),
+                'request_data': data
+            },
+            http_status=400
+        )
+        return jsonify(response), status
 
 @dividends.route('/dividends/<string:dividend_id>', methods=['DELETE'])
+@track_request
 def delete_dividend(dividend_id):
     try:
+        # Store dividend details before deletion for logging
+        dividend = Dividend.query.get_or_404(dividend_id)
+        dividend_details = {
+            'fund_name': dividend.fund.name,
+            'total_amount': dividend.total_amount,
+            'dividend_type': dividend.fund.dividend_type.value,
+            'reinvestment_status': dividend.reinvestment_status.value
+        }
+
         DividendService.delete_dividend(dividend_id)
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.DIVIDEND,
+            message=f"Successfully deleted dividend {dividend_id}",
+            details=dividend_details
+        )
+
         return '', 204
     except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.DIVIDEND,
+            message=f"Error deleting dividend: {str(e)}",
+            details={
+                'dividend_id': dividend_id,
+                'error': str(e)
+            },
+            http_status=400
+        )
+        return jsonify(response), status
     except Exception as e:
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.DIVIDEND,
+            message=f"Unexpected error deleting dividend: {str(e)}",
+            details={
+                'dividend_id': dividend_id,
+                'error': str(e)
+            },
+            http_status=500
+        )
+        return jsonify(response), status

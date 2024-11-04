@@ -2,8 +2,18 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from enum import Enum
 import uuid
+import json
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+import pytz
 
 db = SQLAlchemy()
+
+@event.listens_for(Engine, 'connect')
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA timezone = 'UTC';")
+    cursor.close()
 
 def generate_uuid():
     return str(uuid.uuid4())
@@ -88,3 +98,52 @@ class Dividend(db.Model):
     buy_order_date = db.Column(db.Date, nullable=True)
     reinvestment_transaction_id = db.Column(db.String(36), db.ForeignKey('transaction.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class LogLevel(Enum):
+    DEBUG = 'debug'
+    INFO = 'info'
+    WARNING = 'warning'
+    ERROR = 'error'
+    CRITICAL = 'critical'
+
+class LogCategory(Enum):
+    PORTFOLIO = 'portfolio'
+    FUND = 'fund'
+    TRANSACTION = 'transaction'
+    DIVIDEND = 'dividend'
+    SYSTEM = 'system'
+    DATABASE = 'database'
+    SECURITY = 'security'
+
+class Log(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    level = db.Column(db.Enum(LogLevel), nullable=False)
+    category = db.Column(db.Enum(LogCategory), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    details = db.Column(db.Text, nullable=True)  # JSON string for structured data
+    source = db.Column(db.String(255), nullable=False)  # Function/method name
+    user_id = db.Column(db.String(36), nullable=True)  # For future user authentication
+    request_id = db.Column(db.String(36), nullable=True)  # To track request flow
+    stack_trace = db.Column(db.Text, nullable=True)
+    http_status = db.Column(db.Integer, nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+
+    def __repr__(self):
+        return f'<Log {self.timestamp} {self.level.value}: {self.message}>'
+
+class SystemSettingKey(Enum):
+    LOGGING_ENABLED = 'logging_enabled'
+    LOGGING_LEVEL = 'logging_level'
+
+class SystemSetting(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    key = db.Column(db.Enum(SystemSettingKey), nullable=False, unique=True)
+    value = db.Column(db.String(255), nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @staticmethod
+    def get_value(key: SystemSettingKey, default=None):
+        setting = SystemSetting.query.filter_by(key=key).first()
+        return setting.value if setting else default

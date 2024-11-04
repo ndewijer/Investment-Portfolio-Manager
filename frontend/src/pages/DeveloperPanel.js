@@ -5,6 +5,7 @@ import CollapsibleInfo from '../components/CollapsibleInfo';
 import Toast from '../components/Toast';
 import { useFormat } from '../context/FormatContext';
 import { API_BASE_URL } from '../config';
+import { Link } from 'react-router-dom';
 
 const DeveloperPanel = () => {
   const [exchangeRate, setExchangeRate] = useState({
@@ -33,6 +34,10 @@ const DeveloperPanel = () => {
   const [fundPriceTemplate, setFundPriceTemplate] = useState(null);
   const [portfolioFunds, setPortfolioFunds] = useState([]);
   const { isEuropeanFormat, setIsEuropeanFormat } = useFormat();
+  const [loggingSettings, setLoggingSettings] = useState({
+    enabled: true,
+    level: 'info'
+  });
 
   const fetchCurrentExchangeRate = useCallback(async () => {
     try {
@@ -57,6 +62,7 @@ const DeveloperPanel = () => {
     fetchCsvTemplate();
     fetchCurrentExchangeRate();
     fetchFundPriceTemplate();
+    fetchLoggingSettings();
   }, [fetchCurrentExchangeRate]);
 
   const fetchFundsAndPortfolios = async () => {
@@ -87,6 +93,26 @@ const DeveloperPanel = () => {
       setFundPriceTemplate(response.data);
     } catch (err) {
       console.error('Error fetching fund price template:', err);
+    }
+  };
+
+  const fetchLoggingSettings = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/system-settings/logging`);
+      setLoggingSettings(response.data);
+    } catch (err) {
+      console.error('Error fetching logging settings:', err);
+    }
+  };
+
+  const handleLoggingSettingsUpdate = async (newSettings) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/system-settings/logging`, newSettings);
+      setLoggingSettings(response.data);
+      setMessage('Logging settings updated successfully');
+    } catch (err) {
+      setError('Error updating logging settings');
+      console.error('Error updating logging settings:', err);
     }
   };
 
@@ -429,6 +455,52 @@ const DeveloperPanel = () => {
         </div>
         <div className="format-example">
           <p>Example: {isEuropeanFormat ? '€ 1.234,56' : '$1,234.56'}</p>
+        </div>
+      </section>
+
+      <section className="logging-settings-section">
+        <h2>Logging Settings</h2>
+        <div className="form-group">
+          <label>Logging Status:</label>
+          <select
+            value={loggingSettings.enabled ? 'enabled' : 'disabled'}
+            onChange={(e) => handleLoggingSettingsUpdate({
+              ...loggingSettings,
+              enabled: e.target.value === 'enabled'
+            })}
+          >
+            <option value="enabled">Enabled</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Minimum Log Level:</label>
+          <select
+            value={loggingSettings.level}
+            onChange={(e) => handleLoggingSettingsUpdate({
+              ...loggingSettings,
+              level: e.target.value
+            })}
+            disabled={!loggingSettings.enabled}
+          >
+            <option value="debug">Debug</option>
+            <option value="info">Info</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <div className="logging-info">
+          <p>Current logging configuration:</p>
+          <ul>
+            <li>Status: <strong>{loggingSettings.enabled ? 'Enabled' : 'Disabled'}</strong></li>
+            <li>Minimum Level: <strong>{loggingSettings.level.toUpperCase()}</strong></li>
+          </ul>
+          {loggingSettings.enabled && (
+            <Link to="/logs" className="view-logs-button">
+              View System Logs
+            </Link>
+          )}
         </div>
       </section>
     </div>

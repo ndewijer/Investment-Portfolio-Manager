@@ -7,6 +7,7 @@ import Portfolios from './pages/Portfolios';
 import PortfolioDetail from './pages/PortfolioDetail';
 import Funds from './pages/Funds';
 import DeveloperPanel from './pages/DeveloperPanel';
+import LogViewer from './pages/LogViewer';
 import './App.css';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
               <Route path="/portfolios/:id" element={<PortfolioDetail />} />
               <Route path="/funds" element={<Funds />} />
               <Route path="/developer" element={<DeveloperPanel />} />
+              <Route path="/logs" element={<LogViewer />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
