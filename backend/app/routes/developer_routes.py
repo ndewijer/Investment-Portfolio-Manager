@@ -131,7 +131,7 @@ def import_transactions():
         try:
             # Read and decode the file content
             file_content = file.read()
-            decoded_content = file_content.decode('utf-8')
+            decoded_content = file_content.decode('utf-8-sig')
             
             # Check if the file has the correct headers
             first_line = decoded_content.split('\n')[0].strip()
@@ -163,6 +163,8 @@ def import_transactions():
                 )
                 return jsonify(response), status
             
+            # Re-encode the content without BOM for the service
+            file_content = decoded_content.encode('utf-8')
             count = DeveloperService.import_transactions_csv(file_content, portfolio_fund_id)
             
             logger.log(
