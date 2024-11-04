@@ -2,52 +2,94 @@
   padding: 20px;
 }
 
-.page-header {
+.funds-page .funds-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
 }
 
-.funds-grid {
+.funds-page .add-buttons {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.funds-page .add-fund-button {
+  background-color: #FF9800;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.funds-page .add-stock-button {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.funds-page .fund-actions button:hover,
+.funds-page .add-buttons button:hover {
+  opacity: 0.9;
+}
+
+.funds-page .funds-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
-.fund-card {
+.funds-page .fund-card {
   background-color: white;
-  border-radius: 8px;
   padding: 20px;
+  border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
 }
 
-.fund-card h2 {
+/* Orange border for funds */
+.funds-page .fund-card.fund {
+  border-color: #FF9800;
+}
+
+/* Blue border for stocks */
+.funds-page .fund-card.stock {
+  border-color: #2196F3;
+}
+
+.funds-page .fund-card h2 {
   margin-top: 0;
   margin-bottom: 15px;
   color: #333;
 }
 
-.fund-details {
+.funds-page .fund-details {
   margin-bottom: 20px;
 }
 
-.fund-details p {
+.funds-page .fund-details p {
   margin: 8px 0;
   color: #666;
 }
 
-.fund-details strong {
+.funds-page .fund-details strong {
   color: #333;
   margin-right: 8px;
 }
 
-.fund-actions {
+.funds-page .fund-actions {
   display: flex;
   gap: 10px;
 }
 
-.fund-actions button {
+.funds-page .fund-actions button {
   flex: 1;
   padding: 8px;
   border: none;
@@ -55,16 +97,13 @@
   cursor: pointer;
 }
 
-.fund-actions button:first-child {
+.funds-page .fund-actions button:first-child {
   background-color: #FFC107;
   color: black;
 }
 
-.fund-actions button:last-child {
+.funds-page .fund-actions button:last-child {
   background-color: #f44336;
   color: white;
 }
 
-.fund-actions button:hover {
-  opacity: 0.9;
-}

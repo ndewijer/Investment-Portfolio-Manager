@@ -544,7 +544,7 @@ const PortfolioDetail = () => {
   if (!portfolio) return <div>Portfolio not found</div>;
 
   return (
-    <div className="portfolio-detail">
+    <div className="portfolio-detail-page">
       <div className="portfolio-header">
         <h1>{portfolio.name}</h1>
         <p>{portfolio.description}</p>

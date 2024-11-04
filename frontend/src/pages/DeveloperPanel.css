@@ -23,24 +23,24 @@
   color: #444;
 }
 
-.form-group {
+.developer-panel .form-group {
   margin-bottom: 15px;
 }
 
-.form-group label {
+.developer-panel .form-group label {
   display: block;
   margin-bottom: 5px;
   color: #666;
 }
 
-.form-group input {
+.developer-panel .form-group input {
   width: 100%;
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
 
-button {
+.developer-panel button {
   background-color: #2196F3;
   color: white;
   padding: 10px 20px;
@@ -49,37 +49,36 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background-color: #1976D2;
+.developer-panel button:hover {
+  opacity: 0.9;
 }
 
-/* Add these styles to the existing CSS file */
-.csv-template {
+.developer-panel .csv-template {
   margin: 0;
 }
 
-.csv-template h3 {
+.developer-panel .csv-template h3 {
   margin-top: 0;
   color: #333;
 }
 
-.csv-template p {
+.developer-panel .csv-template p {
   white-space: pre-line;
   margin-bottom: 15px;
 }
 
-.csv-example {
+.developer-panel .csv-example {
   margin-top: 15px;
 }
 
-.csv-example h4 {
+.developer-panel .csv-example h4 {
   margin-top: 0;
   margin-bottom: 10px;
   color: #666;
   font-size: 0.9em;
 }
 
-.csv-example code {
+.developer-panel .csv-example code {
   display: block;
   font-family: monospace;
   white-space: pre;
@@ -89,15 +88,14 @@ button:hover {
   font-size: 0.9em;
 }
 
-.form-group select {
+.developer-panel .form-group select {
   width: 100%;
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
 }
 
-/* Add to existing styles */
-.logging-settings-section {
+.developer-panel .logging-settings-section {
   background-color: white;
   padding: 20px;
   border-radius: 8px;
@@ -105,34 +103,34 @@ button:hover {
   margin-bottom: 20px;
 }
 
-.logging-info {
+.developer-panel .logging-info {
   margin-top: 20px;
   padding: 15px;
   background-color: #f8f9fa;
   border-radius: 4px;
 }
 
-.logging-info p {
+.developer-panel .logging-info p {
   margin: 0 0 10px 0;
   color: #666;
 }
 
-.logging-info ul {
+.developer-panel .logging-info ul {
   list-style: none;
   padding: 0;
   margin: 0 0 15px 0;
 }
 
-.logging-info li {
+.developer-panel .logging-info li {
   margin: 5px 0;
   color: #666;
 }
 
-.logging-info strong {
+.developer-panel .logging-info strong {
   color: #333;
 }
 
-.view-logs-button {
+.developer-panel .view-logs-button {
   display: inline-block;
   padding: 8px 16px;
   background-color: #2196F3;
@@ -142,11 +140,11 @@ button:hover {
   transition: background-color 0.2s;
 }
 
-.view-logs-button:hover {
+.developer-panel .view-logs-button:hover {
   background-color: #1976D2;
 }
 
-select:disabled {
+.developer-panel select:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
 } 

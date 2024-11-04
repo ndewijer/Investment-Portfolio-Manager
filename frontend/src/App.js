@@ -8,7 +8,24 @@ import PortfolioDetail from './pages/PortfolioDetail';
 import Funds from './pages/Funds';
 import DeveloperPanel from './pages/DeveloperPanel';
 import LogViewer from './pages/LogViewer';
+
+// Import global CSS first
 import './App.css';
+
+// Import component CSS after global CSS
+import './components/Navigation.css';
+import './components/Modal.css';
+import './components/Toast.css';
+import './components/FilterPopup.css';
+import './components/CollapsibleInfo.css';
+
+// Import page-specific CSS last
+import './pages/Overview.css';
+import './pages/Portfolios.css';
+import './pages/PortfolioDetail.css';
+import './pages/Funds.css';
+import './pages/DeveloperPanel.css';
+import './pages/LogViewer.css';
 
 function App() {
   return (
