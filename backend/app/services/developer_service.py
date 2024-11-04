@@ -1,7 +1,8 @@
 import csv
-from datetime import datetime
+from datetime import datetime, date
 import uuid
 from ..models import db, Transaction, PortfolioFund, FundPrice, Fund, Portfolio, ExchangeRate
+from io import StringIO
 
 class DeveloperService:
     @staticmethod
@@ -173,27 +174,6 @@ class DeveloperService:
             raise ValueError(f"Error processing CSV file: {str(e)}")
 
     @staticmethod
-    def set_fund_price(fund_id, price, date=None):
-        """Set the price for a fund on a specific date"""
-        if date is None:
-            date = datetime.now().date()
-            
-        fund_price = FundPrice(
-            fund_id=fund_id,
-            date=date,
-            price=price
-        )
-        
-        db.session.add(fund_price)
-        db.session.commit()
-        
-        return {
-            'fund_id': fund_id,
-            'price': price,
-            'date': date.isoformat()
-        }
-
-    @staticmethod
     def get_exchange_rate(from_currency, to_currency, date):
         """Get exchange rate for a specific currency pair and date"""
         exchange_rate = ExchangeRate.query.filter_by(
@@ -258,4 +238,47 @@ class DeveloperService:
             'description': 'CSV file should contain the following columns:\n' +
                          '- date: Price date in YYYY-MM-DD format\n' +
                          '- price: Fund price (decimal numbers)'
+        }
+
+    @staticmethod
+    def get_fund_price(fund_id: str, date_: date) -> dict:
+        fund_price = FundPrice.query.filter_by(
+            fund_id=fund_id,
+            date=date_
+        ).first()
+        
+        if fund_price:
+            return {
+                'fund_id': fund_price.fund_id,
+                'date': fund_price.date.isoformat(),
+                'price': fund_price.price
+            }
+        return None
+
+    @staticmethod
+    def set_fund_price(fund_id: str, price: float, date_: date = None) -> dict:
+        if date_ is None:
+            date_ = datetime.now().date()
+            
+        fund_price = FundPrice.query.filter_by(
+            fund_id=fund_id,
+            date=date_
+        ).first()
+        
+        if not fund_price:
+            fund_price = FundPrice(
+                fund_id=fund_id,
+                price=price,
+                date=date_
+            )
+            db.session.add(fund_price)
+        else:
+            fund_price.price = price
+            
+        db.session.commit()
+        
+        return {
+            'fund_id': fund_price.fund_id,
+            'date': fund_price.date.isoformat(),
+            'price': fund_price.price
         }

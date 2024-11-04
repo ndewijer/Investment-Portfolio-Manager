@@ -1,0 +1,16 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
+.env
+.flaskenv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store 

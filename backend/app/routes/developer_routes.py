@@ -3,7 +3,7 @@ from ..services.developer_service import DeveloperService
 from datetime import datetime, timedelta
 from ..models import (
     PortfolioFund, LogLevel, LogCategory, db, SystemSetting, 
-    SystemSettingKey, Log
+    SystemSettingKey, Log, Fund, FundPrice
 )
 from ..services.logging_service import logger, track_request
 import json
@@ -58,6 +58,38 @@ def get_exchange_rate():
 def set_exchange_rate():
     try:
         data = request.json
+        
+        # Validate required fields
+        required_fields = ['from_currency', 'to_currency', 'rate']
+        for field in required_fields:
+            if field not in data:
+                response, status = logger.log(
+                    level=LogLevel.ERROR,
+                    category=LogCategory.SYSTEM,
+                    message=f"Missing required field: {field}",
+                    details={
+                        'user_message': f'Missing required field: {field}',
+                        'request_data': data
+                    },
+                    http_status=400
+                )
+                return jsonify(response), status
+
+        # Validate currency codes
+        valid_currencies = {'USD', 'EUR', 'GBP', 'JPY'}  # Add more as needed
+        if data['from_currency'] not in valid_currencies:
+            response, status = logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.SYSTEM,
+                message=f"Invalid from_currency: {data['from_currency']}",
+                details={
+                    'user_message': 'Invalid currency code',
+                    'valid_currencies': list(valid_currencies)
+                },
+                http_status=400
+            )
+            return jsonify(response), status
+
         result = DeveloperService.set_exchange_rate(
             data['from_currency'],
             data['to_currency'],
@@ -69,12 +101,7 @@ def set_exchange_rate():
             level=LogLevel.INFO,
             category=LogCategory.SYSTEM,
             message="Successfully set exchange rate",
-            details={
-                'from_currency': result['from_currency'],
-                'to_currency': result['to_currency'],
-                'rate': result['rate'],
-                'date': result['date']
-            }
+            details=result
         )
 
         return jsonify(result)
@@ -152,7 +179,7 @@ def import_transactions():
                 )
                 return jsonify(response), status
             
-            portfolio_fund = PortfolioFund.query.get(portfolio_fund_id)
+            portfolio_fund = db.session.get(PortfolioFund, portfolio_fund_id)
             if not portfolio_fund:
                 response, status = logger.log(
                     level=LogLevel.ERROR,
@@ -207,6 +234,38 @@ def import_transactions():
 def set_fund_price():
     try:
         data = request.json
+        
+        # Validate required fields
+        required_fields = ['fund_id', 'price']
+        for field in required_fields:
+            if field not in data:
+                response, status = logger.log(
+                    level=LogLevel.ERROR,
+                    category=LogCategory.SYSTEM,
+                    message=f"Missing required field: {field}",
+                    details={
+                        'user_message': f'Missing required field: {field}',
+                        'request_data': data
+                    },
+                    http_status=400
+                )
+                return jsonify(response), status
+
+        # Validate fund_id exists
+        fund = db.session.get(Fund, data['fund_id'])
+        if not fund:
+            response, status = logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.SYSTEM,
+                message=f"Invalid fund_id: {data['fund_id']}",
+                details={
+                    'user_message': 'Fund not found',
+                    'fund_id': data['fund_id']
+                },
+                http_status=400
+            )
+            return jsonify(response), status
+
         result = DeveloperService.set_fund_price(
             data['fund_id'],
             data['price'],
@@ -217,11 +276,7 @@ def set_fund_price():
             level=LogLevel.INFO,
             category=LogCategory.SYSTEM,
             message="Successfully set fund price",
-            details={
-                'fund_id': result['fund_id'],
-                'price': result['price'],
-                'date': result['date']
-            }
+            details=result
         )
 
         return jsonify(result)
@@ -517,6 +572,45 @@ def get_logs():
             category=LogCategory.SYSTEM,
             message=f"Error retrieving logs: {str(e)}",
             details={'error': str(e)},
+            http_status=500
+        )
+        return jsonify(response), status
+
+@developer.route('/fund-price/<string:fund_id>', methods=['GET'])
+@track_request
+def get_fund_price(fund_id):
+    try:
+        date = request.args.get('date')
+        if date:
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        else:
+            date = datetime.now().date()
+            
+        result = DeveloperService.get_fund_price(fund_id, date)
+        if not result:
+            response, status = logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.SYSTEM,
+                message=f"Fund price not found",
+                details={
+                    'fund_id': fund_id,
+                    'date': date.isoformat()
+                },
+                http_status=404
+            )
+            return jsonify(response), status
+
+        return jsonify(result)
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.SYSTEM,
+            message=f"Error retrieving fund price: {str(e)}",
+            details={
+                'fund_id': fund_id,
+                'date': date.isoformat() if date else None,
+                'error': str(e)
+            },
             http_status=500
         )
         return jsonify(response), status

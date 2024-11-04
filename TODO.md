@@ -5,7 +5,7 @@
 - [ ] Add support for multiple currencies per portfolio
 - [ ] Implement automatic fund price updates
 - [ ] Add portfolio rebalancing functionality
-- [ ] Add dividend tracking
+- [X] Add dividend tracking
 
 ## Medium Priority
 - [ ] Add more detailed performance metrics
@@ -23,8 +23,8 @@
 
 ## Technical Debt
 - [ ] Add comprehensive test coverage
-- [ ] Implement proper error handling throughout the application
-- [ ] Add logging system
+- [X] Implement proper error handling throughout the application
+- [X] Add logging system
 - [ ] Optimize database queries
 - [ ] Add API documentation
 - [ ] Set up CI/CD pipeline
