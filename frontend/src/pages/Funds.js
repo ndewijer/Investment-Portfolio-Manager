@@ -94,7 +94,8 @@ const Funds = () => {
       }, 3000);
     } catch (error) {
       console.error('Error saving fund:', error);
-      setErrorMessage(error.response?.data?.user_message || 'Error saving fund');
+      const userMessage = error.response?.data?.user_message || error.response?.data?.message || 'Error saving fund';
+      setErrorMessage(userMessage);
     }
   };
 

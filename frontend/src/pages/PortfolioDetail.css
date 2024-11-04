@@ -630,3 +630,8 @@
 .portfolio-detail-page .portfolio-funds-actions .remove-button:hover {
   background-color: #c82333;
 }
+
+.portfolio-detail-page .modal-actions button {
+  background-color: #2196F3;
+  color: white;
+}
