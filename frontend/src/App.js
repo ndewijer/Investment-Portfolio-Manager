@@ -6,6 +6,7 @@ import Overview from './pages/Overview';
 import Portfolios from './pages/Portfolios';
 import PortfolioDetail from './pages/PortfolioDetail';
 import Funds from './pages/Funds';
+import FundDetail from './pages/FundDetail';
 import DeveloperPanel from './pages/DeveloperPanel';
 import LogViewer from './pages/LogViewer';
 
@@ -24,6 +25,7 @@ import './pages/Overview.css';
 import './pages/Portfolios.css';
 import './pages/PortfolioDetail.css';
 import './pages/Funds.css';
+import './pages/FundDetail.css';
 import './pages/DeveloperPanel.css';
 import './pages/LogViewer.css';
 
@@ -39,6 +41,7 @@ function App() {
               <Route path="/portfolios" element={<Portfolios />} />
               <Route path="/portfolios/:id" element={<PortfolioDetail />} />
               <Route path="/funds" element={<Funds />} />
+              <Route path="/funds/:id" element={<FundDetail />} />
               <Route path="/developer" element={<DeveloperPanel />} />
               <Route path="/logs" element={<LogViewer />} />
               <Route path="*" element={<Navigate to="/" replace />} />

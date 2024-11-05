@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from ..models import Fund, PortfolioFund, Transaction, db, DividendType, LogLevel, LogCategory
+from ..models import Fund, PortfolioFund, Transaction, db, DividendType, LogLevel, LogCategory, FundPrice
 from ..services.fund_service import FundService
 from ..services.symbol_lookup_service import SymbolLookupService
 from ..services.logging_service import logger, track_request
@@ -332,6 +332,48 @@ def lookup_symbol_info(symbol):
             message=f"Error looking up symbol: {str(e)}",
             details={
                 'symbol': symbol,
+                'error': str(e)
+            },
+            http_status=500
+        )
+        return jsonify(response), status
+
+# Add this new route to get fund prices
+@funds.route('/fund-prices/<string:fund_id>', methods=['GET'])
+@track_request
+def get_fund_prices(fund_id):
+    try:
+        # Get the fund to ensure it exists
+        fund = Fund.query.get_or_404(fund_id)
+        
+        # Get all prices for this fund, ordered by date
+        prices = FundPrice.query.filter_by(fund_id=fund_id)\
+            .order_by(FundPrice.date.desc())\
+            .all()
+        
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.FUND,
+            message=f"Successfully retrieved price history for fund {fund.name}",
+            details={
+                'fund_id': fund_id,
+                'price_count': len(prices)
+            }
+        )
+
+        return jsonify([{
+            'id': price.id,
+            'date': price.date.isoformat(),
+            'price': price.price
+        } for price in prices])
+        
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.FUND,
+            message=f"Error retrieving fund prices: {str(e)}",
+            details={
+                'fund_id': fund_id,
                 'error': str(e)
             },
             http_status=500

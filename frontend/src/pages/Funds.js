@@ -4,6 +4,7 @@ import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import api from '../utils/api';
 import Modal from '../components/Modal';
 import './Funds.css';
+import { useNavigate } from 'react-router-dom';
 
 const Funds = () => {
   const [funds, setFunds] = useState([]);
@@ -28,6 +29,7 @@ const Funds = () => {
     info: null,
     useInfo: false
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchFunds();
@@ -234,6 +236,10 @@ const Funds = () => {
     }
   };
 
+  const handleViewFund = (fundId) => {
+    navigate(`/funds/${fundId}`);
+  };
+
   return (
     <div className="funds-page">
       {message && (
@@ -303,6 +309,7 @@ const Funds = () => {
                 )}
               </div>
               <div className="fund-actions">
+                <button onClick={() => handleViewFund(fund.id)}>View Details</button>
                 <button onClick={() => handleEditFund(fund)}>Edit</button>
                 <button onClick={() => handleDeleteFund(fund.id)}>Delete</button>
               </div>
