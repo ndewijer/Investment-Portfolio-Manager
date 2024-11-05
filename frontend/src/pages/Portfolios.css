@@ -42,20 +42,26 @@
 
 .portfolios-page .portfolio-card p {
   color: #666;
-  margin-bottom: 20px;
+  flex-grow: 1;
+  margin: 10px 0;
 }
 
 .portfolios-page .portfolio-actions {
   display: flex;
+  justify-content: center;
   gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+  margin-top: auto;
 }
 
 .portfolios-page .portfolio-actions button {
-  padding: 10px 15px;
+  padding: 8px 16px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
+  min-width: 100px;
 }
 
 .portfolios-page .portfolio-actions button:nth-child(1) {
@@ -74,7 +80,7 @@
 }
 
 .portfolios-page .portfolio-actions button:nth-child(4) {
-  background-color: lightgrey;
+  background-color: #lightgrey;
   color: black;
 }
 
