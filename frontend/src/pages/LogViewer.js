@@ -33,6 +33,7 @@ const LogViewer = () => {
     source: false
   });
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+  const [clearing, setClearing] = useState(false);
 
   const levelOptions = [
     { label: 'Debug', value: 'debug' },
@@ -158,9 +159,32 @@ const LogViewer = () => {
     });
   };
 
+  const handleClearLogs = async () => {
+    if (window.confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
+      try {
+        setClearing(true);
+        await api.post('/logs/clear');
+        fetchLogs(); // Refresh the logs display
+      } catch (err) {
+        setError(err.response?.data?.message || 'Error clearing logs');
+      } finally {
+        setClearing(false);
+      }
+    }
+  };
+
   return (
     <div className="log-viewer">
-      <h1>System Logs</h1>
+      <div className="log-viewer-header">
+        <h1>System Logs</h1>
+        <button 
+          className="clear-logs-button" 
+          onClick={handleClearLogs}
+          disabled={clearing}
+        >
+          {clearing ? 'Clearing...' : 'Clear All Logs'}
+        </button>
+      </div>
 
       {loading ? (
         <div className="loading">Loading logs...</div>

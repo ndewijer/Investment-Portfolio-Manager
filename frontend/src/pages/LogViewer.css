@@ -216,4 +216,35 @@ pre {
 
 .clear-filters:hover {
   background-color: #e0e0e0;
+}
+
+.log-viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.log-viewer-header h1 {
+  margin: 0;
+}
+
+.clear-logs-button {
+  padding: 8px 16px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.clear-logs-button:hover {
+  background-color: #c82333;
+}
+
+.clear-logs-button:disabled {
+  background-color: #e4606d;
+  cursor: not-allowed;
 } 

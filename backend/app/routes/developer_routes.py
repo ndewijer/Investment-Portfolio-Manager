@@ -614,3 +614,31 @@ def get_fund_price(fund_id):
             http_status=500
         )
         return jsonify(response), status
+
+@developer.route('/logs/clear', methods=['POST'])
+@track_request
+def clear_logs():
+    try:
+        # Delete all logs from the database
+        Log.query.delete()
+        db.session.commit()
+        
+        response, status = logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM,
+            message="All logs cleared by user",
+            source="clear_logs",
+            http_status=200
+        )
+        
+        return jsonify(response), status
+        
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.SYSTEM,
+            message=f"Error clearing logs: {str(e)}",
+            details={'error': str(e)},
+            http_status=500
+        )
+        return jsonify(response), status
