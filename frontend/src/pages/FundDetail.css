@@ -161,4 +161,37 @@
 
 .fund-detail .toggle-history-button:hover {
   background-color: #1976D2;
+}
+
+.fund-detail .button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.fund-detail .update-prices-button {
+  padding: 8px 16px;
+  background-color: #FF9800;  /* Orange for historical update */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.fund-detail .update-prices-button:hover {
+  background-color: #F57C00;
+}
+
+.fund-detail .update-prices-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.fund-detail .update-prices-button:nth-of-type(2) {
+  background-color: #FF9800;  /* Orange for historical update */
+}
+
+.fund-detail .update-prices-button:nth-of-type(2):hover {
+  background-color: #F57C00;
 } 

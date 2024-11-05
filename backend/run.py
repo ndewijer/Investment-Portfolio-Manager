@@ -10,6 +10,7 @@ from app.seed_data import seed_database
 import click
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
+from app.services.price_update_service import TodayPriceService, HistoricalPriceService
 
 load_dotenv()
 
@@ -80,6 +81,32 @@ def create_app():
             db.create_all()
             seed_database()
             click.echo("Database seeded successfully!")
+    
+    @app.cli.command("update-prices")
+    def update_prices_command():
+        """Update all fund prices."""
+        with app.app_context():
+            funds = Fund.query.filter(Fund.symbol.isnot(None)).all()
+            results = []
+            
+            for fund in funds:
+                # Update today's price for funds
+                if fund.investment_type == 'fund':
+                    today_response, _ = TodayPriceService.update_todays_price(fund.id)
+                
+                # Update historical prices for all
+                hist_response, _ = HistoricalPriceService.update_historical_prices(fund.id)
+                
+                results.append({
+                    'fund_id': fund.id,
+                    'name': fund.name,
+                    'success': hist_response.get('status') == 'success'
+                })
+            
+            click.echo(f"Updated prices for {len(results)} funds")
+            for result in results:
+                status = "✓" if result['success'] else "✗"
+                click.echo(f"{status} {result['name']}")
     
     return app
 

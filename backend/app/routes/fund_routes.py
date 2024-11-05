@@ -5,6 +5,7 @@ from ..services.symbol_lookup_service import SymbolLookupService
 from ..services.logging_service import logger, track_request
 from sqlalchemy.exc import IntegrityError
 import yfinance as yf
+from ..services.price_update_service import TodayPriceService, HistoricalPriceService
 
 funds = Blueprint('funds', __name__)
 
@@ -374,6 +375,33 @@ def get_fund_prices(fund_id):
             message=f"Error retrieving fund prices: {str(e)}",
             details={
                 'fund_id': fund_id,
+                'error': str(e)
+            },
+            http_status=500
+        )
+        return jsonify(response), status
+
+@funds.route('/fund-prices/<string:fund_id>/update', methods=['POST'])
+@track_request
+def update_fund_prices(fund_id):
+    try:
+        update_type = request.args.get('type', 'today')  # 'today' or 'historical'
+        
+        if update_type == 'today':
+            response, status = TodayPriceService.update_todays_price(fund_id)
+        else:
+            response, status = HistoricalPriceService.update_historical_prices(fund_id)
+            
+        return jsonify(response), status
+        
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.FUND,
+            message=f"Error updating fund prices: {str(e)}",
+            details={
+                'fund_id': fund_id,
+                'update_type': update_type,
                 'error': str(e)
             },
             http_status=500

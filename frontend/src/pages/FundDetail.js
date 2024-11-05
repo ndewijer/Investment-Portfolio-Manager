@@ -27,6 +27,7 @@ const FundDetail = () => {
   const [showAllChartHistory, setShowAllChartHistory] = useState(false);
   const [showAllTableHistory, setShowAllTableHistory] = useState(false);
   const [filteredChartHistory, setFilteredChartHistory] = useState([]);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     const fetchFundData = async () => {
@@ -43,6 +44,19 @@ const FundDetail = () => {
         );
         setPriceHistory(sortedPrices);
         setFilteredChartHistory(filterLastMonth(sortedPrices));
+
+        if (fundRes.data.investment_type === 'fund') {
+          await api.post(`/fund-prices/${id}/update?type=today`);
+          const updatedPricesRes = await api.get(`/fund-prices/${id}`);
+          const updatedSortedPrices = updatedPricesRes.data.sort((a, b) => 
+            new Date(a.date) - new Date(b.date)
+          );
+          setPriceHistory(updatedSortedPrices);
+          setFilteredChartHistory(
+            showAllChartHistory ? updatedSortedPrices : filterLastMonth(updatedSortedPrices)
+          );
+        }
+
         setError(null);
       } catch (err) {
         setError('Error fetching fund data');
@@ -53,7 +67,7 @@ const FundDetail = () => {
     };
 
     fetchFundData();
-  }, [id]);
+  }, [id, showAllChartHistory]);
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -133,6 +147,48 @@ const FundDetail = () => {
 
   const handleToggleTableHistory = () => {
     setShowAllTableHistory(prev => !prev);
+  };
+
+  const handleUpdateTodayPrice = async () => {
+    try {
+      setUpdating(true);
+      await api.post(`/fund-prices/${id}/update?type=today`);
+      // Refresh the price data
+      const pricesRes = await api.get(`/fund-prices/${id}`);
+      const sortedPrices = pricesRes.data.sort((a, b) => 
+        new Date(a.date) - new Date(b.date)
+      );
+      setPriceHistory(sortedPrices);
+      setFilteredChartHistory(
+        showAllChartHistory ? sortedPrices : filterLastMonth(sortedPrices)
+      );
+    } catch (error) {
+      console.error('Error updating today\'s price:', error);
+      alert('Error updating today\'s price');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleUpdateHistoricalPrices = async () => {
+    try {
+      setUpdating(true);
+      await api.post(`/fund-prices/${id}/update?type=historical`);
+      // Refresh the price data
+      const pricesRes = await api.get(`/fund-prices/${id}`);
+      const sortedPrices = pricesRes.data.sort((a, b) => 
+        new Date(a.date) - new Date(b.date)
+      );
+      setPriceHistory(sortedPrices);
+      setFilteredChartHistory(
+        showAllChartHistory ? sortedPrices : filterLastMonth(sortedPrices)
+      );
+    } catch (error) {
+      console.error('Error updating historical prices:', error);
+      alert('Error updating historical prices');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   if (loading) return <div>Loading...</div>;
@@ -221,12 +277,21 @@ const FundDetail = () => {
       <section className="price-history">
         <div className="section-header">
           <h2>Price History</h2>
-          <button 
-            className="toggle-history-button"
-            onClick={handleToggleTableHistory}
-          >
-            {showAllTableHistory ? 'Show Last Month' : 'Show All History'}
-          </button>
+          <div className="button-group">
+            <button 
+              className="toggle-history-button"
+              onClick={handleToggleTableHistory}
+            >
+              {showAllTableHistory ? 'Show Last Month' : 'Show All History'}
+            </button>
+            <button 
+              className="update-prices-button"
+              onClick={handleUpdateHistoricalPrices}
+              disabled={updating}
+            >
+              {updating ? 'Updating...' : 'Update Missing Prices'}
+            </button>
+          </div>
         </div>
         <table>
           <thead>

@@ -6,3 +6,4 @@ Werkzeug==3.0.1
 SQLAlchemy==2.0.36
 click==8.1.7
 pytz==2024.2
+yfinance==0.2.48
