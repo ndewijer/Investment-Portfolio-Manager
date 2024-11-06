@@ -38,8 +38,6 @@ const PortfolioDetail = () => {
   const [portfolioFunds, setPortfolioFunds] = useState([]);
   const [availableFunds, setAvailableFunds] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isAddFundModalOpen, setIsAddFundModalOpen] = useState(false);
   const [selectedFundId, setSelectedFundId] = useState('');
@@ -76,6 +74,8 @@ const PortfolioDetail = () => {
   const [selectedFund, setSelectedFund] = useState(null);
   const [editingDividend, setEditingDividend] = useState(null);
   const [isDividendEditModalOpen, setIsDividendEditModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchPortfolioData = useCallback(async () => {
     try {
@@ -89,7 +89,6 @@ const PortfolioDetail = () => {
       setPortfolio(portfolioRes.data);
       setPortfolioFunds(portfolioFundsRes.data);
       setTransactions(transactionsRes.data);
-      setError(null);
     } catch (err) {
       setError('Error fetching portfolio data');
       console.error('Error:', err);
@@ -354,59 +353,6 @@ const PortfolioDetail = () => {
     }
   };
 
-  const handleDividendFundChange = async (portfolioFundId) => {
-    console.log('handleDividendFundChange called with portfolioFundId:', portfolioFundId);
-    
-    try {
-      if (!portfolioFundId) {
-        console.log('No portfolioFundId provided, clearing selected fund');
-        setSelectedFund(null);
-        setNewDividend({
-          ...newDividend,
-          portfolio_fund_id: ''
-        });
-        return;
-      }
-
-      // Find the portfolio fund
-      const portfolioFund = portfolioFunds.find(pf => pf.id === parseInt(portfolioFundId));
-      console.log('Found portfolio fund:', portfolioFund);
-      
-      if (portfolioFund) {
-        try {
-          console.log('Fetching fund details for fund_id:', portfolioFund.fund_id);
-          // Get the fund details using fund_id from portfolioFund
-          const response = await api.get(`/funds/${portfolioFund.fund_id}`);
-          const fundData = response.data;
-          console.log('Received fund data:', fundData);
-          
-          setSelectedFund({
-            ...fundData,
-            id: fundData.id  // This is the actual fund ID
-          });
-          
-          setNewDividend({
-            ...newDividend,
-            portfolio_fund_id: portfolioFundId
-          });
-        } catch (error) {
-          console.error('Error fetching fund details:', error);
-          setSelectedFund(null);
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleDividendFundChange:', error);
-      setSelectedFund(null);
-    }
-  };
-
-  const handleTransactionFundChange = (portfolioFundId) => {
-    setNewTransaction({
-      ...newTransaction,
-      portfolio_fund_id: portfolioFundId
-    });
-  };
-
   const handleEditDividend = async (dividend) => {
     try {
       // Get the fund details to check dividend type
@@ -560,866 +506,858 @@ const PortfolioDetail = () => {
           dividend_type: pf.dividend_type
         })));
       } catch (error) {
-        setError('Error fetching portfolio data');
         console.error('Error:', error);
       }
-      setLoading(false);
     };
 
     fetchPortfolioData();
   }, [id]);
 
   // Debug logging for hasDividendFunds calculation
-  const hasDividendFunds = portfolio?.funds?.some(pf => pf.fund?.dividend_type !== 'none') ?? false;
+  const hasDividendFunds = portfolioFunds.some(pf => pf.dividend_type !== 'none');
   console.log('Has Dividend Funds check:', {
-    portfolioFunds: portfolio?.funds,
-    dividendTypes: portfolio?.funds?.map(pf => pf.fund?.dividend_type),
+    portfolioFunds: portfolioFunds,
+    dividendTypes: portfolioFunds.map(pf => pf.dividend_type),
     hasDividendFunds: hasDividendFunds
   });
 
-  // Add logging before rendering the dividends section
-  {hasDividendFunds && (() => {
-    console.log('Rendering dividend section with:', {
-      hasDividendFunds,
-      dividends,
-      portfolioFunds: portfolioFunds.map(pf => ({
-        fund_name: pf.fund_name,
-        dividend_type: pf.dividend_type
-      }))
-    });
-    return (
-      <section className="portfolio-dividends">
-        <div className="section-header">
-          <h2>Dividends</h2>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Record Date</th>
-              <th>Ex-Dividend Date</th>
-              <th>Fund</th>
-              <th>Type</th>
-              <th>Shares Owned</th>
-              <th>Dividend per Share</th>
-              <th>Total Amount</th>
-              <th>Dividend Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dividends.map(dividend => {
-              // Determine dividend status based on type and transaction
-              let status;
-              if (dividend.dividend_type === 'cash') {
-                status = 'PAID OUT';
-              } else {
-                status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
-              }
-              
-              return (
-                <tr key={dividend.id}>
-                  <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
-                  <td>{new Date(dividend.ex_dividend_date).toLocaleDateString()}</td>
-                  <td>{dividend.fund_name}</td>
-                  <td>
-                    {dividend.dividend_type === 'stock' ? (
-                      <><FontAwesomeIcon icon={faChartLine} /> Stock</>
-                    ) : (
-                      <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
-                    )}
-                  </td>
-                  <td>{formatNumber(dividend.shares_owned, 6)}</td>
-                  <td>{formatCurrency(dividend.dividend_per_share)}</td>
-                  <td>{formatCurrency(dividend.total_amount)}</td>
-                  <td>
-                    <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>
-                      {status}
-                    </span>
-                  </td>
-                  <td className="dividend-actions">
-                    <button 
-                      className="edit-button"
-                      onClick={() => handleEditDividend(dividend)}
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      className="delete-button"
-                      onClick={() => handleDeleteDividend(dividend.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </section>
-    );
-  })()}
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!portfolio) return <div>Portfolio not found</div>;
-
   return (
     <div className="portfolio-detail-page">
-      <div className="portfolio-header">
-        <h1>{portfolio.name}</h1>
-        <p>{portfolio.description}</p>
-      </div>
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div>Error: {error}</div>
+      ) : !portfolio ? (
+        <div>Portfolio not found</div>
+      ) : (
+        <>
+          <div className="portfolio-header">
+            <h1>{portfolio.name}</h1>
+            <p>{portfolio.description}</p>
+          </div>
 
-      <div className="portfolio-summary">
-        <div className="summary-card">
-          <h3>Total Value</h3>
-          <p>{formatCurrency(portfolio.totalValue || 0)}</p>
-        </div>
-        <div className="summary-card">
-          <h3>Total Cost</h3>
-          <p>{formatCurrency(portfolio.totalCost || 0)}</p>
-        </div>
-        <div className="summary-card">
-          <h3>Gain/Loss</h3>
-          <p className={`${((portfolio.totalValue || 0) - (portfolio.totalCost || 0)) >= 0 ? 'positive' : 'negative'}`}>
-            {formatCurrency((portfolio.totalValue || 0) - (portfolio.totalCost || 0))}
-          </p>
-        </div>
-      </div>
+          <div className="portfolio-summary">
+            <div className="summary-card">
+              <h3>Total Value</h3>
+              <p>{formatCurrency(portfolio.totalValue || 0)}</p>
+            </div>
+            <div className="summary-card">
+              <h3>Total Cost</h3>
+              <p>{formatCurrency(portfolio.totalCost || 0)}</p>
+            </div>
+            <div className="summary-card">
+              <h3>Gain/Loss</h3>
+              <p className={`${((portfolio.totalValue || 0) - (portfolio.totalCost || 0)) >= 0 ? 'positive' : 'negative'}`}>
+                {formatCurrency((portfolio.totalValue || 0) - (portfolio.totalCost || 0))}
+              </p>
+            </div>
+          </div>
 
-      <section className="portfolio-chart">
-        <h2>Fund Values Over Time</h2>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={fundHistory}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date"
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
-              />
-              <YAxis 
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
-              />
-              <Tooltip 
-                formatter={(value) => formatCurrency(value)}
-                labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
-              />
-              <Legend />
-              {portfolioFunds.map((pf, index) => (
-                <React.Fragment key={pf.id}>
-                  <Line
-                    type="monotone"
-                    dataKey={`funds[${index}].value`}
-                    name={`${pf.fund_name} Value`}
-                    stroke={getFundColor(index)}
-                    dot={false}
-                    strokeWidth={2}
-                    connectNulls={true}
+          <section className="portfolio-chart">
+            <h2>Fund Values Over Time</h2>
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={fundHistory}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="date"
+                    tick={{ fontSize: 12 }}
+                    interval="preserveStartEnd"
                   />
-                  <Line
-                    type="monotone"
-                    dataKey={`funds[${index}].cost`}
-                    name={`${pf.fund_name} Cost`}
-                    stroke={getFundColor(index)}
-                    dot={false}
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    connectNulls={true}
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
                   />
-                </React.Fragment>
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
-      <section className="portfolio-funds">
-        <div className="section-header">
-          <h2>Funds</h2>
-          <button onClick={() => setIsAddFundModalOpen(true)}>
-            <FontAwesomeIcon icon={faPlus} /> Add Fund
-          </button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Fund</th>
-              <th>Total Shares</th>
-              <th>Average Cost</th>
-              <th>Current Value</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {portfolioFunds.map(portfolioFund => (
-              <tr key={portfolioFund.id}>
-                <td>{portfolioFund.fund_name}</td>
-                <td>{formatNumber(portfolioFund.total_shares, 6)}</td>
-                <td>{formatCurrency(portfolioFund.average_cost)}</td>
-                <td>{formatCurrency(portfolioFund.current_value)}</td>
-                <td className="portfolio-funds-actions">
-                  <button className="transaction-button" onClick={() => {
-                    setNewTransaction({
-                      portfolio_fund_id: portfolioFund.id,
-                      date: new Date().toISOString().split('T')[0],
-                      type: 'buy',
-                      shares: '',
-                      cost_per_share: ''
-                    });
-                    setIsTransactionModalOpen(true);
-                  }}>
-                    Add Transaction
-                  </button>
-                  {portfolioFund.dividend_type !== 'none' && (
-                    <button className="dividend-button" onClick={() => handleAddDividend(portfolioFund)}>
-                      Add Dividend
-                    </button>
-                  )}
-                  <button 
-                    className="remove-button" 
-                    onClick={() => handleRemoveFund(portfolioFund)}
-                  >
-                    Remove Fund
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="portfolio-transactions">
-        <div className="section-header">
-          <h2>Transactions</h2>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th className={`table-header ${sortConfig.key === 'date' ? sortConfig.direction : ''}`}>
-                <div className="header-content">
-                  <FontAwesomeIcon 
-                    icon={faFilter} 
-                    className={`filter-icon ${filters.dateFrom || filters.dateTo ? 'active' : ''}`}
-                    onClick={(e) => handleFilterClick(e, 'date')}
+                  <Tooltip 
+                    formatter={(value) => formatCurrency(value)}
+                    labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
                   />
-                  <span>Date</span>
-                  <FontAwesomeIcon 
-                    icon={faSort} 
-                    className="sort-icon"
-                    onClick={(e) => handleSort(e, 'date')}
-                  />
-                </div>
-                {activeFilter === 'date' && (
-                  <div 
-                    className="filter-popup" 
-                    style={{ 
-                      top: filterPosition.top, 
-                      left: filterPosition.left,
-                      position: 'fixed'
-                    }}
-                  >
-                    <div className="date-picker-container">
-                      <label>From:</label>
-                      <DatePicker
-                        selected={filters.dateFrom}
-                        onChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
-                        dateFormat="yyyy-MM-dd"
-                        isClearable
-                        placeholderText="Start Date"
+                  <Legend />
+                  {portfolioFunds.map((pf, index) => (
+                    <React.Fragment key={pf.id}>
+                      <Line
+                        type="monotone"
+                        dataKey={`funds[${index}].value`}
+                        name={`${pf.fund_name} Value`}
+                        stroke={getFundColor(index)}
+                        dot={false}
+                        strokeWidth={2}
+                        connectNulls={true}
                       />
-                      <label>To:</label>
-                      <DatePicker
-                        selected={filters.dateTo}
-                        onChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
-                        dateFormat="yyyy-MM-dd"
-                        isClearable
-                        placeholderText="End Date"
-                        minDate={filters.dateFrom}
+                      <Line
+                        type="monotone"
+                        dataKey={`funds[${index}].cost`}
+                        name={`${pf.fund_name} Cost`}
+                        stroke={getFundColor(index)}
+                        dot={false}
+                        strokeWidth={1}
+                        strokeDasharray="5 5"
+                        connectNulls={true}
+                      />
+                    </React.Fragment>
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          <section className="portfolio-funds">
+            <div className="section-header">
+              <h2>Funds</h2>
+              <button onClick={() => setIsAddFundModalOpen(true)}>
+                <FontAwesomeIcon icon={faPlus} /> Add Fund
+              </button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Fund</th>
+                  <th>Total Shares</th>
+                  <th>Average Cost</th>
+                  <th>Current Value</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {portfolioFunds.map(portfolioFund => (
+                  <tr key={portfolioFund.id}>
+                    <td>{portfolioFund.fund_name}</td>
+                    <td>{formatNumber(portfolioFund.total_shares, 6)}</td>
+                    <td>{formatCurrency(portfolioFund.average_cost)}</td>
+                    <td>{formatCurrency(portfolioFund.current_value)}</td>
+                    <td className="portfolio-funds-actions">
+                      <button className="transaction-button" onClick={() => {
+                        setNewTransaction({
+                          portfolio_fund_id: portfolioFund.id,
+                          date: new Date().toISOString().split('T')[0],
+                          type: 'buy',
+                          shares: '',
+                          cost_per_share: ''
+                        });
+                        setIsTransactionModalOpen(true);
+                      }}>
+                        Add Transaction
+                      </button>
+                      {portfolioFund.dividend_type !== 'none' && (
+                        <button className="dividend-button" onClick={() => handleAddDividend(portfolioFund)}>
+                          Add Dividend
+                        </button>
+                      )}
+                      <button 
+                        className="remove-button" 
+                        onClick={() => handleRemoveFund(portfolioFund)}
+                      >
+                        Remove Fund
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          <section className="portfolio-transactions">
+            <div className="section-header">
+              <h2>Transactions</h2>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th className={`table-header ${sortConfig.key === 'date' ? sortConfig.direction : ''}`}>
+                    <div className="header-content">
+                      <FontAwesomeIcon 
+                        icon={faFilter} 
+                        className={`filter-icon ${filters.dateFrom || filters.dateTo ? 'active' : ''}`}
+                        onClick={(e) => handleFilterClick(e, 'date')}
+                      />
+                      <span>Date</span>
+                      <FontAwesomeIcon 
+                        icon={faSort} 
+                        className="sort-icon"
+                        onClick={(e) => handleSort(e, 'date')}
                       />
                     </div>
-                  </div>
-                )}
-              </th>
-              <th className={`table-header ${sortConfig.key === 'fund_name' ? sortConfig.direction : ''}`}>
-                <div className="header-content">
-                  <FontAwesomeIcon 
-                    icon={faFilter} 
-                    className={`filter-icon ${filters.fund_names.length > 0 ? 'active' : ''}`}
-                    onClick={(e) => handleFilterClick(e, 'fund')}
-                  />
-                  <span>Fund</span>
-                  <FontAwesomeIcon 
-                    icon={faSort} 
-                    className="sort-icon"
-                    onClick={(e) => handleSort(e, 'fund_name')}
-                  />
-                </div>
-                {activeFilter === 'fund' && (
-                  <div 
-                    className="filter-popup" 
-                    style={{ 
-                      top: filterPosition.top, 
-                      left: filterPosition.left,
-                      position: 'fixed'
-                    }}
-                  >
-                    <MultiSelect
-                      options={getUniqueFundNames().map(name => ({
-                        label: name,
-                        value: name
-                      }))}
-                      value={filters.fund_names.map(name => ({
-                        label: name,
-                        value: name
-                      }))}
-                      onChange={(selected) => {
-                        setFilters(prev => ({
-                          ...prev,
-                          fund_names: selected.map(option => option.value)
-                        }));
-                      }}
-                      labelledBy="Select funds"
-                      hasSelectAll={true}
-                      disableSearch={false}
-                      className="multi-select"
-                    />
-                  </div>
-                )}
-              </th>
-              <th className={`table-header ${sortConfig.key === 'type' ? sortConfig.direction : ''}`}>
-                <div className="header-content">
-                  <FontAwesomeIcon 
-                    icon={faFilter} 
-                    className={`filter-icon ${filters.type ? 'active' : ''}`}
-                    onClick={(e) => handleFilterClick(e, 'type')}
-                  />
-                  <span>Type</span>
-                  <FontAwesomeIcon 
-                    icon={faSort} 
-                    className="sort-icon"
-                    onClick={(e) => handleSort(e, 'type')}
-                  />
-                </div>
-                {activeFilter === 'type' && (
-                  <div 
-                    className="filter-popup" 
-                    style={{ 
-                      top: filterPosition.top, 
-                      left: filterPosition.left,
-                      position: 'fixed'
-                    }}
-                  >
-                    <MultiSelect
-                      options={TYPE_OPTIONS}
-                      value={filters.type ? [{ label: filters.type.charAt(0).toUpperCase() + filters.type.slice(1), value: filters.type }] : []}
-                      onChange={(selected) => {
-                        setFilters(prev => ({
-                          ...prev,
-                          type: selected.length > 0 ? selected[0].value : ''
-                        }));
-                      }}
-                      labelledBy="Select transaction types"
-                      hasSelectAll={true}
-                      disableSearch={true}
-                      className="multi-select"
-                      isCreatable={false}
-                      closeOnSelect={true}
-                    />
-                  </div>
-                )}
-              </th>
-              <th className={`table-header ${sortConfig.key === 'shares' ? sortConfig.direction : ''}`}>
-                <div className="header-content">
-                  <span>Shares</span>
-                  <FontAwesomeIcon 
-                    icon={faSort} 
-                    className="sort-icon"
-                    onClick={(e) => handleSort(e, 'shares')}
-                  />
-                </div>
-              </th>
-              <th className={`table-header ${sortConfig.key === 'cost_per_share' ? sortConfig.direction : ''}`}>
-                <div className="header-content">
-                  <span>Cost per Share</span>
-                  <FontAwesomeIcon 
-                    icon={faSort} 
-                    className="sort-icon"
-                    onClick={(e) => handleSort(e, 'cost_per_share')}
-                  />
-                </div>
-              </th>
-              <th>Total</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {getFilteredTransactions().map(transaction => (
-              <tr key={transaction.id}>
-                <td>{new Date(transaction.date).toLocaleDateString()}</td>
-                <td>{transaction.fund_name}</td>
-                <td>{transaction.type}</td>
-                <td>{formatNumber(transaction.shares, 6)}</td>
-                <td>{formatCurrency(transaction.cost_per_share)}</td>
-                <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
-                <td className="transaction-actions">
-                  {transaction.type !== 'dividend' && (  // Only show actions if not a dividend transaction
-                    <>
-                      <button 
-                        className="edit-button"
-                        onClick={() => handleEditTransaction(transaction)}
+                    {activeFilter === 'date' && (
+                      <div 
+                        className="filter-popup" 
+                        style={{ 
+                          top: filterPosition.top, 
+                          left: filterPosition.left,
+                          position: 'fixed'
+                        }}
                       >
-                        Edit
-                      </button>
-                      <button 
-                        className="delete-button"
-                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        <div className="date-picker-container">
+                          <label>From:</label>
+                          <DatePicker
+                            selected={filters.dateFrom}
+                            onChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
+                            dateFormat="yyyy-MM-dd"
+                            isClearable
+                            placeholderText="Start Date"
+                          />
+                          <label>To:</label>
+                          <DatePicker
+                            selected={filters.dateTo}
+                            onChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
+                            dateFormat="yyyy-MM-dd"
+                            isClearable
+                            placeholderText="End Date"
+                            minDate={filters.dateFrom}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </th>
+                  <th className={`table-header ${sortConfig.key === 'fund_name' ? sortConfig.direction : ''}`}>
+                    <div className="header-content">
+                      <FontAwesomeIcon 
+                        icon={faFilter} 
+                        className={`filter-icon ${filters.fund_names.length > 0 ? 'active' : ''}`}
+                        onClick={(e) => handleFilterClick(e, 'fund')}
+                      />
+                      <span>Fund</span>
+                      <FontAwesomeIcon 
+                        icon={faSort} 
+                        className="sort-icon"
+                        onClick={(e) => handleSort(e, 'fund_name')}
+                      />
+                    </div>
+                    {activeFilter === 'fund' && (
+                      <div 
+                        className="filter-popup" 
+                        style={{ 
+                          top: filterPosition.top, 
+                          left: filterPosition.left,
+                          position: 'fixed'
+                        }}
                       >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+                        <MultiSelect
+                          options={getUniqueFundNames().map(name => ({
+                            label: name,
+                            value: name
+                          }))}
+                          value={filters.fund_names.map(name => ({
+                            label: name,
+                            value: name
+                          }))}
+                          onChange={(selected) => {
+                            setFilters(prev => ({
+                              ...prev,
+                              fund_names: selected.map(option => option.value)
+                            }));
+                          }}
+                          labelledBy="Select funds"
+                          hasSelectAll={true}
+                          disableSearch={false}
+                          className="multi-select"
+                        />
+                      </div>
+                    )}
+                  </th>
+                  <th className={`table-header ${sortConfig.key === 'type' ? sortConfig.direction : ''}`}>
+                    <div className="header-content">
+                      <FontAwesomeIcon 
+                        icon={faFilter} 
+                        className={`filter-icon ${filters.type ? 'active' : ''}`}
+                        onClick={(e) => handleFilterClick(e, 'type')}
+                      />
+                      <span>Type</span>
+                      <FontAwesomeIcon 
+                        icon={faSort} 
+                        className="sort-icon"
+                        onClick={(e) => handleSort(e, 'type')}
+                      />
+                    </div>
+                    {activeFilter === 'type' && (
+                      <div 
+                        className="filter-popup" 
+                        style={{ 
+                          top: filterPosition.top, 
+                          left: filterPosition.left,
+                          position: 'fixed'
+                        }}
+                      >
+                        <MultiSelect
+                          options={TYPE_OPTIONS}
+                          value={filters.type ? [{ label: filters.type.charAt(0).toUpperCase() + filters.type.slice(1), value: filters.type }] : []}
+                          onChange={(selected) => {
+                            setFilters(prev => ({
+                              ...prev,
+                              type: selected.length > 0 ? selected[0].value : ''
+                            }));
+                          }}
+                          labelledBy="Select transaction types"
+                          hasSelectAll={true}
+                          disableSearch={true}
+                          className="multi-select"
+                          isCreatable={false}
+                          closeOnSelect={true}
+                        />
+                      </div>
+                    )}
+                  </th>
+                  <th className={`table-header ${sortConfig.key === 'shares' ? sortConfig.direction : ''}`}>
+                    <div className="header-content">
+                      <span>Shares</span>
+                      <FontAwesomeIcon 
+                        icon={faSort} 
+                        className="sort-icon"
+                        onClick={(e) => handleSort(e, 'shares')}
+                      />
+                    </div>
+                  </th>
+                  <th className={`table-header ${sortConfig.key === 'cost_per_share' ? sortConfig.direction : ''}`}>
+                    <div className="header-content">
+                      <span>Cost per Share</span>
+                      <FontAwesomeIcon 
+                        icon={faSort} 
+                        className="sort-icon"
+                        onClick={(e) => handleSort(e, 'cost_per_share')}
+                      />
+                    </div>
+                  </th>
+                  <th>Total</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getFilteredTransactions().map(transaction => (
+                  <tr key={transaction.id}>
+                    <td>{new Date(transaction.date).toLocaleDateString()}</td>
+                    <td>{transaction.fund_name}</td>
+                    <td>{transaction.type}</td>
+                    <td>{formatNumber(transaction.shares, 6)}</td>
+                    <td>{formatCurrency(transaction.cost_per_share)}</td>
+                    <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
+                    <td className="transaction-actions">
+                      {transaction.type !== 'dividend' && (  // Only show actions if not a dividend transaction
+                        <>
+                          <button 
+                            className="edit-button"
+                            onClick={() => handleEditTransaction(transaction)}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="delete-button"
+                            onClick={() => handleDeleteTransaction(transaction.id)}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
 
-      <Modal
-        isOpen={isAddFundModalOpen}
-        onClose={() => setIsAddFundModalOpen(false)}
-        title="Add Fund to Portfolio"
-      >
-        <div className="form-group">
-          <label>Select Fund:</label>
-          <select
-            value={selectedFundId}
-            onChange={(e) => setSelectedFundId(e.target.value)}
-            required
+          {hasDividendFunds && (
+            <section className="portfolio-dividends">
+              <div className="section-header">
+                <h2>Dividends</h2>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Record Date</th>
+                    <th>Ex-Dividend Date</th>
+                    <th>Fund</th>
+                    <th>Type</th>
+                    <th>Shares Owned</th>
+                    <th>Dividend per Share</th>
+                    <th>Total Amount</th>
+                    <th>Dividend Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dividends.map(dividend => {
+                    let status;
+                    if (dividend.dividend_type === 'cash') {
+                      status = 'PAID OUT';
+                    } else {
+                      status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
+                    }
+                    
+                    return (
+                      <tr key={dividend.id}>
+                        <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
+                        <td>{new Date(dividend.ex_dividend_date).toLocaleDateString()}</td>
+                        <td>{dividend.fund_name}</td>
+                        <td>
+                          {dividend.dividend_type === 'stock' ? (
+                            <><FontAwesomeIcon icon={faChartLine} /> Stock</>
+                          ) : (
+                            <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
+                          )}
+                        </td>
+                        <td>{formatNumber(dividend.shares_owned, 6)}</td>
+                        <td>{formatCurrency(dividend.dividend_per_share)}</td>
+                        <td>{formatCurrency(dividend.total_amount)}</td>
+                        <td>
+                          <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>
+                            {status}
+                          </span>
+                        </td>
+                        <td className="dividend-actions">
+                          <button 
+                            className="edit-button"
+                            onClick={() => handleEditDividend(dividend)}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="delete-button"
+                            onClick={() => handleDeleteDividend(dividend.id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </section>
+          )}
+
+          <Modal
+            isOpen={isAddFundModalOpen}
+            onClose={() => setIsAddFundModalOpen(false)}
+            title="Add Fund to Portfolio"
           >
-            <option value="">Select a fund...</option>
-            {availableFunds.map(fund => (
-              <option key={fund.id} value={fund.id}>
-                {fund.name} ({fund.isin})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="modal-actions">
-          <button onClick={handleAddFund} disabled={!selectedFundId}>
-            Add Fund
-          </button>
-          <button onClick={() => setIsAddFundModalOpen(false)}>Cancel</button>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
-        title="Add Transaction"
-      >
-        <form onSubmit={handleCreateTransaction}>
-          <div className="form-group">
-            <label>Fund:</label>
-            <div className="static-field">
-              {portfolioFunds.find(pf => pf.id === newTransaction.portfolio_fund_id)?.fund_name}
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Date:</label>
-            <input
-              type="date"
-              value={newTransaction.date}
-              onChange={(e) => setNewTransaction({
-                ...newTransaction,
-                date: e.target.value
-              })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Type:</label>
-            <select
-              value={newTransaction.type}
-              onChange={(e) => setNewTransaction({
-                ...newTransaction,
-                type: e.target.value
-              })}
-              required
-            >
-              <option value="buy">Buy</option>
-              <option value="sell">Sell</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Shares:</label>
-            <input
-              type="number"
-              step="0.01"
-              value={newTransaction.shares}
-              onChange={(e) => setNewTransaction({
-                ...newTransaction,
-                shares: e.target.value
-              })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Cost per Share:</label>
-            <input
-              type="number"
-              step="0.01"
-              value={newTransaction.cost_per_share}
-              onChange={(e) => setNewTransaction({
-                ...newTransaction,
-                cost_per_share: e.target.value
-              })}
-              required
-            />
-          </div>
-          <div className="modal-actions">
-            <button type="submit">Create Transaction</button>
-            <button type="button" onClick={() => setIsTransactionModalOpen(false)}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
-        isOpen={isTransactionEditModalOpen}
-        onClose={() => {
-          setIsTransactionEditModalOpen(false);
-          setEditingTransaction(null);
-        }}
-        title="Edit Transaction"
-      >
-        {editingTransaction && (
-          <form onSubmit={handleUpdateTransaction}>
             <div className="form-group">
-              <label>Date:</label>
-              <input
-                type="date"
-                value={editingTransaction.date}
-                onChange={(e) => setEditingTransaction({
-                  ...editingTransaction,
-                  date: e.target.value
-                })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Type:</label>
+              <label>Select Fund:</label>
               <select
-                value={editingTransaction.type}
-                onChange={(e) => setEditingTransaction({
-                  ...editingTransaction,
-                  type: e.target.value
-                })}
+                value={selectedFundId}
+                onChange={(e) => setSelectedFundId(e.target.value)}
                 required
               >
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
+                <option value="">Select a fund...</option>
+                {availableFunds.map(fund => (
+                  <option key={fund.id} value={fund.id}>
+                    {fund.name} ({fund.isin})
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="form-group">
-              <label>Shares:</label>
-              <input
-                type="number"
-                step="0.000001"
-                value={editingTransaction.shares}
-                onChange={(e) => setEditingTransaction({
-                  ...editingTransaction,
-                  shares: e.target.value
-                })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Cost per Share:</label>
-              <input
-                type="number"
-                step="0.01"
-                value={editingTransaction.cost_per_share}
-                onChange={(e) => setEditingTransaction({
-                  ...editingTransaction,
-                  cost_per_share: e.target.value
-                })}
-                required
-              />
-            </div>
             <div className="modal-actions">
-              <button type="submit">Update</button>
-              <button type="button" onClick={() => {
-                setIsTransactionEditModalOpen(false);
-                setEditingTransaction(null);
-              }}>Cancel</button>
+              <button onClick={handleAddFund} disabled={!selectedFundId}>
+                Add Fund
+              </button>
+              <button onClick={() => setIsAddFundModalOpen(false)}>Cancel</button>
             </div>
-          </form>
-        )}
-      </Modal>
+          </Modal>
 
-      <Modal
-        isOpen={isDividendModalOpen}
-        onClose={() => {
-          console.log('Closing dividend modal');
-          setIsDividendModalOpen(false);
-          setSelectedFund(null);
-        }}
-        title="Add Dividend"
-      >
-        <form onSubmit={handleCreateDividend}>
-          <div className="form-group">
-            <label>Fund:</label>
-            <div className="static-field">
-              {portfolioFunds.find(pf => pf.id === newDividend.portfolio_fund_id)?.fund_name}
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Dividend Type:</label>
-            <div className="static-field">
-              {selectedFund?.dividend_type === 'stock' ? (
-                <><FontAwesomeIcon icon={faChartLine} /> Stock Dividend</>
-              ) : selectedFund?.dividend_type === 'cash' ? (
-                <><FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend</>
-              ) : (
-                'No Dividend'
-              )}
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Record Date:</label>
-            <input
-              type="date"
-              value={newDividend.record_date}
-              onChange={(e) => setNewDividend({
-                ...newDividend,
-                record_date: e.target.value
-              })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Ex-Dividend Date:</label>
-            <input
-              type="date"
-              value={newDividend.ex_dividend_date}
-              onChange={(e) => setNewDividend({
-                ...newDividend,
-                ex_dividend_date: e.target.value
-              })}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Dividend per Share:</label>
-            <input
-              type="number"
-              step="0.0001"
-              value={newDividend.dividend_per_share}
-              onChange={(e) => setNewDividend({
-                ...newDividend,
-                dividend_per_share: e.target.value
-              })}
-              required
-            />
-          </div>
-          {selectedFund?.dividend_type === 'stock' && (
-            <div className="reinvestment-fields">
-              <h3>Reinvestment Details</h3>
+          <Modal
+            isOpen={isTransactionModalOpen}
+            onClose={() => setIsTransactionModalOpen(false)}
+            title="Add Transaction"
+          >
+            <form onSubmit={handleCreateTransaction}>
               <div className="form-group">
-                <label>Buy Order Date:</label>
+                <label>Fund:</label>
+                <div className="static-field">
+                  {portfolioFunds.find(pf => pf.id === newTransaction.portfolio_fund_id)?.fund_name}
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Date:</label>
                 <input
                   type="date"
-                  value={newDividend.buy_order_date || ''}
-                  onChange={(e) => {
-                    const newDate = e.target.value;
-                    const isFutureDate = isDateInFuture(newDate);
-                    console.log('Date changed:', newDate, 'Is future:', isFutureDate);
-                    
-                    setNewDividend({
-                      ...newDividend,
-                      buy_order_date: newDate,
-                      // Only clear fields if moving to a future date
-                      reinvestment_shares: isFutureDate ? '' : newDividend.reinvestment_shares,
-                      reinvestment_price: isFutureDate ? '' : newDividend.reinvestment_price
-                    });
-                  }}
+                  value={newTransaction.date}
+                  onChange={(e) => setNewTransaction({
+                    ...newTransaction,
+                    date: e.target.value
+                  })}
                   required
                 />
               </div>
               <div className="form-group">
-                <label>Reinvestment Shares:</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  value={newDividend.reinvestment_shares || ''}
-                  onChange={(e) => setNewDividend({
-                    ...newDividend,
-                    reinvestment_shares: e.target.value
+                <label>Type:</label>
+                <select
+                  value={newTransaction.type}
+                  onChange={(e) => setNewTransaction({
+                    ...newTransaction,
+                    type: e.target.value
                   })}
-                  disabled={isDateInFuture(newDividend.buy_order_date)}
-                  required={!isDateInFuture(newDividend.buy_order_date)}
-                  className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
-                />
+                  required
+                >
+                  <option value="buy">Buy</option>
+                  <option value="sell">Sell</option>
+                </select>
               </div>
               <div className="form-group">
-                <label>Reinvestment Price per Share:</label>
+                <label>Shares:</label>
                 <input
                   type="number"
                   step="0.01"
-                  value={newDividend.reinvestment_price || ''}
-                  onChange={(e) => setNewDividend({
-                    ...newDividend,
-                    reinvestment_price: e.target.value
+                  value={newTransaction.shares}
+                  onChange={(e) => setNewTransaction({
+                    ...newTransaction,
+                    shares: e.target.value
                   })}
-                  disabled={isDateInFuture(newDividend.buy_order_date)}
-                  required={!isDateInFuture(newDividend.buy_order_date)}
-                  className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
+                  required
                 />
               </div>
-            </div>
-          )}
-          <div className="modal-actions">
-            <button type="submit">Create Dividend</button>
-            <button type="button" onClick={() => {
-              setIsDividendModalOpen(false);
-              setSelectedFund(null);
-            }}>Cancel</button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
-        isOpen={isDividendEditModalOpen}
-        onClose={() => {
-          setIsDividendEditModalOpen(false);
-          setEditingDividend(null);
-          setSelectedFund(null);
-        }}
-        title="Edit Dividend"
-      >
-        {editingDividend && (
-          <form onSubmit={handleUpdateDividend}>
-            <div className="form-group">
-              <label>Fund:</label>
-              <div className="static-field">
-                {editingDividend.fund_name}
+              <div className="form-group">
+                <label>Cost per Share:</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newTransaction.cost_per_share}
+                  onChange={(e) => setNewTransaction({
+                    ...newTransaction,
+                    cost_per_share: e.target.value
+                  })}
+                  required
+                />
               </div>
-            </div>
-            <div className="form-group">
-              <label>Record Date:</label>
-              <input
-                type="date"
-                value={editingDividend.record_date}
-                onChange={(e) => setEditingDividend({
-                  ...editingDividend,
-                  record_date: e.target.value
-                })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Ex-Dividend Date:</label>
-              <input
-                type="date"
-                value={editingDividend.ex_dividend_date}
-                onChange={(e) => setEditingDividend({
-                  ...editingDividend,
-                  ex_dividend_date: e.target.value
-                })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Dividend per Share:</label>
-              <input
-                type="number"
-                step="0.0001"
-                value={editingDividend.dividend_per_share}
-                onChange={(e) => setEditingDividend({
-                  ...editingDividend,
-                  dividend_per_share: e.target.value
-                })}
-                required
-              />
-            </div>
-            {selectedFund?.dividend_type === 'stock' && (
-              <div className="reinvestment-fields">
-                <h3>Reinvestment Details</h3>
+              <div className="modal-actions">
+                <button type="submit">Create Transaction</button>
+                <button type="button" onClick={() => setIsTransactionModalOpen(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </Modal>
+
+          <Modal
+            isOpen={isTransactionEditModalOpen}
+            onClose={() => {
+              setIsTransactionEditModalOpen(false);
+              setEditingTransaction(null);
+            }}
+            title="Edit Transaction"
+          >
+            {editingTransaction && (
+              <form onSubmit={handleUpdateTransaction}>
                 <div className="form-group">
-                  <label>Buy Order Date:</label>
+                  <label>Date:</label>
                   <input
                     type="date"
-                    value={editingDividend.buy_order_date || ''}
-                    onChange={(e) => {
-                      const newDate = e.target.value;
-                      const isFutureDate = isDateInFuture(newDate);
-                      console.log('Date changed:', newDate, 'Is future:', isFutureDate);
-                      
-                      setEditingDividend({
-                        ...editingDividend,
-                        buy_order_date: newDate
-                      });
-                    }}
+                    value={editingTransaction.date}
+                    onChange={(e) => setEditingTransaction({
+                      ...editingTransaction,
+                      date: e.target.value
+                    })}
                     required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Reinvestment Shares:</label>
+                  <label>Type:</label>
+                  <select
+                    value={editingTransaction.type}
+                    onChange={(e) => setEditingTransaction({
+                      ...editingTransaction,
+                      type: e.target.value
+                    })}
+                    required
+                  >
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Shares:</label>
                   <input
                     type="number"
                     step="0.000001"
-                    value={editingDividend.reinvestment_shares || ''}
-                    onChange={(e) => setEditingDividend({
-                      ...editingDividend,
-                      reinvestment_shares: e.target.value
+                    value={editingTransaction.shares}
+                    onChange={(e) => setEditingTransaction({
+                      ...editingTransaction,
+                      shares: e.target.value
                     })}
-                    disabled={isDateInFuture(editingDividend.buy_order_date)}
-                    required={!isDateInFuture(editingDividend.buy_order_date)}
-                    className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                    required
                   />
                 </div>
                 <div className="form-group">
-                  <label>Reinvestment Price:</label>
+                  <label>Cost per Share:</label>
                   <input
                     type="number"
                     step="0.01"
-                    value={editingDividend.reinvestment_price || ''}
-                    onChange={(e) => setEditingDividend({
-                      ...editingDividend,
-                      reinvestment_price: e.target.value
+                    value={editingTransaction.cost_per_share}
+                    onChange={(e) => setEditingTransaction({
+                      ...editingTransaction,
+                      cost_per_share: e.target.value
                     })}
-                    disabled={isDateInFuture(editingDividend.buy_order_date)}
-                    required={!isDateInFuture(editingDividend.buy_order_date)}
-                    className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                    required
                   />
                 </div>
-              </div>
+                <div className="modal-actions">
+                  <button type="submit">Update</button>
+                  <button type="button" onClick={() => {
+                    setIsTransactionEditModalOpen(false);
+                    setEditingTransaction(null);
+                  }}>Cancel</button>
+                </div>
+              </form>
             )}
-            <div className="modal-actions">
-              <button 
-                type="submit"
-                disabled={
-                  selectedFund?.dividend_type === 'stock' && 
-                  isDateInFuture(editingDividend.buy_order_date) && 
-                  (editingDividend.reinvestment_shares || editingDividend.reinvestment_price)
-                }
-              >
-                Update
-              </button>
-              <button type="button" onClick={() => {
-                setIsDividendEditModalOpen(false);
-                setEditingDividend(null);
-                setSelectedFund(null);
-              }}>Cancel</button>
-            </div>
-          </form>
-        )}
-      </Modal>
+          </Modal>
+
+          <Modal
+            isOpen={isDividendModalOpen}
+            onClose={() => {
+              console.log('Closing dividend modal');
+              setIsDividendModalOpen(false);
+              setSelectedFund(null);
+            }}
+            title="Add Dividend"
+          >
+            <form onSubmit={handleCreateDividend}>
+              <div className="form-group">
+                <label>Fund:</label>
+                <div className="static-field">
+                  {portfolioFunds.find(pf => pf.id === newDividend.portfolio_fund_id)?.fund_name}
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Dividend Type:</label>
+                <div className="static-field">
+                  {selectedFund?.dividend_type === 'stock' ? (
+                    <><FontAwesomeIcon icon={faChartLine} /> Stock Dividend</>
+                  ) : selectedFund?.dividend_type === 'cash' ? (
+                    <><FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend</>
+                  ) : (
+                    'No Dividend'
+                  )}
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Record Date:</label>
+                <input
+                  type="date"
+                  value={newDividend.record_date}
+                  onChange={(e) => setNewDividend({
+                    ...newDividend,
+                    record_date: e.target.value
+                  })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Ex-Dividend Date:</label>
+                <input
+                  type="date"
+                  value={newDividend.ex_dividend_date}
+                  onChange={(e) => setNewDividend({
+                    ...newDividend,
+                    ex_dividend_date: e.target.value
+                  })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Dividend per Share:</label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={newDividend.dividend_per_share}
+                  onChange={(e) => setNewDividend({
+                    ...newDividend,
+                    dividend_per_share: e.target.value
+                  })}
+                  required
+                />
+              </div>
+              {selectedFund?.dividend_type === 'stock' && (
+                <div className="reinvestment-fields">
+                  <h3>Reinvestment Details</h3>
+                  <div className="form-group">
+                    <label>Buy Order Date:</label>
+                    <input
+                      type="date"
+                      value={newDividend.buy_order_date || ''}
+                      onChange={(e) => {
+                        const newDate = e.target.value;
+                        const isFutureDate = isDateInFuture(newDate);
+                        console.log('Date changed:', newDate, 'Is future:', isFutureDate);
+                        
+                        setNewDividend({
+                          ...newDividend,
+                          buy_order_date: newDate,
+                          // Only clear fields if moving to a future date
+                          reinvestment_shares: isFutureDate ? '' : newDividend.reinvestment_shares,
+                          reinvestment_price: isFutureDate ? '' : newDividend.reinvestment_price
+                        });
+                      }}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Reinvestment Shares:</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={newDividend.reinvestment_shares || ''}
+                      onChange={(e) => setNewDividend({
+                        ...newDividend,
+                        reinvestment_shares: e.target.value
+                      })}
+                      disabled={isDateInFuture(newDividend.buy_order_date)}
+                      required={!isDateInFuture(newDividend.buy_order_date)}
+                      className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Reinvestment Price per Share:</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newDividend.reinvestment_price || ''}
+                      onChange={(e) => setNewDividend({
+                        ...newDividend,
+                        reinvestment_price: e.target.value
+                      })}
+                      disabled={isDateInFuture(newDividend.buy_order_date)}
+                      required={!isDateInFuture(newDividend.buy_order_date)}
+                      className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="modal-actions">
+                <button type="submit">Create Dividend</button>
+                <button type="button" onClick={() => {
+                  setIsDividendModalOpen(false);
+                  setSelectedFund(null);
+                }}>Cancel</button>
+              </div>
+            </form>
+          </Modal>
+
+          <Modal
+            isOpen={isDividendEditModalOpen}
+            onClose={() => {
+              setIsDividendEditModalOpen(false);
+              setEditingDividend(null);
+              setSelectedFund(null);
+            }}
+            title="Edit Dividend"
+          >
+            {editingDividend && (
+              <form onSubmit={handleUpdateDividend}>
+                <div className="form-group">
+                  <label>Fund:</label>
+                  <div className="static-field">
+                    {editingDividend.fund_name}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Record Date:</label>
+                  <input
+                    type="date"
+                    value={editingDividend.record_date}
+                    onChange={(e) => setEditingDividend({
+                      ...editingDividend,
+                      record_date: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Ex-Dividend Date:</label>
+                  <input
+                    type="date"
+                    value={editingDividend.ex_dividend_date}
+                    onChange={(e) => setEditingDividend({
+                      ...editingDividend,
+                      ex_dividend_date: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Dividend per Share:</label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={editingDividend.dividend_per_share}
+                    onChange={(e) => setEditingDividend({
+                      ...editingDividend,
+                      dividend_per_share: e.target.value
+                    })}
+                    required
+                  />
+                </div>
+                {selectedFund?.dividend_type === 'stock' && (
+                  <div className="reinvestment-fields">
+                    <h3>Reinvestment Details</h3>
+                    <div className="form-group">
+                      <label>Buy Order Date:</label>
+                      <input
+                        type="date"
+                        value={editingDividend.buy_order_date || ''}
+                        onChange={(e) => {
+                          const newDate = e.target.value;
+                          const isFutureDate = isDateInFuture(newDate);
+                          console.log('Date changed:', newDate, 'Is future:', isFutureDate);
+                          
+                          setEditingDividend({
+                            ...editingDividend,
+                            buy_order_date: newDate
+                          });
+                        }}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Reinvestment Shares:</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        value={editingDividend.reinvestment_shares || ''}
+                        onChange={(e) => setEditingDividend({
+                          ...editingDividend,
+                          reinvestment_shares: e.target.value
+                        })}
+                        disabled={isDateInFuture(editingDividend.buy_order_date)}
+                        required={!isDateInFuture(editingDividend.buy_order_date)}
+                        className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Reinvestment Price:</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editingDividend.reinvestment_price || ''}
+                        onChange={(e) => setEditingDividend({
+                          ...editingDividend,
+                          reinvestment_price: e.target.value
+                        })}
+                        disabled={isDateInFuture(editingDividend.buy_order_date)}
+                        required={!isDateInFuture(editingDividend.buy_order_date)}
+                        className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="modal-actions">
+                  <button 
+                    type="submit"
+                    disabled={
+                      selectedFund?.dividend_type === 'stock' && 
+                      isDateInFuture(editingDividend.buy_order_date) && 
+                      (editingDividend.reinvestment_shares || editingDividend.reinvestment_price)
+                    }
+                  >
+                    Update
+                  </button>
+                  <button type="button" onClick={() => {
+                    setIsDividendEditModalOpen(false);
+                    setEditingDividend(null);
+                    setSelectedFund(null);
+                  }}>Cancel</button>
+                </div>
+              </form>
+            )}
+          </Modal>
+        </>
+      )}
     </div>
   );
 };

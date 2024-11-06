@@ -8,7 +8,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import api from '../utils/api';
 import './FundDetail.css';
-import { addMonths, subMonths } from 'date-fns';
+import { subMonths } from 'date-fns';
 
 const FundDetail = () => {
   const { id } = useParams();
@@ -16,7 +16,7 @@ const FundDetail = () => {
   const [priceHistory, setPriceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { formatCurrency, formatNumber } = useFormat();
+  const { formatCurrency } = useFormat();
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: null,
@@ -147,27 +147,6 @@ const FundDetail = () => {
 
   const handleToggleTableHistory = () => {
     setShowAllTableHistory(prev => !prev);
-  };
-
-  const handleUpdateTodayPrice = async () => {
-    try {
-      setUpdating(true);
-      await api.post(`/fund-prices/${id}/update?type=today`);
-      // Refresh the price data
-      const pricesRes = await api.get(`/fund-prices/${id}`);
-      const sortedPrices = pricesRes.data.sort((a, b) => 
-        new Date(a.date) - new Date(b.date)
-      );
-      setPriceHistory(sortedPrices);
-      setFilteredChartHistory(
-        showAllChartHistory ? sortedPrices : filterLastMonth(sortedPrices)
-      );
-    } catch (error) {
-      console.error('Error updating today\'s price:', error);
-      alert('Error updating today\'s price');
-    } finally {
-      setUpdating(false);
-    }
   };
 
   const handleUpdateHistoricalPrices = async () => {

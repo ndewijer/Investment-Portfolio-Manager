@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons';
 import { MultiSelect } from "react-multi-select-component";
-import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
 import api from '../utils/api';
 import './LogViewer.css';
 import FilterPopup from '../components/FilterPopup';
@@ -53,7 +51,7 @@ const LogViewer = () => {
     { label: 'Security', value: 'security' }
   ];
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -81,9 +79,7 @@ const LogViewer = () => {
       params.append('page', pagination.currentPage);
       params.append('per_page', 50);
 
-      console.log('Fetching logs with params:', params.toString());
       const response = await api.get(`/logs?${params.toString()}`);
-      console.log('Received logs response:', response.data);
 
       setLogs(response.data.logs);
       setPagination({
@@ -93,7 +89,6 @@ const LogViewer = () => {
       });
       setError(null);
     } catch (err) {
-      console.error('Error fetching logs:', err.response || err);
       setError(err.response?.data?.message || 'Error fetching logs');
       setLogs([]);
       setPagination({
@@ -104,11 +99,11 @@ const LogViewer = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, sortConfig, pagination.currentPage]);
 
   useEffect(() => {
     fetchLogs();
-  }, [filters, sortConfig, pagination.currentPage]);
+  }, [fetchLogs]);
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -147,16 +142,6 @@ const LogViewer = () => {
       ...prev,
       [field]: !prev[field]
     }));
-  };
-
-  const closeAllPopups = () => {
-    setFilterPopups({
-      timestamp: false,
-      level: false,
-      category: false,
-      message: false,
-      source: false
-    });
   };
 
   const handleClearLogs = async () => {

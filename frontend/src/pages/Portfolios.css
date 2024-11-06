@@ -24,7 +24,7 @@
 
 .portfolios-page .portfolios-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
@@ -33,6 +33,10 @@
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  position: relative;
 }
 
 .portfolios-page .portfolio-card h2 {
@@ -53,6 +57,7 @@
   padding-top: 20px;
   border-top: 1px solid #eee;
   margin-top: auto;
+  flex-wrap: wrap;
 }
 
 .portfolios-page .portfolio-actions button {
@@ -62,6 +67,7 @@
   cursor: pointer;
   font-size: 0.9em;
   min-width: 100px;
+  white-space: nowrap;
 }
 
 .portfolios-page .portfolio-actions button:nth-child(1) {

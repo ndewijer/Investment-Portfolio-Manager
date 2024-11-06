@@ -13,7 +13,6 @@ const Funds = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [message, setMessage] = useState('');
-  const [lookupError, setLookupError] = useState('');
   const [newFund, setNewFund] = useState({
     name: '',
     isin: '',
@@ -189,11 +188,9 @@ const Funds = () => {
             info: response.data,
             useInfo: false
           });
-          setLookupError('');
         }
       } catch (error) {
         console.error('Error looking up symbol:', error);
-        setLookupError('Could not find information for this symbol');
         setSymbolValidation({
           isValid: false,
           info: null,
