@@ -252,46 +252,61 @@ def check_fund_usage(fund_id):
 @track_request
 def delete_fund(fund_id):
     try:
+        # First check if the fund exists
         fund = Fund.query.get_or_404(fund_id)
         
-        # Check if fund has any transactions
+        # Check for any portfolio-fund relationships
         portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
-        for pf in portfolio_funds:
-            transaction_count = Transaction.query.filter_by(portfolio_fund_id=pf.id).count()
-            if transaction_count > 0:
-                response, status = logger.log(
-                    level=LogLevel.WARNING,
-                    category=LogCategory.FUND,
-                    message=f"Cannot delete fund {fund_id} with existing transactions",
-                    details={
-                        'user_message': 'Cannot delete fund that has transactions',
-                        'portfolios': [{
-                            'name': pf.portfolio.name,
-                            'transaction_count': transaction_count
-                        } for pf in portfolio_funds if Transaction.query.filter_by(portfolio_fund_id=pf.id).count() > 0]
-                    },
-                    http_status=400
-                )
-                return jsonify(response), status
+        if portfolio_funds:
+            # Get list of portfolios this fund is attached to
+            portfolio_info = [{
+                'name': pf.portfolio.name,
+                'id': pf.portfolio.id
+            } for pf in portfolio_funds]
+            
+            response, status = logger.log(
+                level=LogLevel.WARNING,
+                category=LogCategory.FUND,
+                message="Cannot delete fund while attached to portfolios",
+                details={
+                    'fund_id': fund_id,
+                    'fund_name': fund.name,
+                    'portfolios': portfolio_info,
+                    'user_message': f"Cannot delete {fund.name} because it is still attached to the following portfolios: " + 
+                                  ", ".join(pf['name'] for pf in portfolio_info) +
+                                  ". Please remove the fund from these portfolios first."
+                },
+                http_status=409
+            )
+            return jsonify(response), status
         
+        # If no portfolio relationships exist, proceed with deletion
+        # Delete any fund prices
+        FundPrice.query.filter_by(fund_id=fund_id).delete()
+        
+        # Delete the fund
         db.session.delete(fund)
         db.session.commit()
-
-        logger.log(
+        
+        response, status = logger.log(
             level=LogLevel.INFO,
             category=LogCategory.FUND,
-            message=f"Successfully deleted fund {fund_id}",
-            details={'fund_name': fund.name}
+            message=f"Successfully deleted fund {fund.name}",
+            details={'fund_id': fund_id},
+            http_status=200
         )
-
-        return '', 204
+        return jsonify(response), status
+        
     except Exception as e:
         db.session.rollback()
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
             message=f"Error deleting fund: {str(e)}",
-            details={'error': str(e)},
+            details={
+                'fund_id': fund_id,
+                'error': str(e)
+            },
             http_status=500
         )
         return jsonify(response), status

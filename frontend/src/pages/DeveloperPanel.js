@@ -52,8 +52,8 @@ const DeveloperPanel = () => {
       if (response.data) {
         setExchangeRate(response.data);
       }
-    } catch (err) {
-      console.error('Error fetching current exchange rate:', err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching current exchange rate');
     }
   }, [exchangeRate.from_currency, exchangeRate.to_currency, exchangeRate.date]);
 
@@ -73,8 +73,8 @@ const DeveloperPanel = () => {
       ]);
       setFunds(fundsRes.data);
       setPortfolios(portfoliosRes.data);
-    } catch (err) {
-      console.error('Error fetching data:', err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching data');
     }
   };
 
@@ -82,8 +82,8 @@ const DeveloperPanel = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/csv-template`);
       setCsvTemplate(response.data);
-    } catch (err) {
-      console.error('Error fetching CSV template:', err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching CSV template');
     }
   };
 
@@ -91,8 +91,8 @@ const DeveloperPanel = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/fund-price-template`);
       setFundPriceTemplate(response.data);
-    } catch (err) {
-      console.error('Error fetching fund price template:', err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching fund price template');
     }
   };
 
@@ -100,8 +100,8 @@ const DeveloperPanel = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/system-settings/logging`);
       setLoggingSettings(response.data);
-    } catch (err) {
-      console.error('Error fetching logging settings:', err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching logging settings');
     }
   };
 
@@ -110,9 +110,8 @@ const DeveloperPanel = () => {
       const response = await axios.put(`${API_BASE_URL}/system-settings/logging`, newSettings);
       setLoggingSettings(response.data);
       setMessage('Logging settings updated successfully');
-    } catch (err) {
-      setError('Error updating logging settings');
-      console.error('Error updating logging settings:', err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error updating logging settings');
     }
   };
 
@@ -123,9 +122,8 @@ const DeveloperPanel = () => {
       setMessage(`Exchange rate set successfully: ${response.data.rate}`);
       setError('');
       fetchCurrentExchangeRate();
-    } catch (err) {
-      setError('Error setting exchange rate');
-      console.error(err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error setting exchange rate');
     }
   };
 
@@ -135,12 +133,11 @@ const DeveloperPanel = () => {
       const response = await axios.post(`${API_BASE_URL}/fund-price`, fundPrice);
       setMessage(`Fund price set successfully: ${response.data.price}`);
       setError('');
-    } catch (err) {
-      setError('Error setting fund price');
-      console.error(err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error setting fund price');
     }
   };
-
+  
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!file || !selectedPortfolioId || !selectedFundId) {
@@ -174,10 +171,10 @@ const DeveloperPanel = () => {
         });
         setMessage(response.data.message);
         setError('');
-      } catch (err) {
-        setError(err.response?.data?.error || 'Error importing transactions');
-        console.error(err);
-      }
+      } catch (error) {
+        setError(error.response?.data?.message || error.response?.data?.error || 'Error importing transactions');
+        console.error(error);
+      } 
     };
 
     reader.readAsText(file);
@@ -202,9 +199,9 @@ const DeveloperPanel = () => {
       });
       setMessage(response.data.message);
       setError('');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Error importing fund prices');
-      console.error(err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error importing fund prices');
+      console.error(error);
     }
   };
 
@@ -217,8 +214,8 @@ const DeveloperPanel = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/portfolio-funds?portfolio_id=${portfolioId}`);
       setPortfolioFunds(response.data);
-    } catch (err) {
-      console.error('Error fetching portfolio funds:', err);
+    } catch (error) {
+      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching portfolio funds');
     }
   };
 

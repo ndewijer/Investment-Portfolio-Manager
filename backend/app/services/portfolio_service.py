@@ -1,45 +1,110 @@
 from datetime import datetime, timedelta
-from ..models import Portfolio, PortfolioFund, Transaction, FundPrice, db
+from ..models import Portfolio, PortfolioFund, Transaction, FundPrice, Dividend, db
 
 class PortfolioService:
+    @staticmethod
+    def calculate_portfolio_fund_values(portfolio_funds):
+        """Calculate values for a list of portfolio funds"""
+        result = []
+        
+        for pf in portfolio_funds:
+            shares = 0
+            cost = 0
+            total_dividends = 0
+            
+            # Get all transactions sorted by date
+            transactions = Transaction.query.filter_by(portfolio_fund_id=pf.id)\
+                .order_by(Transaction.date.asc())\
+                .all()
+            
+            for transaction in transactions:
+                if transaction.type == 'buy':
+                    # For buy transactions, exclude those from stock dividends
+                    # Check if this transaction is linked to a dividend
+                    dividend = Dividend.query.filter_by(reinvestment_transaction_id=transaction.id).first()
+                    if not dividend:  # Only count cost if not a dividend reinvestment
+                        shares += transaction.shares
+                        cost += transaction.shares * transaction.cost_per_share
+                    else:  # For dividend reinvestment, add shares but not cost
+                        shares += transaction.shares
+                elif transaction.type == 'sell':
+                    # For sell transactions, subtract shares and adjust cost proportionally
+                    shares -= transaction.shares
+                    if shares > 0:
+                        # Adjust cost proportionally to remaining shares
+                        cost = (cost / (shares + transaction.shares)) * shares
+                    else:
+                        cost = 0
+            
+            # Calculate total dividends paid
+            dividends = Dividend.query.filter_by(portfolio_fund_id=pf.id).all()
+            for dividend in dividends:
+                total_dividends += dividend.total_amount
+            
+            # Get latest price
+            latest_price = FundPrice.query.filter_by(fund_id=pf.fund_id)\
+                .order_by(FundPrice.date.desc())\
+                .first()
+            
+            current_value = shares * (latest_price.price if latest_price else 0)
+            
+            result.append({
+                'id': pf.id,
+                'fund_id': pf.fund_id,
+                'fund_name': pf.fund.name,
+                'total_shares': shares,
+                'latest_price': latest_price.price if latest_price else 0,
+                'average_cost': cost / shares if shares > 0 else 0,
+                'total_cost': cost,
+                'current_value': current_value,
+                'total_dividends': total_dividends,
+                'dividend_type': pf.fund.dividend_type.value
+            })
+        
+        return result
+
     @staticmethod
     def get_portfolio_summary():
         portfolios = Portfolio.query.filter_by(is_archived=False).all()
         summary = []
         
         for portfolio in portfolios:
-            total_value = 0
-            total_cost = 0
             has_transactions = False
+            portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(portfolio.funds)
             
-            for pf in portfolio.funds:
-                shares = 0
-                cost = 0
+            if portfolio_funds_data:
+                total_value = sum(pf['current_value'] for pf in portfolio_funds_data)
+                total_cost = sum(pf['total_cost'] for pf in portfolio_funds_data)
+                total_dividends = sum(pf['total_dividends'] for pf in portfolio_funds_data)
+                has_transactions = any(pf['total_shares'] > 0 for pf in portfolio_funds_data)
                 
-                for transaction in pf.transactions:
-                    has_transactions = True
-                    if transaction.type == 'buy':
-                        shares += transaction.shares
-                        cost += transaction.shares * transaction.cost_per_share
-                    else:
-                        shares -= transaction.shares
-                        cost = (cost / (shares + transaction.shares)) * shares if shares > 0 else 0
-                        
-                latest_price = FundPrice.query.filter_by(fund_id=pf.fund_id).order_by(FundPrice.date.desc()).first()
-                if latest_price:
-                    total_value += shares * latest_price.price
-                total_cost += cost
-            
-            if has_transactions:
-                summary.append({
-                    'id': portfolio.id,
-                    'name': portfolio.name,
-                    'totalValue': total_value,
-                    'totalCost': total_cost,
-                    'is_archived': portfolio.is_archived
-                })
+                if has_transactions:
+                    summary.append({
+                        'id': portfolio.id,
+                        'name': portfolio.name,
+                        'totalValue': total_value,
+                        'totalCost': total_cost,
+                        'totalDividends': total_dividends,
+                        'is_archived': portfolio.is_archived
+                    })
         
         return summary
+
+    @staticmethod
+    def get_portfolio_funds(portfolio_id):
+        portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
+        return PortfolioService.calculate_portfolio_fund_values(portfolio_funds)
+
+    @staticmethod
+    def get_all_portfolio_funds():
+        portfolio_funds = PortfolioFund.query.all()
+        return [{
+            'id': pf.id,
+            'portfolio_id': pf.portfolio_id,
+            'fund_id': pf.fund_id,
+            'portfolio_name': pf.portfolio.name,
+            'fund_name': pf.fund.name
+        } for pf in portfolio_funds]
 
     @staticmethod
     def get_portfolio_history():
@@ -132,48 +197,6 @@ class PortfolioService:
             'total_value': total_value,
             'total_cost': total_cost
         }
-
-    @staticmethod
-    def get_portfolio_funds(portfolio_id):
-        portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
-        result = []
-        
-        for pf in portfolio_funds:
-            shares = 0
-            cost = 0
-            
-            for transaction in pf.transactions:
-                if transaction.type == 'buy':
-                    shares += transaction.shares
-                    cost += transaction.shares * transaction.cost_per_share
-                else:
-                    shares -= transaction.shares
-                    cost = (cost / (shares + transaction.shares)) * shares if shares > 0 else 0
-            
-            latest_price = FundPrice.query.filter_by(fund_id=pf.fund_id).order_by(FundPrice.date.desc()).first()
-            current_value = shares * (latest_price.price if latest_price else 0)
-            
-            result.append({
-                'id': pf.id,
-                'fund_id': pf.fund_id,
-                'fund_name': pf.fund.name,
-                'total_shares': shares,
-                'average_cost': cost / shares if shares > 0 else 0,
-                'current_value': current_value
-            })
-        
-        return result
-
-    @staticmethod
-    def get_all_portfolio_funds():
-        portfolio_funds = PortfolioFund.query.all()
-        return [{
-            'id': pf.id,
-            'portfolio_id': pf.portfolio_id,
-            'fund_id': pf.fund_id,
-            'portfolio_name': pf.portfolio.name,
-            'fund_name': pf.fund.name
-        } for pf in portfolio_funds]
 
     @staticmethod
     def get_portfolio_fund_history(portfolio_id):

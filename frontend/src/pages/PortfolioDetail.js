@@ -4,12 +4,11 @@ import api from '../utils/api';
 import Modal from '../components/Modal';
 import { useFormat } from '../context/FormatContext';
 import './PortfolioDetail.css';
-import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort, faPlus, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { MultiSelect } from "react-multi-select-component";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import FilterPopup from '../components/FilterPopup';
 
 const TYPE_OPTIONS = [
   { label: 'Buy', value: 'buy' },
@@ -56,7 +55,6 @@ const PortfolioDetail = () => {
     fund_names: [],
     type: ''
   });
-  const [activeFilter, setActiveFilter] = useState(null);
   const [filterPosition, setFilterPosition] = useState({ top: 0, right: 0 });
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isTransactionEditModalOpen, setIsTransactionEditModalOpen] = useState(false);
@@ -76,6 +74,14 @@ const PortfolioDetail = () => {
   const [isDividendEditModalOpen, setIsDividendEditModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const [filterPopups, setFilterPopups] = useState({
+    timestamp: false,
+    level: false,
+    category: false,
+    message: false,
+    source: false
+  });
 
   const fetchPortfolioData = useCallback(async () => {
     try {
@@ -146,6 +152,7 @@ const PortfolioDetail = () => {
       fetchPortfolioData(); // Refresh data to update totals
     } catch (error) {
       console.error('Error creating transaction:', error);
+      alert(error.response?.data?.user_message || 'Error creating transaction');
     }
   };
 
@@ -207,28 +214,18 @@ const PortfolioDetail = () => {
     return [...new Set(portfolioFunds.map(pf => pf.fund_name))];
   };
 
-  const handleFilterClick = (e, filterType) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Get the header cell element (th)
-    const headerCell = e.currentTarget.closest('th');
-    const rect = headerCell.getBoundingClientRect();
-    
-    // If clicking the same filter, close it
-    if (activeFilter === filterType) {
-      setActiveFilter(null);
-      return;
-    }
+    const handleFilterClick = (e, field) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setFilterPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX
+      });
+      setFilterPopups(prev => ({
+        ...prev,
+        [field]: !prev[field]
+      }));
+    };
 
-    // Position the popup below the header cell
-    setFilterPosition({
-      top: rect.bottom + 5, // Add small offset
-      left: rect.left
-    });
-    
-    setActiveFilter(filterType);
-  };
 
   const handleEditTransaction = (transaction) => {
     setEditingTransaction({
@@ -247,6 +244,7 @@ const PortfolioDetail = () => {
       fetchPortfolioData(); // Refresh data
     } catch (error) {
       console.error('Error updating transaction:', error);
+      alert(error.response?.data?.user_message || 'Error updating transaction');
     }
   };
 
@@ -257,6 +255,7 @@ const PortfolioDetail = () => {
         fetchPortfolioData(); // Refresh data
       } catch (error) {
         console.error('Error deleting transaction:', error);
+        alert(error.response?.data?.user_message || 'Error deleting transaction');
       }
     }
   };
@@ -349,7 +348,7 @@ const PortfolioDetail = () => {
       fetchPortfolioData();
     } catch (error) {
       console.error('Error creating dividend:', error);
-      alert(error.response?.data?.error || 'Error creating dividend');
+      alert(error.response?.data?.user_message || error.response?.data?.error || 'Error creating dividend');
     }
   };
 
@@ -411,7 +410,7 @@ const PortfolioDetail = () => {
       fetchPortfolioData(); // Refresh portfolio data
     } catch (error) {
       console.error('Error updating dividend:', error);
-      alert(error.response?.data?.error || 'Error updating dividend');
+      alert(error.response?.data?.user_message || error.response?.data?.error || 'Error updating dividend');
     }
   };
 
@@ -423,7 +422,7 @@ const PortfolioDetail = () => {
         fetchPortfolioData(); // Refresh portfolio data
       } catch (error) {
         console.error('Error deleting dividend:', error);
-        alert(error.response?.data?.error || 'Error deleting dividend');
+        alert(error.response?.data?.user_message || error.response?.data?.error || 'Error deleting dividend');
       }
     }
   };
@@ -473,12 +472,12 @@ const PortfolioDetail = () => {
             fetchPortfolioData(); // Refresh the data
           } catch (confirmError) {
             console.error('Error removing fund after confirmation:', confirmError);
-            alert('Error removing fund from portfolio');
+            alert(confirmError.response?.data?.user_message || 'Error removing fund from portfolio');
           }
         }
       } else {
         console.error('Error removing fund:', error);
-        alert('Error removing fund from portfolio');
+        alert(error.response?.data?.user_message || 'Error removing fund from portfolio');
       }
     }
   };
@@ -546,9 +545,13 @@ const PortfolioDetail = () => {
               <p>{formatCurrency(portfolio.totalCost || 0)}</p>
             </div>
             <div className="summary-card">
+              <h3>Total Dividends</h3>
+              <p>{formatCurrency(portfolio.totalDividends || 0)}</p>
+            </div>
+            <div className="summary-card">
               <h3>Gain/Loss</h3>
-              <p className={`${((portfolio.totalValue || 0) - (portfolio.totalCost || 0)) >= 0 ? 'positive' : 'negative'}`}>
-                {formatCurrency((portfolio.totalValue || 0) - (portfolio.totalCost || 0))}
+              <p className={`${((portfolio.totalValue || 0) + (portfolio.totalDividends || 0) - (portfolio.totalCost || 0)) >= 0 ? 'positive' : 'negative'}`}>
+                {formatCurrency((portfolio.totalValue || 0) + (portfolio.totalDividends || 0) - (portfolio.totalCost || 0))}
               </p>
             </div>
           </div>
@@ -612,9 +615,12 @@ const PortfolioDetail = () => {
               <thead>
                 <tr>
                   <th>Fund</th>
+                  <th>Latest Share Price</th>
                   <th>Total Shares</th>
-                  <th>Average Cost</th>
+                  <th>Average Cost / Share</th>
+                  <th>Total Cost</th>
                   <th>Current Value</th>
+                  <th>Total Dividends</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -622,9 +628,12 @@ const PortfolioDetail = () => {
                 {portfolioFunds.map(portfolioFund => (
                   <tr key={portfolioFund.id}>
                     <td>{portfolioFund.fund_name}</td>
+                    <td>{formatCurrency(portfolioFund.latest_price)}</td>
                     <td>{formatNumber(portfolioFund.total_shares, 6)}</td>
                     <td>{formatCurrency(portfolioFund.average_cost)}</td>
+                    <td>{formatCurrency(portfolioFund.total_cost)}</td>
                     <td>{formatCurrency(portfolioFund.current_value)}</td>
+                    <td>{formatCurrency(portfolioFund.total_dividends)}</td>
                     <td className="portfolio-funds-actions">
                       <button className="transaction-button" onClick={() => {
                         setNewTransaction({
@@ -664,7 +673,7 @@ const PortfolioDetail = () => {
             <table>
               <thead>
                 <tr>
-                  <th className={`table-header ${sortConfig.key === 'date' ? sortConfig.direction : ''}`}>
+                  <th>
                     <div className="header-content">
                       <FontAwesomeIcon 
                         icon={faFilter} 
@@ -675,41 +684,21 @@ const PortfolioDetail = () => {
                       <FontAwesomeIcon 
                         icon={faSort} 
                         className="sort-icon"
-                        onClick={(e) => handleSort(e, 'date')}
+                        onClick={(e) => handleSort('date')}
                       />
                     </div>
-                    {activeFilter === 'date' && (
-                      <div 
-                        className="filter-popup" 
-                        style={{ 
-                          top: filterPosition.top, 
-                          left: filterPosition.left,
-                          position: 'fixed'
-                        }}
-                      >
-                        <div className="date-picker-container">
-                          <label>From:</label>
-                          <DatePicker
-                            selected={filters.dateFrom}
-                            onChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
-                            dateFormat="yyyy-MM-dd"
-                            isClearable
-                            placeholderText="Start Date"
-                          />
-                          <label>To:</label>
-                          <DatePicker
-                            selected={filters.dateTo}
-                            onChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
-                            dateFormat="yyyy-MM-dd"
-                            isClearable
-                            placeholderText="End Date"
-                            minDate={filters.dateFrom}
-                          />
-                        </div>
-                      </div>
-                    )}
+                    <FilterPopup
+                      type="date"
+                      isOpen={filterPopups.date}
+                      onClose={() => setFilterPopups(prev => ({ ...prev, date: false }))}
+                      position={filterPosition}
+                      fromDate={filters.dateFrom}
+                      toDate={filters.dateTo}
+                      onFromDateChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
+                      onToDateChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
+                    />
                   </th>
-                  <th className={`table-header ${sortConfig.key === 'fund_name' ? sortConfig.direction : ''}`}>
+                  <th>
                     <div className="header-content">
                       <FontAwesomeIcon 
                         icon={faFilter} 
@@ -720,42 +709,30 @@ const PortfolioDetail = () => {
                       <FontAwesomeIcon 
                         icon={faSort} 
                         className="sort-icon"
-                        onClick={(e) => handleSort(e, 'fund_name')}
+                        onClick={(e) => handleSort('fund_name')}
                       />
                     </div>
-                    {activeFilter === 'fund' && (
-                      <div 
-                        className="filter-popup" 
-                        style={{ 
-                          top: filterPosition.top, 
-                          left: filterPosition.left,
-                          position: 'fixed'
-                        }}
-                      >
-                        <MultiSelect
-                          options={getUniqueFundNames().map(name => ({
-                            label: name,
-                            value: name
-                          }))}
-                          value={filters.fund_names.map(name => ({
-                            label: name,
-                            value: name
-                          }))}
-                          onChange={(selected) => {
-                            setFilters(prev => ({
-                              ...prev,
-                              fund_names: selected.map(option => option.value)
-                            }));
-                          }}
-                          labelledBy="Select funds"
-                          hasSelectAll={true}
-                          disableSearch={false}
-                          className="multi-select"
-                        />
-                      </div>
-                    )}
+                    <FilterPopup
+                      type="multiselect"
+                      isOpen={filterPopups.fund}
+                      onClose={() => setFilterPopups(prev => ({ ...prev, fund: false }))}
+                      position={filterPosition}
+                      value={filters.fund_names.map(name => ({
+                        label: name,
+                        value: name
+                      }))}
+                      onChange={(selected) => {
+                        setFilters(prev => ({ ...prev, fund_names: selected.map(option => option.value) }));
+                        setFilterPopups(prev => ({ ...prev, fund_names: false }));
+                      }}
+                      options={getUniqueFundNames().map(name => ({
+                        label: name,
+                        value: name
+                      }))}
+                      Component={MultiSelect}
+                    />
                   </th>
-                  <th className={`table-header ${sortConfig.key === 'type' ? sortConfig.direction : ''}`}>
+                  <th>
                     <div className="header-content">
                       <FontAwesomeIcon 
                         icon={faFilter} 
@@ -766,54 +743,42 @@ const PortfolioDetail = () => {
                       <FontAwesomeIcon 
                         icon={faSort} 
                         className="sort-icon"
-                        onClick={(e) => handleSort(e, 'type')}
+                        onClick={(e) => handleSort('type')}
                       />
                     </div>
-                    {activeFilter === 'type' && (
-                      <div 
-                        className="filter-popup" 
-                        style={{ 
-                          top: filterPosition.top, 
-                          left: filterPosition.left,
-                          position: 'fixed'
-                        }}
-                      >
-                        <MultiSelect
-                          options={TYPE_OPTIONS}
-                          value={filters.type ? [{ label: filters.type.charAt(0).toUpperCase() + filters.type.slice(1), value: filters.type }] : []}
-                          onChange={(selected) => {
-                            setFilters(prev => ({
-                              ...prev,
-                              type: selected.length > 0 ? selected[0].value : ''
-                            }));
-                          }}
-                          labelledBy="Select transaction types"
-                          hasSelectAll={true}
-                          disableSearch={true}
-                          className="multi-select"
-                          isCreatable={false}
-                          closeOnSelect={true}
-                        />
-                      </div>
-                    )}
+                    <FilterPopup
+                      type="multiselect"
+                      isOpen={filterPopups.type}
+                      onClose={() => setFilterPopups(prev => ({ ...prev, type: false }))}
+                      position={filterPosition}
+                      value={filters.type ? [{ label: filters.type.charAt(0).toUpperCase() + filters.type.slice(1), value: filters.type }] : []}
+                      onChange={(selected) => {
+                        setFilters(prev => ({
+                          ...prev,
+                          type: selected.length > 0 ? selected[0].value : ''
+                        }));
+                      }}
+                      options={TYPE_OPTIONS}
+                      Component={MultiSelect}
+                    />
                   </th>
-                  <th className={`table-header ${sortConfig.key === 'shares' ? sortConfig.direction : ''}`}>
+                  <th>
                     <div className="header-content">
                       <span>Shares</span>
                       <FontAwesomeIcon 
                         icon={faSort} 
                         className="sort-icon"
-                        onClick={(e) => handleSort(e, 'shares')}
+                        onClick={(e) => handleSort('shares')}
                       />
                     </div>
                   </th>
-                  <th className={`table-header ${sortConfig.key === 'cost_per_share' ? sortConfig.direction : ''}`}>
+                  <th>
                     <div className="header-content">
                       <span>Cost per Share</span>
                       <FontAwesomeIcon 
                         icon={faSort} 
                         className="sort-icon"
-                        onClick={(e) => handleSort(e, 'cost_per_share')}
+                        onClick={(e) => handleSort('cost_per_share')}
                       />
                     </div>
                   </th>

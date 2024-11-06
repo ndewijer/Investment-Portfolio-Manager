@@ -5,6 +5,7 @@ import api from '../utils/api';
 import Modal from '../components/Modal';
 import './Funds.css';
 import { useNavigate } from 'react-router-dom';
+import Toast from '../components/Toast';
 
 const Funds = () => {
   const [funds, setFunds] = useState([]);
@@ -70,15 +71,16 @@ const Funds = () => {
     }
   };
 
+  const clearMessages = () => {
+    setMessage('');
+    setErrorMessage('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
     try {
       if (editingFund) {
-        const response = await api.put(
-          `/funds/${editingFund.id}`,
-          editingFund
-        );
+        const response = await api.put(`/funds/${editingFund.id}`, editingFund);
         setFunds(funds.map(f => f.id === editingFund.id ? response.data : f));
         setMessage('Fund updated successfully');
       } else {
@@ -88,15 +90,17 @@ const Funds = () => {
       }
       setIsModalOpen(false);
       setEditingFund(null);
-      setNewFund({ name: '', isin: '', symbol: '', currency: '', exchange: '', investment_type: 'fund' });
-      
-      setTimeout(() => {
-        setMessage('');
-      }, 3000);
+      setNewFund({
+        name: '',
+        isin: '',
+        symbol: '',
+        currency: '',
+        exchange: '',
+        investment_type: 'fund'
+      });
     } catch (error) {
       console.error('Error saving fund:', error);
-      const userMessage = error.response?.data?.user_message || error.response?.data?.message || 'Error saving fund';
-      setErrorMessage(userMessage);
+      setErrorMessage(error.response?.data?.message || 'Error saving fund');
     }
   };
 
@@ -114,12 +118,13 @@ const Funds = () => {
       if (window.confirm('Are you sure you want to delete this fund?')) {
         await api.delete(`/funds/${id}`);
         setFunds(funds.filter(f => f.id !== id));
-      }
+        setMessage('Fund deleted successfully');
+      } 
     } catch (error) {
-      console.error('Error deleting fund:', error);
-      alert('Error deleting fund: ' + (error.response?.data?.error || 'Unknown error'));
-    }
-  };
+        console.error('Error deleting fund:', error);
+        setErrorMessage(error.response?.data?.message || 'Error deleting fund');
+      }
+    };
 
   const handleAddFund = () => {
     setNewFund({
@@ -188,6 +193,7 @@ const Funds = () => {
             info: response.data,
             useInfo: false
           });
+          setMessage('Symbol information retrieved successfully');
         }
       } catch (error) {
         console.error('Error looking up symbol:', error);
@@ -196,6 +202,7 @@ const Funds = () => {
           info: null,
           useInfo: false
         });
+        setErrorMessage(error.response?.data?.message || 'Error looking up symbol');
       }
     } else {
       setSymbolValidation({
@@ -239,11 +246,19 @@ const Funds = () => {
 
   return (
     <div className="funds-page">
-      {message && (
-        <div className="success-message">
-          {message}
-        </div>
-      )}
+      <h1>Funds</h1>
+
+      <Toast 
+        message={message} 
+        type="success" 
+        onClose={clearMessages}
+      />
+      <Toast 
+        message={errorMessage} 
+        type="error" 
+        onClose={clearMessages}
+      />
+
       <div className="funds-header">
         <h1>Funds & Stocks</h1>
         <div className="add-buttons">
