@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from app.models import db, Portfolio, SystemSetting, SystemSettingKey, LogLevel
+from app.models import db, Portfolio, SystemSetting, SystemSettingKey, LogLevel, Fund
 from app.routes.portfolio_routes import portfolios
 from app.routes.fund_routes import funds
 from app.routes.transaction_routes import transactions
@@ -11,6 +11,7 @@ import click
 from dotenv import load_dotenv
 from werkzeug.middleware.proxy_fix import ProxyFix
 from app.services.price_update_service import TodayPriceService, HistoricalPriceService
+import os
 
 load_dotenv()
 
@@ -18,10 +19,32 @@ def create_app():
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app)
     
+    # Get database directory from environment variable or use default
+    db_dir = os.environ.get('DB_DIR', os.path.join(os.getcwd(), 'data/db'))
+    print(f"DB_DIR: {db_dir}")
+    # Ensure the directory exists
+    os.makedirs(db_dir, exist_ok=True)
+    
+    # Configure database URI using the DB_DIR
+    db_path = os.path.join(db_dir, 'portfolio_manager.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Configure logging directory
+    log_dir = os.environ.get('LOG_DIR', os.path.join(os.getcwd(), 'data/logs'))
+    os.makedirs(log_dir, exist_ok=True)
+    app.config['LOG_DIR'] = log_dir
+    
+    # Get hostname from environment variable
+    hostname = os.environ.get('HOSTNAME', 'localhost')
+    
     # Configure CORS with all necessary headers
     CORS(app, 
          resources={r"/*": {
-             "origins": ["http://localhost:3000", "http://localhost:3001"],
+             "origins": [
+                 "http://localhost:3000",
+                 f"http://{hostname}:3000"  # Dynamic frontend host
+             ],
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": [
                  "Content-Type", 
@@ -37,10 +60,6 @@ def create_app():
     
     # Configure Flask to handle trailing slashes
     app.url_map.strict_slashes = False
-    
-    # Database configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///portfolio_manager.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Initialize extensions
     db.init_app(app)

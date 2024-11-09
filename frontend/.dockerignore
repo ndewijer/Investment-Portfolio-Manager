@@ -1,0 +1,8 @@
+node_modules
+.env
+Makefile
+Dockerfile
+
+**/.DS_Store
+.gitignore
+.dockerignore
