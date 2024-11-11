@@ -16,7 +16,8 @@ COPY . .
 
 # Create directories for database and logs with environment variables
 ENV DB_DIR=/data/db \
-    LOG_DIR=/data/logs
+    LOG_DIR=/data/logs \
+    DOMAIN=localhost
 
 RUN mkdir -p $DB_DIR $LOG_DIR
 

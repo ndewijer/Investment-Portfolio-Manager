@@ -36,7 +36,7 @@ def create_app():
     app.config['LOG_DIR'] = log_dir
     
     # Get hostname from environment variable
-    frontend_host = os.environ.get('FRONTEND_HOST', '*')
+    frontend_host = os.environ.get('DOMAIN', '*')
     
     # Configure CORS with all necessary headers
     CORS(app, 

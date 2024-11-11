@@ -4,6 +4,10 @@ FROM node:23-alpine AS build
 # Set working directory
 WORKDIR /app
 
+# Add build arguments
+ARG DOMAIN=localhost
+ENV DOMAIN=$DOMAIN
+
 # Copy package files
 COPY package*.json ./
 
@@ -19,14 +23,17 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
+# Re-declare the build argument and env variable in this stage
+ARG DOMAIN=localhost
+ENV DOMAIN=$DOMAIN
+
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/nginx.conf
 
-# Expose port
-EXPOSE 80
+RUN envsubst '${DOMAIN}' < /etc/nginx/conf.d/nginx.conf > /etc/nginx/conf.d/default.conf && \
+    rm /etc/nginx/conf.d/nginx.conf
 
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"] 

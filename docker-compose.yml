@@ -7,14 +7,19 @@ services:
     environment:
       - DB_DIR=/data/db
       - LOG_DIR=/data/logs
+      - DOMAIN=${DOMAIN:-localhost}
     volumes:
-      - /Users/ndewijer/investment-portfolio/data:/data
-   #   - ./data/db:/data/db
-   #   - ./data/logs:/data/logs
+      - ./data/db:/data/db
+      - ./data/logs:/data/logs
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - DOMAIN=${DOMAIN:-localhost}
     container_name: investment-portfolio-frontend
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
     ports:
       - "80:80"
     depends_on:

@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -42,6 +43,12 @@ module.exports = {
       template: './public/index.html',
       filename: 'index.html',
       inject: true
+    }),
+    new webpack.DefinePlugin({
+      'process.env': {
+        'NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+        'DOMAIN': JSON.stringify(process.env.DOMAIN || 'localhost')
+      }
     })
   ],
   resolve: {

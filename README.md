@@ -26,30 +26,45 @@ git clone https://github.com/ndewijer/investment-portfolio-manager.git
 cd investment-portfolio-manager
 ```
 
-2. Create data directory for persistent storage:
+2. Create .env file in the root directory:
 ```bash
-mkdir -p /path/to/your/data/{db,logs}
+# Set your domain (defaults to localhost if not set)
+DOMAIN=your-domain.com
+
+# Database and logs location
+DB_DIR=/path/to/your/data/db
+LOG_DIR=/path/to/your/data/logs
 ```
 
-3. Update docker-compose.yml with your data directory:
-```yaml
-volumes:
-  - /path/to/your/data:/data
-```
-
-4. Build and start the containers:
+3. Build and start the containers:
 ```bash
 docker compose up -d
 ```
 
-5. Initialize the database:
+4. Initialize the database:
 ```bash
 docker compose exec backend flask seed-db
 ```
 
 The application will be available at:
-- Production: http://localhost:80 (or just http://localhost)
+- Production: https://your-domain.com (or http://localhost if no domain set)
 - Development: http://localhost:3000
+
+### Domain Configuration
+
+The application supports custom domains through environment variables:
+
+1. Production Setup:
+   - Set DOMAIN in .env file
+   - Frontend automatically configures Nginx
+   - Backend CORS settings adapt to the domain
+   - API calls use the correct domain
+
+2. Development Setup:
+   - Uses localhost by default
+   - Frontend runs on port 3000
+   - Backend runs on port 5000
+   - No domain configuration needed
 
 ### Local Development Setup
 
@@ -112,6 +127,7 @@ npm start
   - Nginx serving static files on port 80
   - Handles all frontend routes
   - Proxies /api requests to backend
+  - Supports custom domain configuration
   - Configured for React router support
 - Development: Webpack dev server on port 3000
 
@@ -119,6 +135,7 @@ npm start
 - Production (Docker): 
   - Gunicorn WSGI server on port 5000
   - Accessed through Nginx proxy at /api
+  - Dynamic CORS configuration based on domain
   - Persistent data storage in mounted volume
 - Development: Flask development server on port 5000
 
