@@ -1,4 +1,5 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -8,6 +9,7 @@ module.exports = {
     filename: '[name].bundle.js',
     sourceMapFilename: '[name].js.map',
     path: path.resolve(__dirname, 'build'),
+    clean: true
   },
   module: {
     rules: [
@@ -35,4 +37,14 @@ module.exports = {
       },
     },
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: './public/index.html',
+      filename: 'index.html',
+      inject: true
+    })
+  ],
+  resolve: {
+    extensions: ['.js', '.jsx']
+  }
 };
