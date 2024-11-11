@@ -36,14 +36,15 @@ def create_app():
     app.config['LOG_DIR'] = log_dir
     
     # Get hostname from environment variable
-    hostname = os.environ.get('HOSTNAME', 'localhost')
+    frontend_host = os.environ.get('FRONTEND_HOST', '*')
     
     # Configure CORS with all necessary headers
     CORS(app, 
          resources={r"/*": {
              "origins": [
-                 "http://localhost:3000",
-                 f"http://{hostname}:3000"  # Dynamic frontend host
+                 f"http://{frontend_host}",  # Production HTTP
+                 f"https://{frontend_host}",  # Production HTTPS
+                 "http://localhost:3000",     # Development
              ],
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": [
@@ -51,11 +52,13 @@ def create_app():
                  "Authorization",
                  "Access-Control-Allow-Methods",
                  "Access-Control-Allow-Headers",
-                 "Access-Control-Allow-Origin"
+                 "Access-Control-Allow-Origin",
+                 "Access-Control-Allow-Credentials"
              ],
              "expose_headers": ["Content-Type"],
              "supports_credentials": True,
-             "send_wildcard": False
+             "send_wildcard": False,
+             "max_age": 86400  # Cache preflight requests for 24 hours
          }})
     
     # Configure Flask to handle trailing slashes

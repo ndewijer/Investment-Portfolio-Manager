@@ -4,31 +4,18 @@ services:
     container_name: investment-portfolio-backend
     ports:
       - "5000:5000"
-    env_file:
-      - ./backend/.env
     environment:
       - DB_DIR=/data/db
       - LOG_DIR=/data/logs
     volumes:
-      - ./backend:/app
-      - ./data/db:/data/db
-      - ./data/logs:/data/logs
-      - /app/venv
-    networks:
-      - app-network
+      - /Users/ndewijer/investment-portfolio/data:/data
+   #   - ./data/db:/data/db
+   #   - ./data/logs:/data/logs
 
   frontend:
     build: ./frontend
     container_name: investment-portfolio-frontend
     ports:
-      - "3000:3000"
-    env_file:
-      - ./frontend/.env
+      - "80:80"
     depends_on:
       - backend
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge

@@ -1,17 +1,9 @@
-FROM python:3.11-alpine
-
-# Install build dependencies
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    python3-dev \
-    libffi-dev \
-    openssl-dev \
-    cargo \
-    postgresql-dev
+FROM python:3.13-slim
 
 # Set working directory
 WORKDIR /app
+
+RUN pip install gunicorn
 
 # Copy requirements file
 COPY requirements.txt .
@@ -32,4 +24,5 @@ RUN mkdir -p $DB_DIR $LOG_DIR
 EXPOSE 5000
 
 # Run the application
-CMD ["flask", "run", "--host=0.0.0.0"] 
+#CMD ["flask", "run", "--app", "run:app", "--host=0.0.0.0"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]

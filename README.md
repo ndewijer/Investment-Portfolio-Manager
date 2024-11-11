@@ -12,11 +12,44 @@ A web application for managing investment portfolios, tracking transactions, and
 - CSV import/export
 
 ## Prerequisites
-- Python 3.11+
-- Node.js 20+
-- Docker (optional)
+- Docker and Docker Compose (recommended)
+- Node.js 23+ (for local development only)
+- Python 3.13+ (for local development only)
 
 ## Setup and Running
+
+### Docker Compose Setup (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ndewijer/investment-portfolio-manager.git
+cd investment-portfolio-manager
+```
+
+2. Create data directory for persistent storage:
+```bash
+mkdir -p /path/to/your/data/{db,logs}
+```
+
+3. Update docker-compose.yml with your data directory:
+```yaml
+volumes:
+  - /path/to/your/data:/data
+```
+
+4. Build and start the containers:
+```bash
+docker compose up -d
+```
+
+5. Initialize the database:
+```bash
+docker compose exec backend flask seed-db
+```
+
+The application will be available at:
+- Production: http://localhost:80 (or just http://localhost)
+- Development: http://localhost:3000
 
 ### Local Development Setup
 
@@ -46,12 +79,7 @@ DATABASE_URL=sqlite:///portfolio_manager.db
 LOG_DIR=logs
 ```
 
-5. Initialize the database:
-```bash
-flask seed-db
-```
-
-6. Run the backend:
+5. Run the development server:
 ```bash
 flask run
 ```
@@ -70,71 +98,31 @@ npm install
 3. Create .env file:
 ```bash
 REACT_APP_API_URL=http://localhost:5000/api
-NODE_ENV=development
 ```
 
-4. Run the frontend:
+4. Run the development server (Webpack):
 ```bash
 npm start
 ```
 
-### Docker Setup
+## Architecture
 
-The application can be run using Docker and Docker Compose with configurable storage locations.
+### Frontend
+- Production (Docker): 
+  - Nginx serving static files on port 80
+  - Handles all frontend routes
+  - Proxies /api requests to backend
+  - Configured for React router support
+- Development: Webpack dev server on port 3000
 
-#### Environment Variables
-- `DB_DIR`: Location for the SQLite database (default: ./data/db)
-- `LOG_DIR`: Location for application logs (default: ./data/logs)
+### Backend
+- Production (Docker): 
+  - Gunicorn WSGI server on port 5000
+  - Accessed through Nginx proxy at /api
+  - Persistent data storage in mounted volume
+- Development: Flask development server on port 5000
 
-#### Using Docker Compose (Recommended)
-1. Build and start all services:
-```bash
-make build
-make up
-```
-
-2. Initialize the database:
-```bash
-make init-db
-```
-
-3. View logs:
-```bash
-make logs
-```
-
-4. Stop all services:
-```bash
-make down
-```
-
-#### Using Individual Docker Containers
-
-##### Backend Container
-```bash
-cd backend
-# Build with custom directories
-DB_DIR=/custom/path/db LOG_DIR=/custom/path/logs make build
-# Run the container
-make run
-# Seed the database
-make seed
-```
-
-##### Frontend Container
-```bash
-cd frontend
-make build
-make run
-```
-
-### Accessing the Application
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000/api
-
-## Development
-
-### Project Structure
+## Project Structure
 ```
 Investment-Portfolio-Manager/
 ├── backend/
@@ -153,6 +141,29 @@ Investment-Portfolio-Manager/
         ├── pages/
         └── services/
 ```
+
+## Technologies Used
+
+### Backend
+- Python 3.13
+- Gunicorn (Production WSGI Server)
+- Flask (Development Server)
+- SQLAlchemy (ORM)
+- SQLite (Database)
+- Flask-CORS (Cross-Origin Resource Sharing)
+- PyTZ (Timezone handling)
+
+### Frontend
+- Node.js 23
+- React 18
+- Nginx (Production Server)
+- Webpack (Development Server)
+- React Router (Navigation)
+- Axios (HTTP client)
+- React-DatePicker (Date selection)
+- React-Multi-Select (Advanced select inputs)
+- FontAwesome (Icons)
+
 
 ## Features in Detail
 
@@ -190,44 +201,6 @@ Investment-Portfolio-Manager/
 - CSV templates for data import
 - System settings configuration
 - Logging configuration
-
-## Technologies Used
-
-### Backend
-- Python 3.11
-- Flask (Web Framework)
-- SQLAlchemy (ORM)
-- SQLite (Database)
-- Flask-CORS (Cross-Origin Resource Sharing)
-- PyTZ (Timezone handling)
-
-### Frontend
-- React 18
-- React Router (Navigation)
-- Axios (HTTP client)
-- React-DatePicker (Date selection)
-- React-Multi-Select (Advanced select inputs)
-- FontAwesome (Icons)
-
-### Development Tools
-- Docker
-- Docker Compose
-- Make
-- Git
-
-### Logging
-The application includes comprehensive logging with:
-- Multiple log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-- Database and file logging
-- Configurable log settings via Developer Panel
-- Log viewer interface
-
-### Database
-SQLite database with support for:
-- SQLite with UTC timezone support
-- Custom storage location support
-- Automatic migrations
-- Seed data for testing
 
 ## Contributing
 1. Fork the repository

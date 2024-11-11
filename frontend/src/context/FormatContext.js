@@ -5,55 +5,47 @@ const FormatContext = createContext();
 export const FormatProvider = ({ children }) => {
   const [isEuropeanFormat, setIsEuropeanFormat] = useState(true);
 
-  const formatCurrency = (value) => {
-    const number = parseFloat(value).toFixed(2);
-    const [whole, decimal] = number.split('.');
-    
-    if (isEuropeanFormat) {
-      // European format: € 1.234,56
-      const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      return `€ ${formattedWhole},${decimal}`;
-    } else {
-      // US format: $1,234.56
-      const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      return `$${formattedWhole}.${decimal}`;
-    }
-  };
-
   const formatNumber = (value, decimals = 2) => {
-    const number = parseFloat(value).toFixed(decimals);
-    const [whole, decimal] = number.split('.');
-    
-    if (isEuropeanFormat) {
-      const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      return `${formattedWhole},${decimal}`;
-    } else {
-      const formattedWhole = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-      return `${formattedWhole}.${decimal}`;
-    }
+    if (!value && value !== 0) return '';
+    const num = parseFloat(value);
+    return num.toLocaleString(isEuropeanFormat ? 'nl-NL' : 'en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
   };
 
-  const formatPercentage = (value) => {
-    return `${formatNumber(value, 2)}%`;
+  const formatCurrency = (value) => {
+    if (!value && value !== 0) return '';
+    const num = parseFloat(value);
+    return num.toLocaleString(isEuropeanFormat ? 'nl-NL' : 'en-US', {
+      style: 'currency',
+      currency: isEuropeanFormat ? 'EUR' : 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const formatPercentage = (value, decimals = 2) => {
+    if (!value && value !== 0) return '';
+    const num = parseFloat(value) / 100;
+    return num.toLocaleString(isEuropeanFormat ? 'nl-NL' : 'en-US', {
+      style: 'percent',
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
   };
 
   return (
     <FormatContext.Provider value={{ 
-      isEuropeanFormat, 
-      setIsEuropeanFormat, 
-      formatCurrency, 
       formatNumber, 
-      formatPercentage 
+      formatCurrency, 
+      formatPercentage,
+      isEuropeanFormat, 
+      setIsEuropeanFormat 
     }}>
       {children}
     </FormatContext.Provider>
   );
 };
 
-export const useFormat = () => {
-  const context = useContext(FormatContext);
-  if (!context) {
-    throw new Error('useFormat must be used within a FormatProvider');
-  }
-  return context;
-}; 
+export const useFormat = () => useContext(FormatContext);

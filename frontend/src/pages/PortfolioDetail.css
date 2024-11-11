@@ -635,3 +635,29 @@
   background-color: #2196F3;
   color: white;
 }
+
+.clickable-fund-name {
+  cursor: pointer;
+  color: #2196F3;
+  text-decoration: underline;
+}
+
+.clickable-fund-name:hover {
+  color: #1976D2;
+}
+
+.portfolio-detail-page .input-with-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.portfolio-detail-page .input-with-indicator input {
+  flex-grow: 1;
+}
+
+.portfolio-detail-page .price-found-indicator {
+  color: #4CAF50;
+  margin-left: 10px;
+  font-size: 1.2em;
+}

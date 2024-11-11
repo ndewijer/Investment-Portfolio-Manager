@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import Modal from '../components/Modal';
 import { useFormat } from '../context/FormatContext';
 import './PortfolioDetail.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort, faPlus, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faSort, faPlus, faMoneyBill, faChartLine, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { MultiSelect } from "react-multi-select-component";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import FilterPopup from '../components/FilterPopup';
@@ -47,7 +47,7 @@ const PortfolioDetail = () => {
     shares: '',
     cost_per_share: ''
   });
-  const { formatCurrency, formatNumber } = useFormat();
+  const { formatNumber, formatCurrency, isEUFormat } = useFormat();
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: null,
@@ -82,6 +82,74 @@ const PortfolioDetail = () => {
     message: false,
     source: false
   });
+
+  const navigate = useNavigate();
+
+  const [fundPrices, setFundPrices] = useState({});
+
+  const [priceFound, setPriceFound] = useState(false);
+
+  const fetchFundPrice = async (fundId, date) => {
+    try {
+      const response = await api.get(`/fund-prices/${fundId}`);
+      const prices = response.data;
+      // Create a map of date -> price for easy lookup
+      const priceMap = prices.reduce((acc, price) => {
+        acc[price.date.split('T')[0]] = price.price;
+        return acc;
+      }, {});
+      
+      // Return the priceMap instead of setting state
+      return priceMap;
+    } catch (error) {
+      console.error('Error fetching fund prices:', error);
+      return null;
+    }
+  };
+
+  const handleTransactionDateChange = async (e) => {
+    const date = e.target.value;
+    setPriceFound(false); // Reset price found status
+
+    // Only auto-fill price for buy transactions as sell transactions
+    // often have specific target prices or are executed at market prices
+    // that may differ from historical closing prices
+    if (newTransaction.portfolio_fund_id && newTransaction.type === 'buy') {
+      const selectedFund = portfolioFunds.find(pf => pf.id === newTransaction.portfolio_fund_id);
+      if (selectedFund) {
+        let priceMap = fundPrices[selectedFund.fund_id];
+        
+        // If we don't have prices yet, fetch them
+        if (!priceMap) {
+          priceMap = await fetchFundPrice(selectedFund.fund_id, date);
+          setFundPrices(prev => ({
+            ...prev,
+            [selectedFund.fund_id]: priceMap
+          }));
+        }
+        
+        // Set the price if we have it for this date
+        if (priceMap && priceMap[date]) {
+          setNewTransaction(prev => ({
+            ...prev,
+            date: date,
+            cost_per_share: priceMap[date]
+          }));
+          setPriceFound(true);
+        } else {
+          setNewTransaction(prev => ({
+            ...prev,
+            date: date
+          }));
+        }
+      }
+    } else {
+      setNewTransaction(prev => ({
+        ...prev,
+        date: date
+      }));
+    }
+  };
 
   const fetchPortfolioData = useCallback(async () => {
     try {
@@ -520,6 +588,30 @@ const PortfolioDetail = () => {
     hasDividendFunds: hasDividendFunds
   });
 
+  const handleFundClick = (fundId) => {
+    navigate(`/funds/${fundId}`);
+  };
+
+  // Update handleNumericInput to properly handle pasted values
+  const handleNumericInput = (value) => {
+    // First, check if this is a pasted value with a comma as decimal separator
+    if (value.includes(',') && !value.includes('.')) {
+      // Direct comma to period conversion for pasted values
+      return value.replace(',', '.');
+    }
+
+    // For manually typed values
+    const cleanValue = value.trim();
+    
+    if (isEUFormat) {
+      // Replace any dots (thousand separators) and convert comma to period
+      return cleanValue.replace(/\./g, '').replace(',', '.');
+    } else {
+      // For US format, remove any commas (thousand separators)
+      return cleanValue.replace(/,/g, '');
+    }
+  };
+
   return (
     <div className="portfolio-detail-page">
       {loading ? (
@@ -627,7 +719,14 @@ const PortfolioDetail = () => {
               <tbody>
                 {portfolioFunds.map(portfolioFund => (
                   <tr key={portfolioFund.id}>
-                    <td>{portfolioFund.fund_name}</td>
+                    <td>
+                      <span 
+                        className="clickable-fund-name" 
+                        onClick={() => handleFundClick(portfolioFund.fund_id)}
+                      >
+                        {portfolioFund.fund_name}
+                      </span>
+                    </td>
                     <td>{formatCurrency(portfolioFund.latest_price)}</td>
                     <td>{formatNumber(portfolioFund.total_shares, 6)}</td>
                     <td>{formatCurrency(portfolioFund.average_cost)}</td>
@@ -934,10 +1033,7 @@ const PortfolioDetail = () => {
                 <input
                   type="date"
                   value={newTransaction.date}
-                  onChange={(e) => setNewTransaction({
-                    ...newTransaction,
-                    date: e.target.value
-                  })}
+                  onChange={handleTransactionDateChange}
                   required
                 />
               </div>
@@ -958,28 +1054,37 @@ const PortfolioDetail = () => {
               <div className="form-group">
                 <label>Shares:</label>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={newTransaction.shares}
+                  type="text"
+                  value={formatNumber(newTransaction.shares, 6)}
                   onChange={(e) => setNewTransaction({
                     ...newTransaction,
-                    shares: e.target.value
+                    shares: handleNumericInput(e.target.value)
                   })}
                   required
                 />
               </div>
               <div className="form-group">
                 <label>Cost per Share:</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={newTransaction.cost_per_share}
-                  onChange={(e) => setNewTransaction({
-                    ...newTransaction,
-                    cost_per_share: e.target.value
-                  })}
-                  required
-                />
+                <div className="input-with-indicator">
+                  <input
+                    type="text"
+                    value={formatNumber(newTransaction.cost_per_share, 2)}
+                    onChange={(e) => {
+                      setPriceFound(false);
+                      setNewTransaction({
+                        ...newTransaction,
+                        cost_per_share: handleNumericInput(e.target.value)
+                      });
+                    }}
+                    required
+                  />
+                  {priceFound && (
+                    <FontAwesomeIcon 
+                      icon={faCheck} 
+                      className="price-found-indicator"
+                    />
+                  )}
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="submit">Create Transaction</button>
@@ -1031,7 +1136,7 @@ const PortfolioDetail = () => {
                   <input
                     type="number"
                     step="0.000001"
-                    value={editingTransaction.shares}
+                    value={Number(editingTransaction.shares).toFixed(6)}
                     onChange={(e) => setEditingTransaction({
                       ...editingTransaction,
                       shares: e.target.value
@@ -1044,7 +1149,7 @@ const PortfolioDetail = () => {
                   <input
                     type="number"
                     step="0.01"
-                    value={editingTransaction.cost_per_share}
+                    value={Number(editingTransaction.cost_per_share).toFixed(2)}
                     onChange={(e) => setEditingTransaction({
                       ...editingTransaction,
                       cost_per_share: e.target.value
@@ -1118,12 +1223,11 @@ const PortfolioDetail = () => {
               <div className="form-group">
                 <label>Dividend per Share:</label>
                 <input
-                  type="number"
-                  step="0.0001"
-                  value={newDividend.dividend_per_share}
+                  type="text"
+                  value={formatNumber(newDividend.dividend_per_share, 2)}
                   onChange={(e) => setNewDividend({
                     ...newDividend,
-                    dividend_per_share: e.target.value
+                    dividend_per_share: handleNumericInput(e.target.value)
                   })}
                   required
                 />
@@ -1157,7 +1261,7 @@ const PortfolioDetail = () => {
                     <input
                       type="number"
                       step="0.000001"
-                      value={newDividend.reinvestment_shares || ''}
+                      value={Number(newDividend.reinvestment_shares).toFixed(6) || ''}
                       onChange={(e) => setNewDividend({
                         ...newDividend,
                         reinvestment_shares: e.target.value
@@ -1168,11 +1272,11 @@ const PortfolioDetail = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Reinvestment Price per Share:</label>
+                    <label>Reinvestment Cost per Share:</label>
                     <input
                       type="number"
                       step="0.01"
-                      value={newDividend.reinvestment_price || ''}
+                      value={Number(newDividend.reinvestment_price).toFixed(2) || ''}
                       onChange={(e) => setNewDividend({
                         ...newDividend,
                         reinvestment_price: e.target.value
@@ -1238,12 +1342,11 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Dividend per Share:</label>
                   <input
-                    type="number"
-                    step="0.0001"
-                    value={editingDividend.dividend_per_share}
+                    type="text"
+                    value={formatNumber(editingDividend.dividend_per_share, 2)}
                     onChange={(e) => setEditingDividend({
                       ...editingDividend,
-                      dividend_per_share: e.target.value
+                      dividend_per_share: handleNumericInput(e.target.value)
                     })}
                     required
                   />
@@ -1274,7 +1377,7 @@ const PortfolioDetail = () => {
                       <input
                         type="number"
                         step="0.000001"
-                        value={editingDividend.reinvestment_shares || ''}
+                        value={Number(editingDividend.reinvestment_shares).toFixed(6) || ''}
                         onChange={(e) => setEditingDividend({
                           ...editingDividend,
                           reinvestment_shares: e.target.value
@@ -1289,7 +1392,7 @@ const PortfolioDetail = () => {
                       <input
                         type="number"
                         step="0.01"
-                        value={editingDividend.reinvestment_price || ''}
+                        value={Number(editingDividend.reinvestment_price).toFixed(2) || ''}
                         onChange={(e) => setEditingDividend({
                           ...editingDividend,
                           reinvestment_price: e.target.value
