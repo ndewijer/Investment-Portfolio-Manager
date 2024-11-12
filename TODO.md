@@ -40,4 +40,4 @@
 - [ ] Integration with financial data providers
 - [ ] Mobile app development
 - [ ] Advanced analytics and reporting
-- [ ] Tax optimization suggestions 
+- [ ] Tax optimization suggestions

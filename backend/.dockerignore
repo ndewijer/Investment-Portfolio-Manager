@@ -36,3 +36,10 @@ data
 instance
 logs
 tests
+
+.flake8
+.pre-commit-config.yaml
+scripts/fix_line_length.py
+.pytest_cache
+mypy.ini
+pytest.ini

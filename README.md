@@ -123,7 +123,7 @@ npm start
 ## Architecture
 
 ### Frontend
-- Production (Docker): 
+- Production (Docker):
   - Nginx serving static files on port 80
   - Handles all frontend routes
   - Proxies /api requests to backend
@@ -132,7 +132,7 @@ npm start
 - Development: Webpack dev server on port 3000
 
 ### Backend
-- Production (Docker): 
+- Production (Docker):
   - Gunicorn WSGI server on port 5000
   - Accessed through Nginx proxy at /api
   - Dynamic CORS configuration based on domain
