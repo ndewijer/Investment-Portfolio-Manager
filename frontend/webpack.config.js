@@ -10,18 +10,31 @@ module.exports = (env, argv) => {
   const envFile = isProduction ? '.env.production' : '.env';
   const envVars = dotenv.config({ path: envFile }).parsed || {};
 
+  // Get domain from environment or build args
+  const domain = process.env.DOMAIN || envVars.DOMAIN || 'localhost';
+
   // Create a default environment if .env file doesn't exist
   const defaultEnv = {
     NODE_ENV: isProduction ? 'production' : 'development',
-    DOMAIN: 'localhost',
-    REACT_APP_API_URL: 'http://localhost:5000/api'
+    DOMAIN: domain,
+    REACT_APP_API_URL: isProduction ? 
+      `https://${domain}/api` : 
+      'http://localhost:5000/api'
   };
 
   // Combine default and loaded environment variables
   const combinedEnv = {
     ...defaultEnv,
-    ...envVars
+    ...envVars,
+    DOMAIN: domain  // Ensure domain from build args takes precedence
   };
+
+  // Debugging output
+  // console.log('Webpack build environment:', {
+  //   isProduction,
+  //   domain,
+  //   apiUrl: combinedEnv.REACT_APP_API_URL
+  // });
 
   // Convert environment variables to strings
   const stringifiedEnv = {
