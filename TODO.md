@@ -3,7 +3,7 @@
 ## High Priority
 - [ ] Add user authentication and authorization
 - [ ] Add support for multiple currencies per portfolio
-- [ ] Implement automatic fund price updates
+- [X] Implement automatic fund price updates
 - [ ] Add portfolio rebalancing functionality
 - [X] Add dividend tracking
 

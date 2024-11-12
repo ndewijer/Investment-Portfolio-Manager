@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faSort, faMoneyBill, faChartLine, faCheck } from '@fortawesome/free-solid-svg-icons';
 import { useFormat } from '../context/FormatContext';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import api from '../utils/api';
 import './FundDetail.css';
 import { subMonths } from 'date-fns';
+import { MultiSelect } from "react-multi-select-component";
+import FilterPopup from '../components/FilterPopup';
+import Toast from '../components/Toast';
 
 const FundDetail = () => {
   const { id } = useParams();
@@ -16,7 +19,9 @@ const FundDetail = () => {
   const [priceHistory, setPriceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { formatCurrency } = useFormat();
+  const [loadingPrices, setLoadingPrices] = useState(true);
+  const [priceError, setPriceError] = useState(null);
+  const { formatCurrency, formatNumber, isEuropeanFormat } = useFormat();
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: null,
@@ -28,46 +33,54 @@ const FundDetail = () => {
   const [showAllTableHistory, setShowAllTableHistory] = useState(false);
   const [filteredChartHistory, setFilteredChartHistory] = useState([]);
   const [updating, setUpdating] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const [filteredPriceHistory, setFilteredPriceHistory] = useState([]);
+
+  const fetchFundData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/funds/${id}`);
+      setFund(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching fund:', err);
+      setError(err.response?.data?.user_message || 'Error fetching fund details');
+      // Don't set fund to null if it fails - keep existing data if any
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  const fetchPriceHistory = useCallback(async () => {
+    try {
+      setLoadingPrices(true);
+      const response = await api.get(`/fund-prices/${id}`);
+      const sortedPrices = response.data.sort((a, b) => 
+        new Date(a.date) - new Date(b.date)
+      );
+      setPriceHistory(sortedPrices);
+      setFilteredPriceHistory(filterLastMonth(sortedPrices));
+      setPriceError(null);
+    } catch (err) {
+      console.error('Error fetching price history:', err);
+      setPriceError(err.response?.data?.user_message || 'Error fetching price history');
+    } finally {
+      setLoadingPrices(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    const fetchFundData = async () => {
-      try {
-        setLoading(true);
-        const [fundRes, pricesRes] = await Promise.all([
-          api.get(`/funds/${id}`),
-          api.get(`/fund-prices/${id}`)
-        ]);
-
-        setFund(fundRes.data);
-        const sortedPrices = pricesRes.data.sort((a, b) => 
-          new Date(a.date) - new Date(b.date)
-        );
-        setPriceHistory(sortedPrices);
-        setFilteredChartHistory(filterLastMonth(sortedPrices));
-
-        if (fundRes.data.investment_type === 'fund') {
-          await api.post(`/fund-prices/${id}/update?type=today`);
-          const updatedPricesRes = await api.get(`/fund-prices/${id}`);
-          const updatedSortedPrices = updatedPricesRes.data.sort((a, b) => 
-            new Date(a.date) - new Date(b.date)
-          );
-          setPriceHistory(updatedSortedPrices);
-          setFilteredChartHistory(
-            showAllChartHistory ? updatedSortedPrices : filterLastMonth(updatedSortedPrices)
-          );
-        }
-
-        setError(null);
-      } catch (err) {
-        setError('Error fetching fund data');
-        console.error('Error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFundData();
-  }, [id, showAllChartHistory]);
+    fetchPriceHistory();
+  }, [fetchFundData, fetchPriceHistory]);
+
+  useEffect(() => {
+    if (priceHistory.length > 0) {
+      setFilteredPriceHistory(
+        showAllHistory ? priceHistory : filterLastMonth(priceHistory)
+      );
+    }
+  }, [showAllHistory, priceHistory]);
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -170,44 +183,70 @@ const FundDetail = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!fund) return <div>Fund not found</div>;
+  const handleToggleHistory = () => {
+    setShowAllHistory(prev => !prev);
+  };
+
+  const handleToggleGraphHistory = () => {
+    setShowAllHistory(prev => !prev);
+  };
+
+  if (loading && !fund) {
+    return <div className="loading">Loading fund details...</div>;
+  }
 
   return (
     <div className="fund-detail">
+      {error && (
+        <Toast 
+          message={error}
+          type="error"
+          onClose={() => setError(null)}
+        />
+      )}
+      
+      {priceError && (
+        <Toast 
+          message={priceError}
+          type="error"
+          onClose={() => setPriceError(null)}
+        />
+      )}
+
       <div className="fund-header">
-        <h1>{fund.name}</h1>
-        <div className="fund-info">
-          <div className="info-item">
-            <label>ISIN:</label>
-            <span>{fund.isin}</span>
-          </div>
-          <div className="info-item">
-            <label>Symbol:</label>
-            <span>{fund.symbol}</span>
-          </div>
-          <div className="info-item">
-            <label>Currency:</label>
-            <span>{fund.currency}</span>
-          </div>
-          <div className="info-item">
-            <label>Exchange:</label>
-            <span>{fund.exchange}</span>
-          </div>
-          {fund.dividend_type !== 'none' && (
+        <h1>{fund?.name || 'Fund Details'}</h1>
+        {fund && (
+          <div className="fund-info">
             <div className="info-item">
-              <label>Dividend Type:</label>
-              <span>
-                {fund.dividend_type === 'cash' ? (
-                  <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
-                ) : (
-                  <><FontAwesomeIcon icon={faChartLine} /> Stock</>
-                )}
-              </span>
+              <label>ISIN:</label>
+              <span>{fund.isin}</span>
             </div>
-          )}
-        </div>
+            <div className="info-item">
+              <label>Symbol:</label>
+              <span>{fund.symbol}</span>
+            </div>
+            <div className="info-item">
+              <label>Currency:</label>
+              <span>{fund.currency}</span>
+            </div>
+            <div className="info-item">
+              <label>Exchange:</label>
+              <span>{fund.exchange}</span>
+            </div>
+            {fund.dividend_type !== 'none' && (
+              <div className="info-item">
+                <label>Dividend Type:</label>
+                <span>
+                  {fund.dividend_type === 'cash' ? (
+                    <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
+                  ) : (
+                    <><FontAwesomeIcon icon={faChartLine} /> Stock</>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <section className="price-chart">
@@ -215,38 +254,31 @@ const FundDetail = () => {
           <h2>Price History</h2>
           <button 
             className="toggle-history-button"
-            onClick={handleToggleChartHistory}
+            onClick={handleToggleGraphHistory}
           >
-            {showAllChartHistory ? 'Show Last Month' : 'Show All History'}
+            {showAllHistory ? 'Show Last Month' : 'Show All History'}
           </button>
         </div>
         <div className="chart-container">
           <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={filteredChartHistory}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <LineChart data={filteredPriceHistory}>
               <XAxis 
-                dataKey="date"
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
+                dataKey="date" 
                 tickFormatter={(date) => new Date(date).toLocaleDateString()}
               />
               <YAxis 
-                tick={{ fontSize: 12 }}
                 domain={['auto', 'auto']}
                 tickFormatter={(value) => formatCurrency(value)}
               />
               <Tooltip 
                 formatter={(value) => formatCurrency(value)}
-                labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                labelFormatter={(date) => new Date(date).toLocaleDateString()}
               />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="price"
-                name="Price"
-                stroke="#2196F3"
+              <Line 
+                type="monotone" 
+                dataKey="price" 
+                stroke="#2196F3" 
                 dot={false}
-                strokeWidth={2}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -256,91 +288,86 @@ const FundDetail = () => {
       <section className="price-history">
         <div className="section-header">
           <h2>Price History</h2>
-          <div className="button-group">
-            <button 
-              className="toggle-history-button"
-              onClick={handleToggleTableHistory}
-            >
-              {showAllTableHistory ? 'Show Last Month' : 'Show All History'}
-            </button>
-            <button 
-              className="update-prices-button"
-              onClick={handleUpdateHistoricalPrices}
-              disabled={updating}
-            >
-              {updating ? 'Updating...' : 'Update Missing Prices'}
-            </button>
-          </div>
+          <button 
+            className="toggle-history-button"
+            onClick={handleToggleTableHistory}
+          >
+            {showAllTableHistory ? 'Show Last Month' : 'Show All History'}
+          </button>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>
-                <div className="header-content">
-                  <FontAwesomeIcon 
-                    icon={faFilter} 
-                    className={`filter-icon ${filters.dateFrom || filters.dateTo ? 'active' : ''}`}
-                    onClick={(e) => handleFilterClick(e, 'date')}
-                  />
-                  <span>Date</span>
-                  <FontAwesomeIcon 
-                    icon={faSort} 
-                    className="sort-icon"
-                    onClick={() => handleSort('date')}
-                  />
-                </div>
-                {activeFilter === 'date' && (
-                  <div 
-                    className="filter-popup" 
-                    style={{ 
-                      top: filterPosition.top, 
-                      left: filterPosition.left,
-                      position: 'fixed'
-                    }}
-                  >
-                    <div className="date-picker-container">
-                      <label>From:</label>
-                      <DatePicker
-                        selected={filters.dateFrom}
-                        onChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
-                        dateFormat="yyyy-MM-dd"
-                        isClearable
-                        placeholderText="Start Date"
-                      />
-                      <label>To:</label>
-                      <DatePicker
-                        selected={filters.dateTo}
-                        onChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
-                        dateFormat="yyyy-MM-dd"
-                        isClearable
-                        placeholderText="End Date"
-                        minDate={filters.dateFrom}
-                      />
-                    </div>
+        {loadingPrices ? (
+          <div className="loading">Loading price history...</div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>
+                  <div className="header-content">
+                    <FontAwesomeIcon 
+                      icon={faFilter} 
+                      className={`filter-icon ${filters.dateFrom || filters.dateTo ? 'active' : ''}`}
+                      onClick={(e) => handleFilterClick(e, 'date')}
+                    />
+                    <span>Date</span>
+                    <FontAwesomeIcon 
+                      icon={faSort} 
+                      className="sort-icon"
+                      onClick={() => handleSort('date')}
+                    />
                   </div>
-                )}
-              </th>
-              <th>
-                <div className="header-content">
-                  <span>Price</span>
-                  <FontAwesomeIcon 
-                    icon={faSort} 
-                    className="sort-icon"
-                    onClick={() => handleSort('price')}
-                  />
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {getFilteredPrices().map(price => (
-              <tr key={price.id}>
-                <td>{new Date(price.date).toLocaleDateString()}</td>
-                <td>{formatCurrency(price.price)}</td>
+                  {activeFilter === 'date' && (
+                    <div 
+                      className="filter-popup" 
+                      style={{ 
+                        top: filterPosition.top, 
+                        left: filterPosition.left,
+                        position: 'fixed'
+                      }}
+                    >
+                      <div className="date-picker-container">
+                        <label>From:</label>
+                        <DatePicker
+                          selected={filters.dateFrom}
+                          onChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
+                          dateFormat="yyyy-MM-dd"
+                          isClearable
+                          placeholderText="Start Date"
+                        />
+                        <label>To:</label>
+                        <DatePicker
+                          selected={filters.dateTo}
+                          onChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
+                          dateFormat="yyyy-MM-dd"
+                          isClearable
+                          placeholderText="End Date"
+                          minDate={filters.dateFrom}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </th>
+                <th>
+                  <div className="header-content">
+                    <span>Price</span>
+                    <FontAwesomeIcon 
+                      icon={faSort} 
+                      className="sort-icon"
+                      onClick={() => handleSort('price')}
+                    />
+                  </div>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {getFilteredPrices().map(price => (
+                <tr key={price.id}>
+                  <td>{new Date(price.date).toLocaleDateString()}</td>
+                  <td>{formatCurrency(price.price)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );

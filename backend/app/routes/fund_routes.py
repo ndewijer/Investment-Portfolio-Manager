@@ -6,6 +6,8 @@ from ..services.logging_service import logger, track_request
 from sqlalchemy.exc import IntegrityError
 import yfinance as yf
 from ..services.price_update_service import TodayPriceService, HistoricalPriceService
+from urllib3.exceptions import MaxRetryError, NewConnectionError
+from requests.exceptions import ConnectionError, RequestException
 
 funds = Blueprint('funds', __name__)
 
@@ -124,18 +126,74 @@ def create_fund():
         return jsonify(response), status
 
 @funds.route('/funds/<string:fund_id>', methods=['GET'])
+@track_request
 def get_fund(fund_id):
-    fund = Fund.query.get_or_404(fund_id)
-    return jsonify({
-        'id': fund.id,
-        'name': fund.name,
-        'isin': fund.isin,
-        'symbol': fund.symbol,
-        'currency': fund.currency,
-        'exchange': fund.exchange,
-        'dividend_type': fund.dividend_type.value,
-        'investment_type': fund.investment_type.value
-    })
+    try:
+        fund = Fund.query.get_or_404(fund_id)
+        
+        # Try to get latest price if symbol exists
+        latest_price = None
+        if fund.symbol:
+            try:
+                ticker = yf.Ticker(fund.symbol)
+                latest_price = ticker.info.get('regularMarketPrice')
+            except (ConnectionError, MaxRetryError, NewConnectionError, RequestException) as e:
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.FUND,
+                    message=f"Failed to fetch latest price for {fund.symbol}",
+                    details={
+                        'fund_id': fund_id,
+                        'symbol': fund.symbol,
+                        'error': str(e),
+                        'user_message': f"Unable to fetch current price for {fund.symbol}. Using last known price."
+                    },
+                    http_status=200  # Still return success, just with a warning
+                )
+                # Get last known price from database
+                price_record = FundPrice.query.filter_by(fund_id=fund_id)\
+                    .order_by(FundPrice.date.desc())\
+                    .first()
+                if price_record:
+                    latest_price = price_record.price
+
+        response = {
+            'id': fund.id,
+            'name': fund.name,
+            'symbol': fund.symbol,
+            'isin': fund.isin,
+            'currency': fund.currency,
+            'exchange': fund.exchange,
+            'investment_type': fund.investment_type.value,
+            'dividend_type': fund.dividend_type.value,
+            'latest_price': latest_price
+        }
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.FUND,
+            message=f"Successfully retrieved fund {fund.name}",
+            details={
+                'fund_id': fund_id,
+                'has_latest_price': latest_price is not None
+            }
+        )
+
+        return jsonify(response)
+
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.FUND,
+            message=f"Error retrieving fund: {str(e)}",
+            details={
+                'fund_id': fund_id,
+                'error': str(e),
+                'user_message': "Unable to retrieve fund details. Please try again later."
+            },
+            http_status=500
+        )
+        return jsonify(response), status
 
 @funds.route('/funds/<string:fund_id>', methods=['PUT'])
 @track_request
