@@ -172,12 +172,12 @@ const FundDetail = () => {
         new Date(a.date) - new Date(b.date)
       );
       setPriceHistory(sortedPrices);
-      setFilteredChartHistory(
-        showAllChartHistory ? sortedPrices : filterLastMonth(sortedPrices)
+      setFilteredPriceHistory(
+        showAllHistory ? sortedPrices : filterLastMonth(sortedPrices)
       );
     } catch (error) {
       console.error('Error updating historical prices:', error);
-      alert('Error updating historical prices');
+      alert(error.response?.data?.user_message || 'Error updating historical prices');
     } finally {
       setUpdating(false);
     }
@@ -288,12 +288,21 @@ const FundDetail = () => {
       <section className="price-history">
         <div className="section-header">
           <h2>Price History</h2>
-          <button 
-            className="toggle-history-button"
-            onClick={handleToggleTableHistory}
-          >
-            {showAllTableHistory ? 'Show Last Month' : 'Show All History'}
-          </button>
+          <div className="button-group">
+            <button 
+              className="toggle-history-button"
+              onClick={handleToggleGraphHistory}
+            >
+              {showAllHistory ? 'Show Last Month' : 'Show All History'}
+            </button>
+            <button 
+              className="update-prices-button"
+              onClick={handleUpdateHistoricalPrices}
+              disabled={updating}
+            >
+              {updating ? 'Updating...' : 'Update Missing Prices'}
+            </button>
+          </div>
         </div>
         {loadingPrices ? (
           <div className="loading">Loading price history...</div>
