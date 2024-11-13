@@ -2,6 +2,12 @@
 
 A web application for managing investment portfolios, tracking transactions, and monitoring dividends.
 
+This application was developed as an exploration of Large Language Model (LLM) assisted coding, specifically using Anthropic's Claude. The project aimed to solve a personal challenge of managing multiple Excel spreadsheets tracking various investment fund portfolios, their transactions, and dividend payments. Through iterative development with AI assistance, it evolved into a functional web application that demonstrates both the capabilities and limitations of LLM-guided development.
+
+The app provides core portfolio management features, including transaction tracking, dividend processing (cash and stock) and basic performance visualization. It caters to European funds, supporting currency conversion and formatting.
+
+While functional for personal use, replacing my manual Excel tracking, it is not intended to compete with professional trading or portfolio management platforms as it lacks advanced features found in professional trading platforms, such as user authentication, real-time pricing, or complex trading tools.
+
 ## Features
 - Portfolio management
 - Transaction tracking
@@ -120,96 +126,6 @@ REACT_APP_API_URL=http://localhost:5000/api
 npm start
 ```
 
-### Development Tools Setup
-
-#### Pre-commit Hooks
-The project uses pre-commit hooks to ensure code quality:
-
-1. Install pre-commit:
-```bash
-pip install pre-commit
-```
-
-2. Install the hooks:
-```bash
-pre-commit install
-```
-
-Pre-commit will now run automatically on `git commit`, checking:
-- Code formatting (black, prettier)
-- Linting (flake8)
-- File formatting (trailing spaces, EOF)
-- YAML/JSON validation
-- Large file checks
-
-#### Backend Development Dependencies
-The backend uses separate requirement files:
-- `requirements.txt`: Production dependencies
-- `dev-requirements.txt`: Development tools (linting, formatting)
-
-Install development dependencies:
-```bash
-cd backend
-pip install -r dev-requirements.txt
-```
-
-Development tools include:
-- black: Code formatting
-- flake8: Linting with docstring checking
-- isort: Import sorting
-- autopep8: Code style fixing
-- pydocstyle: Docstring style checking
-
-#### Frontend Development Tools
-The frontend includes:
-- ESLint: JavaScript/React linting
-- Prettier: Code formatting
-- Webpack: Build and development server
-
-Run checks manually:
-```bash
-cd frontend
-npm run lint    # Run ESLint
-npm run format  # Run Prettier
-```
-
-### Docker Setup
-
-The application uses a multi-container setup:
-
-#### Backend Container
-- Base: Python 3.13-slim
-- Gunicorn as WSGI server
-- Environment variables:
-  - DB_DIR: Database location
-  - LOG_DIR: Log files location
-  - DOMAIN: Server domain name
-
-#### Frontend Container
-- Multi-stage build:
-  1. Node.js 23 for building
-  2. Nginx for serving
-- Environment variables:
-  - DOMAIN: Server domain name
-- Nginx configured for:
-  - Static file serving
-  - API proxying
-  - React routing support
-
-#### Volume Management
-Persistent data is stored in:
-```
-./data/
-  ├── db/    # Database files
-  └── logs/  # Application logs
-```
-
-#### Domain Configuration
-Set your domain in the root .env file:
-```bash
-DOMAIN=your-domain.com  # Defaults to localhost
-```
-
 ## Architecture
 
 ### Frontend
@@ -229,6 +145,37 @@ DOMAIN=your-domain.com  # Defaults to localhost
   - Persistent data storage in mounted volume
 - Development: Flask development server on port 5000
 
+## Data Structure
+
+### Historical Price Data
+The application includes historical price data for two Goldman Sachs funds:
+- Goldman Sachs Enhanced Index Sustainable Equity (NL0012125736)
+- Goldman Sachs Enhanced Index Sustainable EM Equity (NL0006311771)
+
+Note: The included CSV files contain historical data up to November 2024. For development and testing purposes, this data is sufficient. In production, rely on the actual historical data from the fund provider.
+
+### CSV Format
+Price history files follow this format:
+```csv
+date,price
+2024-10-30,40.17
+2024-10-29,40.01
+...
+```
+
+### Development Data
+The application includes:
+- Sample portfolios
+- Historical price data (CSV)
+- Generated transactions
+- Simulated dividend payments
+
+When running `flask seed-db`, the application will:
+1. Load historical prices from CSV files
+2. Generate realistic transactions
+3. Create yearly dividend records
+4. Set up sample portfolios
+
 ## Project Structure
 ```
 Investment-Portfolio-Manager/
@@ -238,6 +185,9 @@ Investment-Portfolio-Manager/
 │   │   ├── routes/
 │   │   └── services/
 │   ├── data/
+│   │   ├── seed/
+│   │   │   └── funds/
+│   │   │   │   └── prices/
 │   │   ├── db/
 │   │   └── logs/
 │   └── tests/

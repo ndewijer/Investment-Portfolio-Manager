@@ -27,13 +27,6 @@ module.exports = (env, argv) => {
     DOMAIN: domain, // Ensure domain from build args takes precedence
   };
 
-  // Debugging output
-  // console.log('Webpack build environment:', {
-  //   isProduction,
-  //   domain,
-  //   apiUrl: combinedEnv.REACT_APP_API_URL
-  // });
-
   // Convert environment variables to strings
   const stringifiedEnv = {
     'process.env': Object.keys(combinedEnv).reduce((env, key) => {
@@ -83,6 +76,25 @@ module.exports = (env, argv) => {
       historyApiFallback: true,
       hot: true,
       port: 3000,
+      static: {
+        directory: path.join(__dirname, 'public'),
+        publicPath: '/',
+      },
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false,
+        },
+      },
+      proxy: [
+        {
+          context: ['/api'],
+          target: 'http://localhost:5000',
+          secure: false,
+          pathRewrite: { '^/api': '/api' },
+          changeOrigin: true,
+        },
+      ],
     },
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     performance: {

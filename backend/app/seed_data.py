@@ -8,7 +8,11 @@ This module provides functionality to:
 - Create sample system logs with various levels and categories
 """
 
+import csv
+import os
+import random
 import uuid
+from datetime import datetime, timedelta
 
 from .models import (
     Dividend,
@@ -20,9 +24,186 @@ from .models import (
     LogLevel,
     Portfolio,
     PortfolioFund,
+    ReinvestmentStatus,
     Transaction,
     db,
+    SymbolInfo,
 )
+
+
+def load_fund_prices(fund_id, isin):
+    """Load historical prices from CSV file.
+
+    Args:
+        fund_id (str): The ID of the fund to load prices for.
+        isin (str): The ISIN of the fund to load prices for.
+
+    Returns:
+        list: A list of FundPrice objects.
+    """
+    prices = []
+    csv_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "data",
+        "seed",
+        "funds",
+        "prices",
+        f"{isin}.csv",
+    )
+
+    with open(csv_path, "r") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            prices.append(
+                FundPrice(
+                    id=str(uuid.uuid4()),
+                    fund_id=fund_id,
+                    date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
+                    price=float(row["price"]),
+                )
+            )
+    return prices
+
+
+def generate_transactions(portfolio_fund_id, fund_prices, num_transactions=50):
+    """Generate realistic transactions based on price history.
+
+    Args:
+        portfolio_fund_id (str): The ID of the portfolio fund to generate transactions for.
+        fund_prices (list): A list of FundPrice objects.
+        num_transactions (int): The number of transactions to generate.
+
+    Returns:
+        list: A list of Transaction objects.
+    """
+    transactions = []
+    sorted_prices = sorted(fund_prices, key=lambda x: x.date)
+    available_dates = [price.date for price in sorted_prices]
+
+    # Initial investment
+    initial_date = available_dates[0]
+    initial_price = next(p.price for p in sorted_prices if p.date == initial_date)
+    transactions.append(
+        Transaction(
+            id=str(uuid.uuid4()),
+            portfolio_fund_id=portfolio_fund_id,
+            date=initial_date,
+            type="buy",
+            shares=round(10000 / initial_price, 6),  # €10,000 initial investment
+            cost_per_share=initial_price,
+        )
+    )
+
+    # Generate random transactions throughout the period
+    for _ in range(num_transactions - 1):
+        date = random.choice(available_dates[1:])
+        price = next(p.price for p in sorted_prices if p.date == date)
+
+        # 70% chance of buy, 30% chance of sell
+        transaction_type = "buy" if random.random() < 0.7 else "sell"
+        amount = random.uniform(500, 5000)  # Random amount between €500 and €5000
+        shares = round(amount / price, 6)
+
+        transactions.append(
+            Transaction(
+                id=str(uuid.uuid4()),
+                portfolio_fund_id=portfolio_fund_id,
+                date=date,
+                type=transaction_type,
+                shares=shares,
+                cost_per_share=price,
+            )
+        )
+
+    return sorted(transactions, key=lambda x: x.date)
+
+
+def generate_dividends(portfolio_fund_id, fund_id, fund_prices, dividend_type):
+    """Generate yearly dividend payments.
+
+    Args:
+        portfolio_fund_id (str): The ID of the portfolio fund to generate dividends for.
+        fund_id (str): The ID of the fund to generate dividends for.
+        fund_prices (list): A list of FundPrice objects.
+        dividend_type (DividendType): The type of dividend to generate.
+
+    Returns:
+        list: A list of Dividend objects.
+    """
+    dividends = []
+    sorted_prices = sorted(fund_prices, key=lambda x: x.date)
+    years = set(price.date.year for price in sorted_prices)
+
+    # Get all transactions for this portfolio_fund
+    all_transactions = Transaction.query.filter_by(
+        portfolio_fund_id=portfolio_fund_id
+    ).all()
+
+    for year in years:
+        # Set dividend date to April 15th of each year
+        dividend_date = datetime(year, 4, 15).date()
+        if dividend_date < sorted_prices[0].date:
+            continue
+
+        # Find closest price before dividend date
+        price = next((p.price for p in sorted_prices if p.date <= dividend_date), None)
+        if not price:
+            continue
+
+        # Calculate shares owned at dividend date
+        shares_owned = 0
+        for transaction in all_transactions:
+            if transaction.date <= dividend_date:
+                if transaction.type == "buy":
+                    shares_owned += transaction.shares
+                elif transaction.type == "sell":
+                    shares_owned -= transaction.shares
+
+        if shares_owned <= 0:
+            continue
+
+        # Generate dividend amount (2-4% yearly return)
+        dividend_rate = random.uniform(0.02, 0.04)
+        dividend_per_share = price * dividend_rate
+
+        # Create dividend record
+        dividend = Dividend(
+            id=str(uuid.uuid4()),
+            fund_id=fund_id,
+            portfolio_fund_id=portfolio_fund_id,
+            record_date=dividend_date - timedelta(days=10),
+            ex_dividend_date=dividend_date - timedelta(days=5),
+            shares_owned=shares_owned,
+            dividend_per_share=dividend_per_share,
+            total_amount=shares_owned * dividend_per_share,
+            reinvestment_status=(
+                ReinvestmentStatus.PENDING
+                if dividend_type == DividendType.STOCK
+                else ReinvestmentStatus.COMPLETED
+            ),
+        )
+        dividends.append(dividend)
+
+        # For stock dividends, create reinvestment transaction
+        if dividend_type == DividendType.STOCK:
+            reinvestment_shares = dividend.total_amount / price
+            reinvestment_transaction = Transaction(
+                id=str(uuid.uuid4()),
+                portfolio_fund_id=portfolio_fund_id,
+                date=dividend_date + timedelta(days=2),  # 2 days after dividend date
+                type="buy",
+                shares=reinvestment_shares,
+                cost_per_share=price,
+            )
+            dividend.reinvestment_transaction_id = reinvestment_transaction.id
+            dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
+            dividend.buy_order_date = reinvestment_transaction.date
+
+            # Add reinvestment transaction to list
+            all_transactions.append(reinvestment_transaction)
+
+    return dividends
 
 
 def seed_database():
@@ -115,11 +296,8 @@ def seed_database():
 
     # Create Portfolios
     portfolios = [
-        Portfolio(name="Marit", description="Marit's Portfolio", is_archived=False),
-        Portfolio(name="Tobias", description="Tobias's Portfolio", is_archived=False),
-        Portfolio(
-            name="PytNick", description="Pytrik and Nick's Portfolio", is_archived=False
-        ),
+        Portfolio(name="Kirsten", description="Kirsten's Portfolio", is_archived=False),
+        Portfolio(name="Thomas", description="Thomas's Portfolio", is_archived=False),
         Portfolio(
             name="Test Portfolio",
             description="A test portfolio that is archived",
@@ -134,46 +312,100 @@ def seed_database():
     db.session.add_all(portfolios)
     db.session.commit()
 
-    # Create Funds with dividend types
+    # Create Funds with real data
     funds = [
         Fund(
             name="Goldman Sachs Enhanced Index Sustainable Equity",
             isin="NL0012125736",
+            symbol="GSESA.AS",
             currency="EUR",
             exchange="XAMS",
-            dividend_type=DividendType.STOCK,  # Update dividend type
+            dividend_type=DividendType.STOCK,
         ),
         Fund(
             name="Goldman Sachs Enhanced Index Sustainable EM Equity",
             isin="NL0006311771",
+            symbol="GSEME.AS",
             currency="EUR",
             exchange="XAMS",
-            dividend_type=DividendType.CASH,  # Update dividend type
-        ),
-        Fund(
-            name="Test Fund",
-            isin="TEST000TEST",
-            currency="USD",
-            exchange="NYSE",
-            dividend_type=DividendType.NONE,  # Update dividend type
+            dividend_type=DividendType.STOCK,
         ),
     ]
     db.session.add_all(funds)
     db.session.commit()
 
-    # Create Portfolio-Fund relationships
-    portfolio_funds = [
-        # Marit's Portfolio
-        PortfolioFund(portfolio_id=portfolios[0].id, fund_id=funds[0].id),
-        # Tobias's Portfolio
-        PortfolioFund(portfolio_id=portfolios[1].id, fund_id=funds[0].id),
-        # PytNick's Portfolio
-        PortfolioFund(portfolio_id=portfolios[2].id, fund_id=funds[0].id),
-        PortfolioFund(portfolio_id=portfolios[2].id, fund_id=funds[1].id),
-        # Archived Portfolio
-        PortfolioFund(portfolio_id=portfolios[3].id, fund_id=funds[2].id),
+    # Load historical prices
+    fund_prices = []
+    for fund in funds:
+        fund_prices.extend(load_fund_prices(fund.id, fund.isin))
+    db.session.add_all(fund_prices)
+    db.session.commit()
+
+    # Create Portfolio-Fund relationships with transactions
+    portfolio_funds = []
+    transactions = []
+    dividends = []
+
+    for portfolio in portfolios[:2]:  # First 2 portfolios
+        for fund in funds:
+            pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+            portfolio_funds.append(pf)
+            db.session.add(pf)
+            db.session.commit()
+
+            # Generate transactions and dividends
+            fund_specific_prices = [fp for fp in fund_prices if fp.fund_id == fund.id]
+
+            # Generate initial transactions
+            portfolio_transactions = generate_transactions(pf.id, fund_specific_prices)
+            transactions.extend(portfolio_transactions)
+
+            # Add transactions to database so they're available for dividend calculation
+            db.session.add_all(portfolio_transactions)
+            db.session.commit()
+
+            # Generate dividends and their reinvestment transactions
+            portfolio_dividends = generate_dividends(
+                pf.id, fund.id, fund_specific_prices, fund.dividend_type
+            )
+
+            # Extract reinvestment transactions from dividends
+            reinvestment_transactions = []
+            for dividend in portfolio_dividends:
+                if hasattr(dividend, "reinvestment_transaction"):
+                    reinvestment_transactions.append(dividend.reinvestment_transaction)
+
+            # Add all transactions and dividends
+            transactions.extend(reinvestment_transactions)
+            dividends.extend(portfolio_dividends)
+
+    # Commit all remaining records
+    db.session.add_all(transactions)
+    db.session.add_all(dividends)
+    db.session.commit()
+
+    # Create SymbolInfo records
+    symbol_info = [
+        SymbolInfo(
+            symbol="GSESA.AS",
+            name="Goldman Sachs Enhanced Index Sustainable Equity",
+            exchange="XAMS",
+            currency="EUR",
+            isin="NL0012125736",
+            data_source="manual",
+            is_valid=True,
+        ),
+        SymbolInfo(
+            symbol="GSEME.AS",
+            name="Goldman Sachs Enhanced Index Sustainable EM Equity",
+            exchange="XAMS",
+            currency="EUR",
+            isin="NL0006311771",
+            data_source="manual",
+            is_valid=True,
+        ),
     ]
-    db.session.add_all(portfolio_funds)
+    db.session.add_all(symbol_info)
     db.session.commit()
 
     # Log the seeding completion

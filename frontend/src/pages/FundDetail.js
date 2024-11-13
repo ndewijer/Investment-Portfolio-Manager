@@ -29,6 +29,7 @@ const FundDetail = () => {
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
   const [updating, setUpdating] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [showAllTableHistory, setShowAllTableHistory] = useState(false);
   const [filteredPriceHistory, setFilteredPriceHistory] = useState([]);
 
   const fetchFundData = useCallback(async () => {
@@ -118,14 +119,22 @@ const FundDetail = () => {
   const getFilteredPrices = () => {
     let prices = getSortedPrices();
 
-    return prices.filter((price) => {
+    // Apply date range filter
+    prices = prices.filter((price) => {
       const priceDate = new Date(price.date);
-
       if (filters.dateFrom && priceDate < filters.dateFrom) return false;
       if (filters.dateTo && priceDate > filters.dateTo) return false;
-
       return true;
     });
+
+    // Apply show all/last month filter
+    if (!showAllTableHistory) {
+      const today = new Date();
+      const lastMonth = subMonths(today, 1);
+      prices = prices.filter((price) => new Date(price.date) >= lastMonth);
+    }
+
+    return prices;
   };
 
   const filterLastMonth = (prices) => {
@@ -153,6 +162,10 @@ const FundDetail = () => {
 
   const handleToggleGraphHistory = () => {
     setShowAllHistory((prev) => !prev);
+  };
+
+  const handleToggleTableHistory = () => {
+    setShowAllTableHistory((prev) => !prev);
   };
 
   if (loading && !fund) {
@@ -233,8 +246,8 @@ const FundDetail = () => {
         <div className="section-header">
           <h2>Price History</h2>
           <div className="button-group">
-            <button className="toggle-history-button" onClick={handleToggleGraphHistory}>
-              {showAllHistory ? 'Show Last Month' : 'Show All History'}
+            <button className="toggle-history-button" onClick={handleToggleTableHistory}>
+              {showAllTableHistory ? 'Show Last Month' : 'Show All History'}
             </button>
             <button
               className="update-prices-button"
