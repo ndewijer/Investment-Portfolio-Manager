@@ -30,9 +30,9 @@
 - [ ] Set up CI/CD pipeline
 
 ## Bug Fixes
-- [ ] Fix CORS issues with trailing slashes
+- [X] Fix CORS issues with trailing slashes
 - [ ] Handle edge cases in transaction calculations
-- [ ] Improve error messages for CSV imports
+- [X] Improve error messages for CSV imports
 - [ ] Fix date handling across different timezones
 
 ## Future Features
