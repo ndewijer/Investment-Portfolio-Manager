@@ -20,7 +20,7 @@ updates:
       - "dependencies"
       - "backend"
     reviewers:
-      - "backend-team"
+      - "ndewijer"
 
   # Node.js dependencies
   - package-ecosystem: "npm"
@@ -39,7 +39,7 @@ updates:
       - "dependencies"
       - "frontend"
     reviewers:
-      - "frontend-team"
+      - "ndewijer"
 
   # GitHub Actions dependencies
   - package-ecosystem: "github-actions"

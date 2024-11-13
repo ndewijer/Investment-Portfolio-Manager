@@ -120,6 +120,96 @@ REACT_APP_API_URL=http://localhost:5000/api
 npm start
 ```
 
+### Development Tools Setup
+
+#### Pre-commit Hooks
+The project uses pre-commit hooks to ensure code quality:
+
+1. Install pre-commit:
+```bash
+pip install pre-commit
+```
+
+2. Install the hooks:
+```bash
+pre-commit install
+```
+
+Pre-commit will now run automatically on `git commit`, checking:
+- Code formatting (black, prettier)
+- Linting (flake8)
+- File formatting (trailing spaces, EOF)
+- YAML/JSON validation
+- Large file checks
+
+#### Backend Development Dependencies
+The backend uses separate requirement files:
+- `requirements.txt`: Production dependencies
+- `dev-requirements.txt`: Development tools (linting, formatting)
+
+Install development dependencies:
+```bash
+cd backend
+pip install -r dev-requirements.txt
+```
+
+Development tools include:
+- black: Code formatting
+- flake8: Linting with docstring checking
+- isort: Import sorting
+- autopep8: Code style fixing
+- pydocstyle: Docstring style checking
+
+#### Frontend Development Tools
+The frontend includes:
+- ESLint: JavaScript/React linting
+- Prettier: Code formatting
+- Webpack: Build and development server
+
+Run checks manually:
+```bash
+cd frontend
+npm run lint    # Run ESLint
+npm run format  # Run Prettier
+```
+
+### Docker Setup
+
+The application uses a multi-container setup:
+
+#### Backend Container
+- Base: Python 3.13-slim
+- Gunicorn as WSGI server
+- Environment variables:
+  - DB_DIR: Database location
+  - LOG_DIR: Log files location
+  - DOMAIN: Server domain name
+
+#### Frontend Container
+- Multi-stage build:
+  1. Node.js 23 for building
+  2. Nginx for serving
+- Environment variables:
+  - DOMAIN: Server domain name
+- Nginx configured for:
+  - Static file serving
+  - API proxying
+  - React routing support
+
+#### Volume Management
+Persistent data is stored in:
+```
+./data/
+  ├── db/    # Database files
+  └── logs/  # Application logs
+```
+
+#### Domain Configuration
+Set your domain in the root .env file:
+```bash
+DOMAIN=your-domain.com  # Defaults to localhost
+```
+
 ## Architecture
 
 ### Frontend
