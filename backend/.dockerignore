@@ -1,44 +1,24 @@
+# First exclude everything
+*
+**/*
+
+# Then include only what we need
+!app/
+!requirements.txt
+!run.py
+
+# Exclude any cache/temp files from included directories
 **/__pycache__
-**/.venv
-**/venv
-**/.pytest_cache
-.flaskenv
-
-*.pyc
-*.pyo
-*.pyd
-.Python
-.env
-env
-pip-log.txt
-pip-delete-this-directory.txt
-.tox
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git
-.mypy_cache
-.pytest_cache
-.hypothesis
-
-Makefile
-Dockerfile
-
+**/*.pyc
+**/*.pyo
+**/*.pyd
 **/.DS_Store
-.gitignore
-.dockerignore
+**/.env
+**/*.log
 
-data
-instance
-logs
-tests
-
-.flake8
-scripts/fix_line_length.py
-.pytest_cache
-mypy.ini
-pytest.ini
+# Exclude test and development files from included directories
+**/tests/
+**/.pytest_cache/
+**/.coverage
+**/.mypy_cache/
+**/*.egg-info/

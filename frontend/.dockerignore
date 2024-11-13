@@ -1,12 +1,11 @@
-node_modules
-.env
-Makefile
-Dockerfile
+# Exclude everything
+*
 
-**/.DS_Store
-.gitignore
-.dockerignore
-
-.prettierrc.json
-.babelrc.json
-eslint.config.mjs
+# Include necessary files and directories
+!src/
+!public/
+!package.json
+!package-lock.json
+!nginx.conf
+!webpack.config.js
+!.babelrc
