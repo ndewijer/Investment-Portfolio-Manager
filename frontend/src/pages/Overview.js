@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import './Overview.css';
 import { useFormat } from '../context/FormatContext';
 
@@ -21,9 +30,9 @@ const Overview = () => {
     try {
       const [summaryRes, historyRes] = await Promise.all([
         api.get('/portfolio-summary'),
-        api.get('/portfolio-history')
+        api.get('/portfolio-history'),
       ]);
-      
+
       setPortfolioSummary(summaryRes.data);
       setPortfolioHistory(historyRes.data);
       setError(null);
@@ -36,23 +45,26 @@ const Overview = () => {
   };
 
   const calculateTotalPerformance = () => {
-    const totals = portfolioSummary.reduce((acc, portfolio) => {
-      return {
-        totalValue: acc.totalValue + portfolio.totalValue,
-        totalCost: acc.totalCost + portfolio.totalCost
-      };
-    }, { totalValue: 0, totalCost: 0 });
+    const totals = portfolioSummary.reduce(
+      (acc, portfolio) => {
+        return {
+          totalValue: acc.totalValue + portfolio.totalValue,
+          totalCost: acc.totalCost + portfolio.totalCost,
+        };
+      },
+      { totalValue: 0, totalCost: 0 }
+    );
 
     const performance = ((totals.totalValue / totals.totalCost - 1) * 100).toFixed(2);
     return {
       ...totals,
       performance: performance,
-      gain: totals.totalValue - totals.totalCost
+      gain: totals.totalValue - totals.totalCost,
     };
   };
 
   const formatChartData = () => {
-    return portfolioHistory.map(day => {
+    return portfolioHistory.map((day) => {
       const dayData = {
         date: new Date(day.date).toLocaleDateString(),
       };
@@ -68,8 +80,8 @@ const Overview = () => {
       }
 
       // Add individual portfolio values only if they exist on this day
-      portfolioSummary.forEach(portfolio => {
-        const portfolioData = day.portfolios.find(p => p.id === portfolio.id);
+      portfolioSummary.forEach((portfolio) => {
+        const portfolioData = day.portfolios.find((p) => p.id === portfolio.id);
         if (portfolioData) {
           dayData[`${portfolio.name} Value`] = portfolioData.value;
           dayData[`${portfolio.name} Cost`] = portfolioData.cost;
@@ -137,35 +149,31 @@ const Overview = () => {
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="date"
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
-              />
-              <YAxis 
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+              <YAxis
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
               />
-              <Tooltip 
-                formatter={(value) => value ? formatCurrency(value) : 'N/A'}
+              <Tooltip
+                formatter={(value) => (value ? formatCurrency(value) : 'N/A')}
                 labelFormatter={(label) => `Date: ${label}`}
               />
               <Legend />
               {/* Total Value and Cost lines */}
-              <Line 
-                type="monotone" 
-                dataKey="totalValue" 
-                name="Total Value" 
-                stroke="#8884d8" 
+              <Line
+                type="monotone"
+                dataKey="totalValue"
+                name="Total Value"
+                stroke="#8884d8"
                 dot={false}
                 strokeWidth={2}
                 connectNulls={true}
               />
-              <Line 
-                type="monotone" 
-                dataKey="totalCost" 
-                name="Total Cost" 
-                stroke="#82ca9d" 
+              <Line
+                type="monotone"
+                dataKey="totalCost"
+                name="Total Cost"
+                stroke="#82ca9d"
                 dot={false}
                 strokeWidth={2}
                 connectNulls={true}
@@ -214,18 +222,18 @@ const Overview = () => {
             </tr>
           </thead>
           <tbody>
-            {portfolioSummary.map(portfolio => {
+            {portfolioSummary.map((portfolio) => {
               const gain = portfolio.totalValue - portfolio.totalCost;
-              const performance = ((portfolio.totalValue / portfolio.totalCost - 1) * 100).toFixed(2);
-              
+              const performance = ((portfolio.totalValue / portfolio.totalCost - 1) * 100).toFixed(
+                2
+              );
+
               return (
                 <tr key={portfolio.id} onClick={() => handlePortfolioClick(portfolio.id)}>
                   <td>{portfolio.name}</td>
                   <td>{formatCurrency(portfolio.totalValue)}</td>
                   <td>{formatCurrency(portfolio.totalCost)}</td>
-                  <td className={gain >= 0 ? 'positive' : 'negative'}>
-                    {formatCurrency(gain)}
-                  </td>
+                  <td className={gain >= 0 ? 'positive' : 'negative'}>{formatCurrency(gain)}</td>
                   <td className={performance >= 0 ? 'positive' : 'negative'}>
                     {formatPercentage(performance)}
                   </td>

@@ -10,7 +10,7 @@ export const FormatProvider = ({ children }) => {
     const num = parseFloat(value);
     return num.toLocaleString(isEuropeanFormat ? 'nl-NL' : 'en-US', {
       minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
+      maximumFractionDigits: decimals,
     });
   };
 
@@ -21,7 +21,7 @@ export const FormatProvider = ({ children }) => {
       style: 'currency',
       currency: isEuropeanFormat ? 'EUR' : 'USD',
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     });
   };
 
@@ -31,18 +31,20 @@ export const FormatProvider = ({ children }) => {
     return num.toLocaleString(isEuropeanFormat ? 'nl-NL' : 'en-US', {
       style: 'percent',
       minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
+      maximumFractionDigits: decimals,
     });
   };
 
   return (
-    <FormatContext.Provider value={{ 
-      formatNumber, 
-      formatCurrency, 
-      formatPercentage,
-      isEuropeanFormat, 
-      setIsEuropeanFormat 
-    }}>
+    <FormatContext.Provider
+      value={{
+        formatNumber,
+        formatCurrency,
+        formatPercentage,
+        isEuropeanFormat,
+        setIsEuropeanFormat,
+      }}
+    >
       {children}
     </FormatContext.Provider>
   );

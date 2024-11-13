@@ -2,20 +2,19 @@ import React, { useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import './FilterPopup.css';
 
-const FilterPopup = ({ 
-  type, 
-  isOpen, 
-  onClose, 
-  position, 
-  value, 
+const FilterPopup = ({
+  type,
+  isOpen,
+  onClose,
+  position,
+  value,
   onChange,
   options = [],
-  dateRange = false,
   fromDate,
   toDate,
   onFromDateChange,
   onToDateChange,
-  Component
+  Component,
 }) => {
   const popupRef = useRef(null);
 
@@ -90,11 +89,14 @@ const FilterPopup = ({
             multiple
             value={Array.isArray(value) ? value : []}
             onChange={(e) => {
-              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+              const selectedOptions = Array.from(
+                e.target.selectedOptions,
+                (option) => option.value
+              );
               onChange(selectedOptions);
             }}
           >
-            {options.map(option => (
+            {options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -154,12 +156,12 @@ const FilterPopup = ({
   };
 
   return (
-    <div 
+    <div
       className="filter-popup"
       ref={popupRef}
       style={{
         top: position.top,
-        left: position.left
+        left: position.left,
       }}
     >
       {renderContent()}
@@ -167,4 +169,4 @@ const FilterPopup = ({
   );
 };
 
-export default FilterPopup; 
+export default FilterPopup;

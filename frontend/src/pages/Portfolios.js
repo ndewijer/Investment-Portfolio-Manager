@@ -34,13 +34,8 @@ const Portfolios = () => {
     e.preventDefault();
     try {
       if (editingPortfolio) {
-        const response = await api.put(
-          `/portfolios/${editingPortfolio.id}`,
-          editingPortfolio
-        );
-        setPortfolios(portfolios.map(p => 
-          p.id === editingPortfolio.id ? response.data : p
-        ));
+        const response = await api.put(`/portfolios/${editingPortfolio.id}`, editingPortfolio);
+        setPortfolios(portfolios.map((p) => (p.id === editingPortfolio.id ? response.data : p)));
       } else {
         const response = await api.post('/portfolios', newPortfolio);
         setPortfolios([...portfolios, response.data]);
@@ -57,7 +52,7 @@ const Portfolios = () => {
     if (window.confirm('Are you sure you want to delete this portfolio?')) {
       try {
         await api.delete(`/portfolios/${id}`);
-        setPortfolios(portfolios.filter(p => p.id !== id));
+        setPortfolios(portfolios.filter((p) => p.id !== id));
       } catch (error) {
         console.error('Error deleting portfolio:', error);
       }
@@ -97,18 +92,20 @@ const Portfolios = () => {
       </div>
 
       <div className="portfolios-grid">
-        {portfolios.map(portfolio => (
+        {portfolios.map((portfolio) => (
           <div key={portfolio.id} className="portfolio-card">
             <h2>{portfolio.name}</h2>
             <p>{portfolio.description}</p>
             <div className="portfolio-actions">
-              <button onClick={() => handleViewPortfolio(portfolio.id)}>
-                View Details
+              <button onClick={() => handleViewPortfolio(portfolio.id)}>View Details</button>
+              <button
+                onClick={() => {
+                  setEditingPortfolio(portfolio);
+                  setIsModalOpen(true);
+                }}
+              >
+                Edit
               </button>
-              <button onClick={() => {
-                setEditingPortfolio(portfolio);
-                setIsModalOpen(true);
-              }}>Edit</button>
               <button onClick={() => handleDelete(portfolio.id)}>Delete</button>
               {portfolio.is_archived ? (
                 <button onClick={() => handleUnarchive(portfolio.id)}>Unarchive</button>
@@ -120,13 +117,13 @@ const Portfolios = () => {
         ))}
       </div>
 
-      <Modal 
+      <Modal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
           setEditingPortfolio(null);
         }}
-        title={editingPortfolio ? "Edit Portfolio" : "Add Portfolio"}
+        title={editingPortfolio ? 'Edit Portfolio' : 'Add Portfolio'}
       >
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -136,9 +133,9 @@ const Portfolios = () => {
               value={editingPortfolio ? editingPortfolio.name : newPortfolio.name}
               onChange={(e) => {
                 if (editingPortfolio) {
-                  setEditingPortfolio({...editingPortfolio, name: e.target.value});
+                  setEditingPortfolio({ ...editingPortfolio, name: e.target.value });
                 } else {
-                  setNewPortfolio({...newPortfolio, name: e.target.value});
+                  setNewPortfolio({ ...newPortfolio, name: e.target.value });
                 }
               }}
               required
@@ -150,19 +147,24 @@ const Portfolios = () => {
               value={editingPortfolio ? editingPortfolio.description : newPortfolio.description}
               onChange={(e) => {
                 if (editingPortfolio) {
-                  setEditingPortfolio({...editingPortfolio, description: e.target.value});
+                  setEditingPortfolio({ ...editingPortfolio, description: e.target.value });
                 } else {
-                  setNewPortfolio({...newPortfolio, description: e.target.value});
+                  setNewPortfolio({ ...newPortfolio, description: e.target.value });
                 }
               }}
             />
           </div>
           <div className="modal-actions">
-            <button type="submit">{editingPortfolio ? "Update" : "Create"}</button>
-            <button type="button" onClick={() => {
-              setIsModalOpen(false);
-              setEditingPortfolio(null);
-            }}>Cancel</button>
+            <button type="submit">{editingPortfolio ? 'Update' : 'Create'}</button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsModalOpen(false);
+                setEditingPortfolio(null);
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </form>
       </Modal>

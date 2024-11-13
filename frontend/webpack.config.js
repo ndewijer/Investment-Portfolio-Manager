@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
-  
+
   // Load environment variables
   const envFile = isProduction ? '.env.production' : '.env';
   const envVars = dotenv.config({ path: envFile }).parsed || {};
@@ -17,16 +17,14 @@ module.exports = (env, argv) => {
   const defaultEnv = {
     NODE_ENV: isProduction ? 'production' : 'development',
     DOMAIN: domain,
-    REACT_APP_API_URL: isProduction ? 
-      `https://${domain}/api` : 
-      'http://localhost:5000/api'
+    REACT_APP_API_URL: isProduction ? `https://${domain}/api` : 'http://localhost:5000/api',
   };
 
   // Combine default and loaded environment variables
   const combinedEnv = {
     ...defaultEnv,
     ...envVars,
-    DOMAIN: domain  // Ensure domain from build args takes precedence
+    DOMAIN: domain, // Ensure domain from build args takes precedence
   };
 
   // Debugging output
@@ -41,7 +39,7 @@ module.exports = (env, argv) => {
     'process.env': Object.keys(combinedEnv).reduce((env, key) => {
       env[key] = JSON.stringify(combinedEnv[key]);
       return env;
-    }, {})
+    }, {}),
   };
 
   return {
@@ -50,7 +48,7 @@ module.exports = (env, argv) => {
       path: path.resolve(__dirname, 'build'),
       filename: '[name].bundle.js',
       publicPath: '/',
-      clean: true
+      clean: true,
     },
     module: {
       rules: [
@@ -60,35 +58,35 @@ module.exports = (env, argv) => {
           use: {
             loader: 'babel-loader',
             options: {
-              presets: ['@babel/preset-env', '@babel/preset-react']
-            }
-          }
+              presets: ['@babel/preset-env', '@babel/preset-react'],
+            },
+          },
         },
         {
           test: /\.css$/,
-          use: ['style-loader', 'css-loader']
-        }
-      ]
+          use: ['style-loader', 'css-loader'],
+        },
+      ],
     },
     plugins: [
       new HtmlWebpackPlugin({
         template: './public/index.html',
         filename: 'index.html',
-        inject: true
+        inject: true,
       }),
-      new webpack.DefinePlugin(stringifiedEnv)
+      new webpack.DefinePlugin(stringifiedEnv),
     ],
     resolve: {
-      extensions: ['.js', '.jsx']
+      extensions: ['.js', '.jsx'],
     },
     devServer: {
       historyApiFallback: true,
       hot: true,
-      port: 3000
+      port: 3000,
     },
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     performance: {
-      hints: false
-    }
+      hints: false,
+    },
   };
 };

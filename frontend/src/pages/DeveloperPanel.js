@@ -12,13 +12,13 @@ const DeveloperPanel = () => {
     from_currency: 'USD',
     to_currency: 'EUR',
     rate: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
   });
 
   const [fundPrice, setFundPrice] = useState({
     fund_id: '',
     price: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
   });
 
   const [file, setFile] = useState(null);
@@ -36,7 +36,7 @@ const DeveloperPanel = () => {
   const { isEuropeanFormat, setIsEuropeanFormat } = useFormat();
   const [loggingSettings, setLoggingSettings] = useState({
     enabled: true,
-    level: 'info'
+    level: 'info',
   });
 
   const fetchCurrentExchangeRate = useCallback(async () => {
@@ -45,15 +45,19 @@ const DeveloperPanel = () => {
         params: {
           from_currency: exchangeRate.from_currency,
           to_currency: exchangeRate.to_currency,
-          date: exchangeRate.date
-        }
+          date: exchangeRate.date,
+        },
       });
-      
+
       if (response.data) {
         setExchangeRate(response.data);
       }
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching current exchange rate');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error fetching current exchange rate'
+      );
     }
   }, [exchangeRate.from_currency, exchangeRate.to_currency, exchangeRate.date]);
 
@@ -69,12 +73,14 @@ const DeveloperPanel = () => {
     try {
       const [fundsRes, portfoliosRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/funds`),
-        axios.get(`${API_BASE_URL}/portfolios`)
+        axios.get(`${API_BASE_URL}/portfolios`),
       ]);
       setFunds(fundsRes.data);
       setPortfolios(portfoliosRes.data);
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching data');
+      setError(
+        error.response?.data?.message || error.response?.data?.error || 'Error fetching data'
+      );
     }
   };
 
@@ -83,7 +89,11 @@ const DeveloperPanel = () => {
       const response = await axios.get(`${API_BASE_URL}/csv-template`);
       setCsvTemplate(response.data);
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching CSV template');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error fetching CSV template'
+      );
     }
   };
 
@@ -92,7 +102,11 @@ const DeveloperPanel = () => {
       const response = await axios.get(`${API_BASE_URL}/fund-price-template`);
       setFundPriceTemplate(response.data);
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching fund price template');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error fetching fund price template'
+      );
     }
   };
 
@@ -101,7 +115,11 @@ const DeveloperPanel = () => {
       const response = await axios.get(`${API_BASE_URL}/system-settings/logging`);
       setLoggingSettings(response.data);
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching logging settings');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error fetching logging settings'
+      );
     }
   };
 
@@ -111,7 +129,11 @@ const DeveloperPanel = () => {
       setLoggingSettings(response.data);
       setMessage('Logging settings updated successfully');
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error updating logging settings');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error updating logging settings'
+      );
     }
   };
 
@@ -123,7 +145,11 @@ const DeveloperPanel = () => {
       setError('');
       fetchCurrentExchangeRate();
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error setting exchange rate');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error setting exchange rate'
+      );
     }
   };
 
@@ -134,10 +160,12 @@ const DeveloperPanel = () => {
       setMessage(`Fund price set successfully: ${response.data.price}`);
       setError('');
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error setting fund price');
+      setError(
+        error.response?.data?.message || error.response?.data?.error || 'Error setting fund price'
+      );
     }
   };
-  
+
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!file || !selectedPortfolioId || !selectedFundId) {
@@ -150,11 +178,13 @@ const DeveloperPanel = () => {
     reader.onload = async (event) => {
       const content = event.target.result;
       const firstLine = content.split('\n')[0].trim();
-      const headers = firstLine.split(',').map(h => h.trim());
+      const headers = firstLine.split(',').map((h) => h.trim());
 
       // Check if this is a fund price file
       if (headers.length === 2 && headers.includes('date') && headers.includes('price')) {
-        setError('This appears to be a fund price file. Please use the "Import Fund Prices" section below to import fund prices.');
+        setError(
+          'This appears to be a fund price file. Please use the "Import Fund Prices" section below to import fund prices.'
+        );
         return;
       }
 
@@ -166,15 +196,19 @@ const DeveloperPanel = () => {
       try {
         const response = await axios.post(`${API_BASE_URL}/import-transactions`, formData, {
           headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
         });
         setMessage(response.data.message);
         setError('');
       } catch (error) {
-        setError(error.response?.data?.message || error.response?.data?.error || 'Error importing transactions');
+        setError(
+          error.response?.data?.message ||
+            error.response?.data?.error ||
+            'Error importing transactions'
+        );
         console.error(error);
-      } 
+      }
     };
 
     reader.readAsText(file);
@@ -194,13 +228,17 @@ const DeveloperPanel = () => {
     try {
       const response = await axios.post(`${API_BASE_URL}/import-fund-prices`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
       setMessage(response.data.message);
       setError('');
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error importing fund prices');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error importing fund prices'
+      );
       console.error(error);
     }
   };
@@ -212,10 +250,16 @@ const DeveloperPanel = () => {
 
   const fetchPortfolioFunds = async (portfolioId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/portfolio-funds?portfolio_id=${portfolioId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/portfolio-funds?portfolio_id=${portfolioId}`
+      );
       setPortfolioFunds(response.data);
     } catch (error) {
-      setError(error.response?.data?.message || error.response?.data?.error || 'Error fetching portfolio funds');
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Error fetching portfolio funds'
+      );
     }
   };
 
@@ -234,16 +278,8 @@ const DeveloperPanel = () => {
     <div className="developer-panel">
       <h1>Developer Panel</h1>
 
-      <Toast 
-        message={message} 
-        type="success" 
-        onClose={clearMessages}
-      />
-      <Toast 
-        message={error} 
-        type="error" 
-        onClose={clearMessages}
-      />
+      <Toast message={message} type="success" onClose={clearMessages} />
+      <Toast message={error} type="error" onClose={clearMessages} />
 
       <section className="exchange-rate-section">
         <h2>Set Exchange Rate</h2>
@@ -253,7 +289,7 @@ const DeveloperPanel = () => {
             <input
               type="text"
               value={exchangeRate.from_currency}
-              onChange={(e) => setExchangeRate({...exchangeRate, from_currency: e.target.value})}
+              onChange={(e) => setExchangeRate({ ...exchangeRate, from_currency: e.target.value })}
               required
             />
           </div>
@@ -262,7 +298,7 @@ const DeveloperPanel = () => {
             <input
               type="text"
               value={exchangeRate.to_currency}
-              onChange={(e) => setExchangeRate({...exchangeRate, to_currency: e.target.value})}
+              onChange={(e) => setExchangeRate({ ...exchangeRate, to_currency: e.target.value })}
               required
             />
           </div>
@@ -272,7 +308,7 @@ const DeveloperPanel = () => {
               type="number"
               step="0.0001"
               value={exchangeRate.rate}
-              onChange={(e) => setExchangeRate({...exchangeRate, rate: e.target.value})}
+              onChange={(e) => setExchangeRate({ ...exchangeRate, rate: e.target.value })}
               required
             />
           </div>
@@ -281,7 +317,7 @@ const DeveloperPanel = () => {
             <input
               type="date"
               value={exchangeRate.date}
-              onChange={(e) => setExchangeRate({...exchangeRate, date: e.target.value})}
+              onChange={(e) => setExchangeRate({ ...exchangeRate, date: e.target.value })}
               required
             />
           </div>
@@ -296,11 +332,11 @@ const DeveloperPanel = () => {
             <label>Fund:</label>
             <select
               value={fundPrice.fund_id}
-              onChange={(e) => setFundPrice({...fundPrice, fund_id: e.target.value})}
+              onChange={(e) => setFundPrice({ ...fundPrice, fund_id: e.target.value })}
               required
             >
               <option value="">Select a fund...</option>
-              {funds.map(fund => (
+              {funds.map((fund) => (
                 <option key={fund.id} value={fund.id}>
                   {fund.name} ({fund.isin})
                 </option>
@@ -313,7 +349,7 @@ const DeveloperPanel = () => {
               type="number"
               step="0.01"
               value={fundPrice.price}
-              onChange={(e) => setFundPrice({...fundPrice, price: e.target.value})}
+              onChange={(e) => setFundPrice({ ...fundPrice, price: e.target.value })}
               required
             />
           </div>
@@ -322,7 +358,7 @@ const DeveloperPanel = () => {
             <input
               type="date"
               value={fundPrice.date}
-              onChange={(e) => setFundPrice({...fundPrice, date: e.target.value})}
+              onChange={(e) => setFundPrice({ ...fundPrice, date: e.target.value })}
               required
             />
           </div>
@@ -350,13 +386,9 @@ const DeveloperPanel = () => {
         <form onSubmit={handleFileUpload}>
           <div className="form-group">
             <label>Portfolio:</label>
-            <select
-              value={selectedPortfolioId}
-              onChange={handlePortfolioSelect}
-              required
-            >
+            <select value={selectedPortfolioId} onChange={handlePortfolioSelect} required>
               <option value="">Select a portfolio...</option>
-              {portfolios.map(portfolio => (
+              {portfolios.map((portfolio) => (
                 <option key={portfolio.id} value={portfolio.id}>
                   {portfolio.name}
                 </option>
@@ -372,7 +404,7 @@ const DeveloperPanel = () => {
               disabled={!selectedPortfolioId}
             >
               <option value="">Select a fund...</option>
-              {portfolioFunds.map(pf => (
+              {portfolioFunds.map((pf) => (
                 <option key={pf.id} value={pf.id}>
                   {pf.fund_name}
                 </option>
@@ -418,7 +450,7 @@ const DeveloperPanel = () => {
               required
             >
               <option value="">Select a fund...</option>
-              {funds.map(fund => (
+              {funds.map((fund) => (
                 <option key={fund.id} value={fund.id}>
                   {fund.name} ({fund.isin})
                 </option>
@@ -461,10 +493,12 @@ const DeveloperPanel = () => {
           <label>Logging Status:</label>
           <select
             value={loggingSettings.enabled ? 'enabled' : 'disabled'}
-            onChange={(e) => handleLoggingSettingsUpdate({
-              ...loggingSettings,
-              enabled: e.target.value === 'enabled'
-            })}
+            onChange={(e) =>
+              handleLoggingSettingsUpdate({
+                ...loggingSettings,
+                enabled: e.target.value === 'enabled',
+              })
+            }
           >
             <option value="enabled">Enabled</option>
             <option value="disabled">Disabled</option>
@@ -474,10 +508,12 @@ const DeveloperPanel = () => {
           <label>Minimum Log Level:</label>
           <select
             value={loggingSettings.level}
-            onChange={(e) => handleLoggingSettingsUpdate({
-              ...loggingSettings,
-              level: e.target.value
-            })}
+            onChange={(e) =>
+              handleLoggingSettingsUpdate({
+                ...loggingSettings,
+                level: e.target.value,
+              })
+            }
             disabled={!loggingSettings.enabled}
           >
             <option value="debug">Debug</option>
@@ -490,8 +526,12 @@ const DeveloperPanel = () => {
         <div className="logging-info">
           <p>Current logging configuration:</p>
           <ul>
-            <li>Status: <strong>{loggingSettings.enabled ? 'Enabled' : 'Disabled'}</strong></li>
-            <li>Minimum Level: <strong>{loggingSettings.level.toUpperCase()}</strong></li>
+            <li>
+              Status: <strong>{loggingSettings.enabled ? 'Enabled' : 'Disabled'}</strong>
+            </li>
+            <li>
+              Minimum Level: <strong>{loggingSettings.level.toUpperCase()}</strong>
+            </li>
           </ul>
           {loggingSettings.enabled && (
             <Link to="/logs" className="view-logs-button">
@@ -504,4 +544,4 @@ const DeveloperPanel = () => {
   );
 };
 
-export default DeveloperPanel; 
+export default DeveloperPanel;

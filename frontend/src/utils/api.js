@@ -2,12 +2,12 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
 // Enable axios debug mode
-axios.interceptors.request.use(request => {
+axios.interceptors.request.use((request) => {
   console.log('Starting Request:', request);
   return request;
 });
 
-axios.interceptors.response.use(response => {
+axios.interceptors.response.use((response) => {
   console.log('Response:', response);
   return response;
 });
@@ -19,19 +19,19 @@ const api = axios.create({
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
   },
-  withCredentials: false
+  withCredentials: false,
 });
 
 // Add more detailed logging to the request interceptor
 api.interceptors.request.use(
-  config => {
+  (config) => {
     console.log('API Request:', {
       url: config.url,
       method: config.method,
       data: config.data,
-      headers: config.headers
+      headers: config.headers,
     });
-    
+
     if (config.url) {
       config.url = config.url.replace(/\/+$/, '');
       if (config.url.startsWith('/')) {
@@ -40,7 +40,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  error => {
+  (error) => {
     console.error('Request Error:', error);
     return Promise.reject(error);
   }
@@ -48,20 +48,20 @@ api.interceptors.request.use(
 
 // Add more detailed logging to the response interceptor
 api.interceptors.response.use(
-  response => {
+  (response) => {
     console.log('API Response:', {
       status: response.status,
       data: response.data,
-      headers: response.headers
+      headers: response.headers,
     });
     return response;
   },
-  error => {
+  (error) => {
     if (error.response) {
       console.error('Response Error:', {
         status: error.response.status,
         data: error.response.data,
-        headers: error.response.headers
+        headers: error.response.headers,
       });
     } else if (error.request) {
       console.error('Request Error:', error.request);
@@ -72,4 +72,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+export default api;

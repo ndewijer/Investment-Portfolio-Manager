@@ -36,4 +36,4 @@ COPY nginx.conf /etc/nginx/conf.d/nginx.conf
 RUN envsubst '${DOMAIN}' < /etc/nginx/conf.d/nginx.conf > /etc/nginx/conf.d/default.conf && \
     rm /etc/nginx/conf.d/nginx.conf
 
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["nginx", "-g", "daemon off;"]

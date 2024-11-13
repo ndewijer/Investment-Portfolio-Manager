@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort, faMoneyBill, faChartLine, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faSort, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { useFormat } from '../context/FormatContext';
 import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
+import 'react-datepicker/dist/react-datepicker.css';
 import api from '../utils/api';
 import './FundDetail.css';
 import { subMonths } from 'date-fns';
-import { MultiSelect } from "react-multi-select-component";
-import FilterPopup from '../components/FilterPopup';
 import Toast from '../components/Toast';
 
 const FundDetail = () => {
@@ -21,7 +19,7 @@ const FundDetail = () => {
   const [error, setError] = useState(null);
   const [loadingPrices, setLoadingPrices] = useState(true);
   const [priceError, setPriceError] = useState(null);
-  const { formatCurrency, formatNumber, isEuropeanFormat } = useFormat();
+  const { formatCurrency } = useFormat();
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: null,
@@ -29,9 +27,6 @@ const FundDetail = () => {
   });
   const [activeFilter, setActiveFilter] = useState(null);
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
-  const [showAllChartHistory, setShowAllChartHistory] = useState(false);
-  const [showAllTableHistory, setShowAllTableHistory] = useState(false);
-  const [filteredChartHistory, setFilteredChartHistory] = useState([]);
   const [updating, setUpdating] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [filteredPriceHistory, setFilteredPriceHistory] = useState([]);
@@ -55,9 +50,7 @@ const FundDetail = () => {
     try {
       setLoadingPrices(true);
       const response = await api.get(`/fund-prices/${id}`);
-      const sortedPrices = response.data.sort((a, b) => 
-        new Date(a.date) - new Date(b.date)
-      );
+      const sortedPrices = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
       setPriceHistory(sortedPrices);
       setFilteredPriceHistory(filterLastMonth(sortedPrices));
       setPriceError(null);
@@ -76,26 +69,24 @@ const FundDetail = () => {
 
   useEffect(() => {
     if (priceHistory.length > 0) {
-      setFilteredPriceHistory(
-        showAllHistory ? priceHistory : filterLastMonth(priceHistory)
-      );
+      setFilteredPriceHistory(showAllHistory ? priceHistory : filterLastMonth(priceHistory));
     }
   }, [showAllHistory, priceHistory]);
 
   const handleSort = (key) => {
-    setSortConfig(prevConfig => ({
+    setSortConfig((prevConfig) => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
     }));
   };
 
   const handleFilterClick = (e, filterType) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const headerCell = e.currentTarget.closest('th');
     const rect = headerCell.getBoundingClientRect();
-    
+
     if (activeFilter === filterType) {
       setActiveFilter(null);
       return;
@@ -103,9 +94,9 @@ const FundDetail = () => {
 
     setFilterPosition({
       top: rect.bottom + 5,
-      left: rect.left
+      left: rect.left,
     });
-    
+
     setActiveFilter(filterType);
   };
 
@@ -115,11 +106,9 @@ const FundDetail = () => {
       if (sortConfig.key === 'date') {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
-        return sortConfig.direction === 'asc' 
-          ? dateA - dateB 
-          : dateB - dateA;
+        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
       }
-      
+
       return sortConfig.direction === 'asc'
         ? a[sortConfig.key] - b[sortConfig.key]
         : b[sortConfig.key] - a[sortConfig.key];
@@ -128,16 +117,10 @@ const FundDetail = () => {
 
   const getFilteredPrices = () => {
     let prices = getSortedPrices();
-    
-    if (!showAllTableHistory) {
-      const today = new Date();
-      const lastMonth = subMonths(today, 1);
-      prices = prices.filter(price => new Date(price.date) >= lastMonth);
-    }
-    
-    return prices.filter(price => {
+
+    return prices.filter((price) => {
       const priceDate = new Date(price.date);
-      
+
       if (filters.dateFrom && priceDate < filters.dateFrom) return false;
       if (filters.dateTo && priceDate > filters.dateTo) return false;
 
@@ -148,18 +131,7 @@ const FundDetail = () => {
   const filterLastMonth = (prices) => {
     const today = new Date();
     const lastMonth = subMonths(today, 1);
-    return prices.filter(price => new Date(price.date) >= lastMonth);
-  };
-
-  const handleToggleChartHistory = () => {
-    setShowAllChartHistory(prev => !prev);
-    setFilteredChartHistory(prev => 
-      showAllChartHistory ? filterLastMonth(priceHistory) : priceHistory
-    );
-  };
-
-  const handleToggleTableHistory = () => {
-    setShowAllTableHistory(prev => !prev);
+    return prices.filter((price) => new Date(price.date) >= lastMonth);
   };
 
   const handleUpdateHistoricalPrices = async () => {
@@ -168,13 +140,9 @@ const FundDetail = () => {
       await api.post(`/fund-prices/${id}/update?type=historical`);
       // Refresh the price data
       const pricesRes = await api.get(`/fund-prices/${id}`);
-      const sortedPrices = pricesRes.data.sort((a, b) => 
-        new Date(a.date) - new Date(b.date)
-      );
+      const sortedPrices = pricesRes.data.sort((a, b) => new Date(a.date) - new Date(b.date));
       setPriceHistory(sortedPrices);
-      setFilteredPriceHistory(
-        showAllHistory ? sortedPrices : filterLastMonth(sortedPrices)
-      );
+      setFilteredPriceHistory(showAllHistory ? sortedPrices : filterLastMonth(sortedPrices));
     } catch (error) {
       console.error('Error updating historical prices:', error);
       alert(error.response?.data?.user_message || 'Error updating historical prices');
@@ -183,12 +151,8 @@ const FundDetail = () => {
     }
   };
 
-  const handleToggleHistory = () => {
-    setShowAllHistory(prev => !prev);
-  };
-
   const handleToggleGraphHistory = () => {
-    setShowAllHistory(prev => !prev);
+    setShowAllHistory((prev) => !prev);
   };
 
   if (loading && !fund) {
@@ -197,20 +161,10 @@ const FundDetail = () => {
 
   return (
     <div className="fund-detail">
-      {error && (
-        <Toast 
-          message={error}
-          type="error"
-          onClose={() => setError(null)}
-        />
-      )}
-      
+      {error && <Toast message={error} type="error" onClose={() => setError(null)} />}
+
       {priceError && (
-        <Toast 
-          message={priceError}
-          type="error"
-          onClose={() => setPriceError(null)}
-        />
+        <Toast message={priceError} type="error" onClose={() => setPriceError(null)} />
       )}
 
       <div className="fund-header">
@@ -238,9 +192,13 @@ const FundDetail = () => {
                 <label>Dividend Type:</label>
                 <span>
                   {fund.dividend_type === 'cash' ? (
-                    <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
+                    <>
+                      <FontAwesomeIcon icon={faMoneyBill} /> Cash
+                    </>
                   ) : (
-                    <><FontAwesomeIcon icon={faChartLine} /> Stock</>
+                    <>
+                      <FontAwesomeIcon icon={faChartLine} /> Stock
+                    </>
                   )}
                 </span>
               </div>
@@ -252,34 +210,20 @@ const FundDetail = () => {
       <section className="price-chart">
         <div className="section-header">
           <h2>Price History</h2>
-          <button 
-            className="toggle-history-button"
-            onClick={handleToggleGraphHistory}
-          >
+          <button className="toggle-history-button" onClick={handleToggleGraphHistory}>
             {showAllHistory ? 'Show Last Month' : 'Show All History'}
           </button>
         </div>
         <div className="chart-container">
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={filteredPriceHistory}>
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={(date) => new Date(date).toLocaleDateString()}
-              />
-              <YAxis 
-                domain={['auto', 'auto']}
-                tickFormatter={(value) => formatCurrency(value)}
-              />
-              <Tooltip 
+              <XAxis dataKey="date" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
+              <YAxis domain={['auto', 'auto']} tickFormatter={(value) => formatCurrency(value)} />
+              <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 labelFormatter={(date) => new Date(date).toLocaleDateString()}
               />
-              <Line 
-                type="monotone" 
-                dataKey="price" 
-                stroke="#2196F3" 
-                dot={false}
-              />
+              <Line type="monotone" dataKey="price" stroke="#2196F3" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -289,13 +233,10 @@ const FundDetail = () => {
         <div className="section-header">
           <h2>Price History</h2>
           <div className="button-group">
-            <button 
-              className="toggle-history-button"
-              onClick={handleToggleGraphHistory}
-            >
+            <button className="toggle-history-button" onClick={handleToggleGraphHistory}>
               {showAllHistory ? 'Show Last Month' : 'Show All History'}
             </button>
-            <button 
+            <button
               className="update-prices-button"
               onClick={handleUpdateHistoricalPrices}
               disabled={updating}
@@ -312,32 +253,34 @@ const FundDetail = () => {
               <tr>
                 <th>
                   <div className="header-content">
-                    <FontAwesomeIcon 
-                      icon={faFilter} 
-                      className={`filter-icon ${filters.dateFrom || filters.dateTo ? 'active' : ''}`}
+                    <FontAwesomeIcon
+                      icon={faFilter}
+                      className={`filter-icon ${
+                        filters.dateFrom || filters.dateTo ? 'active' : ''
+                      }`}
                       onClick={(e) => handleFilterClick(e, 'date')}
                     />
                     <span>Date</span>
-                    <FontAwesomeIcon 
-                      icon={faSort} 
+                    <FontAwesomeIcon
+                      icon={faSort}
                       className="sort-icon"
                       onClick={() => handleSort('date')}
                     />
                   </div>
                   {activeFilter === 'date' && (
-                    <div 
-                      className="filter-popup" 
-                      style={{ 
-                        top: filterPosition.top, 
+                    <div
+                      className="filter-popup"
+                      style={{
+                        top: filterPosition.top,
                         left: filterPosition.left,
-                        position: 'fixed'
+                        position: 'fixed',
                       }}
                     >
                       <div className="date-picker-container">
                         <label>From:</label>
                         <DatePicker
                           selected={filters.dateFrom}
-                          onChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
+                          onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
                           dateFormat="yyyy-MM-dd"
                           isClearable
                           placeholderText="Start Date"
@@ -345,7 +288,7 @@ const FundDetail = () => {
                         <label>To:</label>
                         <DatePicker
                           selected={filters.dateTo}
-                          onChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
+                          onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
                           dateFormat="yyyy-MM-dd"
                           isClearable
                           placeholderText="End Date"
@@ -358,8 +301,8 @@ const FundDetail = () => {
                 <th>
                   <div className="header-content">
                     <span>Price</span>
-                    <FontAwesomeIcon 
-                      icon={faSort} 
+                    <FontAwesomeIcon
+                      icon={faSort}
                       className="sort-icon"
                       onClick={() => handleSort('price')}
                     />
@@ -368,7 +311,7 @@ const FundDetail = () => {
               </tr>
             </thead>
             <tbody>
-              {getFilteredPrices().map(price => (
+              {getFilteredPrices().map((price) => (
                 <tr key={price.id}>
                   <td>{new Date(price.date).toLocaleDateString()}</td>
                   <td>{formatCurrency(price.price)}</td>
@@ -382,4 +325,4 @@ const FundDetail = () => {
   );
 };
 
-export default FundDetail; 
+export default FundDetail;

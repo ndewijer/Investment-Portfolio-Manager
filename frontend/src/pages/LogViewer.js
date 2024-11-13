@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons';
-import { MultiSelect } from "react-multi-select-component";
+import { MultiSelect } from 'react-multi-select-component';
 import api from '../utils/api';
 import './LogViewer.css';
 import FilterPopup from '../components/FilterPopup';
@@ -15,20 +15,20 @@ const LogViewer = () => {
     category: [],
     startDate: null,
     endDate: null,
-    source: ''
+    source: '',
   });
   const [sortConfig, setSortConfig] = useState({ key: 'timestamp', direction: 'desc' });
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
-    totalLogs: 0
+    totalLogs: 0,
   });
   const [filterPopups, setFilterPopups] = useState({
     timestamp: false,
     level: false,
     category: false,
     message: false,
-    source: false
+    source: false,
   });
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
   const [clearing, setClearing] = useState(false);
@@ -38,7 +38,7 @@ const LogViewer = () => {
     { label: 'Info', value: 'info' },
     { label: 'Warning', value: 'warning' },
     { label: 'Error', value: 'error' },
-    { label: 'Critical', value: 'critical' }
+    { label: 'Critical', value: 'critical' },
   ];
 
   const categoryOptions = [
@@ -48,19 +48,19 @@ const LogViewer = () => {
     { label: 'Dividend', value: 'dividend' },
     { label: 'System', value: 'system' },
     { label: 'Database', value: 'database' },
-    { label: 'Security', value: 'security' }
+    { label: 'Security', value: 'security' },
   ];
 
   const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      
+
       if (filters.level.length > 0) {
-        params.append('level', filters.level.map(l => l.value).join(','));
+        params.append('level', filters.level.map((l) => l.value).join(','));
       }
       if (filters.category.length > 0) {
-        params.append('category', filters.category.map(c => c.value).join(','));
+        params.append('category', filters.category.map((c) => c.value).join(','));
       }
       if (filters.startDate) {
         const utcStart = new Date(filters.startDate).toISOString().split('.')[0] + 'Z';
@@ -73,7 +73,7 @@ const LogViewer = () => {
       if (filters.source) {
         params.append('source', filters.source);
       }
-      
+
       params.append('sort_by', sortConfig.key);
       params.append('sort_dir', sortConfig.direction);
       params.append('page', pagination.currentPage);
@@ -85,7 +85,7 @@ const LogViewer = () => {
       setPagination({
         currentPage: response.data.current_page,
         totalPages: response.data.pages,
-        totalLogs: response.data.total
+        totalLogs: response.data.total,
       });
       setError(null);
     } catch (err) {
@@ -94,7 +94,7 @@ const LogViewer = () => {
       setPagination({
         currentPage: 1,
         totalPages: 1,
-        totalLogs: 0
+        totalLogs: 0,
       });
     } finally {
       setLoading(false);
@@ -106,9 +106,9 @@ const LogViewer = () => {
   }, [fetchLogs]);
 
   const handleSort = (key) => {
-    setSortConfig(prevConfig => ({
+    setSortConfig((prevConfig) => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
     }));
   };
 
@@ -118,7 +118,7 @@ const LogViewer = () => {
       info: 'level-info',
       warning: 'level-warning',
       error: 'level-error',
-      critical: 'level-critical'
+      critical: 'level-critical',
     };
     return classes[level] || '';
   };
@@ -136,11 +136,11 @@ const LogViewer = () => {
     const rect = e.currentTarget.getBoundingClientRect();
     setFilterPosition({
       top: rect.bottom + window.scrollY,
-      left: rect.left + window.scrollX
+      left: rect.left + window.scrollX,
     });
-    setFilterPopups(prev => ({
+    setFilterPopups((prev) => ({
       ...prev,
-      [field]: !prev[field]
+      [field]: !prev[field],
     }));
   };
 
@@ -162,11 +162,7 @@ const LogViewer = () => {
     <div className="log-viewer">
       <div className="log-viewer-header">
         <h1>System Logs</h1>
-        <button 
-          className="clear-logs-button" 
-          onClick={handleClearLogs}
-          disabled={clearing}
-        >
+        <button className="clear-logs-button" onClick={handleClearLogs} disabled={clearing}>
           {clearing ? 'Clearing...' : 'Clear All Logs'}
         </button>
       </div>
@@ -182,14 +178,16 @@ const LogViewer = () => {
               <tr>
                 <th>
                   <div className="header-content">
-                    <FontAwesomeIcon 
-                      icon={faFilter} 
-                      className={`filter-icon ${filters.startDate || filters.endDate ? 'active' : ''}`}
+                    <FontAwesomeIcon
+                      icon={faFilter}
+                      className={`filter-icon ${
+                        filters.startDate || filters.endDate ? 'active' : ''
+                      }`}
                       onClick={(e) => handleFilterClick(e, 'timestamp')}
                     />
                     <span>Timestamp</span>
-                    <FontAwesomeIcon 
-                      icon={faSort} 
+                    <FontAwesomeIcon
+                      icon={faSort}
                       className="sort-icon"
                       onClick={() => handleSort('timestamp')}
                     />
@@ -197,14 +195,14 @@ const LogViewer = () => {
                 </th>
                 <th>
                   <div className="header-content">
-                    <FontAwesomeIcon 
-                      icon={faFilter} 
+                    <FontAwesomeIcon
+                      icon={faFilter}
                       className={`filter-icon ${filters.level.length > 0 ? 'active' : ''}`}
                       onClick={(e) => handleFilterClick(e, 'level')}
                     />
                     <span>Level</span>
-                    <FontAwesomeIcon 
-                      icon={faSort} 
+                    <FontAwesomeIcon
+                      icon={faSort}
                       className="sort-icon"
                       onClick={() => handleSort('level')}
                     />
@@ -212,14 +210,14 @@ const LogViewer = () => {
                 </th>
                 <th>
                   <div className="header-content">
-                    <FontAwesomeIcon 
-                      icon={faFilter} 
+                    <FontAwesomeIcon
+                      icon={faFilter}
                       className={`filter-icon ${filters.category.length > 0 ? 'active' : ''}`}
                       onClick={(e) => handleFilterClick(e, 'category')}
                     />
                     <span>Category</span>
-                    <FontAwesomeIcon 
-                      icon={faSort} 
+                    <FontAwesomeIcon
+                      icon={faSort}
                       className="sort-icon"
                       onClick={() => handleSort('category')}
                     />
@@ -227,14 +225,14 @@ const LogViewer = () => {
                 </th>
                 <th>
                   <div className="header-content">
-                    <FontAwesomeIcon 
-                      icon={faFilter} 
+                    <FontAwesomeIcon
+                      icon={faFilter}
                       className={`filter-icon ${filters.message ? 'active' : ''}`}
                       onClick={(e) => handleFilterClick(e, 'message')}
                     />
                     <span>Message</span>
-                    <FontAwesomeIcon 
-                      icon={faSort} 
+                    <FontAwesomeIcon
+                      icon={faSort}
                       className="sort-icon"
                       onClick={() => handleSort('message')}
                     />
@@ -243,14 +241,14 @@ const LogViewer = () => {
                 <th>Details</th>
                 <th>
                   <div className="header-content">
-                    <FontAwesomeIcon 
-                      icon={faFilter} 
+                    <FontAwesomeIcon
+                      icon={faFilter}
                       className={`filter-icon ${filters.source ? 'active' : ''}`}
                       onClick={(e) => handleFilterClick(e, 'source')}
                     />
                     <span>Source</span>
-                    <FontAwesomeIcon 
-                      icon={faSort} 
+                    <FontAwesomeIcon
+                      icon={faSort}
                       className="sort-icon"
                       onClick={() => handleSort('source')}
                     />
@@ -260,10 +258,10 @@ const LogViewer = () => {
               </tr>
             </thead>
             <tbody>
-              {logs.map(log => (
+              {logs.map((log) => (
                 <tr key={log.id}>
                   <td>
-                    {new Date(log.timestamp + 'Z').toLocaleString('en-GB', { 
+                    {new Date(log.timestamp + 'Z').toLocaleString('en-GB', {
                       timeZone: 'UTC',
                       year: 'numeric',
                       month: '2-digit',
@@ -272,7 +270,8 @@ const LogViewer = () => {
                       minute: '2-digit',
                       second: '2-digit',
                       hour12: false,
-                    })} UTC
+                    })}{' '}
+                    UTC
                   </td>
                   <td>
                     <span className={`level-badge ${getLevelClass(log.level)}`}>
@@ -291,7 +290,9 @@ const LogViewer = () => {
 
           <div className="pagination">
             <button
-              onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, currentPage: prev.currentPage - 1 }))
+              }
               disabled={pagination.currentPage === 1}
             >
               Previous
@@ -300,7 +301,9 @@ const LogViewer = () => {
               Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalLogs} logs)
             </span>
             <button
-              onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+              onClick={() =>
+                setPagination((prev) => ({ ...prev, currentPage: prev.currentPage + 1 }))
+              }
               disabled={pagination.currentPage === pagination.totalPages}
             >
               Next
@@ -312,23 +315,23 @@ const LogViewer = () => {
       <FilterPopup
         type="datetime"
         isOpen={filterPopups.timestamp}
-        onClose={() => setFilterPopups(prev => ({ ...prev, timestamp: false }))}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, timestamp: false }))}
         position={filterPosition}
         fromDate={filters.startDate}
         toDate={filters.endDate}
-        onFromDateChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
-        onToDateChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+        onFromDateChange={(date) => setFilters((prev) => ({ ...prev, startDate: date }))}
+        onToDateChange={(date) => setFilters((prev) => ({ ...prev, endDate: date }))}
       />
 
       <FilterPopup
         type="multiselect"
         isOpen={filterPopups.level}
-        onClose={() => setFilterPopups(prev => ({ ...prev, level: false }))}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, level: false }))}
         position={filterPosition}
         value={filters.level}
         onChange={(selected) => {
-          setFilters(prev => ({ ...prev, level: selected }));
-          setFilterPopups(prev => ({ ...prev, level: false }));
+          setFilters((prev) => ({ ...prev, level: selected }));
+          setFilterPopups((prev) => ({ ...prev, level: false }));
         }}
         options={levelOptions}
         Component={MultiSelect}
@@ -337,12 +340,12 @@ const LogViewer = () => {
       <FilterPopup
         type="multiselect"
         isOpen={filterPopups.category}
-        onClose={() => setFilterPopups(prev => ({ ...prev, category: false }))}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, category: false }))}
         position={filterPosition}
         value={filters.category}
         onChange={(selected) => {
-          setFilters(prev => ({ ...prev, category: selected }));
-          setFilterPopups(prev => ({ ...prev, category: false }));
+          setFilters((prev) => ({ ...prev, category: selected }));
+          setFilterPopups((prev) => ({ ...prev, category: false }));
         }}
         options={categoryOptions}
         Component={MultiSelect}
@@ -351,22 +354,22 @@ const LogViewer = () => {
       <FilterPopup
         type="text"
         isOpen={filterPopups.message}
-        onClose={() => setFilterPopups(prev => ({ ...prev, message: false }))}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, message: false }))}
         position={filterPosition}
         value={filters.message}
-        onChange={(value) => setFilters(prev => ({ ...prev, message: value }))}
+        onChange={(value) => setFilters((prev) => ({ ...prev, message: value }))}
       />
 
       <FilterPopup
         type="text"
         isOpen={filterPopups.source}
-        onClose={() => setFilterPopups(prev => ({ ...prev, source: false }))}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, source: false }))}
         position={filterPosition}
         value={filters.source}
-        onChange={(value) => setFilters(prev => ({ ...prev, source: value }))}
+        onChange={(value) => setFilters((prev) => ({ ...prev, source: value }))}
       />
     </div>
   );
 };
 
-export default LogViewer; 
+export default LogViewer;

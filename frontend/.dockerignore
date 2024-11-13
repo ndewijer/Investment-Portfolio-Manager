@@ -6,3 +6,7 @@ Dockerfile
 **/.DS_Store
 .gitignore
 .dockerignore
+
+.prettierrc.json
+.babelrc.json
+eslint.config.mjs

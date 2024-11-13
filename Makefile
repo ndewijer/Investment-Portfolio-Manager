@@ -22,4 +22,4 @@ logs:
 
 # Initialize database
 init-db:
-	docker-compose exec backend flask seed-db 
+	docker-compose exec backend flask seed-db

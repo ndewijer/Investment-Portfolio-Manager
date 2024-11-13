@@ -27,7 +27,7 @@
   background-color: white;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
@@ -58,7 +58,7 @@
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .portfolio-detail-page .portfolio-funds table,
@@ -98,7 +98,7 @@
 }
 
 .portfolio-detail-page .action-button {
-  background-color: #4CAF50;  /* Green color */
+  background-color: #4caf50; /* Green color */
   color: white;
   padding: 8px 16px;
   border: none;
@@ -128,7 +128,7 @@
 .portfolio-detail-page .table-header .filter-icon:hover,
 .portfolio-detail-page .table-header .filter-icon.active {
   opacity: 1;
-  color: #2196F3;
+  color: #2196f3;
 }
 
 .portfolio-detail-page .table-header .sort-icon {
@@ -299,13 +299,13 @@
 .portfolio-detail-page .header-content .filter-icon.active,
 .portfolio-detail-page .header-content .sort-icon:hover {
   opacity: 1;
-  color: #2196F3;
+  color: #2196f3;
 }
 
 .portfolio-detail-page .table-header.asc .sort-icon,
 .portfolio-detail-page .table-header.desc .sort-icon {
   opacity: 1;
-  color: #2196F3;
+  color: #2196f3;
 }
 
 .portfolio-detail-page .filter-popup {
@@ -314,7 +314,7 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   padding: 15px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   min-width: 300px;
 }
@@ -366,7 +366,7 @@
 }
 
 .portfolio-detail-page .filter-popup .rmsc {
-  --rmsc-main: #2196F3;
+  --rmsc-main: #2196f3;
   --rmsc-hover: #f4f4f4;
   --rmsc-selected: #e9f4ff;
   --rmsc-border: #ddd;
@@ -383,7 +383,7 @@
 
 .portfolio-detail-page .filter-popup .rmsc .dropdown-content {
   border-color: var(--rmsc-border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   max-height: none;
 }
 
@@ -401,12 +401,14 @@
 }
 
 /* Specific style for the fund filter popup */
-.portfolio-detail-page .table-header:nth-child(2) .filter-popup {  /* Fund column */
+.portfolio-detail-page .table-header:nth-child(2) .filter-popup {
+  /* Fund column */
   min-width: 550px;
 }
 
 /* Keep type filter popup at original width */
-.portfolio-detail-page .table-header:nth-child(3) .filter-popup {  /* Type column */
+.portfolio-detail-page .table-header:nth-child(3) .filter-popup {
+  /* Type column */
   min-width: 200px;
 }
 
@@ -426,7 +428,7 @@
 }
 
 .portfolio-detail-page .transaction-actions .edit-button {
-  background-color: #FFC107;
+  background-color: #ffc107;
   color: black;
 }
 
@@ -435,7 +437,7 @@
   color: white;
 }
 
-.portfolio-detail-page .transaction-actions .edit-button:hover, 
+.portfolio-detail-page .transaction-actions .edit-button:hover,
 .portfolio-detail-page .transaction-actions .delete-button:hover {
   opacity: 0.9;
 }
@@ -452,7 +454,7 @@
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .portfolio-detail-page .portfolio-chart h2 {
@@ -493,11 +495,11 @@
 }
 
 .portfolio-detail-page .portfolio-funds-actions .transaction-button {
-  background-color: #4CAF50;  
+  background-color: #4caf50;
 }
 
 .portfolio-detail-page .portfolio-funds-actions .dividend-button {
-  background-color: #2196F3;  
+  background-color: #2196f3;
 }
 .portfolio-detail-page .portfolio-funds-actions .transaction-button:hover,
 .portfolio-detail-page .portfolio-funds-actions .dividend-button:hover {
@@ -558,7 +560,7 @@
 }
 
 .portfolio-detail-page .dividend-actions .edit-button {
-  background-color: #FFC107;
+  background-color: #ffc107;
   color: black;
 }
 
@@ -623,7 +625,7 @@
 }
 
 .portfolio-detail-page .portfolio-funds-actions .remove-button {
-  background-color: #dc3545;  /* Red */
+  background-color: #dc3545; /* Red */
   color: white;
 }
 
@@ -632,18 +634,18 @@
 }
 
 .portfolio-detail-page .modal-actions button {
-  background-color: #2196F3;
+  background-color: #2196f3;
   color: white;
 }
 
 .clickable-fund-name {
   cursor: pointer;
-  color: #2196F3;
+  color: #2196f3;
   text-decoration: underline;
 }
 
 .clickable-fund-name:hover {
-  color: #1976D2;
+  color: #1976d2;
 }
 
 .portfolio-detail-page .input-with-indicator {
@@ -657,7 +659,7 @@
 }
 
 .portfolio-detail-page .price-found-indicator {
-  color: #4CAF50;
+  color: #4caf50;
   margin-left: 10px;
   font-size: 1.2em;
 }

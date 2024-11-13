@@ -6,20 +6,16 @@ const CollapsibleInfo = ({ title, children }) => {
 
   return (
     <div className="collapsible-info">
-      <button 
+      <button
         className={`collapsible-header ${isExpanded ? 'expanded' : ''}`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {title}
         <span className="toggle-icon">{isExpanded ? '−' : '+'}</span>
       </button>
-      {isExpanded && (
-        <div className="collapsible-content">
-          {children}
-        </div>
-      )}
+      {isExpanded && <div className="collapsible-content">{children}</div>}
     </div>
   );
 };
 
-export default CollapsibleInfo; 
+export default CollapsibleInfo;

@@ -211,6 +211,7 @@ class FundPrice(db.Model):
     date = db.Column(db.Date, nullable=False)
     price = db.Column(db.Float, nullable=False)
 
+
 class ExchangeRate(db.Model):
     """
     Represents exchange rates between currency pairs.

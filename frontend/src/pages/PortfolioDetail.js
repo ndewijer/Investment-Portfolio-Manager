@@ -5,28 +5,44 @@ import Modal from '../components/Modal';
 import { useFormat } from '../context/FormatContext';
 import './PortfolioDetail.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort, faPlus, faMoneyBill, faChartLine, faCheck } from '@fortawesome/free-solid-svg-icons';
-import { MultiSelect } from "react-multi-select-component";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  faFilter,
+  faSort,
+  faPlus,
+  faMoneyBill,
+  faChartLine,
+  faCheck,
+} from '@fortawesome/free-solid-svg-icons';
+import { MultiSelect } from 'react-multi-select-component';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import FilterPopup from '../components/FilterPopup';
 
 const TYPE_OPTIONS = [
   { label: 'Buy', value: 'buy' },
   { label: 'Sell', value: 'sell' },
-  { label: 'Dividend', value: 'dividend' }
+  { label: 'Dividend', value: 'dividend' },
 ].sort((a, b) => a.label.localeCompare(b.label));
 
 // Update the isDateInFuture helper function
 const isDateInFuture = (dateString) => {
-  if (!dateString) return true;  // If no date is selected, treat as future date
-  
+  if (!dateString) return true; // If no date is selected, treat as future date
+
   const date = new Date(dateString);
   const today = new Date();
-  
+
   // Set both dates to start of day for comparison
   date.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
-  
+
   // Return true only if date is strictly greater than today
   return date > today;
 };
@@ -45,7 +61,7 @@ const PortfolioDetail = () => {
     date: new Date().toISOString().split('T')[0],
     type: 'buy',
     shares: '',
-    cost_per_share: ''
+    cost_per_share: '',
   });
   const { formatNumber, formatCurrency, isEUFormat } = useFormat();
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
@@ -53,7 +69,7 @@ const PortfolioDetail = () => {
     dateFrom: null,
     dateTo: null,
     fund_names: [],
-    type: ''
+    type: '',
   });
   const [filterPosition, setFilterPosition] = useState({ top: 0, right: 0 });
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -66,8 +82,8 @@ const PortfolioDetail = () => {
     record_date: new Date().toISOString().split('T')[0],
     ex_dividend_date: new Date().toISOString().split('T')[0],
     dividend_per_share: '',
-    reinvestment_shares: '',  // Only for stock dividends
-    reinvestment_price: ''    // Only for stock dividends
+    reinvestment_shares: '', // Only for stock dividends
+    reinvestment_price: '', // Only for stock dividends
   });
   const [selectedFund, setSelectedFund] = useState(null);
   const [editingDividend, setEditingDividend] = useState(null);
@@ -80,7 +96,7 @@ const PortfolioDetail = () => {
     level: false,
     category: false,
     message: false,
-    source: false
+    source: false,
   });
 
   const navigate = useNavigate();
@@ -89,7 +105,7 @@ const PortfolioDetail = () => {
 
   const [priceFound, setPriceFound] = useState(false);
 
-  const fetchFundPrice = async (fundId, date) => {
+  const fetchFundPrice = async (fundId) => {
     try {
       const response = await api.get(`/fund-prices/${fundId}`);
       const prices = response.data;
@@ -98,7 +114,7 @@ const PortfolioDetail = () => {
         acc[price.date.split('T')[0]] = price.price;
         return acc;
       }, {});
-      
+
       // Return the priceMap instead of setting state
       return priceMap;
     } catch (error) {
@@ -115,38 +131,38 @@ const PortfolioDetail = () => {
     // often have specific target prices or are executed at market prices
     // that may differ from historical closing prices
     if (newTransaction.portfolio_fund_id && newTransaction.type === 'buy') {
-      const selectedFund = portfolioFunds.find(pf => pf.id === newTransaction.portfolio_fund_id);
+      const selectedFund = portfolioFunds.find((pf) => pf.id === newTransaction.portfolio_fund_id);
       if (selectedFund) {
         let priceMap = fundPrices[selectedFund.fund_id];
-        
+
         // If we don't have prices yet, fetch them
         if (!priceMap) {
           priceMap = await fetchFundPrice(selectedFund.fund_id, date);
-          setFundPrices(prev => ({
+          setFundPrices((prev) => ({
             ...prev,
-            [selectedFund.fund_id]: priceMap
+            [selectedFund.fund_id]: priceMap,
           }));
         }
-        
+
         // Set the price if we have it for this date
         if (priceMap && priceMap[date]) {
-          setNewTransaction(prev => ({
+          setNewTransaction((prev) => ({
             ...prev,
             date: date,
-            cost_per_share: priceMap[date]
+            cost_per_share: priceMap[date],
           }));
           setPriceFound(true);
         } else {
-          setNewTransaction(prev => ({
+          setNewTransaction((prev) => ({
             ...prev,
-            date: date
+            date: date,
           }));
         }
       }
     } else {
-      setNewTransaction(prev => ({
+      setNewTransaction((prev) => ({
         ...prev,
-        date: date
+        date: date,
       }));
     }
   };
@@ -157,7 +173,7 @@ const PortfolioDetail = () => {
       const [portfolioRes, portfolioFundsRes, transactionsRes] = await Promise.all([
         api.get(`/portfolios/${id}`),
         api.get(`/portfolio-funds?portfolio_id=${id}`),
-        api.get(`/transactions?portfolio_id=${id}`)
+        api.get(`/transactions?portfolio_id=${id}`),
       ]);
 
       setPortfolio(portfolioRes.data);
@@ -194,7 +210,7 @@ const PortfolioDetail = () => {
     try {
       await api.post(`/portfolio-funds`, {
         portfolio_id: id,
-        fund_id: selectedFundId
+        fund_id: selectedFundId,
       });
       setIsAddFundModalOpen(false);
       setSelectedFundId('');
@@ -215,7 +231,7 @@ const PortfolioDetail = () => {
         date: new Date().toISOString().split('T')[0],
         type: 'buy',
         shares: '',
-        cost_per_share: ''
+        cost_per_share: '',
       });
       fetchPortfolioData(); // Refresh data to update totals
     } catch (error) {
@@ -224,8 +240,7 @@ const PortfolioDetail = () => {
     }
   };
 
-  const handleSort = (e, key) => {
-    e.stopPropagation();
+  const handleSort = (key) => {
     let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
@@ -239,11 +254,9 @@ const PortfolioDetail = () => {
       if (sortConfig.key === 'date') {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
-        return sortConfig.direction === 'asc' 
-          ? dateA - dateB 
-          : dateB - dateA;
+        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
       }
-      
+
       if (['shares', 'cost_per_share'].includes(sortConfig.key)) {
         return sortConfig.direction === 'asc'
           ? a[sortConfig.key] - b[sortConfig.key]
@@ -257,9 +270,9 @@ const PortfolioDetail = () => {
   };
 
   const getFilteredTransactions = () => {
-    return getSortedTransactions().filter(transaction => {
+    return getSortedTransactions().filter((transaction) => {
       const transactionDate = new Date(transaction.date);
-      
+
       // Date range filter
       if (filters.dateFrom && transactionDate < filters.dateFrom) return false;
       if (filters.dateTo && transactionDate > filters.dateTo) return false;
@@ -279,26 +292,25 @@ const PortfolioDetail = () => {
   };
 
   const getUniqueFundNames = () => {
-    return [...new Set(portfolioFunds.map(pf => pf.fund_name))];
+    return [...new Set(portfolioFunds.map((pf) => pf.fund_name))];
   };
 
-    const handleFilterClick = (e, field) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      setFilterPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX
-      });
-      setFilterPopups(prev => ({
-        ...prev,
-        [field]: !prev[field]
-      }));
-    };
-
+  const handleFilterClick = (e, field) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFilterPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+    });
+    setFilterPopups((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
 
   const handleEditTransaction = (transaction) => {
     setEditingTransaction({
       ...transaction,
-      date: transaction.date.split('T')[0] // Format date for input field
+      date: transaction.date.split('T')[0], // Format date for input field
     });
     setIsTransactionEditModalOpen(true);
   };
@@ -377,8 +389,11 @@ const PortfolioDetail = () => {
       // Validate stock dividend fields
       if (selectedFund?.dividend_type === 'stock') {
         const isFutureOrder = isDateInFuture(newDividend.buy_order_date);
-        
-        if (!isFutureOrder && (!newDividend.reinvestment_shares || !newDividend.reinvestment_price)) {
+
+        if (
+          !isFutureOrder &&
+          (!newDividend.reinvestment_shares || !newDividend.reinvestment_price)
+        ) {
           alert('Please fill in both reinvestment shares and price for completed stock dividends');
           return;
         }
@@ -391,13 +406,16 @@ const PortfolioDetail = () => {
 
       const dividendData = {
         ...newDividend,
-        reinvestment_shares: selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date) 
-          ? newDividend.reinvestment_shares 
-          : undefined,
-        reinvestment_price: selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date)
-          ? newDividend.reinvestment_price 
-          : undefined,
-        buy_order_date: selectedFund?.dividend_type === 'stock' ? newDividend.buy_order_date : undefined
+        reinvestment_shares:
+          selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date)
+            ? newDividend.reinvestment_shares
+            : undefined,
+        reinvestment_price:
+          selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date)
+            ? newDividend.reinvestment_price
+            : undefined,
+        buy_order_date:
+          selectedFund?.dividend_type === 'stock' ? newDividend.buy_order_date : undefined,
       };
 
       const response = await api.post('/dividends', dividendData);
@@ -410,13 +428,17 @@ const PortfolioDetail = () => {
         dividend_per_share: '',
         buy_order_date: '',
         reinvestment_shares: '',
-        reinvestment_price: ''
+        reinvestment_price: '',
       });
       setSelectedFund(null);
       fetchPortfolioData();
     } catch (error) {
       console.error('Error creating dividend:', error);
-      alert(error.response?.data?.user_message || error.response?.data?.error || 'Error creating dividend');
+      alert(
+        error.response?.data?.user_message ||
+          error.response?.data?.error ||
+          'Error creating dividend'
+      );
     }
   };
 
@@ -431,15 +453,17 @@ const PortfolioDetail = () => {
       const editData = {
         ...dividend,
         record_date: dividend.record_date.split('T')[0],
-        ex_dividend_date: dividend.ex_dividend_date.split('T')[0]
+        ex_dividend_date: dividend.ex_dividend_date.split('T')[0],
       };
 
       // If it's a stock dividend and has a transaction, fetch the transaction details
       if (fundData.dividend_type === 'stock' && dividend.reinvestment_transaction_id) {
         try {
-          const transactionResponse = await api.get(`/transactions/${dividend.reinvestment_transaction_id}`);
+          const transactionResponse = await api.get(
+            `/transactions/${dividend.reinvestment_transaction_id}`
+          );
           const transactionData = transactionResponse.data;
-          
+
           // Add reinvestment data from the transaction
           editData.reinvestment_shares = transactionData.shares;
           editData.reinvestment_price = transactionData.cost_per_share;
@@ -460,25 +484,31 @@ const PortfolioDetail = () => {
     e.preventDefault();
     try {
       // Validate stock dividend fields
-      if (selectedFund?.dividend_type === 'stock' && 
-          (!editingDividend.reinvestment_shares || !editingDividend.reinvestment_price)) {
+      if (
+        selectedFund?.dividend_type === 'stock' &&
+        (!editingDividend.reinvestment_shares || !editingDividend.reinvestment_price)
+      ) {
         alert('Please fill in both reinvestment shares and price for stock dividends');
         return;
       }
 
       const response = await api.put(`/dividends/${editingDividend.id}`, {
         ...editingDividend,
-        reinvestment_transaction_id: editingDividend.reinvestment_transaction_id
+        reinvestment_transaction_id: editingDividend.reinvestment_transaction_id,
       });
 
-      setDividends(dividends.map(d => d.id === editingDividend.id ? response.data : d));
+      setDividends(dividends.map((d) => (d.id === editingDividend.id ? response.data : d)));
       setIsDividendEditModalOpen(false);
       setEditingDividend(null);
       setSelectedFund(null);
       fetchPortfolioData(); // Refresh portfolio data
     } catch (error) {
       console.error('Error updating dividend:', error);
-      alert(error.response?.data?.user_message || error.response?.data?.error || 'Error updating dividend');
+      alert(
+        error.response?.data?.user_message ||
+          error.response?.data?.error ||
+          'Error updating dividend'
+      );
     }
   };
 
@@ -486,11 +516,15 @@ const PortfolioDetail = () => {
     if (window.confirm('Are you sure you want to delete this dividend?')) {
       try {
         await api.delete(`/dividends/${dividendId}`);
-        setDividends(dividends.filter(d => d.id !== dividendId));
+        setDividends(dividends.filter((d) => d.id !== dividendId));
         fetchPortfolioData(); // Refresh portfolio data
       } catch (error) {
         console.error('Error deleting dividend:', error);
-        alert(error.response?.data?.user_message || error.response?.data?.error || 'Error deleting dividend');
+        alert(
+          error.response?.data?.user_message ||
+            error.response?.data?.error ||
+            'Error deleting dividend'
+        );
       }
     }
   };
@@ -501,7 +535,7 @@ const PortfolioDetail = () => {
       // Get the fund details including dividend type
       const response = await api.get(`/funds/${fund.fund_id}`);
       const fundData = response.data;
-      
+
       setSelectedFund(fundData);
       setNewDividend({
         portfolio_fund_id: fund.id,
@@ -509,7 +543,7 @@ const PortfolioDetail = () => {
         ex_dividend_date: new Date().toISOString().split('T')[0],
         dividend_per_share: '',
         reinvestment_shares: '',
-        reinvestment_price: ''
+        reinvestment_price: '',
       });
       setIsDividendModalOpen(true);
     } catch (error) {
@@ -526,13 +560,13 @@ const PortfolioDetail = () => {
       // Check if this is a 409 Conflict response with confirmation data
       if (error.response && error.response.status === 409) {
         const data = error.response.data;
-        const confirmMessage = 
+        const confirmMessage =
           `Are you sure you want to remove ${data.fund_name} from this portfolio?\n\n` +
           `This will also delete:\n` +
           `- ${data.transaction_count} transaction(s)\n` +
           `- ${data.dividend_count} dividend(s)\n\n` +
           `This action cannot be undone.`;
-        
+
         if (window.confirm(confirmMessage)) {
           try {
             // Send delete request with confirmation
@@ -540,7 +574,9 @@ const PortfolioDetail = () => {
             fetchPortfolioData(); // Refresh the data
           } catch (confirmError) {
             console.error('Error removing fund after confirmation:', confirmError);
-            alert(confirmError.response?.data?.user_message || 'Error removing fund from portfolio');
+            alert(
+              confirmError.response?.data?.user_message || 'Error removing fund from portfolio'
+            );
           }
         }
       } else {
@@ -558,7 +594,7 @@ const PortfolioDetail = () => {
           api.get(`/portfolios/${id}`),
           api.get(`/portfolio-funds?portfolio_id=${id}`),
           api.get(`/transactions?portfolio_id=${id}`),
-          api.get(`/dividends/portfolio/${id}`)
+          api.get(`/dividends/portfolio/${id}`),
         ]);
 
         setPortfolio(portfolioRes.data);
@@ -568,10 +604,13 @@ const PortfolioDetail = () => {
 
         // Debug logging
         console.log('Portfolio Funds:', fundsRes.data);
-        console.log('Portfolio Funds with dividend types:', fundsRes.data.map(pf => ({
-          fund_name: pf.fund_name,
-          dividend_type: pf.dividend_type
-        })));
+        console.log(
+          'Portfolio Funds with dividend types:',
+          fundsRes.data.map((pf) => ({
+            fund_name: pf.fund_name,
+            dividend_type: pf.dividend_type,
+          }))
+        );
       } catch (error) {
         console.error('Error:', error);
       }
@@ -581,11 +620,11 @@ const PortfolioDetail = () => {
   }, [id]);
 
   // Debug logging for hasDividendFunds calculation
-  const hasDividendFunds = portfolioFunds.some(pf => pf.dividend_type !== 'none');
+  const hasDividendFunds = portfolioFunds.some((pf) => pf.dividend_type !== 'none');
   console.log('Has Dividend Funds check:', {
     portfolioFunds: portfolioFunds,
-    dividendTypes: portfolioFunds.map(pf => pf.dividend_type),
-    hasDividendFunds: hasDividendFunds
+    dividendTypes: portfolioFunds.map((pf) => pf.dividend_type),
+    hasDividendFunds: hasDividendFunds,
   });
 
   const handleFundClick = (fundId) => {
@@ -602,7 +641,7 @@ const PortfolioDetail = () => {
 
     // For manually typed values
     const cleanValue = value.trim();
-    
+
     if (isEUFormat) {
       // Replace any dots (thousand separators) and convert comma to period
       return cleanValue.replace(/\./g, '').replace(',', '.');
@@ -642,8 +681,21 @@ const PortfolioDetail = () => {
             </div>
             <div className="summary-card">
               <h3>Gain/Loss</h3>
-              <p className={`${((portfolio.totalValue || 0) + (portfolio.totalDividends || 0) - (portfolio.totalCost || 0)) >= 0 ? 'positive' : 'negative'}`}>
-                {formatCurrency((portfolio.totalValue || 0) + (portfolio.totalDividends || 0) - (portfolio.totalCost || 0))}
+              <p
+                className={`${
+                  (portfolio.totalValue || 0) +
+                    (portfolio.totalDividends || 0) -
+                    (portfolio.totalCost || 0) >=
+                  0
+                    ? 'positive'
+                    : 'negative'
+                }`}
+              >
+                {formatCurrency(
+                  (portfolio.totalValue || 0) +
+                    (portfolio.totalDividends || 0) -
+                    (portfolio.totalCost || 0)
+                )}
               </p>
             </div>
           </div>
@@ -654,16 +706,12 @@ const PortfolioDetail = () => {
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={fundHistory}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date"
-                    tick={{ fontSize: 12 }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis 
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+                  <YAxis
                     tick={{ fontSize: 12 }}
                     tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
                   />
-                  <Tooltip 
+                  <Tooltip
                     formatter={(value) => formatCurrency(value)}
                     labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
                   />
@@ -717,11 +765,11 @@ const PortfolioDetail = () => {
                 </tr>
               </thead>
               <tbody>
-                {portfolioFunds.map(portfolioFund => (
+                {portfolioFunds.map((portfolioFund) => (
                   <tr key={portfolioFund.id}>
                     <td>
-                      <span 
-                        className="clickable-fund-name" 
+                      <span
+                        className="clickable-fund-name"
                         onClick={() => handleFundClick(portfolioFund.fund_id)}
                       >
                         {portfolioFund.fund_name}
@@ -734,25 +782,31 @@ const PortfolioDetail = () => {
                     <td>{formatCurrency(portfolioFund.current_value)}</td>
                     <td>{formatCurrency(portfolioFund.total_dividends)}</td>
                     <td className="portfolio-funds-actions">
-                      <button className="transaction-button" onClick={() => {
-                        setNewTransaction({
-                          portfolio_fund_id: portfolioFund.id,
-                          date: new Date().toISOString().split('T')[0],
-                          type: 'buy',
-                          shares: '',
-                          cost_per_share: ''
-                        });
-                        setIsTransactionModalOpen(true);
-                      }}>
+                      <button
+                        className="transaction-button"
+                        onClick={() => {
+                          setNewTransaction({
+                            portfolio_fund_id: portfolioFund.id,
+                            date: new Date().toISOString().split('T')[0],
+                            type: 'buy',
+                            shares: '',
+                            cost_per_share: '',
+                          });
+                          setIsTransactionModalOpen(true);
+                        }}
+                      >
                         Add Transaction
                       </button>
                       {portfolioFund.dividend_type !== 'none' && (
-                        <button className="dividend-button" onClick={() => handleAddDividend(portfolioFund)}>
+                        <button
+                          className="dividend-button"
+                          onClick={() => handleAddDividend(portfolioFund)}
+                        >
                           Add Dividend
                         </button>
                       )}
-                      <button 
-                        className="remove-button" 
+                      <button
+                        className="remove-button"
                         onClick={() => handleRemoveFund(portfolioFund)}
                       >
                         Remove Fund
@@ -774,87 +828,103 @@ const PortfolioDetail = () => {
                 <tr>
                   <th>
                     <div className="header-content">
-                      <FontAwesomeIcon 
-                        icon={faFilter} 
-                        className={`filter-icon ${filters.dateFrom || filters.dateTo ? 'active' : ''}`}
+                      <FontAwesomeIcon
+                        icon={faFilter}
+                        className={`filter-icon ${
+                          filters.dateFrom || filters.dateTo ? 'active' : ''
+                        }`}
                         onClick={(e) => handleFilterClick(e, 'date')}
                       />
                       <span>Date</span>
-                      <FontAwesomeIcon 
-                        icon={faSort} 
+                      <FontAwesomeIcon
+                        icon={faSort}
                         className="sort-icon"
-                        onClick={(e) => handleSort('date')}
+                        onClick={() => handleSort('date')}
                       />
                     </div>
                     <FilterPopup
                       type="date"
                       isOpen={filterPopups.date}
-                      onClose={() => setFilterPopups(prev => ({ ...prev, date: false }))}
+                      onClose={() => setFilterPopups((prev) => ({ ...prev, date: false }))}
                       position={filterPosition}
                       fromDate={filters.dateFrom}
                       toDate={filters.dateTo}
-                      onFromDateChange={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
-                      onToDateChange={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
+                      onFromDateChange={(date) =>
+                        setFilters((prev) => ({ ...prev, dateFrom: date }))
+                      }
+                      onToDateChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
                     />
                   </th>
                   <th>
                     <div className="header-content">
-                      <FontAwesomeIcon 
-                        icon={faFilter} 
+                      <FontAwesomeIcon
+                        icon={faFilter}
                         className={`filter-icon ${filters.fund_names.length > 0 ? 'active' : ''}`}
                         onClick={(e) => handleFilterClick(e, 'fund')}
                       />
                       <span>Fund</span>
-                      <FontAwesomeIcon 
-                        icon={faSort} 
+                      <FontAwesomeIcon
+                        icon={faSort}
                         className="sort-icon"
-                        onClick={(e) => handleSort('fund_name')}
+                        onClick={() => handleSort('fund_name')}
                       />
                     </div>
                     <FilterPopup
                       type="multiselect"
                       isOpen={filterPopups.fund}
-                      onClose={() => setFilterPopups(prev => ({ ...prev, fund: false }))}
+                      onClose={() => setFilterPopups((prev) => ({ ...prev, fund: false }))}
                       position={filterPosition}
-                      value={filters.fund_names.map(name => ({
+                      value={filters.fund_names.map((name) => ({
                         label: name,
-                        value: name
+                        value: name,
                       }))}
                       onChange={(selected) => {
-                        setFilters(prev => ({ ...prev, fund_names: selected.map(option => option.value) }));
-                        setFilterPopups(prev => ({ ...prev, fund_names: false }));
+                        setFilters((prev) => ({
+                          ...prev,
+                          fund_names: selected.map((option) => option.value),
+                        }));
+                        setFilterPopups((prev) => ({ ...prev, fund_names: false }));
                       }}
-                      options={getUniqueFundNames().map(name => ({
+                      options={getUniqueFundNames().map((name) => ({
                         label: name,
-                        value: name
+                        value: name,
                       }))}
                       Component={MultiSelect}
                     />
                   </th>
                   <th>
                     <div className="header-content">
-                      <FontAwesomeIcon 
-                        icon={faFilter} 
+                      <FontAwesomeIcon
+                        icon={faFilter}
                         className={`filter-icon ${filters.type ? 'active' : ''}`}
                         onClick={(e) => handleFilterClick(e, 'type')}
                       />
                       <span>Type</span>
-                      <FontAwesomeIcon 
-                        icon={faSort} 
+                      <FontAwesomeIcon
+                        icon={faSort}
                         className="sort-icon"
-                        onClick={(e) => handleSort('type')}
+                        onClick={() => handleSort('type')}
                       />
                     </div>
                     <FilterPopup
                       type="multiselect"
                       isOpen={filterPopups.type}
-                      onClose={() => setFilterPopups(prev => ({ ...prev, type: false }))}
+                      onClose={() => setFilterPopups((prev) => ({ ...prev, type: false }))}
                       position={filterPosition}
-                      value={filters.type ? [{ label: filters.type.charAt(0).toUpperCase() + filters.type.slice(1), value: filters.type }] : []}
+                      value={
+                        filters.type
+                          ? [
+                              {
+                                label: filters.type.charAt(0).toUpperCase() + filters.type.slice(1),
+                                value: filters.type,
+                              },
+                            ]
+                          : []
+                      }
                       onChange={(selected) => {
-                        setFilters(prev => ({
+                        setFilters((prev) => ({
                           ...prev,
-                          type: selected.length > 0 ? selected[0].value : ''
+                          type: selected.length > 0 ? selected[0].value : '',
                         }));
                       }}
                       options={TYPE_OPTIONS}
@@ -864,20 +934,20 @@ const PortfolioDetail = () => {
                   <th>
                     <div className="header-content">
                       <span>Shares</span>
-                      <FontAwesomeIcon 
-                        icon={faSort} 
+                      <FontAwesomeIcon
+                        icon={faSort}
                         className="sort-icon"
-                        onClick={(e) => handleSort('shares')}
+                        onClick={() => handleSort('shares')}
                       />
                     </div>
                   </th>
                   <th>
                     <div className="header-content">
                       <span>Cost per Share</span>
-                      <FontAwesomeIcon 
-                        icon={faSort} 
+                      <FontAwesomeIcon
+                        icon={faSort}
                         className="sort-icon"
-                        onClick={(e) => handleSort('cost_per_share')}
+                        onClick={() => handleSort('cost_per_share')}
                       />
                     </div>
                   </th>
@@ -886,7 +956,7 @@ const PortfolioDetail = () => {
                 </tr>
               </thead>
               <tbody>
-                {getFilteredTransactions().map(transaction => (
+                {getFilteredTransactions().map((transaction) => (
                   <tr key={transaction.id}>
                     <td>{new Date(transaction.date).toLocaleDateString()}</td>
                     <td>{transaction.fund_name}</td>
@@ -895,15 +965,15 @@ const PortfolioDetail = () => {
                     <td>{formatCurrency(transaction.cost_per_share)}</td>
                     <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
                     <td className="transaction-actions">
-                      {transaction.type !== 'dividend' && (  // Only show actions if not a dividend transaction
+                      {transaction.type !== 'dividend' && ( // Only show actions if not a dividend transaction
                         <>
-                          <button 
+                          <button
                             className="edit-button"
                             onClick={() => handleEditTransaction(transaction)}
                           >
                             Edit
                           </button>
-                          <button 
+                          <button
                             className="delete-button"
                             onClick={() => handleDeleteTransaction(transaction.id)}
                           >
@@ -938,14 +1008,14 @@ const PortfolioDetail = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {dividends.map(dividend => {
+                  {dividends.map((dividend) => {
                     let status;
                     if (dividend.dividend_type === 'cash') {
                       status = 'PAID OUT';
                     } else {
                       status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
                     }
-                    
+
                     return (
                       <tr key={dividend.id}>
                         <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
@@ -953,9 +1023,13 @@ const PortfolioDetail = () => {
                         <td>{dividend.fund_name}</td>
                         <td>
                           {dividend.dividend_type === 'stock' ? (
-                            <><FontAwesomeIcon icon={faChartLine} /> Stock</>
+                            <>
+                              <FontAwesomeIcon icon={faChartLine} /> Stock
+                            </>
                           ) : (
-                            <><FontAwesomeIcon icon={faMoneyBill} /> Cash</>
+                            <>
+                              <FontAwesomeIcon icon={faMoneyBill} /> Cash
+                            </>
                           )}
                         </td>
                         <td>{formatNumber(dividend.shares_owned, 6)}</td>
@@ -967,13 +1041,13 @@ const PortfolioDetail = () => {
                           </span>
                         </td>
                         <td className="dividend-actions">
-                          <button 
+                          <button
                             className="edit-button"
                             onClick={() => handleEditDividend(dividend)}
                           >
                             Edit
                           </button>
-                          <button 
+                          <button
                             className="delete-button"
                             onClick={() => handleDeleteDividend(dividend.id)}
                           >
@@ -1001,7 +1075,7 @@ const PortfolioDetail = () => {
                 required
               >
                 <option value="">Select a fund...</option>
-                {availableFunds.map(fund => (
+                {availableFunds.map((fund) => (
                   <option key={fund.id} value={fund.id}>
                     {fund.name} ({fund.isin})
                   </option>
@@ -1025,7 +1099,10 @@ const PortfolioDetail = () => {
               <div className="form-group">
                 <label>Fund:</label>
                 <div className="static-field">
-                  {portfolioFunds.find(pf => pf.id === newTransaction.portfolio_fund_id)?.fund_name}
+                  {
+                    portfolioFunds.find((pf) => pf.id === newTransaction.portfolio_fund_id)
+                      ?.fund_name
+                  }
                 </div>
               </div>
               <div className="form-group">
@@ -1041,10 +1118,12 @@ const PortfolioDetail = () => {
                 <label>Type:</label>
                 <select
                   value={newTransaction.type}
-                  onChange={(e) => setNewTransaction({
-                    ...newTransaction,
-                    type: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setNewTransaction({
+                      ...newTransaction,
+                      type: e.target.value,
+                    })
+                  }
                   required
                 >
                   <option value="buy">Buy</option>
@@ -1056,10 +1135,12 @@ const PortfolioDetail = () => {
                 <input
                   type="text"
                   value={formatNumber(newTransaction.shares, 6)}
-                  onChange={(e) => setNewTransaction({
-                    ...newTransaction,
-                    shares: handleNumericInput(e.target.value)
-                  })}
+                  onChange={(e) =>
+                    setNewTransaction({
+                      ...newTransaction,
+                      shares: handleNumericInput(e.target.value),
+                    })
+                  }
                   required
                 />
               </div>
@@ -1073,16 +1154,13 @@ const PortfolioDetail = () => {
                       setPriceFound(false);
                       setNewTransaction({
                         ...newTransaction,
-                        cost_per_share: handleNumericInput(e.target.value)
+                        cost_per_share: handleNumericInput(e.target.value),
                       });
                     }}
                     required
                   />
                   {priceFound && (
-                    <FontAwesomeIcon 
-                      icon={faCheck} 
-                      className="price-found-indicator"
-                    />
+                    <FontAwesomeIcon icon={faCheck} className="price-found-indicator" />
                   )}
                 </div>
               </div>
@@ -1110,10 +1188,12 @@ const PortfolioDetail = () => {
                   <input
                     type="date"
                     value={editingTransaction.date}
-                    onChange={(e) => setEditingTransaction({
-                      ...editingTransaction,
-                      date: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingTransaction({
+                        ...editingTransaction,
+                        date: e.target.value,
+                      })
+                    }
                     required
                   />
                 </div>
@@ -1121,10 +1201,12 @@ const PortfolioDetail = () => {
                   <label>Type:</label>
                   <select
                     value={editingTransaction.type}
-                    onChange={(e) => setEditingTransaction({
-                      ...editingTransaction,
-                      type: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingTransaction({
+                        ...editingTransaction,
+                        type: e.target.value,
+                      })
+                    }
                     required
                   >
                     <option value="buy">Buy</option>
@@ -1137,10 +1219,12 @@ const PortfolioDetail = () => {
                     type="number"
                     step="0.000001"
                     value={Number(editingTransaction.shares).toFixed(6)}
-                    onChange={(e) => setEditingTransaction({
-                      ...editingTransaction,
-                      shares: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingTransaction({
+                        ...editingTransaction,
+                        shares: e.target.value,
+                      })
+                    }
                     required
                   />
                 </div>
@@ -1150,19 +1234,26 @@ const PortfolioDetail = () => {
                     type="number"
                     step="0.01"
                     value={Number(editingTransaction.cost_per_share).toFixed(2)}
-                    onChange={(e) => setEditingTransaction({
-                      ...editingTransaction,
-                      cost_per_share: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingTransaction({
+                        ...editingTransaction,
+                        cost_per_share: e.target.value,
+                      })
+                    }
                     required
                   />
                 </div>
                 <div className="modal-actions">
                   <button type="submit">Update</button>
-                  <button type="button" onClick={() => {
-                    setIsTransactionEditModalOpen(false);
-                    setEditingTransaction(null);
-                  }}>Cancel</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsTransactionEditModalOpen(false);
+                      setEditingTransaction(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </form>
             )}
@@ -1181,16 +1272,20 @@ const PortfolioDetail = () => {
               <div className="form-group">
                 <label>Fund:</label>
                 <div className="static-field">
-                  {portfolioFunds.find(pf => pf.id === newDividend.portfolio_fund_id)?.fund_name}
+                  {portfolioFunds.find((pf) => pf.id === newDividend.portfolio_fund_id)?.fund_name}
                 </div>
               </div>
               <div className="form-group">
                 <label>Dividend Type:</label>
                 <div className="static-field">
                   {selectedFund?.dividend_type === 'stock' ? (
-                    <><FontAwesomeIcon icon={faChartLine} /> Stock Dividend</>
+                    <>
+                      <FontAwesomeIcon icon={faChartLine} /> Stock Dividend
+                    </>
                   ) : selectedFund?.dividend_type === 'cash' ? (
-                    <><FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend</>
+                    <>
+                      <FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend
+                    </>
                   ) : (
                     'No Dividend'
                   )}
@@ -1201,10 +1296,12 @@ const PortfolioDetail = () => {
                 <input
                   type="date"
                   value={newDividend.record_date}
-                  onChange={(e) => setNewDividend({
-                    ...newDividend,
-                    record_date: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setNewDividend({
+                      ...newDividend,
+                      record_date: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
@@ -1213,10 +1310,12 @@ const PortfolioDetail = () => {
                 <input
                   type="date"
                   value={newDividend.ex_dividend_date}
-                  onChange={(e) => setNewDividend({
-                    ...newDividend,
-                    ex_dividend_date: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setNewDividend({
+                      ...newDividend,
+                      ex_dividend_date: e.target.value,
+                    })
+                  }
                   required
                 />
               </div>
@@ -1225,10 +1324,12 @@ const PortfolioDetail = () => {
                 <input
                   type="text"
                   value={formatNumber(newDividend.dividend_per_share, 2)}
-                  onChange={(e) => setNewDividend({
-                    ...newDividend,
-                    dividend_per_share: handleNumericInput(e.target.value)
-                  })}
+                  onChange={(e) =>
+                    setNewDividend({
+                      ...newDividend,
+                      dividend_per_share: handleNumericInput(e.target.value),
+                    })
+                  }
                   required
                 />
               </div>
@@ -1244,13 +1345,13 @@ const PortfolioDetail = () => {
                         const newDate = e.target.value;
                         const isFutureDate = isDateInFuture(newDate);
                         console.log('Date changed:', newDate, 'Is future:', isFutureDate);
-                        
+
                         setNewDividend({
                           ...newDividend,
                           buy_order_date: newDate,
                           // Only clear fields if moving to a future date
                           reinvestment_shares: isFutureDate ? '' : newDividend.reinvestment_shares,
-                          reinvestment_price: isFutureDate ? '' : newDividend.reinvestment_price
+                          reinvestment_price: isFutureDate ? '' : newDividend.reinvestment_price,
                         });
                       }}
                       required
@@ -1262,10 +1363,12 @@ const PortfolioDetail = () => {
                       type="number"
                       step="0.000001"
                       value={Number(newDividend.reinvestment_shares).toFixed(6) || ''}
-                      onChange={(e) => setNewDividend({
-                        ...newDividend,
-                        reinvestment_shares: e.target.value
-                      })}
+                      onChange={(e) =>
+                        setNewDividend({
+                          ...newDividend,
+                          reinvestment_shares: e.target.value,
+                        })
+                      }
                       disabled={isDateInFuture(newDividend.buy_order_date)}
                       required={!isDateInFuture(newDividend.buy_order_date)}
                       className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
@@ -1277,10 +1380,12 @@ const PortfolioDetail = () => {
                       type="number"
                       step="0.01"
                       value={Number(newDividend.reinvestment_price).toFixed(2) || ''}
-                      onChange={(e) => setNewDividend({
-                        ...newDividend,
-                        reinvestment_price: e.target.value
-                      })}
+                      onChange={(e) =>
+                        setNewDividend({
+                          ...newDividend,
+                          reinvestment_price: e.target.value,
+                        })
+                      }
                       disabled={isDateInFuture(newDividend.buy_order_date)}
                       required={!isDateInFuture(newDividend.buy_order_date)}
                       className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
@@ -1290,10 +1395,15 @@ const PortfolioDetail = () => {
               )}
               <div className="modal-actions">
                 <button type="submit">Create Dividend</button>
-                <button type="button" onClick={() => {
-                  setIsDividendModalOpen(false);
-                  setSelectedFund(null);
-                }}>Cancel</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDividendModalOpen(false);
+                    setSelectedFund(null);
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </Modal>
@@ -1311,19 +1421,19 @@ const PortfolioDetail = () => {
               <form onSubmit={handleUpdateDividend}>
                 <div className="form-group">
                   <label>Fund:</label>
-                  <div className="static-field">
-                    {editingDividend.fund_name}
-                  </div>
+                  <div className="static-field">{editingDividend.fund_name}</div>
                 </div>
                 <div className="form-group">
                   <label>Record Date:</label>
                   <input
                     type="date"
                     value={editingDividend.record_date}
-                    onChange={(e) => setEditingDividend({
-                      ...editingDividend,
-                      record_date: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingDividend({
+                        ...editingDividend,
+                        record_date: e.target.value,
+                      })
+                    }
                     required
                   />
                 </div>
@@ -1332,10 +1442,12 @@ const PortfolioDetail = () => {
                   <input
                     type="date"
                     value={editingDividend.ex_dividend_date}
-                    onChange={(e) => setEditingDividend({
-                      ...editingDividend,
-                      ex_dividend_date: e.target.value
-                    })}
+                    onChange={(e) =>
+                      setEditingDividend({
+                        ...editingDividend,
+                        ex_dividend_date: e.target.value,
+                      })
+                    }
                     required
                   />
                 </div>
@@ -1344,10 +1456,12 @@ const PortfolioDetail = () => {
                   <input
                     type="text"
                     value={formatNumber(editingDividend.dividend_per_share, 2)}
-                    onChange={(e) => setEditingDividend({
-                      ...editingDividend,
-                      dividend_per_share: handleNumericInput(e.target.value)
-                    })}
+                    onChange={(e) =>
+                      setEditingDividend({
+                        ...editingDividend,
+                        dividend_per_share: handleNumericInput(e.target.value),
+                      })
+                    }
                     required
                   />
                 </div>
@@ -1363,10 +1477,10 @@ const PortfolioDetail = () => {
                           const newDate = e.target.value;
                           const isFutureDate = isDateInFuture(newDate);
                           console.log('Date changed:', newDate, 'Is future:', isFutureDate);
-                          
+
                           setEditingDividend({
                             ...editingDividend,
-                            buy_order_date: newDate
+                            buy_order_date: newDate,
                           });
                         }}
                         required
@@ -1378,13 +1492,17 @@ const PortfolioDetail = () => {
                         type="number"
                         step="0.000001"
                         value={Number(editingDividend.reinvestment_shares).toFixed(6) || ''}
-                        onChange={(e) => setEditingDividend({
-                          ...editingDividend,
-                          reinvestment_shares: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setEditingDividend({
+                            ...editingDividend,
+                            reinvestment_shares: e.target.value,
+                          })
+                        }
                         disabled={isDateInFuture(editingDividend.buy_order_date)}
                         required={!isDateInFuture(editingDividend.buy_order_date)}
-                        className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                        className={
+                          isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''
+                        }
                       />
                     </div>
                     <div className="form-group">
@@ -1393,33 +1511,42 @@ const PortfolioDetail = () => {
                         type="number"
                         step="0.01"
                         value={Number(editingDividend.reinvestment_price).toFixed(2) || ''}
-                        onChange={(e) => setEditingDividend({
-                          ...editingDividend,
-                          reinvestment_price: e.target.value
-                        })}
+                        onChange={(e) =>
+                          setEditingDividend({
+                            ...editingDividend,
+                            reinvestment_price: e.target.value,
+                          })
+                        }
                         disabled={isDateInFuture(editingDividend.buy_order_date)}
                         required={!isDateInFuture(editingDividend.buy_order_date)}
-                        className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                        className={
+                          isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''
+                        }
                       />
                     </div>
                   </div>
                 )}
                 <div className="modal-actions">
-                  <button 
+                  <button
                     type="submit"
                     disabled={
-                      selectedFund?.dividend_type === 'stock' && 
-                      isDateInFuture(editingDividend.buy_order_date) && 
+                      selectedFund?.dividend_type === 'stock' &&
+                      isDateInFuture(editingDividend.buy_order_date) &&
                       (editingDividend.reinvestment_shares || editingDividend.reinvestment_price)
                     }
                   >
                     Update
                   </button>
-                  <button type="button" onClick={() => {
-                    setIsDividendEditModalOpen(false);
-                    setEditingDividend(null);
-                    setSelectedFund(null);
-                  }}>Cancel</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDividendEditModalOpen(false);
+                      setEditingDividend(null);
+                      setSelectedFund(null);
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </form>
             )}

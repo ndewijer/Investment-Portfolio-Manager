@@ -23,4 +23,4 @@ clean:
 	docker rm $(CONTAINER_NAME) || true
 
 # Rebuild and restart
-restart: clean build run 
+restart: clean build run

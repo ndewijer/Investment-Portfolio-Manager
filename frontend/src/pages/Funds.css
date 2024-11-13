@@ -16,7 +16,7 @@
 }
 
 .funds-page .add-fund-button {
-  background-color: #FF9800;
+  background-color: #ff9800;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -25,7 +25,7 @@
 }
 
 .funds-page .add-stock-button {
-  background-color: #2196F3;
+  background-color: #2196f3;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -48,7 +48,7 @@
   background-color: white;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   border: 2px solid transparent;
   transition: border-color 0.2s ease;
@@ -59,12 +59,12 @@
 
 /* Orange border for funds */
 .funds-page .fund-card.fund {
-  border-color: #FF9800;
+  border-color: #ff9800;
 }
 
 /* Blue border for stocks */
 .funds-page .fund-card.stock {
-  border-color: #2196F3;
+  border-color: #2196f3;
 }
 
 .funds-page .fund-card h2 {
@@ -107,17 +107,17 @@
 }
 
 .funds-page .fund-actions button:nth-child(1) {
-  background-color: #2196F3;  /* Blue for View Details */
+  background-color: #2196f3; /* Blue for View Details */
   color: white;
 }
 
 .funds-page .fund-actions button:nth-child(2) {
-  background-color: #FFC107;  /* Yellow for Edit */
+  background-color: #ffc107; /* Yellow for Edit */
   color: black;
 }
 
 .funds-page .fund-actions button:nth-child(3) {
-  background-color: #f44336;  /* Red for Delete */
+  background-color: #f44336; /* Red for Delete */
   color: white;
 }
 
@@ -154,7 +154,7 @@
 }
 
 .funds-page .modal-actions button {
-  background-color: #2196F3;
+  background-color: #2196f3;
   color: white;
 }
 
@@ -175,7 +175,7 @@
   margin-top: 4px;
 }
 
-.funds-page .symbol-validation input[type="checkbox"] {
+.funds-page .symbol-validation input[type='checkbox'] {
   width: auto;
   margin: 0;
 }
