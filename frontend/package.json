@@ -1,6 +1,6 @@
 {
   "name": "investment-portfolio-manager",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "private": true,
   "dependencies": {
     "@babel/cli": "^7.25.9",
@@ -32,8 +32,7 @@
     "build": "webpack --mode production",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint --fix src/**/*.js",
-    "format": "prettier --write src/**/*.{js,css}",
-    "prepare": "cd .. && husky install frontend/.husky"
+    "format": "prettier --write src/**/*.{js,css}"
   },
   "devServer": {
     "setupMiddlewares": true
@@ -55,7 +54,6 @@
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "globals": "^15.12.0",
-    "husky": "^9.1.6",
     "prettier": "^3.3.3",
     "webpack-dev-server": "^5.1.0"
   }

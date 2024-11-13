@@ -4,6 +4,7 @@
 
 # Then include only what we need
 !app/
+!data/seed/
 !requirements.txt
 !run.py
 

@@ -5,6 +5,10 @@ WORKDIR /app
 
 RUN pip install gunicorn
 
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV FLASK_APP=run.py
+
 # Copy requirements file
 COPY requirements.txt .
 

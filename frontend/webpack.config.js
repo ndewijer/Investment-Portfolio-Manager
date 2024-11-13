@@ -17,7 +17,10 @@ module.exports = (env, argv) => {
   const defaultEnv = {
     NODE_ENV: isProduction ? 'production' : 'development',
     DOMAIN: domain,
-    REACT_APP_API_URL: isProduction ? `https://${domain}/api` : 'http://localhost:5000/api',
+    USE_HTTPS: process.env.USE_HTTPS === 'true',
+    REACT_APP_API_URL: isProduction
+      ? `${process.env.USE_HTTPS === 'true' ? 'https' : 'http'}://${domain}/api`
+      : 'http://localhost:5000/api',
   };
 
   // Combine default and loaded environment variables

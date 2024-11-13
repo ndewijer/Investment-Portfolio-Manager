@@ -12,7 +12,7 @@ While functional for personal use, replacing my manual Excel tracking, it is not
 ```bash
 git clone https://github.com/ndewijer/investment-portfolio-manager.git
 cd investment-portfolio-manager
-# Set DOMAIN, DB_DIR, and LOG_DIR in .env
+# Set DOMAIN, USE_HTTPS, DB_DIR, and LOG_DIR in .env
 ```
 
 2. Run with Docker:

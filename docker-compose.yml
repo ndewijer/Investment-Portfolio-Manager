@@ -2,25 +2,32 @@ services:
   backend:
     build: ./backend
     container_name: investment-portfolio-backend
-    ports:
-      - "5000:5000"
     environment:
       - DB_DIR=/data/db
       - LOG_DIR=/data/logs
       - DOMAIN=${DOMAIN:-localhost}
     volumes:
-      - ./data/db:/data/db
-      - ./data/logs:/data/logs
+      - /path/to/your/data:/data
+    networks:
+      - app-network
 
   frontend:
     build:
       context: ./frontend
       args:
         - DOMAIN=${DOMAIN:-localhost}
+        - USE_HTTPS=${USE_HTTPS:-false}
     container_name: investment-portfolio-frontend
     environment:
       - DOMAIN=${DOMAIN:-localhost}
+      - USE_HTTPS=${USE_HTTPS:-false}
     ports:
       - "80:80"
     depends_on:
       - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
