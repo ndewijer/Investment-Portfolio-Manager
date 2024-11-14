@@ -5,8 +5,10 @@ FROM node:23-alpine AS build
 WORKDIR /app
 
 # Add build arguments
-ARG DOMAIN=localhost
-ENV DOMAIN=$DOMAIN
+ARG DOMAIN=localhost \
+    USE_HTTPS=false
+ENV DOMAIN=$DOMAIN \
+    USE_HTTPS=$USE_HTTPS
 
 # Copy package files
 COPY package*.json ./
@@ -24,8 +26,10 @@ RUN npm run build
 FROM nginx:alpine
 
 # Re-declare the build argument and env variable in this stage
-ARG DOMAIN=localhost
-ENV DOMAIN=$DOMAIN
+ARG DOMAIN=localhost \
+    USE_HTTPS=false
+ENV DOMAIN=$DOMAIN \
+    USE_HTTPS=$USE_HTTPS
 
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
