@@ -12,14 +12,15 @@ module.exports = (env, argv) => {
 
   // Get domain from environment or build args
   const domain = process.env.DOMAIN || envVars.DOMAIN || 'localhost';
+  const useHttps = process.env.USE_HTTPS || envVars.USE_HTTPS || false;
 
   // Create a default environment if .env file doesn't exist
   const defaultEnv = {
     NODE_ENV: isProduction ? 'production' : 'development',
     DOMAIN: domain,
-    USE_HTTPS: process.env.USE_HTTPS === 'true',
+    USE_HTTPS: useHttps,
     REACT_APP_API_URL: isProduction
-      ? `${process.env.USE_HTTPS === 'true' ? 'https' : 'http'}://${domain}/api`
+      ? `${useHttps ? 'https' : 'http'}://${domain}/api`
       : 'http://localhost:5000/api',
   };
 
