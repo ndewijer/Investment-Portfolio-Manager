@@ -43,9 +43,32 @@ const ValueChart = ({
     // Add 5% padding to the top and bottom
     const padding = (max - min) * 0.05;
     return [
-      Math.max(0, min - padding), // Don't go below 0
-      max + padding
+      Math.max(0, Math.floor(min - padding)), // Round down and don't go below 0
+      Math.ceil(max + padding) // Round up
     ];
+  };
+
+  // Format Y-axis ticks based on value range
+  const formatYAxis = (value) => {
+    const domain = calculateDomain();
+    const maxValue = domain[1];
+    
+    // Round the value to whole numbers
+    const roundedValue = Math.round(value);
+
+    if (maxValue >= 1000000) {
+      return formatCurrency(roundedValue / 1000000, 0) + 'M';
+    } else if (maxValue >= 1000) {
+      return formatCurrency(roundedValue / 1000, 0) + 'k';
+    } else {
+      return formatCurrency(roundedValue, 0);
+    }
+  };
+
+  // Format tooltip values with full precision
+  const formatTooltip = (value) => {
+    if (!value && value !== 0) return 'N/A';
+    return formatCurrency(value);
   };
 
   return (
@@ -78,10 +101,11 @@ const ValueChart = ({
           <YAxis
             domain={calculateDomain()}
             tick={{ fontSize: 12 }}
-            tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
+            tickFormatter={formatYAxis}
+            width={80}
           />
           <Tooltip
-            formatter={(value) => (value ? formatCurrency(value) : 'N/A')}
+            formatter={formatTooltip}
             labelFormatter={(label) => `Date: ${label}`}
           />
           <Legend />

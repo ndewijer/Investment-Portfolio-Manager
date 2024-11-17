@@ -669,29 +669,57 @@ const PortfolioDetail = () => {
   const formatChartData = () => {
     if (!fundHistory.length) return [];
     
-    return fundHistory.map(day => ({
-      date: new Date(day.date).toLocaleDateString(),
-      value: day.value || 0,
-      cost: day.cost || 0
-    }));
+    return fundHistory.map(day => {
+      const dayData = {
+        date: new Date(day.date).toLocaleDateString(),
+      };
+
+      // Add data for each fund using array indexing
+      day.funds.forEach((fund, index) => {
+        dayData[`funds[${index}].value`] = fund.value;
+        dayData[`funds[${index}].cost`] = fund.cost;
+      });
+
+      return dayData;
+    });
   };
 
   const getChartLines = () => {
-    return [
-      {
-        dataKey: 'value',
-        name: 'Portfolio Value',
-        color: '#8884d8',
+    const lines = [];
+    
+    // Create lines for each fund using array indexing
+    portfolioFunds.forEach((fund, index) => {
+      // Add value line
+      lines.push({
+        dataKey: `funds[${index}].value`,
+        name: `${fund.fund_name} Value`,
+        color: getFundColor(index),
         strokeWidth: 2,
-      },
-      {
-        dataKey: 'cost',
-        name: 'Cost Basis',
-        color: '#82ca9d',
-        strokeWidth: 2,
-      }
-    ];
+        connectNulls: true,
+      });
+      
+      // Add cost line
+      lines.push({
+        dataKey: `funds[${index}].cost`,
+        name: `${fund.fund_name} Cost`,
+        color: getFundColor(index),
+        strokeWidth: 1,
+        strokeDasharray: '5 5',
+        opacity: 0.7,
+        connectNulls: true,
+      });
+    });
+
+    return lines;
   };
+
+  useEffect(() => {
+    if (fundHistory.length > 0) {
+      console.log('Fund History:', fundHistory);
+      console.log('Formatted Chart Data:', formatChartData());
+      console.log('Chart Lines:', getChartLines());
+    }
+  }, [fundHistory, portfolioFunds]);
 
   return (
     <div className="portfolio-detail-page">
