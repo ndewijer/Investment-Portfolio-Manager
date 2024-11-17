@@ -77,12 +77,16 @@ module.exports = (env, argv) => {
       extensions: ['.js', '.jsx'],
     },
     devServer: {
-      historyApiFallback: true,
+      historyApiFallback: {
+        disableDotRule: true,
+        rewrites: [{ from: /^\/[^?]*$/, to: '/index.html' }],
+      },
       hot: true,
       port: 3000,
       static: {
         directory: path.join(__dirname, 'public'),
         publicPath: '/',
+        serveIndex: false,
       },
       client: {
         overlay: {

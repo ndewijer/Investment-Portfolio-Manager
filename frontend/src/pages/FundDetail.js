@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { useFormat } from '../context/FormatContext';
@@ -10,6 +9,7 @@ import api from '../utils/api';
 import './FundDetail.css';
 import { subMonths } from 'date-fns';
 import Toast from '../components/Toast';
+import ValueChart from '../components/ValueChart';
 
 const FundDetail = () => {
   const { id } = useParams();
@@ -28,9 +28,9 @@ const FundDetail = () => {
   const [activeFilter, setActiveFilter] = useState(null);
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
   const [updating, setUpdating] = useState(false);
-  const [showAllHistory, setShowAllHistory] = useState(false);
   const [showAllTableHistory, setShowAllTableHistory] = useState(false);
   const [filteredPriceHistory, setFilteredPriceHistory] = useState([]);
+  const [timeRange, setTimeRange] = useState('1M'); // Default to last month view
 
   const fetchFundData = useCallback(async () => {
     try {
@@ -70,9 +70,10 @@ const FundDetail = () => {
 
   useEffect(() => {
     if (priceHistory.length > 0) {
-      setFilteredPriceHistory(showAllHistory ? priceHistory : filterLastMonth(priceHistory));
+      const filtered = timeRange === '1M' ? filterLastMonth(priceHistory) : priceHistory;
+      setFilteredPriceHistory(filtered);
     }
-  }, [showAllHistory, priceHistory]);
+  }, [timeRange, priceHistory]);
 
   const handleSort = (key) => {
     setSortConfig((prevConfig) => ({
@@ -151,7 +152,7 @@ const FundDetail = () => {
       const pricesRes = await api.get(`/fund-prices/${id}`);
       const sortedPrices = pricesRes.data.sort((a, b) => new Date(a.date) - new Date(b.date));
       setPriceHistory(sortedPrices);
-      setFilteredPriceHistory(showAllHistory ? sortedPrices : filterLastMonth(sortedPrices));
+      setFilteredPriceHistory(timeRange === '1M' ? filterLastMonth(sortedPrices) : sortedPrices);
     } catch (error) {
       console.error('Error updating historical prices:', error);
       alert(error.response?.data?.user_message || 'Error updating historical prices');
@@ -160,12 +161,27 @@ const FundDetail = () => {
     }
   };
 
-  const handleToggleGraphHistory = () => {
-    setShowAllHistory((prev) => !prev);
-  };
-
   const handleToggleTableHistory = () => {
     setShowAllTableHistory((prev) => !prev);
+  };
+
+  const formatChartData = () => {
+    return filteredPriceHistory.map((price) => ({
+      date: new Date(price.date).toLocaleDateString(),
+      value: price.price,
+      cost: null,
+    }));
+  };
+
+  const getChartLines = () => {
+    return [
+      {
+        dataKey: 'value',
+        name: 'Price',
+        color: '#8884d8',
+        strokeWidth: 2,
+      },
+    ];
   };
 
   if (loading && !fund) {
@@ -220,27 +236,18 @@ const FundDetail = () => {
         )}
       </div>
 
-      <section className="price-chart">
-        <div className="section-header">
-          <h2>Price History</h2>
-          <button className="toggle-history-button" onClick={handleToggleGraphHistory}>
-            {showAllHistory ? 'Show Last Month' : 'Show All History'}
-          </button>
-        </div>
+      <div className="chart-section">
         <div className="chart-container">
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={filteredPriceHistory}>
-              <XAxis dataKey="date" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
-              <YAxis domain={['auto', 'auto']} tickFormatter={(value) => formatCurrency(value)} />
-              <Tooltip
-                formatter={(value) => formatCurrency(value)}
-                labelFormatter={(date) => new Date(date).toLocaleDateString()}
-              />
-              <Line type="monotone" dataKey="price" stroke="#2196F3" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <h2>Fund Value Over Time</h2>
+          <ValueChart
+            data={formatChartData()}
+            lines={getChartLines()}
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
+            showTimeRangeButtons={true}
+          />
         </div>
-      </section>
+      </div>
 
       <section className="price-history">
         <div className="section-header">

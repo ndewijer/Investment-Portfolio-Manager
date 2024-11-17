@@ -448,8 +448,8 @@
   width: 120px;
 }
 
-/* Add to existing styles */
-.portfolio-detail-page .portfolio-chart {
+/* Update the chart section styles */
+.portfolio-detail-page .chart-section {
   background-color: white;
   border-radius: 8px;
   padding: 20px;
@@ -457,17 +457,21 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.portfolio-detail-page .portfolio-chart h2 {
+.portfolio-detail-page .chart-section h2 {
   margin-top: 0;
   margin-bottom: 20px;
   color: #333;
 }
 
 .portfolio-detail-page .chart-container {
-  width: 95%;
-  height: 400px;
+  width: 100%;
   margin: 0 auto;
-  padding: 20px 20px 20px 40px;
+  padding: 0; /* Remove padding since it's now on the parent */
+}
+
+/* Remove any existing chart container styles that might conflict */
+.portfolio-detail-page .portfolio-chart {
+  display: none;
 }
 
 .portfolio-detail-page .fund-actions {

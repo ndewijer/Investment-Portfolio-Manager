@@ -35,21 +35,28 @@
   color: #333;
 }
 
-.charts-section {
-  margin: 40px 0;
-}
-
-.chart-container {
+.overview .charts-section {
   background-color: white;
-  padding: 20px;
   border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.chart-container h2 {
+.overview .charts-section h2 {
   margin-top: 0;
   margin-bottom: 20px;
   color: #333;
+}
+
+.overview .chart-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.overview .portfolio-chart {
+  display: none;
 }
 
 .portfolios-table {

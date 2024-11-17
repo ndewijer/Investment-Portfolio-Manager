@@ -56,10 +56,9 @@
 }
 
 .fund-detail .chart-container {
-  width: 95%;
-  height: 400px;
+  width: 100%;
   margin: 0 auto;
-  padding: 20px 20px 20px 40px;
+  padding: 0;
 }
 
 .fund-detail .price-history table {
@@ -194,4 +193,28 @@
 
 .fund-detail .update-prices-button:nth-of-type(2):hover {
   background-color: #f57c00;
+}
+
+.fund-detail .chart-section {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.fund-detail .chart-section h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.fund-detail .chart-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.fund-detail .price-chart {
+  display: none;
 }
