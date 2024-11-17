@@ -102,7 +102,7 @@ const ValueChart = ({
           />
           <Tooltip formatter={formatTooltip} labelFormatter={(label) => `Date: ${label}`} />
           <Legend />
-          {lines.map((line, index) => (
+          {lines.map((line) => (
             <Line
               key={line.dataKey}
               type="monotone"

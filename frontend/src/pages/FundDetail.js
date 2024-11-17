@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { useFormat } from '../context/FormatContext';
@@ -29,7 +28,6 @@ const FundDetail = () => {
   const [activeFilter, setActiveFilter] = useState(null);
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
   const [updating, setUpdating] = useState(false);
-  const [showAllHistory, setShowAllHistory] = useState(false);
   const [showAllTableHistory, setShowAllTableHistory] = useState(false);
   const [filteredPriceHistory, setFilteredPriceHistory] = useState([]);
   const [timeRange, setTimeRange] = useState('1M'); // Default to last month view

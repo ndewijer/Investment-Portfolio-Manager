@@ -14,16 +14,6 @@ import {
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import { MultiSelect } from 'react-multi-select-component';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import FilterPopup from '../components/FilterPopup';
 import ValueChart from '../components/ValueChart';
 
@@ -386,7 +376,8 @@ const PortfolioDetail = () => {
     }
   }, [portfolio, id]);
 
-  const getFundColor = (index) => {
+  // Move getFundColor to a useCallback hook
+  const getFundColor = useCallback((index) => {
     const colors = [
       '#8884d8', // Purple
       '#82ca9d', // Green
@@ -397,7 +388,7 @@ const PortfolioDetail = () => {
       '#ff8042', // Coral
     ];
     return colors[index % colors.length];
-  };
+  }, []); // Empty dependency array since colors array is static
 
   const handleCreateDividend = async (e) => {
     e.preventDefault();
@@ -667,7 +658,8 @@ const PortfolioDetail = () => {
     }
   };
 
-  const formatChartData = () => {
+  // First, memoize the formatting functions using useCallback
+  const formatChartData = useCallback(() => {
     if (!fundHistory.length) return [];
 
     return fundHistory.map((day) => {
@@ -683,9 +675,10 @@ const PortfolioDetail = () => {
 
       return dayData;
     });
-  };
+  }, [fundHistory]);
 
-  const getChartLines = () => {
+  // Update getChartLines to use the memoized getFundColor
+  const getChartLines = useCallback(() => {
     const lines = [];
 
     // Create lines for each fund using array indexing
@@ -712,15 +705,16 @@ const PortfolioDetail = () => {
     });
 
     return lines;
-  };
+  }, [portfolioFunds, getFundColor]); // getFundColor is now a stable reference
 
+  // Then update the useEffect to include the memoized functions
   useEffect(() => {
     if (fundHistory.length > 0) {
       console.log('Fund History:', fundHistory);
       console.log('Formatted Chart Data:', formatChartData());
       console.log('Chart Lines:', getChartLines());
     }
-  }, [fundHistory, portfolioFunds]);
+  }, [fundHistory, portfolioFunds, formatChartData, getChartLines]);
 
   return (
     <div className="portfolio-detail-page">
