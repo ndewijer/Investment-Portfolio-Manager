@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import ValueChart from '../components/ValueChart';
 import './Overview.css';
 import { useFormat } from '../context/FormatContext';
 
@@ -110,6 +101,46 @@ const Overview = () => {
     navigate(`/portfolios/${portfolioId}`);
   };
 
+  const getChartLines = () => {
+    const lines = [
+      {
+        dataKey: 'totalValue',
+        name: 'Total Value',
+        color: '#8884d8',
+        strokeWidth: 2,
+      },
+      {
+        dataKey: 'totalCost',
+        name: 'Total Cost',
+        color: '#82ca9d',
+        strokeWidth: 2,
+      },
+    ];
+
+    // Add individual portfolio lines
+    portfolioSummary.forEach((portfolio, index) => {
+      lines.push(
+        {
+          dataKey: `${portfolio.name} Value`,
+          name: `${portfolio.name} Value`,
+          color: getPortfolioColor(index),
+          strokeWidth: 1,
+          strokeDasharray: '5 5',
+        },
+        {
+          dataKey: `${portfolio.name} Cost`,
+          name: `${portfolio.name} Cost`,
+          color: getPortfolioColor(index),
+          strokeWidth: 1,
+          strokeDasharray: '2 2',
+          opacity: 0.7,
+        }
+      );
+    });
+
+    return lines;
+  };
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -146,66 +177,10 @@ const Overview = () => {
       <div className="charts-section">
         <div className="chart-container">
           <h2>Portfolio Value Over Time</h2>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
-              />
-              <Tooltip
-                formatter={(value) => (value ? formatCurrency(value) : 'N/A')}
-                labelFormatter={(label) => `Date: ${label}`}
-              />
-              <Legend />
-              {/* Total Value and Cost lines */}
-              <Line
-                type="monotone"
-                dataKey="totalValue"
-                name="Total Value"
-                stroke="#8884d8"
-                dot={false}
-                strokeWidth={2}
-                connectNulls={true}
-              />
-              <Line
-                type="monotone"
-                dataKey="totalCost"
-                name="Total Cost"
-                stroke="#82ca9d"
-                dot={false}
-                strokeWidth={2}
-                connectNulls={true}
-              />
-              {/* Individual portfolio lines */}
-              {portfolioSummary.map((portfolio, index) => (
-                <React.Fragment key={portfolio.id}>
-                  <Line
-                    type="monotone"
-                    dataKey={`${portfolio.name} Value`}
-                    name={`${portfolio.name} Value`}
-                    stroke={getPortfolioColor(index)}
-                    dot={false}
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    connectNulls={true}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={`${portfolio.name} Cost`}
-                    name={`${portfolio.name} Cost`}
-                    stroke={getPortfolioColor(index)}
-                    dot={false}
-                    strokeWidth={1}
-                    strokeDasharray="2 2"
-                    opacity={0.7}
-                    connectNulls={true}
-                  />
-                </React.Fragment>
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+          <ValueChart
+            data={chartData}
+            lines={getChartLines()}
+          />
         </div>
       </div>
 

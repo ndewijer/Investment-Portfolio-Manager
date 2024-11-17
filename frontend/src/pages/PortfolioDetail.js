@@ -25,6 +25,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import FilterPopup from '../components/FilterPopup';
+import ValueChart from '../components/ValueChart';
 
 const TYPE_OPTIONS = [
   { label: 'Buy', value: 'buy' },
@@ -104,6 +105,8 @@ const PortfolioDetail = () => {
   const [fundPrices, setFundPrices] = useState({});
 
   const [priceFound, setPriceFound] = useState(false);
+
+  const [timeRange, setTimeRange] = useState('1M'); // Default to last month view
 
   const fetchFundPrice = async (fundId) => {
     try {
@@ -344,7 +347,19 @@ const PortfolioDetail = () => {
     const fetchFundHistory = async () => {
       try {
         const response = await api.get(`/portfolios/${id}/fund-history`);
-        setFundHistory(response.data);
+        const historyData = response.data;
+        
+        // Filter based on timeRange
+        const filtered = timeRange === '1M' 
+          ? historyData.filter(day => {
+              const date = new Date(day.date);
+              const monthAgo = new Date();
+              monthAgo.setMonth(monthAgo.getMonth() - 1);
+              return date >= monthAgo;
+            })
+          : historyData;
+          
+        setFundHistory(filtered);
       } catch (error) {
         console.error('Error fetching fund history:', error);
       }
@@ -353,7 +368,7 @@ const PortfolioDetail = () => {
     if (portfolio) {
       fetchFundHistory();
     }
-  }, [portfolio, id]);
+  }, [portfolio, id, timeRange]); // Added timeRange as dependency
 
   useEffect(() => {
     const fetchDividends = async () => {
@@ -651,6 +666,33 @@ const PortfolioDetail = () => {
     }
   };
 
+  const formatChartData = () => {
+    if (!fundHistory.length) return [];
+    
+    return fundHistory.map(day => ({
+      date: new Date(day.date).toLocaleDateString(),
+      value: day.value || 0,
+      cost: day.cost || 0
+    }));
+  };
+
+  const getChartLines = () => {
+    return [
+      {
+        dataKey: 'value',
+        name: 'Portfolio Value',
+        color: '#8884d8',
+        strokeWidth: 2,
+      },
+      {
+        dataKey: 'cost',
+        name: 'Cost Basis',
+        color: '#82ca9d',
+        strokeWidth: 2,
+      }
+    ];
+  };
+
   return (
     <div className="portfolio-detail-page">
       {loading ? (
@@ -700,49 +742,18 @@ const PortfolioDetail = () => {
             </div>
           </div>
 
-          <section className="portfolio-chart">
-            <h2>Fund Values Over Time</h2>
+          <div className="chart-section">
             <div className="chart-container">
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={fundHistory}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    tickFormatter={(value) => formatCurrency(value / 1000) + 'k'}
-                  />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(value)}
-                    labelFormatter={(label) => `Date: ${new Date(label).toLocaleDateString()}`}
-                  />
-                  <Legend />
-                  {portfolioFunds.map((pf, index) => (
-                    <React.Fragment key={pf.id}>
-                      <Line
-                        type="monotone"
-                        dataKey={`funds[${index}].value`}
-                        name={`${pf.fund_name} Value`}
-                        stroke={getFundColor(index)}
-                        dot={false}
-                        strokeWidth={2}
-                        connectNulls={true}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey={`funds[${index}].cost`}
-                        name={`${pf.fund_name} Cost`}
-                        stroke={getFundColor(index)}
-                        dot={false}
-                        strokeWidth={1}
-                        strokeDasharray="5 5"
-                        connectNulls={true}
-                      />
-                    </React.Fragment>
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
+              <h2>Portfolio Value Over Time</h2>
+              <ValueChart
+                data={formatChartData()}
+                lines={getChartLines()}
+                timeRange={timeRange}
+                onTimeRangeChange={setTimeRange}
+                showTimeRangeButtons={true}
+              />
             </div>
-          </section>
+          </div>
 
           <section className="portfolio-funds">
             <div className="section-header">

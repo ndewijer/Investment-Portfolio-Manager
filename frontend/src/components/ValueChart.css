@@ -1,0 +1,44 @@
+.chart-wrapper {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.chart-button {
+  padding: 8px 16px;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  background-color: white;
+  color: #1976d2;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.chart-button:hover {
+  background-color: #f0f7ff;
+}
+
+.chart-button.active {
+  background-color: #1976d2;
+  color: white;
+  opacity: 0.9;
+}
+
+.chart-container {
+  width: 100%;
+  padding: 20px;
+  margin-bottom: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container .recharts-responsive-container {
+  margin: 20px 0;
+} 
