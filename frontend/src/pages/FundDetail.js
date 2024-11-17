@@ -168,10 +168,10 @@ const FundDetail = () => {
   };
 
   const formatChartData = () => {
-    return filteredPriceHistory.map(price => ({
+    return filteredPriceHistory.map((price) => ({
       date: new Date(price.date).toLocaleDateString(),
       value: price.price,
-      cost: null
+      cost: null,
     }));
   };
 
@@ -182,7 +182,7 @@ const FundDetail = () => {
         name: 'Price',
         color: '#8884d8',
         strokeWidth: 2,
-      }
+      },
     ];
   };
 

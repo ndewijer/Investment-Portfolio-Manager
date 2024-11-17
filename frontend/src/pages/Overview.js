@@ -177,10 +177,7 @@ const Overview = () => {
       <div className="charts-section">
         <div className="chart-container">
           <h2>Portfolio Value Over Time</h2>
-          <ValueChart
-            data={chartData}
-            lines={getChartLines()}
-          />
+          <ValueChart data={chartData} lines={getChartLines()} />
         </div>
       </div>
 

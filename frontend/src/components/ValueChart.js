@@ -30,8 +30,8 @@ const ValueChart = ({
     let max = -Infinity;
 
     // Check all lines and find min/max values
-    data.forEach(point => {
-      lines.forEach(line => {
+    data.forEach((point) => {
+      lines.forEach((line) => {
         const value = point[line.dataKey];
         if (value !== null && value !== undefined) {
           min = Math.min(min, value);
@@ -44,7 +44,7 @@ const ValueChart = ({
     const padding = (max - min) * 0.05;
     return [
       Math.max(0, Math.floor(min - padding)), // Round down and don't go below 0
-      Math.ceil(max + padding) // Round up
+      Math.ceil(max + padding), // Round up
     ];
   };
 
@@ -52,7 +52,7 @@ const ValueChart = ({
   const formatYAxis = (value) => {
     const domain = calculateDomain();
     const maxValue = domain[1];
-    
+
     // Round the value to whole numbers
     const roundedValue = Math.round(value);
 
@@ -89,25 +89,18 @@ const ValueChart = ({
           </button>
         </div>
       )}
-      
+
       <ResponsiveContainer width="100%" height={height}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="date" 
-            tick={{ fontSize: 12 }} 
-            interval="preserveStartEnd" 
-          />
+          <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
           <YAxis
             domain={calculateDomain()}
             tick={{ fontSize: 12 }}
             tickFormatter={formatYAxis}
             width={80}
           />
-          <Tooltip
-            formatter={formatTooltip}
-            labelFormatter={(label) => `Date: ${label}`}
-          />
+          <Tooltip formatter={formatTooltip} labelFormatter={(label) => `Date: ${label}`} />
           <Legend />
           {lines.map((line, index) => (
             <Line
@@ -129,4 +122,4 @@ const ValueChart = ({
   );
 };
 
-export default ValueChart; 
+export default ValueChart;

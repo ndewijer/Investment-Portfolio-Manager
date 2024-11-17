@@ -348,17 +348,18 @@ const PortfolioDetail = () => {
       try {
         const response = await api.get(`/portfolios/${id}/fund-history`);
         const historyData = response.data;
-        
+
         // Filter based on timeRange
-        const filtered = timeRange === '1M' 
-          ? historyData.filter(day => {
-              const date = new Date(day.date);
-              const monthAgo = new Date();
-              monthAgo.setMonth(monthAgo.getMonth() - 1);
-              return date >= monthAgo;
-            })
-          : historyData;
-          
+        const filtered =
+          timeRange === '1M'
+            ? historyData.filter((day) => {
+                const date = new Date(day.date);
+                const monthAgo = new Date();
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+                return date >= monthAgo;
+              })
+            : historyData;
+
         setFundHistory(filtered);
       } catch (error) {
         console.error('Error fetching fund history:', error);
@@ -668,8 +669,8 @@ const PortfolioDetail = () => {
 
   const formatChartData = () => {
     if (!fundHistory.length) return [];
-    
-    return fundHistory.map(day => {
+
+    return fundHistory.map((day) => {
       const dayData = {
         date: new Date(day.date).toLocaleDateString(),
       };
@@ -686,7 +687,7 @@ const PortfolioDetail = () => {
 
   const getChartLines = () => {
     const lines = [];
-    
+
     // Create lines for each fund using array indexing
     portfolioFunds.forEach((fund, index) => {
       // Add value line
@@ -697,7 +698,7 @@ const PortfolioDetail = () => {
         strokeWidth: 2,
         connectNulls: true,
       });
-      
+
       // Add cost line
       lines.push({
         dataKey: `funds[${index}].cost`,
