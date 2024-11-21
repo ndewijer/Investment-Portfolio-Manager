@@ -56,6 +56,7 @@ module.exports = (env, argv) => {
             loader: 'babel-loader',
             options: {
               presets: ['@babel/preset-env', '@babel/preset-react'],
+              cacheDirectory: true,
             },
           },
         },
@@ -115,6 +116,14 @@ module.exports = (env, argv) => {
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     performance: {
       hints: false,
+    },
+    optimization: {
+      concatenateModules: false,
+      minimize: isProduction,
+      splitChunks: {
+        chunks: 'all',
+        name: false,
+      },
     },
   };
 };
