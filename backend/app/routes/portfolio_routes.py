@@ -62,6 +62,7 @@ class PortfolioAPI(MethodView):
                         "name": p.name,
                         "description": p.description,
                         "is_archived": p.is_archived,
+                        "exclude_from_overview": p.exclude_from_overview,
                     }
                     for p in portfolios
                 ]
@@ -136,12 +137,14 @@ class PortfolioAPI(MethodView):
         data = request.json
         portfolio.name = data["name"]
         portfolio.description = data.get("description", "")
+        portfolio.exclude_from_overview = data.get("exclude_from_overview", False)
         db.session.commit()
         return jsonify(
             {
                 "id": portfolio.id,
                 "name": portfolio.name,
                 "description": portfolio.description,
+                "exclude_from_overview": portfolio.exclude_from_overview,
             }
         )
 
@@ -440,3 +443,25 @@ def delete_portfolio_fund(portfolio_fund_id):
             http_status=400,
         )
         return jsonify(response), status
+
+
+@portfolios.route("/portfolios", methods=["GET"])
+def get_portfolios():
+    """Get all portfolios."""
+    include_excluded = request.args.get("include_excluded", "false").lower() == "true"
+    query = Portfolio.query
+    if not include_excluded:
+        query = query.filter_by(exclude_from_overview=False)
+    portfolios = query.all()
+    return jsonify(
+        [
+            {
+                "id": p.id,
+                "name": p.name,
+                "description": p.description,
+                "is_archived": p.is_archived,
+                "exclude_from_overview": p.exclude_from_overview,
+            }
+            for p in portfolios
+        ]
+    )

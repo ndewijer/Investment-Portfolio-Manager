@@ -98,6 +98,7 @@ class Portfolio(db.Model):
         name (str): Portfolio name
         description (str): Optional portfolio description
         is_archived (bool): Whether the portfolio is archived
+        exclude_from_overview (bool): Whether to exclude this portfolio from overview
         funds (relationship): Related PortfolioFund entries
     """
 
@@ -105,6 +106,7 @@ class Portfolio(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     is_archived = db.Column(db.Boolean, default=False)
+    exclude_from_overview = db.Column(db.Boolean, default=False)
     funds = db.relationship(
         "PortfolioFund", backref="portfolio", lazy=True, cascade="all, delete-orphan"
     )

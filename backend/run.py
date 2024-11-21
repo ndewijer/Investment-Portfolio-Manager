@@ -52,7 +52,8 @@ def create_app():
                 "origins": [
                     f"http://{frontend_host}",  # Production HTTP
                     f"https://{frontend_host}",  # Production HTTPS
-                    "http://localhost:3000",  # Development
+                    "http://localhost:3000",  # Development scripts
+                    "http://localhost",  # Development docker
                 ],
                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
                 "allow_headers": [
