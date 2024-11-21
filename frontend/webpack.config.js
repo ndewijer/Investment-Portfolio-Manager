@@ -56,6 +56,7 @@ module.exports = (env, argv) => {
             loader: 'babel-loader',
             options: {
               presets: ['@babel/preset-env', '@babel/preset-react'],
+              cacheDirectory: true,
             },
           },
         },
@@ -63,12 +64,17 @@ module.exports = (env, argv) => {
           test: /\.css$/,
           use: ['style-loader', 'css-loader'],
         },
+        {
+          test: /\.(ico|png|jpg|jpeg|gif|svg)$/,
+          type: 'asset/resource',
+        },
       ],
     },
     plugins: [
       new HtmlWebpackPlugin({
         template: './public/index.html',
         filename: 'index.html',
+        favicon: './public/favicon.ico',
         inject: true,
       }),
       new webpack.DefinePlugin(stringifiedEnv),
@@ -79,7 +85,10 @@ module.exports = (env, argv) => {
     devServer: {
       historyApiFallback: {
         disableDotRule: true,
-        rewrites: [{ from: /^\/[^?]*$/, to: '/index.html' }],
+        rewrites: [
+          { from: /^\/favicon.ico$/, to: '/favicon.ico' },
+          { from: /^\/[^.]*$/, to: '/index.html' },
+        ],
       },
       hot: true,
       port: 3000,
@@ -107,6 +116,14 @@ module.exports = (env, argv) => {
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     performance: {
       hints: false,
+    },
+    optimization: {
+      concatenateModules: false,
+      minimize: isProduction,
+      splitChunks: {
+        chunks: 'all',
+        name: false,
+      },
     },
   };
 };
