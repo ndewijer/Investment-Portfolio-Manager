@@ -33,9 +33,11 @@ Access at http://localhost (or your configured domain)
 ## Features
 - Portfolio management with transaction tracking
 - Cash and stock dividend processing
+- Automated daily fund price updates
 - Fund price history and currency conversion
 - CSV import/export functionality
 - System logging and monitoring
+- Protected API endpoints for automated tasks
 
 ## License
 Apache License, Version 2.0
