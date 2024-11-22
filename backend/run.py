@@ -7,15 +7,18 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
-from app.models import Fund, LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
+from app.models import LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
 from app.routes.developer_routes import developer
 from app.routes.dividend_routes import dividends
 from app.routes.fund_routes import funds
 from app.routes.portfolio_routes import portfolios
 from app.routes.transaction_routes import transactions
 from app.seed_data import seed_database
-from app.services.price_update_service import HistoricalPriceService, TodayPriceService
+
+from app.tasks.price_updates import update_all_fund_prices
 
 load_dotenv()
 
@@ -108,6 +111,25 @@ def create_app():
 
         db.session.commit()
 
+    # Set up scheduler
+    scheduler = BackgroundScheduler()
+
+    # Create a wrapper function that provides app context
+    def run_price_updates():
+        with app.app_context():
+            update_all_fund_prices()
+
+    # Schedule the price update task to run at 23:55 local time every weekday
+    scheduler.add_job(
+        func=run_price_updates,  # Use the wrapper function instead
+        trigger=CronTrigger(hour=23, minute=55, day_of_week="mon-fri"),
+        id="daily_price_update",
+        name="Update all fund prices daily",
+        replace_existing=True,
+    )
+
+    scheduler.start()
+
     # CLI commands
     @app.cli.command("seed-db")
     def seed_db_command():
@@ -116,36 +138,6 @@ def create_app():
             db.create_all()
             seed_database()
             click.echo("Database seeded successfully!")
-
-    @app.cli.command("update-prices")
-    def update_prices_command():
-        """Update all fund prices."""
-        with app.app_context():
-            funds = Fund.query.filter(Fund.symbol.isnot(None)).all()
-            results = []
-
-            for fund in funds:
-                # Update today's price for funds
-                if fund.investment_type == "fund":
-                    today_response, _ = TodayPriceService.update_todays_price(fund.id)
-
-                # Update historical prices for all
-                hist_response, _ = HistoricalPriceService.update_historical_prices(
-                    fund.id
-                )
-
-                results.append(
-                    {
-                        "fund_id": fund.id,
-                        "name": fund.name,
-                        "success": hist_response.get("status") == "success",
-                    }
-                )
-
-            click.echo(f"Updated prices for {len(results)} funds")
-            for result in results:
-                status = "✓" if result["success"] else "✗"
-                click.echo(f"{status} {result['name']}")
 
     return app
 
