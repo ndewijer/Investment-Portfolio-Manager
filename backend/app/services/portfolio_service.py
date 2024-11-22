@@ -113,7 +113,7 @@ class PortfolioService:
     @staticmethod
     def get_portfolio_summary():
         """
-        Get summary of all non-archived portfolios.
+        Get summary of all non-archived and visible portfolios.
 
         Returns:
             list: List of dictionaries containing:
@@ -127,7 +127,9 @@ class PortfolioService:
         Raises:
             None
         """
-        portfolios = Portfolio.query.filter_by(is_archived=False).all()
+        portfolios = Portfolio.query.filter_by(
+            is_archived=False, exclude_from_overview=False
+        ).all()
         summary = []
 
         for portfolio in portfolios:
@@ -203,7 +205,7 @@ class PortfolioService:
     @staticmethod
     def get_portfolio_history():
         """
-        Get historical value data for all non-archived portfolios.
+        Get historical value data for all non-archived and visible portfolios.
 
         Returns:
             list: List of daily values containing:
@@ -217,7 +219,9 @@ class PortfolioService:
         Raises:
             None
         """
-        portfolios = Portfolio.query.filter_by(is_archived=False).all()
+        portfolios = Portfolio.query.filter_by(
+            is_archived=False, exclude_from_overview=False
+        ).all()
         history = []
 
         portfolio_date_ranges = {}

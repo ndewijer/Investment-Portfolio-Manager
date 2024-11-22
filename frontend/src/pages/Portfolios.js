@@ -10,7 +10,11 @@ const Portfolios = () => {
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState(null);
-  const [newPortfolio, setNewPortfolio] = useState({ name: '', description: '' });
+  const [newPortfolio, setNewPortfolio] = useState({
+    name: '',
+    description: '',
+    exclude_from_overview: false,
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,7 +46,7 @@ const Portfolios = () => {
       }
       setIsModalOpen(false);
       setEditingPortfolio(null);
-      setNewPortfolio({ name: '', description: '' });
+      setNewPortfolio({ name: '', description: '', exclude_from_overview: false });
     } catch (error) {
       console.error('Error saving portfolio:', error);
     }
@@ -100,7 +104,12 @@ const Portfolios = () => {
               <button onClick={() => handleViewPortfolio(portfolio.id)}>View Details</button>
               <button
                 onClick={() => {
-                  setEditingPortfolio(portfolio);
+                  setEditingPortfolio({
+                    id: portfolio.id,
+                    name: portfolio.name,
+                    description: portfolio.description,
+                    exclude_from_overview: portfolio.exclude_from_overview || false,
+                  });
                   setIsModalOpen(true);
                 }}
               >
@@ -153,6 +162,32 @@ const Portfolios = () => {
                 }
               }}
             />
+          </div>
+          <div className="form-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={
+                  editingPortfolio
+                    ? editingPortfolio.exclude_from_overview
+                    : newPortfolio.exclude_from_overview
+                }
+                onChange={(e) => {
+                  if (editingPortfolio) {
+                    setEditingPortfolio({
+                      ...editingPortfolio,
+                      exclude_from_overview: e.target.checked,
+                    });
+                  } else {
+                    setNewPortfolio({
+                      ...newPortfolio,
+                      exclude_from_overview: e.target.checked,
+                    });
+                  }
+                }}
+              />
+              Exclude from overview page
+            </label>
           </div>
           <div className="modal-actions">
             <button type="submit">{editingPortfolio ? 'Update' : 'Create'}</button>

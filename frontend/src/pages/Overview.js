@@ -143,6 +143,18 @@ const Overview = () => {
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
+  if (portfolioSummary.length === 0) {
+    return (
+      <div className="overview">
+        <h1>Investment Portfolio Overview</h1>
+        <div className="no-portfolios-message">
+          <p>No visible portfolios to display.</p>
+          <p>Portfolios might be hidden from the overview or archived.</p>
+          <button onClick={() => navigate('/portfolios')}>Manage Portfolios</button>
+        </div>
+      </div>
+    );
+  }
 
   const totals = calculateTotalPerformance();
   const chartData = formatChartData();
