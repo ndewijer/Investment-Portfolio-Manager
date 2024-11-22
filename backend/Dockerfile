@@ -24,13 +24,16 @@ COPY . .
 # Create directories for database and logs
 RUN mkdir -p $DB_DIR $LOG_DIR
 
-# Generate random API key if not provided
+# Create wrapper script that sets up environment and runs the command
 RUN echo '#!/bin/sh\n\
 if [ -z "$INTERNAL_API_KEY" ]; then\n\
-  export INTERNAL_API_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")\n\
-  echo "Generated INTERNAL_API_KEY: $INTERNAL_API_KEY"\n\
+    KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")\n\
+    echo "Generated INTERNAL_API_KEY: $KEY"\n\
+    echo "export INTERNAL_API_KEY=$KEY" >> /etc/profile\n\
+    echo "export INTERNAL_API_KEY=$KEY" >> ~/.bashrc\n\
+    export INTERNAL_API_KEY=$KEY\n\
 fi\n\
-exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
+exec env INTERNAL_API_KEY=$INTERNAL_API_KEY "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 5000
