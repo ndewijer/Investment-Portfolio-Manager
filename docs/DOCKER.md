@@ -15,6 +15,7 @@ USE_HTTPS=true/false  # Controls protocol for API calls
 # Backend
 DB_DIR=/data/db
 LOG_DIR=/data/logs
+INTERNAL_API_KEY=your-secure-key-here  # Optional; auto-generated if not provided
 
 # Frontend
 # Inherits DOMAIN and USE_HTTPS
@@ -24,6 +25,7 @@ LOG_DIR=/data/logs
 ```bash
 DOMAIN=ipm.local
 USE_HTTPS=false
+INTERNAL_API_KEY=your-secure-random-key-here
 ```
 
 ## HTTPS Configuration
@@ -56,3 +58,17 @@ volumes:
 ## Development vs Production
 - Development: Webpack dev server & Flask
 - Production: Nginx & Gunicorn
+
+## API Key Management
+The INTERNAL_API_KEY can be handled in two ways:
+
+1. Manually specified:
+   ```bash
+   INTERNAL_API_KEY=your-secure-key-here
+   ```
+
+2. Auto-generated:
+   - If not provided, a secure random key is generated at container start
+   - The generated key is logged at startup for reference
+   - The key persists for the container's lifetime
+   - A new key is generated if the container is recreated
