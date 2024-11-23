@@ -12,6 +12,16 @@
 - RESTful API design
 - Comprehensive logging system
 
+## Automated Tasks
+- Daily fund price updates (weekdays at 23:55)
+- Protected endpoints with API key authentication
+- Scheduled tasks run with application context
+
+## Security
+- API key authentication for automated tasks
+- Time-based token validation
+- Protected endpoints for system tasks
+
 ## Project Structure
 ```
 Investment-Portfolio-Manager/

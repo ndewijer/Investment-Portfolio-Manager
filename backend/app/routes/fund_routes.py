@@ -27,6 +27,7 @@ from ..models import (
 from ..services.logging_service import logger, track_request
 from ..services.price_update_service import HistoricalPriceService, TodayPriceService
 from ..services.symbol_lookup_service import SymbolLookupService
+from ..utils.security import require_api_key
 
 funds = Blueprint("funds", __name__)
 
@@ -611,3 +612,72 @@ def update_fund_prices(fund_id):
             http_status=500,
         )
         return jsonify(response), status
+
+
+@funds.route("/funds/update-all-prices", methods=["POST"])
+@require_api_key
+def update_all_fund_prices():
+    """
+    Update prices for all funds with symbols.
+
+    This endpoint is meant to be called once daily.
+    Protected by API key and time-based token.
+
+    Returns:
+        JSON response containing update results
+    """
+    try:
+        # Get all funds with symbols
+        funds_with_symbols = Fund.query.filter(
+            Fund.symbol.isnot(None), Fund.symbol != ""
+        ).all()
+
+        updated_funds = []
+        errors = []
+
+        for fund in funds_with_symbols:
+            try:
+                result, status = HistoricalPriceService.update_historical_prices(
+                    fund.id
+                )
+
+                if status == 200:
+                    updated_funds.append(
+                        {
+                            "fund_id": fund.id,
+                            "name": fund.name,
+                            "symbol": fund.symbol,
+                            "prices_added": result.get("prices_added", 0),
+                        }
+                    )
+                else:
+                    errors.append(
+                        {
+                            "fund_id": fund.id,
+                            "name": fund.name,
+                            "symbol": fund.symbol,
+                            "error": result.get("message", "Unknown error"),
+                        }
+                    )
+            except Exception as e:
+                errors.append(
+                    {
+                        "fund_id": fund.id,
+                        "name": fund.name,
+                        "symbol": fund.symbol,
+                        "error": str(e),
+                    }
+                )
+
+        return jsonify(
+            {
+                "success": True,
+                "updated_funds": updated_funds,
+                "errors": errors,
+                "total_updated": len(updated_funds),
+                "total_errors": len(errors),
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500

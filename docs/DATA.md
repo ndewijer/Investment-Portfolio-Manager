@@ -34,7 +34,9 @@ backend/data/
 - System Logs
 
 ## Data Management
-- Automatic price updates via Yahoo Finance
+- Automatic daily price updates via Yahoo Finance (weekdays at 23:55)
+- Protected endpoints for automated tasks
 - CSV import/export functionality
 - Data validation and sanitization
 - Error logging and tracking
+- Time-accurate logging with proper timestamps

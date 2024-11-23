@@ -27,4 +27,22 @@ npm start
 - Black and Flake8 for backend
 - Pre-commit hooks for code quality
 
+## Environment Setup
+```bash
+# Required environment variables
+INTERNAL_API_KEY=your-secure-key-here  # For automated tasks
+DB_DIR=/path/to/data/db
+LOG_DIR=/path/to/data/logs
+```
+
+## Automated Tasks
+The application includes automated tasks for:
+- Daily fund price updates (weekdays at 23:55)
+- System maintenance and cleanup
+
+These tasks require:
+- Valid INTERNAL_API_KEY in environment
+- Proper application context
+- Database access
+
 [Detailed development documentation...]
