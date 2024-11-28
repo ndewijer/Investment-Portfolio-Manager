@@ -7,7 +7,7 @@ portfolio funds, and retrieving portfolio history and summaries.
 
 from datetime import datetime, timedelta
 
-from ..models import Dividend, FundPrice, Portfolio, PortfolioFund, Transaction
+from ..models import Dividend, FundPrice, Portfolio, PortfolioFund, Transaction, RealizedGainLoss
 
 
 class PortfolioService:
@@ -38,6 +38,9 @@ class PortfolioService:
                 - average_cost: Average cost per share
                 - total_cost: Total investment cost
                 - current_value: Current market value
+                - unrealized_gain_loss: Unrealized gain/loss
+                - realized_gain_loss: Realized gain/loss
+                - total_gain_loss: Total gain/loss
                 - total_dividends: Total dividends received
                 - dividend_type: Type of dividends
 
@@ -49,7 +52,16 @@ class PortfolioService:
         for pf in portfolio_funds:
             shares = 0
             cost = 0
+            realized_gain_loss = 0
             total_dividends = 0
+            
+            # Calculate realized gains/losses
+            realized_records = RealizedGainLoss.query.filter_by(
+                portfolio_id=pf.portfolio_id,
+                fund_id=pf.fund_id
+            ).all()
+            
+            historical_realized_gain = sum(r.realized_gain_loss for r in realized_records)
 
             # Get all transactions sorted by date
             transactions = (
@@ -58,18 +70,11 @@ class PortfolioService:
                 .all()
             )
 
+            # Calculate current position
             for transaction in transactions:
                 if transaction.type == "buy":
-                    # For buy transactions, exclude those from stock dividends
-                    # Check if this transaction is linked to a dividend
-                    dividend = Dividend.query.filter_by(
-                        reinvestment_transaction_id=transaction.id
-                    ).first()
-                    if not dividend:  # Only count cost if not a dividend reinvestment
-                        shares += transaction.shares
-                        cost += transaction.shares * transaction.cost_per_share
-                    else:  # For dividend reinvestment, add shares but not cost
-                        shares += transaction.shares
+                    shares += transaction.shares
+                    cost += transaction.shares * transaction.cost_per_share
                 elif transaction.type == "sell":
                     # For sell transactions, subtract shares and adjust cost proportionally
                     shares -= transaction.shares
@@ -79,11 +84,6 @@ class PortfolioService:
                     else:
                         cost = 0
 
-            # Calculate total dividends paid
-            dividends = Dividend.query.filter_by(portfolio_fund_id=pf.id).all()
-            for dividend in dividends:
-                total_dividends += dividend.total_amount
-
             # Get latest price
             latest_price = (
                 FundPrice.query.filter_by(fund_id=pf.fund_id)
@@ -92,21 +92,28 @@ class PortfolioService:
             )
 
             current_value = shares * (latest_price.price if latest_price else 0)
+            unrealized_gain_loss = current_value - cost
+            total_gain_loss = historical_realized_gain + unrealized_gain_loss
 
-            result.append(
-                {
-                    "id": pf.id,
-                    "fund_id": pf.fund_id,
-                    "fund_name": pf.fund.name,
-                    "total_shares": shares,
-                    "latest_price": latest_price.price if latest_price else 0,
-                    "average_cost": cost / shares if shares > 0 else 0,
-                    "total_cost": cost,
-                    "current_value": current_value,
-                    "total_dividends": total_dividends,
-                    "dividend_type": pf.fund.dividend_type.value,
-                }
-            )
+            # Calculate total dividends
+            dividends = Dividend.query.filter_by(portfolio_fund_id=pf.id).all()
+            total_dividends = sum(d.total_amount for d in dividends)
+
+            result.append({
+                "id": pf.id,
+                "fund_id": pf.fund_id,
+                "fund_name": pf.fund.name,
+                "total_shares": shares,
+                "latest_price": latest_price.price if latest_price else 0,
+                "average_cost": cost / shares if shares > 0 else 0,
+                "total_cost": cost,
+                "current_value": current_value,
+                "unrealized_gain_loss": unrealized_gain_loss,
+                "realized_gain_loss": historical_realized_gain,
+                "total_gain_loss": total_gain_loss,
+                "total_dividends": total_dividends,
+                "dividend_type": pf.fund.dividend_type.value,
+            })
 
         return result
 
@@ -119,10 +126,13 @@ class PortfolioService:
             list: List of dictionaries containing:
                 - id: Portfolio ID
                 - name: Portfolio name
-                - total_value: Current total value
-                - total_cost: Total investment cost
-                - total_dividends: Total dividends received
-                - fund_count: Number of funds
+                - totalValue: Current total value
+                - totalCost: Total investment cost
+                - totalDividends: Total dividends received
+                - totalUnrealizedGainLoss: Total unrealized gain/loss
+                - totalRealizedGainLoss: Total realized gain/loss
+                - totalGainLoss: Total gain/loss
+                - is_archived: Whether portfolio is archived
 
         Raises:
             None
@@ -133,29 +143,31 @@ class PortfolioService:
         summary = []
 
         for portfolio in portfolios:
-            has_transactions = False
             portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(
                 portfolio.funds
             )
 
             if portfolio_funds_data:
-                total_value = sum(pf["current_value"] for pf in portfolio_funds_data)
-                total_cost = sum(pf["total_cost"] for pf in portfolio_funds_data)
-                total_dividends = sum(
-                    pf["total_dividends"] for pf in portfolio_funds_data
-                )
                 has_transactions = any(
                     pf["total_shares"] > 0 for pf in portfolio_funds_data
                 )
 
                 if has_transactions:
+                    # Calculate totals from portfolio_funds_data
+                    totals = {
+                        "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
+                        "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
+                        "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
+                        "totalUnrealizedGainLoss": sum(pf["unrealized_gain_loss"] for pf in portfolio_funds_data),
+                        "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
+                        "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data)
+                    }
+
                     summary.append(
                         {
                             "id": portfolio.id,
                             "name": portfolio.name,
-                            "totalValue": total_value,
-                            "totalCost": total_cost,
-                            "totalDividends": total_dividends,
+                            **totals,
                             "is_archived": portfolio.is_archived,
                         }
                     )

@@ -747,20 +747,9 @@ const PortfolioDetail = () => {
             <div className="summary-card">
               <h3>Gain/Loss</h3>
               <p
-                className={`${
-                  (portfolio.totalValue || 0) +
-                    (portfolio.totalDividends || 0) -
-                    (portfolio.totalCost || 0) >=
-                  0
-                    ? 'positive'
-                    : 'negative'
-                }`}
+                className={portfolio.total_gain_loss >= 0 ? 'positive' : 'negative'}
               >
-                {formatCurrency(
-                  (portfolio.totalValue || 0) +
-                    (portfolio.totalDividends || 0) -
-                    (portfolio.totalCost || 0)
-                )}
+                {formatCurrency(portfolio.totalGainLoss)}
               </p>
             </div>
           </div>

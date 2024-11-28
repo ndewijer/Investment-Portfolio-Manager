@@ -81,6 +81,9 @@ class PortfolioAPI(MethodView):
             total_value = sum(pf["current_value"] for pf in portfolio_funds_data)
             total_cost = sum(pf["total_cost"] for pf in portfolio_funds_data)
             total_dividends = sum(pf["total_dividends"] for pf in portfolio_funds_data)
+            total_unrealized_gain_loss = sum(pf["unrealized_gain_loss"] for pf in portfolio_funds_data)
+            total_realized_gain_loss = sum(pf["realized_gain_loss"] for pf in portfolio_funds_data)
+            total_gain_loss = sum(pf["total_gain_loss"] for pf in portfolio_funds_data)
 
             return jsonify(
                 {
@@ -91,6 +94,9 @@ class PortfolioAPI(MethodView):
                     "totalValue": total_value,
                     "totalCost": total_cost,
                     "totalDividends": total_dividends,
+                    "totalUnrealizedGainLoss": total_unrealized_gain_loss,
+                    "totalRealizedGainLoss": total_realized_gain_loss,
+                    "totalGainLoss": total_gain_loss
                 }
             )
 
