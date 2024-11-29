@@ -267,7 +267,9 @@ class TransactionService:
         db.session.add(transaction)
 
         # Calculate and record the realized gain/loss
-        current_position = TransactionService.calculate_current_position(portfolio_fund_id)
+        current_position = TransactionService.calculate_current_position(
+            portfolio_fund_id
+        )
         if current_position["total_shares"] < shares:
             raise ValueError("Insufficient shares for sale")
 
