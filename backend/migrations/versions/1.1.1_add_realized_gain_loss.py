@@ -3,7 +3,7 @@ Add RealizedGainLoss table.
 
 Revision ID: 1.1.1
 Revises: None
-Create Date: 2024-03-21
+Create Date: 2024-11-29
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "1.1.1"
-down_revision = None
+down_revision = "1.1.0"
 branch_labels = None
 depends_on = None
 
