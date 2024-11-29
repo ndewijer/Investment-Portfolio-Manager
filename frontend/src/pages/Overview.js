@@ -41,16 +41,28 @@ const Overview = () => {
         return {
           totalValue: acc.totalValue + portfolio.totalValue,
           totalCost: acc.totalCost + portfolio.totalCost,
+          totalUnrealizedGainLoss: acc.totalUnrealizedGainLoss + portfolio.totalUnrealizedGainLoss,
+          totalRealizedGainLoss: acc.totalRealizedGainLoss + portfolio.totalRealizedGainLoss,
+          totalGainLoss: acc.totalGainLoss + portfolio.totalGainLoss,
         };
       },
-      { totalValue: 0, totalCost: 0 }
+      {
+        totalValue: 0,
+        totalCost: 0,
+        totalUnrealizedGainLoss: 0,
+        totalRealizedGainLoss: 0,
+        totalGainLoss: 0,
+      }
     );
 
-    const performance = ((totals.totalValue / totals.totalCost - 1) * 100).toFixed(2);
+    const performance = (
+      (totals.totalValue / (totals.totalCost + totals.totalRealizedGainLoss) - 1) *
+      100
+    ).toFixed(2);
     return {
       ...totals,
       performance: performance,
-      gain: totals.totalValue - totals.totalCost,
+      gain: totals.totalGainLoss,
     };
   };
 
@@ -201,23 +213,30 @@ const Overview = () => {
               <th>Portfolio</th>
               <th>Current Value</th>
               <th>Cost Basis</th>
-              <th>Gain/Loss</th>
+              <th>Unrealized Gain/Loss</th>
+              <th>Realized Gain/Loss</th>
               <th>Performance</th>
             </tr>
           </thead>
           <tbody>
             {portfolioSummary.map((portfolio) => {
-              const gain = portfolio.totalValue - portfolio.totalCost;
-              const performance = ((portfolio.totalValue / portfolio.totalCost - 1) * 100).toFixed(
-                2
-              );
+              const performance = (
+                (portfolio.totalValue / (portfolio.totalCost + portfolio.totalRealizedGainLoss) -
+                  1) *
+                100
+              ).toFixed(2);
 
               return (
                 <tr key={portfolio.id} onClick={() => handlePortfolioClick(portfolio.id)}>
                   <td>{portfolio.name}</td>
                   <td>{formatCurrency(portfolio.totalValue)}</td>
                   <td>{formatCurrency(portfolio.totalCost)}</td>
-                  <td className={gain >= 0 ? 'positive' : 'negative'}>{formatCurrency(gain)}</td>
+                  <td className={portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}>
+                    {formatCurrency(portfolio.totalUnrealizedGainLoss)}
+                  </td>
+                  <td className={portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}>
+                    {formatCurrency(portfolio.totalRealizedGainLoss)}
+                  </td>
                   <td className={performance >= 0 ? 'positive' : 'negative'}>
                     {formatPercentage(performance)}
                   </td>

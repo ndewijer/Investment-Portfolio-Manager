@@ -81,7 +81,7 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
-    migrate = Migrate(app, db)
+    migrate = Migrate(app, db)  # noqa: F841
 
     # Register blueprints
     app.register_blueprint(portfolios, url_prefix="/api")
@@ -142,7 +142,7 @@ def create_app():
     def seed_db_command():
         """Seed the database with sample data."""
         with app.app_context():
-            #db.create_all()
+            db.create_all()
             seed_database()
             click.echo("Database seeded successfully!")
 

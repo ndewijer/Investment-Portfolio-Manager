@@ -7,7 +7,14 @@ portfolio funds, and retrieving portfolio history and summaries.
 
 from datetime import datetime, timedelta
 
-from ..models import Dividend, FundPrice, Portfolio, PortfolioFund, Transaction, RealizedGainLoss
+from ..models import (
+    Dividend,
+    FundPrice,
+    Portfolio,
+    PortfolioFund,
+    Transaction,
+    RealizedGainLoss,
+)
 
 
 class PortfolioService:
@@ -52,16 +59,16 @@ class PortfolioService:
         for pf in portfolio_funds:
             shares = 0
             cost = 0
-            realized_gain_loss = 0
             total_dividends = 0
-            
+
             # Calculate realized gains/losses
             realized_records = RealizedGainLoss.query.filter_by(
-                portfolio_id=pf.portfolio_id,
-                fund_id=pf.fund_id
+                portfolio_id=pf.portfolio_id, fund_id=pf.fund_id
             ).all()
-            
-            historical_realized_gain = sum(r.realized_gain_loss for r in realized_records)
+
+            historical_realized_gain = sum(
+                r.realized_gain_loss for r in realized_records
+            )
 
             # Get all transactions sorted by date
             transactions = (
@@ -99,21 +106,23 @@ class PortfolioService:
             dividends = Dividend.query.filter_by(portfolio_fund_id=pf.id).all()
             total_dividends = sum(d.total_amount for d in dividends)
 
-            result.append({
-                "id": pf.id,
-                "fund_id": pf.fund_id,
-                "fund_name": pf.fund.name,
-                "total_shares": shares,
-                "latest_price": latest_price.price if latest_price else 0,
-                "average_cost": cost / shares if shares > 0 else 0,
-                "total_cost": cost,
-                "current_value": current_value,
-                "unrealized_gain_loss": unrealized_gain_loss,
-                "realized_gain_loss": historical_realized_gain,
-                "total_gain_loss": total_gain_loss,
-                "total_dividends": total_dividends,
-                "dividend_type": pf.fund.dividend_type.value,
-            })
+            result.append(
+                {
+                    "id": pf.id,
+                    "fund_id": pf.fund_id,
+                    "fund_name": pf.fund.name,
+                    "total_shares": shares,
+                    "latest_price": latest_price.price if latest_price else 0,
+                    "average_cost": cost / shares if shares > 0 else 0,
+                    "total_cost": cost,
+                    "current_value": current_value,
+                    "unrealized_gain_loss": unrealized_gain_loss,
+                    "realized_gain_loss": historical_realized_gain,
+                    "total_gain_loss": total_gain_loss,
+                    "total_dividends": total_dividends,
+                    "dividend_type": pf.fund.dividend_type.value,
+                }
+            )
 
         return result
 
@@ -155,12 +164,24 @@ class PortfolioService:
                 if has_transactions:
                     # Calculate totals from portfolio_funds_data
                     totals = {
-                        "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
-                        "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
-                        "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
-                        "totalUnrealizedGainLoss": sum(pf["unrealized_gain_loss"] for pf in portfolio_funds_data),
-                        "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
-                        "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data)
+                        "totalValue": sum(
+                            pf["current_value"] for pf in portfolio_funds_data
+                        ),
+                        "totalCost": sum(
+                            pf["total_cost"] for pf in portfolio_funds_data
+                        ),
+                        "totalDividends": sum(
+                            pf["total_dividends"] for pf in portfolio_funds_data
+                        ),
+                        "totalUnrealizedGainLoss": sum(
+                            pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+                        ),
+                        "totalRealizedGainLoss": sum(
+                            pf["realized_gain_loss"] for pf in portfolio_funds_data
+                        ),
+                        "totalGainLoss": sum(
+                            pf["total_gain_loss"] for pf in portfolio_funds_data
+                        ),
                     }
 
                     summary.append(

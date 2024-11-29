@@ -745,10 +745,20 @@ const PortfolioDetail = () => {
               <p>{formatCurrency(portfolio.totalDividends || 0)}</p>
             </div>
             <div className="summary-card">
+              <h3>Unrealized Gain/Loss</h3>
+              <p className={portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}>
+                {formatCurrency(portfolio.totalUnrealizedGainLoss)}
+              </p>
+            </div>
+            <div className="summary-card">
+              <h3>Realized Gain/Loss</h3>
+              <p className={portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}>
+                {formatCurrency(portfolio.totalRealizedGainLoss)}
+              </p>
+            </div>
+            <div className="summary-card">
               <h3>Gain/Loss</h3>
-              <p
-                className={portfolio.total_gain_loss >= 0 ? 'positive' : 'negative'}
-              >
+              <p className={portfolio.totalGainLoss >= 0 ? 'positive' : 'negative'}>
                 {formatCurrency(portfolio.totalGainLoss)}
               </p>
             </div>

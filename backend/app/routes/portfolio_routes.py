@@ -81,8 +81,12 @@ class PortfolioAPI(MethodView):
             total_value = sum(pf["current_value"] for pf in portfolio_funds_data)
             total_cost = sum(pf["total_cost"] for pf in portfolio_funds_data)
             total_dividends = sum(pf["total_dividends"] for pf in portfolio_funds_data)
-            total_unrealized_gain_loss = sum(pf["unrealized_gain_loss"] for pf in portfolio_funds_data)
-            total_realized_gain_loss = sum(pf["realized_gain_loss"] for pf in portfolio_funds_data)
+            total_unrealized_gain_loss = sum(
+                pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+            )
+            total_realized_gain_loss = sum(
+                pf["realized_gain_loss"] for pf in portfolio_funds_data
+            )
             total_gain_loss = sum(pf["total_gain_loss"] for pf in portfolio_funds_data)
 
             return jsonify(
@@ -96,7 +100,7 @@ class PortfolioAPI(MethodView):
                     "totalDividends": total_dividends,
                     "totalUnrealizedGainLoss": total_unrealized_gain_loss,
                     "totalRealizedGainLoss": total_realized_gain_loss,
-                    "totalGainLoss": total_gain_loss
+                    "totalGainLoss": total_gain_loss,
                 }
             )
 
@@ -245,11 +249,15 @@ def get_portfolio_summary():
 
     Returns:
         JSON response containing portfolio summaries with:
-        - Total value
-        - Total cost
-        - Total dividends
-        - Fund count
-        - Transaction count
+        - id: Portfolio ID
+        - name: Portfolio name
+        - totalValue: Current total value
+        - totalCost: Total investment cost
+        - totalDividends: Total dividends received
+        - totalUnrealizedGainLoss: Total unrealized gain/loss
+        - totalRealizedGainLoss: Total realized gain/loss
+        - totalGainLoss: Total gain/loss
+        - is_archived: Whether portfolio is archived
     """
     service = PortfolioService()
     return jsonify(service.get_portfolio_summary())
