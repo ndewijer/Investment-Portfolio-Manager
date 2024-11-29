@@ -667,3 +667,31 @@
   margin-left: 10px;
   font-size: 1.2em;
 }
+
+.portfolio-detail-page .chart-controls {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.portfolio-detail-page .time-range-buttons,
+.portfolio-detail-page .metric-toggles {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Update existing transaction-button styles to handle active state */
+.portfolio-detail-page .transaction-button.active {
+  background-color: #1976d2;
+  color: white;
+}
+
+.portfolio-detail-page .transaction-button:hover {
+  background-color: #f5f5f5;
+}
+
+.portfolio-detail-page .transaction-button.active:hover {
+  background-color: #1565c0;
+}

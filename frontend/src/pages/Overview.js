@@ -72,28 +72,46 @@ const Overview = () => {
         date: new Date(day.date).toLocaleDateString(),
       };
 
-      // Calculate totals only from portfolios that exist on this day
+      // Calculate totals for this day
       const totalValue = day.portfolios.reduce((sum, p) => sum + p.value, 0);
       const totalCost = day.portfolios.reduce((sum, p) => sum + p.cost, 0);
+      const totalRealizedGain = day.portfolios.reduce((sum, p) => sum + (p.realized_gain || 0), 0);
+      const totalUnrealizedGain = day.portfolios.reduce(
+        (sum, p) => sum + (p.value - p.cost || 0),
+        0
+      );
 
       // Only add totals if there are any portfolios on this day
       if (day.portfolios.length > 0) {
         dayData.totalValue = totalValue;
         dayData.totalCost = totalCost;
+        dayData.realizedGain = totalRealizedGain;
+        dayData.unrealizedGain = totalUnrealizedGain;
+        dayData.totalGain = totalRealizedGain + totalUnrealizedGain;
       }
 
-      // Add individual portfolio values only if they exist on this day
+      // Add individual portfolio values
       portfolioSummary.forEach((portfolio) => {
         const portfolioData = day.portfolios.find((p) => p.id === portfolio.id);
         if (portfolioData) {
           dayData[`${portfolio.name} Value`] = portfolioData.value;
           dayData[`${portfolio.name} Cost`] = portfolioData.cost;
+          dayData[`${portfolio.name} Realized`] = portfolioData.realized_gain || 0;
+          dayData[`${portfolio.name} Unrealized`] = portfolioData.value - portfolioData.cost || 0;
         }
       });
 
       return dayData;
     });
   };
+
+  const [visibleMetrics, setVisibleMetrics] = useState({
+    value: true,
+    cost: true,
+    realizedGain: false,
+    unrealizedGain: false,
+    totalGain: false,
+  });
 
   // Generate unique colors for each portfolio
   const getPortfolioColor = (index) => {
@@ -114,40 +132,76 @@ const Overview = () => {
   };
 
   const getChartLines = () => {
-    const lines = [
-      {
+    const lines = [];
+
+    // Only add lines that are visible
+    if (visibleMetrics.value) {
+      lines.push({
         dataKey: 'totalValue',
         name: 'Total Value',
         color: '#8884d8',
         strokeWidth: 2,
-      },
-      {
+      });
+    }
+
+    if (visibleMetrics.cost) {
+      lines.push({
         dataKey: 'totalCost',
         name: 'Total Cost',
         color: '#82ca9d',
         strokeWidth: 2,
-      },
-    ];
+      });
+    }
+
+    if (visibleMetrics.realizedGain) {
+      lines.push({
+        dataKey: 'realizedGain',
+        name: 'Realized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+      });
+    }
+
+    if (visibleMetrics.unrealizedGain) {
+      lines.push({
+        dataKey: 'unrealizedGain',
+        name: 'Unrealized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+        strokeDasharray: '5 5',
+      });
+    }
+
+    if (visibleMetrics.totalGain) {
+      lines.push({
+        dataKey: 'totalGain',
+        name: 'Total Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 3,
+      });
+    }
 
     // Add individual portfolio lines
     portfolioSummary.forEach((portfolio, index) => {
-      lines.push(
-        {
+      if (visibleMetrics.value) {
+        lines.push({
           dataKey: `${portfolio.name} Value`,
           name: `${portfolio.name} Value`,
           color: getPortfolioColor(index),
           strokeWidth: 1,
           strokeDasharray: '5 5',
-        },
-        {
+        });
+      }
+      if (visibleMetrics.cost) {
+        lines.push({
           dataKey: `${portfolio.name} Cost`,
           name: `${portfolio.name} Cost`,
           color: getPortfolioColor(index),
           strokeWidth: 1,
           strokeDasharray: '2 2',
           opacity: 0.7,
-        }
-      );
+        });
+      }
     });
 
     return lines;
@@ -169,7 +223,6 @@ const Overview = () => {
   }
 
   const totals = calculateTotalPerformance();
-  const chartData = formatChartData();
 
   return (
     <div className="overview">
@@ -201,7 +254,56 @@ const Overview = () => {
       <div className="charts-section">
         <div className="chart-container">
           <h2>Portfolio Value Over Time</h2>
-          <ValueChart data={chartData} lines={getChartLines()} />
+          <div className="chart-controls">
+            <div className="metric-toggles">
+              <button
+                className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+                onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+              >
+                Value
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+                onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
+              >
+                Cost
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    realizedGain: !prev.realizedGain,
+                  }))
+                }
+              >
+                Realized Gain/Loss
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    unrealizedGain: !prev.unrealizedGain,
+                  }))
+                }
+              >
+                Unrealized Gain/Loss
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    totalGain: !prev.totalGain,
+                  }))
+                }
+              >
+                Total Gain/Loss
+              </button>
+            </div>
+          </div>
+          <ValueChart data={formatChartData()} lines={getChartLines()} />
         </div>
       </div>
 

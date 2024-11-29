@@ -98,6 +98,14 @@ const PortfolioDetail = () => {
 
   const [timeRange, setTimeRange] = useState('1M'); // Default to last month view
 
+  const [visibleMetrics, setVisibleMetrics] = useState({
+    value: true,
+    cost: true,
+    realizedGain: false,
+    unrealizedGain: false,
+    totalGain: false,
+  });
+
   const fetchFundPrice = async (fundId) => {
     try {
       const response = await api.get(`/fund-prices/${fundId}`);
@@ -667,45 +675,113 @@ const PortfolioDetail = () => {
         date: new Date(day.date).toLocaleDateString(),
       };
 
-      // Add data for each fund using array indexing
+      // Calculate totals for this day
+      const totalValue = day.funds.reduce((sum, f) => sum + f.value, 0);
+      const totalCost = day.funds.reduce((sum, f) => sum + f.cost, 0);
+      const totalRealizedGain = day.funds.reduce((sum, f) => sum + (f.realized_gain || 0), 0);
+      const totalUnrealizedGain = day.funds.reduce((sum, f) => sum + (f.value - f.cost || 0), 0);
+
+      dayData.totalValue = totalValue;
+      dayData.totalCost = totalCost;
+      dayData.realizedGain = totalRealizedGain;
+      dayData.unrealizedGain = totalUnrealizedGain;
+      dayData.totalGain = totalRealizedGain + totalUnrealizedGain;
+
+      // Add data for each fund
       day.funds.forEach((fund, index) => {
         dayData[`funds[${index}].value`] = fund.value;
         dayData[`funds[${index}].cost`] = fund.cost;
+        dayData[`funds[${index}].realized`] = fund.realized_gain || 0;
+        dayData[`funds[${index}].unrealized`] = fund.value - fund.cost || 0;
       });
 
       return dayData;
     });
   }, [fundHistory]);
 
-  // Update getChartLines to use the memoized getFundColor
+  // Update getChartLines function
   const getChartLines = useCallback(() => {
     const lines = [];
 
-    // Create lines for each fund using array indexing
-    portfolioFunds.forEach((fund, index) => {
-      // Add value line
+    // Only add lines that are visible
+    if (visibleMetrics.value) {
       lines.push({
-        dataKey: `funds[${index}].value`,
-        name: `${fund.fund_name} Value`,
-        color: getFundColor(index),
+        dataKey: 'totalValue',
+        name: 'Total Value',
+        color: '#8884d8',
         strokeWidth: 2,
         connectNulls: true,
       });
+    }
 
-      // Add cost line
+    if (visibleMetrics.cost) {
       lines.push({
-        dataKey: `funds[${index}].cost`,
-        name: `${fund.fund_name} Cost`,
-        color: getFundColor(index),
-        strokeWidth: 1,
-        strokeDasharray: '5 5',
-        opacity: 0.7,
+        dataKey: 'totalCost',
+        name: 'Total Cost',
+        color: '#82ca9d',
+        strokeWidth: 2,
         connectNulls: true,
       });
+    }
+
+    if (visibleMetrics.realizedGain) {
+      lines.push({
+        dataKey: 'realizedGain',
+        name: 'Realized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+        connectNulls: true,
+      });
+    }
+
+    if (visibleMetrics.unrealizedGain) {
+      lines.push({
+        dataKey: 'unrealizedGain',
+        name: 'Unrealized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+        strokeDasharray: '5 5',
+        connectNulls: true,
+      });
+    }
+
+    if (visibleMetrics.totalGain) {
+      lines.push({
+        dataKey: 'totalGain',
+        name: 'Total Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 3,
+        connectNulls: true,
+      });
+    }
+
+    // Add individual fund lines
+    portfolioFunds.forEach((fund, index) => {
+      if (visibleMetrics.value) {
+        lines.push({
+          dataKey: `funds[${index}].value`,
+          name: `${fund.fund_name} Value`,
+          color: getFundColor(index),
+          strokeWidth: 1,
+          strokeDasharray: '5 5',
+          connectNulls: true,
+        });
+      }
+      if (visibleMetrics.cost) {
+        lines.push({
+          dataKey: `funds[${index}].cost`,
+          name: `${fund.fund_name} Cost`,
+          color: getFundColor(index),
+          strokeWidth: 1,
+          strokeDasharray: '2 2',
+          opacity: 0.7,
+          connectNulls: true,
+        });
+      }
     });
 
     return lines;
-  }, [portfolioFunds, getFundColor]); // getFundColor is now a stable reference
+  }, [portfolioFunds, visibleMetrics, getFundColor]);
 
   // Then update the useEffect to include the memoized functions
   useEffect(() => {
@@ -767,13 +843,70 @@ const PortfolioDetail = () => {
           <div className="chart-section">
             <div className="chart-container">
               <h2>Portfolio Value Over Time</h2>
-              <ValueChart
-                data={formatChartData()}
-                lines={getChartLines()}
-                timeRange={timeRange}
-                onTimeRangeChange={setTimeRange}
-                showTimeRangeButtons={true}
-              />
+              <div className="chart-controls">
+                <div className="time-range-buttons">
+                  <button
+                    className={`transaction-button ${timeRange === '1M' ? 'active' : ''}`}
+                    onClick={() => setTimeRange('1M')}
+                  >
+                    Last Month
+                  </button>
+                  <button
+                    className={`transaction-button ${timeRange === 'ALL' ? 'active' : ''}`}
+                    onClick={() => setTimeRange('ALL')}
+                  >
+                    All Time
+                  </button>
+                </div>
+                <div className="metric-toggles">
+                  <button
+                    className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+                    onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+                  >
+                    Value
+                  </button>
+                  <button
+                    className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+                    onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
+                  >
+                    Cost
+                  </button>
+                  <button
+                    className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+                    onClick={() =>
+                      setVisibleMetrics((prev) => ({
+                        ...prev,
+                        realizedGain: !prev.realizedGain,
+                      }))
+                    }
+                  >
+                    Realized Gain/Loss
+                  </button>
+                  <button
+                    className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+                    onClick={() =>
+                      setVisibleMetrics((prev) => ({
+                        ...prev,
+                        unrealizedGain: !prev.unrealizedGain,
+                      }))
+                    }
+                  >
+                    Unrealized Gain/Loss
+                  </button>
+                  <button
+                    className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+                    onClick={() =>
+                      setVisibleMetrics((prev) => ({
+                        ...prev,
+                        totalGain: !prev.totalGain,
+                      }))
+                    }
+                  >
+                    Total Gain/Loss
+                  </button>
+                </div>
+              </div>
+              <ValueChart data={formatChartData()} lines={getChartLines()} />
             </div>
           </div>
 
