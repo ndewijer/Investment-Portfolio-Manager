@@ -9,6 +9,7 @@ from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from flask_migrate import Migrate
 
 from app.models import LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
 from app.routes.developer_routes import developer
@@ -80,6 +81,7 @@ def create_app():
 
     # Initialize extensions
     db.init_app(app)
+    migrate = Migrate(app, db)  # noqa: F841
 
     # Register blueprints
     app.register_blueprint(portfolios, url_prefix="/api")
@@ -90,26 +92,31 @@ def create_app():
 
     # Create database tables and set default settings
     with app.app_context():
-        db.create_all()
+        # Check if database exists by trying to query any table
+        try:
+            SystemSetting.query.first()
+        except Exception:
+            # If query fails, database doesn't exist yet
+            db.create_all()
+        else:
+            # Database exists, set default settings if needed
+            if not SystemSetting.query.filter_by(
+                key=SystemSettingKey.LOGGING_ENABLED
+            ).first():
+                logging_enabled = SystemSetting(
+                    key=SystemSettingKey.LOGGING_ENABLED, value="true"
+                )
+                db.session.add(logging_enabled)
 
-        # Set default system settings if they don't exist
-        if not SystemSetting.query.filter_by(
-            key=SystemSettingKey.LOGGING_ENABLED
-        ).first():
-            logging_enabled = SystemSetting(
-                key=SystemSettingKey.LOGGING_ENABLED, value="true"
-            )
-            db.session.add(logging_enabled)
+            if not SystemSetting.query.filter_by(
+                key=SystemSettingKey.LOGGING_LEVEL
+            ).first():
+                logging_level = SystemSetting(
+                    key=SystemSettingKey.LOGGING_LEVEL, value=LogLevel.ERROR.value
+                )
+                db.session.add(logging_level)
 
-        if not SystemSetting.query.filter_by(
-            key=SystemSettingKey.LOGGING_LEVEL
-        ).first():
-            logging_level = SystemSetting(
-                key=SystemSettingKey.LOGGING_LEVEL, value=LogLevel.ERROR.value
-            )
-            db.session.add(logging_level)
-
-        db.session.commit()
+            db.session.commit()
 
     # Set up scheduler
     scheduler = BackgroundScheduler()

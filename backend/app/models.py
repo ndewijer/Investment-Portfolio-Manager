@@ -450,3 +450,36 @@ class SymbolInfo(db.Model):
             str: Symbol details in a formatted string
         """
         return f"<SymbolInfo {self.symbol} ({self.name})>"
+
+
+class RealizedGainLoss(db.Model):
+    """
+    Tracks realized gains and losses from selling investments.
+
+    This allows historical tracking of portfolio performance even after
+    shares are sold and reinvested.
+    """
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    portfolio_id = db.Column(
+        db.String(36), db.ForeignKey("portfolio.id", ondelete="CASCADE"), nullable=False
+    )
+    fund_id = db.Column(db.String(36), db.ForeignKey("fund.id"), nullable=False)
+    transaction_id = db.Column(
+        db.String(36),
+        db.ForeignKey("transaction.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    transaction_date = db.Column(db.Date, nullable=False)
+    shares_sold = db.Column(db.Float, nullable=False)
+    cost_basis = db.Column(db.Float, nullable=False)
+    sale_proceeds = db.Column(db.Float, nullable=False)
+    realized_gain_loss = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    # Add relationships
+    portfolio = db.relationship("Portfolio", backref="realized_gains_losses")
+    fund = db.relationship("Fund", backref="realized_gains_losses")
+    transaction = db.relationship(
+        "Transaction", backref="realized_gain_loss", uselist=False
+    )

@@ -162,7 +162,7 @@ const LogViewer = () => {
     <div className="log-viewer">
       <div className="log-viewer-header">
         <h1>System Logs</h1>
-        <button className="clear-logs-button" onClick={handleClearLogs} disabled={clearing}>
+        <button className="delete-button" onClick={handleClearLogs} disabled={clearing}>
           {clearing ? 'Clearing...' : 'Clear All Logs'}
         </button>
       </div>
@@ -290,6 +290,7 @@ const LogViewer = () => {
 
           <div className="pagination">
             <button
+              className="default-button"
               onClick={() =>
                 setPagination((prev) => ({ ...prev, currentPage: prev.currentPage - 1 }))
               }
@@ -301,6 +302,7 @@ const LogViewer = () => {
               Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalLogs} logs)
             </span>
             <button
+              className="default-button"
               onClick={() =>
                 setPagination((prev) => ({ ...prev, currentPage: prev.currentPage + 1 }))
               }

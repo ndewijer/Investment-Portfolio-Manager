@@ -8,11 +8,8 @@ This module provides routes for:
 - Symbol information lookup
 """
 
-import yfinance as yf
 from flask import Blueprint, jsonify, request
-from requests.exceptions import ConnectionError, RequestException
 from sqlalchemy.exc import IntegrityError
-from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 from ..models import (
     DividendType,
@@ -192,38 +189,15 @@ def get_fund(fund_id):
     try:
         fund = Fund.query.get_or_404(fund_id)
 
-        # Try to get latest price if symbol exists
+        # Get last known price from database
         latest_price = None
-        if fund.symbol:
-            try:
-                ticker = yf.Ticker(fund.symbol)
-                latest_price = ticker.info.get("regularMarketPrice")
-            except (
-                ConnectionError,
-                MaxRetryError,
-                NewConnectionError,
-                RequestException,
-            ) as e:
-                logger.log(
-                    level=LogLevel.WARNING,
-                    category=LogCategory.FUND,
-                    message=f"Failed to fetch latest price for {fund.symbol}",
-                    details={
-                        "fund_id": fund_id,
-                        "symbol": fund.symbol,
-                        "error": str(e),
-                        "user_message": f"Unable to fetch current price for {fund.symbol}. Using last known price.",  # noqa: E501
-                    },
-                    http_status=200,  # Still return success, just with a warning
-                )
-                # Get last known price from database
-                price_record = (
-                    FundPrice.query.filter_by(fund_id=fund_id)
-                    .order_by(FundPrice.date.desc())
-                    .first()
-                )
-                if price_record:
-                    latest_price = price_record.price
+        price_record = (
+            FundPrice.query.filter_by(fund_id=fund_id)
+            .order_by(FundPrice.date.desc())
+            .first()
+        )
+        if price_record:
+            latest_price = price_record.price
 
         response = {
             "id": fund.id,

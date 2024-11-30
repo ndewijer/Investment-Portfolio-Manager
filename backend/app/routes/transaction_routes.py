@@ -9,7 +9,14 @@ This module provides routes for:
 
 from flask import Blueprint, jsonify, request
 
-from ..models import LogCategory, LogLevel, Transaction, db
+from ..models import (
+    LogCategory,
+    LogLevel,
+    Transaction,
+    db,
+    PortfolioFund,
+    RealizedGainLoss,
+)
 from ..services.logging_service import logger, track_request
 from ..services.transaction_service import TransactionService
 
@@ -69,7 +76,6 @@ def get_transactions():
 
 
 @transactions.route("/transactions", methods=["POST"])
-@track_request
 def create_transaction():
     """
     Create a new transaction.
@@ -89,6 +95,24 @@ def create_transaction():
         service = TransactionService()
         transaction = service.create_transaction(data)
 
+        # Format the transaction response
+        response = service.format_transaction(transaction)
+        if data["type"] == "sell":
+            # Add realized gain/loss info to response for sell transactions
+            portfolio_fund = PortfolioFund.query.get(data["portfolio_fund_id"])
+            realized_records = (
+                RealizedGainLoss.query.filter_by(
+                    portfolio_id=portfolio_fund.portfolio_id,
+                    fund_id=portfolio_fund.fund_id,
+                    transaction_date=transaction.date,
+                )
+                .order_by(RealizedGainLoss.created_at.desc())
+                .first()
+            )
+
+            if realized_records:
+                response["realized_gain_loss"] = realized_records.realized_gain_loss
+
         logger.log(
             level=LogLevel.INFO,
             category=LogCategory.TRANSACTION,
@@ -101,7 +125,20 @@ def create_transaction():
             },
         )
 
-        return jsonify(service.format_transaction(transaction))
+        return jsonify(response)
+    except ValueError as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.TRANSACTION,
+            message=f"Error creating transaction: {str(e)}",
+            details={
+                "user_message": "Error creating transaction",
+                "error": str(e),
+                "request_data": data,
+            },
+            http_status=500,
+        )
+        return jsonify(response), status
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
@@ -112,7 +149,7 @@ def create_transaction():
                 "error": str(e),
                 "request_data": data,
             },
-            http_status=400,
+            http_status=500,
         )
         return jsonify(response), status
 
@@ -175,6 +212,24 @@ def update_transaction(transaction_id):
         service = TransactionService()
         transaction = service.update_transaction(transaction_id, data)
 
+        # Format the transaction response
+        response = service.format_transaction(transaction)
+        if transaction.type == "sell":
+            # Add realized gain/loss info to response
+            portfolio_fund = transaction.portfolio_fund
+            realized_records = (
+                RealizedGainLoss.query.filter_by(
+                    portfolio_id=portfolio_fund.portfolio_id,
+                    fund_id=portfolio_fund.fund_id,
+                    transaction_date=transaction.date,
+                )
+                .order_by(RealizedGainLoss.created_at.desc())
+                .first()
+            )
+
+            if realized_records:
+                response["realized_gain_loss"] = realized_records.realized_gain_loss
+
         logger.log(
             level=LogLevel.INFO,
             category=LogCategory.TRANSACTION,
@@ -186,13 +241,14 @@ def update_transaction(transaction_id):
             },
         )
 
-        return jsonify(service.format_transaction(transaction))
-    except Exception as e:
+        return jsonify(response)
+    except ValueError as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
             message=f"Error updating transaction: {str(e)}",
             details={
+                "user_message": str(e),
                 "transaction_id": transaction_id,
                 "error": str(e),
                 "request_data": data,
@@ -225,6 +281,19 @@ def delete_transaction(transaction_id):
             "date": transaction.date.isoformat(),
         }
 
+        # If this is a sell transaction, delete associated realized gain/loss record
+        if transaction.type == "sell":
+            portfolio_fund = transaction.portfolio_fund
+            realized_gain = RealizedGainLoss.query.filter_by(
+                portfolio_id=portfolio_fund.portfolio_id,
+                fund_id=portfolio_fund.fund_id,
+                transaction_date=transaction.date,
+                shares_sold=transaction.shares,
+            ).first()
+
+            if realized_gain:
+                db.session.delete(realized_gain)
+
         db.session.delete(transaction)
         db.session.commit()
 
@@ -232,7 +301,12 @@ def delete_transaction(transaction_id):
             level=LogLevel.INFO,
             category=LogCategory.TRANSACTION,
             message=f"Successfully deleted transaction {transaction_id}",
-            details=transaction_details,
+            details={
+                **transaction_details,
+                "realized_gain_deleted": (
+                    bool(realized_gain) if transaction.type == "sell" else None
+                ),
+            },
         )
 
         return "", 204

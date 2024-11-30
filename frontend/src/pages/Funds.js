@@ -466,8 +466,11 @@ const Funds = () => {
             </select>
           </div>
           <div className="modal-actions">
-            <button type="submit">{editingFund ? 'Update' : 'Create'}</button>
+            <button className={editingFund ? 'edit-button' : 'add-button'} type="submit">
+              {editingFund ? 'Update' : 'Create'}
+            </button>
             <button
+              className="cancel-button"
               type="button"
               onClick={() => {
                 setIsModalOpen(false);

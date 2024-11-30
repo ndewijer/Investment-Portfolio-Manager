@@ -98,6 +98,14 @@ const PortfolioDetail = () => {
 
   const [timeRange, setTimeRange] = useState('1M'); // Default to last month view
 
+  const [visibleMetrics, setVisibleMetrics] = useState({
+    value: true,
+    cost: true,
+    realizedGain: false,
+    unrealizedGain: false,
+    totalGain: false,
+  });
+
   const fetchFundPrice = async (fundId) => {
     try {
       const response = await api.get(`/fund-prices/${fundId}`);
@@ -667,45 +675,113 @@ const PortfolioDetail = () => {
         date: new Date(day.date).toLocaleDateString(),
       };
 
-      // Add data for each fund using array indexing
+      // Calculate totals for this day
+      const totalValue = day.funds.reduce((sum, f) => sum + f.value, 0);
+      const totalCost = day.funds.reduce((sum, f) => sum + f.cost, 0);
+      const totalRealizedGain = day.funds.reduce((sum, f) => sum + (f.realized_gain || 0), 0);
+      const totalUnrealizedGain = day.funds.reduce((sum, f) => sum + (f.value - f.cost || 0), 0);
+
+      dayData.totalValue = totalValue;
+      dayData.totalCost = totalCost;
+      dayData.realizedGain = totalRealizedGain;
+      dayData.unrealizedGain = totalUnrealizedGain;
+      dayData.totalGain = totalRealizedGain + totalUnrealizedGain;
+
+      // Add data for each fund
       day.funds.forEach((fund, index) => {
         dayData[`funds[${index}].value`] = fund.value;
         dayData[`funds[${index}].cost`] = fund.cost;
+        dayData[`funds[${index}].realized`] = fund.realized_gain || 0;
+        dayData[`funds[${index}].unrealized`] = fund.value - fund.cost || 0;
       });
 
       return dayData;
     });
   }, [fundHistory]);
 
-  // Update getChartLines to use the memoized getFundColor
+  // Update getChartLines function
   const getChartLines = useCallback(() => {
     const lines = [];
 
-    // Create lines for each fund using array indexing
-    portfolioFunds.forEach((fund, index) => {
-      // Add value line
+    // Only add lines that are visible
+    if (visibleMetrics.value) {
       lines.push({
-        dataKey: `funds[${index}].value`,
-        name: `${fund.fund_name} Value`,
-        color: getFundColor(index),
+        dataKey: 'totalValue',
+        name: 'Total Value',
+        color: '#8884d8',
         strokeWidth: 2,
         connectNulls: true,
       });
+    }
 
-      // Add cost line
+    if (visibleMetrics.cost) {
       lines.push({
-        dataKey: `funds[${index}].cost`,
-        name: `${fund.fund_name} Cost`,
-        color: getFundColor(index),
-        strokeWidth: 1,
-        strokeDasharray: '5 5',
-        opacity: 0.7,
+        dataKey: 'totalCost',
+        name: 'Total Cost',
+        color: '#82ca9d',
+        strokeWidth: 2,
         connectNulls: true,
       });
+    }
+
+    if (visibleMetrics.realizedGain) {
+      lines.push({
+        dataKey: 'realizedGain',
+        name: 'Realized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+        connectNulls: true,
+      });
+    }
+
+    if (visibleMetrics.unrealizedGain) {
+      lines.push({
+        dataKey: 'unrealizedGain',
+        name: 'Unrealized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+        strokeDasharray: '5 5',
+        connectNulls: true,
+      });
+    }
+
+    if (visibleMetrics.totalGain) {
+      lines.push({
+        dataKey: 'totalGain',
+        name: 'Total Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 3,
+        connectNulls: true,
+      });
+    }
+
+    // Add individual fund lines
+    portfolioFunds.forEach((fund, index) => {
+      if (visibleMetrics.value) {
+        lines.push({
+          dataKey: `funds[${index}].value`,
+          name: `${fund.fund_name} Value`,
+          color: getFundColor(index),
+          strokeWidth: 1,
+          strokeDasharray: '5 5',
+          connectNulls: true,
+        });
+      }
+      if (visibleMetrics.cost) {
+        lines.push({
+          dataKey: `funds[${index}].cost`,
+          name: `${fund.fund_name} Cost`,
+          color: getFundColor(index),
+          strokeWidth: 1,
+          strokeDasharray: '2 2',
+          opacity: 0.7,
+          connectNulls: true,
+        });
+      }
     });
 
     return lines;
-  }, [portfolioFunds, getFundColor]); // getFundColor is now a stable reference
+  }, [portfolioFunds, visibleMetrics, getFundColor]);
 
   // Then update the useEffect to include the memoized functions
   useEffect(() => {
@@ -717,7 +793,7 @@ const PortfolioDetail = () => {
   }, [fundHistory, portfolioFunds, formatChartData, getChartLines]);
 
   return (
-    <div className="portfolio-detail-page">
+    <div className="portfolio-detail-container">
       {loading ? (
         <div>Loading...</div>
       ) : error ? (
@@ -731,37 +807,44 @@ const PortfolioDetail = () => {
             <p>{portfolio.description}</p>
           </div>
 
-          <div className="portfolio-summary">
+          <div className="summary-cards">
             <div className="summary-card">
               <h3>Total Value</h3>
-              <p>{formatCurrency(portfolio.totalValue || 0)}</p>
+              <div className="value">{formatCurrency(portfolio.totalValue || 0)}</div>
             </div>
             <div className="summary-card">
               <h3>Total Cost</h3>
-              <p>{formatCurrency(portfolio.totalCost || 0)}</p>
+              <div className="value">{formatCurrency(portfolio.totalCost || 0)}</div>
             </div>
             <div className="summary-card">
               <h3>Total Dividends</h3>
-              <p>{formatCurrency(portfolio.totalDividends || 0)}</p>
+              <div className="value">{formatCurrency(portfolio.totalDividends || 0)}</div>
+            </div>
+            <div className="summary-card">
+              <h3>Unrealized Gain/Loss</h3>
+              <div
+                className={`value ${
+                  portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'
+                }`}
+              >
+                {formatCurrency(portfolio.totalUnrealizedGainLoss)}
+              </div>
+            </div>
+            <div className="summary-card">
+              <h3>Realized Gain/Loss</h3>
+              <div
+                className={`value ${
+                  portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'
+                }`}
+              >
+                {formatCurrency(portfolio.totalRealizedGainLoss)}
+              </div>
             </div>
             <div className="summary-card">
               <h3>Gain/Loss</h3>
-              <p
-                className={`${
-                  (portfolio.totalValue || 0) +
-                    (portfolio.totalDividends || 0) -
-                    (portfolio.totalCost || 0) >=
-                  0
-                    ? 'positive'
-                    : 'negative'
-                }`}
-              >
-                {formatCurrency(
-                  (portfolio.totalValue || 0) +
-                    (portfolio.totalDividends || 0) -
-                    (portfolio.totalCost || 0)
-                )}
-              </p>
+              <div className={`value ${portfolio.totalGainLoss >= 0 ? 'positive' : 'negative'}`}>
+                {formatCurrency(portfolio.totalGainLoss)}
+              </div>
             </div>
           </div>
 
@@ -774,6 +857,8 @@ const PortfolioDetail = () => {
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
                 showTimeRangeButtons={true}
+                visibleMetrics={visibleMetrics}
+                setVisibleMetrics={setVisibleMetrics}
               />
             </div>
           </div>
@@ -781,7 +866,7 @@ const PortfolioDetail = () => {
           <section className="portfolio-funds">
             <div className="section-header">
               <h2>Funds</h2>
-              <button onClick={() => setIsAddFundModalOpen(true)}>
+              <button className="add-button" onClick={() => setIsAddFundModalOpen(true)}>
                 <FontAwesomeIcon icon={faPlus} /> Add Fund
               </button>
             </div>
@@ -815,9 +900,9 @@ const PortfolioDetail = () => {
                     <td>{formatCurrency(portfolioFund.total_cost)}</td>
                     <td>{formatCurrency(portfolioFund.current_value)}</td>
                     <td>{formatCurrency(portfolioFund.total_dividends)}</td>
-                    <td className="portfolio-funds-actions">
+                    <td className="action-buttons">
                       <button
-                        className="transaction-button"
+                        className="add-button"
                         onClick={() => {
                           setNewTransaction({
                             portfolio_fund_id: portfolioFund.id,
@@ -840,7 +925,7 @@ const PortfolioDetail = () => {
                         </button>
                       )}
                       <button
-                        className="remove-button"
+                        className="delete-button"
                         onClick={() => handleRemoveFund(portfolioFund)}
                       >
                         Remove Fund
@@ -998,7 +1083,7 @@ const PortfolioDetail = () => {
                     <td>{formatNumber(transaction.shares, 6)}</td>
                     <td>{formatCurrency(transaction.cost_per_share)}</td>
                     <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
-                    <td className="transaction-actions">
+                    <td className="action-buttons">
                       {transaction.type !== 'dividend' && ( // Only show actions if not a dividend transaction
                         <>
                           <button
@@ -1074,7 +1159,7 @@ const PortfolioDetail = () => {
                             {status}
                           </span>
                         </td>
-                        <td className="dividend-actions">
+                        <td className="action-buttons">
                           <button
                             className="edit-button"
                             onClick={() => handleEditDividend(dividend)}
@@ -1199,8 +1284,14 @@ const PortfolioDetail = () => {
                 </div>
               </div>
               <div className="modal-actions">
-                <button type="submit">Create Transaction</button>
-                <button type="button" onClick={() => setIsTransactionModalOpen(false)}>
+                <button className="add-button" type="submit">
+                  Create Transaction
+                </button>
+                <button
+                  className="cancel-button"
+                  type="button"
+                  onClick={() => setIsTransactionModalOpen(false)}
+                >
                   Cancel
                 </button>
               </div>
@@ -1278,8 +1369,11 @@ const PortfolioDetail = () => {
                   />
                 </div>
                 <div className="modal-actions">
-                  <button type="submit">Update</button>
+                  <button className="add-button" type="submit">
+                    Update
+                  </button>
                   <button
+                    className="cancel-button"
                     type="button"
                     onClick={() => {
                       setIsTransactionEditModalOpen(false);
@@ -1428,8 +1522,11 @@ const PortfolioDetail = () => {
                 </div>
               )}
               <div className="modal-actions">
-                <button type="submit">Create Dividend</button>
+                <button className="add-button" type="submit">
+                  Create Dividend
+                </button>
                 <button
+                  className="cancel-button"
                   type="button"
                   onClick={() => {
                     setIsDividendModalOpen(false);
@@ -1562,6 +1659,7 @@ const PortfolioDetail = () => {
                 )}
                 <div className="modal-actions">
                   <button
+                    className="add-button"
                     type="submit"
                     disabled={
                       selectedFund?.dividend_type === 'stock' &&
@@ -1572,6 +1670,7 @@ const PortfolioDetail = () => {
                     Update
                   </button>
                   <button
+                    className="cancel-button"
                     type="button"
                     onClick={() => {
                       setIsDividendEditModalOpen(false);
