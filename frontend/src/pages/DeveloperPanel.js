@@ -5,7 +5,6 @@ import CollapsibleInfo from '../components/CollapsibleInfo';
 import Toast from '../components/Toast';
 import { useFormat } from '../context/FormatContext';
 import { API_BASE_URL } from '../config';
-import { Link } from 'react-router-dom';
 
 const DeveloperPanel = () => {
   const [exchangeRate, setExchangeRate] = useState({
@@ -542,7 +541,7 @@ const DeveloperPanel = () => {
             </li>
           </ul>
           {loggingSettings.enabled && (
-            <button className="default-button" onClick={() => window.location.href = '/logs'}>
+            <button className="default-button" onClick={() => (window.location.href = '/logs')}>
               View System Logs
             </button>
           )}

@@ -64,27 +64,6 @@
   padding: 0;
 }
 
-.fund-detail-container .price-history table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.fund-detail-container .price-history th {
-  background-color: #f5f5f5;
-  padding: 12px;
-  text-align: left;
-  position: relative;
-}
-
-.fund-detail-container .price-history td {
-  padding: 12px;
-  border-bottom: 1px solid #eee;
-}
-
-.fund-detail-container .price-history tr:last-child td {
-  border-bottom: none;
-}
-
 .fund-detail-container .header-content {
   display: flex;
   align-items: center;
