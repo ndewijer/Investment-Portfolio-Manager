@@ -321,7 +321,9 @@ const DeveloperPanel = () => {
               required
             />
           </div>
-          <button type="submit">Set Exchange Rate</button>
+          <button className="default-button" type="submit">
+            Set Exchange Rate
+          </button>
         </form>
       </section>
 
@@ -362,7 +364,9 @@ const DeveloperPanel = () => {
               required
             />
           </div>
-          <button type="submit">Set Fund Price</button>
+          <button className="default-button" type="submit">
+            Set Fund Price
+          </button>
         </form>
       </section>
 
@@ -420,7 +424,9 @@ const DeveloperPanel = () => {
               required
             />
           </div>
-          <button type="submit">Import Transactions</button>
+          <button className="default-button" type="submit">
+            Import Transactions
+          </button>
         </form>
       </section>
 
@@ -466,7 +472,9 @@ const DeveloperPanel = () => {
               required
             />
           </div>
-          <button type="submit">Import Fund Prices</button>
+          <button className="default-button" type="submit">
+            Import Fund Prices
+          </button>
         </form>
       </section>
 
@@ -534,9 +542,9 @@ const DeveloperPanel = () => {
             </li>
           </ul>
           {loggingSettings.enabled && (
-            <Link to="/logs" className="view-logs-button">
+            <button className="default-button" onClick={() => window.location.href = '/logs'}>
               View System Logs
-            </Link>
+            </button>
           )}
         </div>
       </section>

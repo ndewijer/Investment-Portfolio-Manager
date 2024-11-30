@@ -126,6 +126,10 @@
   opacity: 0.9;
 }
 
+.default-button {
+  background-color: var(--primary-color);
+}
+
 .add-button {
   background-color: var(--add-color);
 }
@@ -145,4 +149,31 @@
 
 .cancel-button {
   background-color: var(--archive-color);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Pagination Button Styles */
+.pagination button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--primary-color);
+  color: white;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  background-color: var(--archive-color);
+  cursor: not-allowed;
+}
+
+.pagination span {
+  color: #666;
 }

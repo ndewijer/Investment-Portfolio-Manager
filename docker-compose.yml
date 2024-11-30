@@ -7,7 +7,7 @@ services:
       - LOG_DIR=/data/logs
       - DOMAIN=${DOMAIN:-localhost}
     volumes:
-      - /path/to/your/data:/data
+      - /Users/ndewijer/data:/data
     networks:
       - app-network
 
