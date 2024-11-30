@@ -843,77 +843,22 @@ const PortfolioDetail = () => {
           <div className="chart-section">
             <div className="chart-container">
               <h2>Portfolio Value Over Time</h2>
-              <div className="chart-controls">
-                <div className="time-range-buttons">
-                  <button
-                    className={`transaction-button ${timeRange === '1M' ? 'active' : ''}`}
-                    onClick={() => setTimeRange('1M')}
-                  >
-                    Last Month
-                  </button>
-                  <button
-                    className={`transaction-button ${timeRange === 'ALL' ? 'active' : ''}`}
-                    onClick={() => setTimeRange('ALL')}
-                  >
-                    All Time
-                  </button>
-                </div>
-                <div className="metric-toggles">
-                  <button
-                    className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
-                    onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
-                  >
-                    Value
-                  </button>
-                  <button
-                    className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
-                    onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
-                  >
-                    Cost
-                  </button>
-                  <button
-                    className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
-                    onClick={() =>
-                      setVisibleMetrics((prev) => ({
-                        ...prev,
-                        realizedGain: !prev.realizedGain,
-                      }))
-                    }
-                  >
-                    Realized Gain/Loss
-                  </button>
-                  <button
-                    className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
-                    onClick={() =>
-                      setVisibleMetrics((prev) => ({
-                        ...prev,
-                        unrealizedGain: !prev.unrealizedGain,
-                      }))
-                    }
-                  >
-                    Unrealized Gain/Loss
-                  </button>
-                  <button
-                    className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
-                    onClick={() =>
-                      setVisibleMetrics((prev) => ({
-                        ...prev,
-                        totalGain: !prev.totalGain,
-                      }))
-                    }
-                  >
-                    Total Gain/Loss
-                  </button>
-                </div>
-              </div>
-              <ValueChart data={formatChartData()} lines={getChartLines()} />
+              <ValueChart 
+                data={formatChartData()} 
+                lines={getChartLines()} 
+                timeRange={timeRange}
+                onTimeRangeChange={setTimeRange}
+                showTimeRangeButtons={true}
+                visibleMetrics={visibleMetrics}
+                setVisibleMetrics={setVisibleMetrics}
+              />
             </div>
           </div>
 
           <section className="portfolio-funds">
             <div className="section-header">
               <h2>Funds</h2>
-              <button onClick={() => setIsAddFundModalOpen(true)}>
+              <button className="add-button" onClick={() => setIsAddFundModalOpen(true)}>
                 <FontAwesomeIcon icon={faPlus} /> Add Fund
               </button>
             </div>
@@ -947,9 +892,9 @@ const PortfolioDetail = () => {
                     <td>{formatCurrency(portfolioFund.total_cost)}</td>
                     <td>{formatCurrency(portfolioFund.current_value)}</td>
                     <td>{formatCurrency(portfolioFund.total_dividends)}</td>
-                    <td className="portfolio-funds-actions">
+                    <td className="action-buttons">
                       <button
-                        className="transaction-button"
+                        className="add-button"
                         onClick={() => {
                           setNewTransaction({
                             portfolio_fund_id: portfolioFund.id,
@@ -972,7 +917,7 @@ const PortfolioDetail = () => {
                         </button>
                       )}
                       <button
-                        className="remove-button"
+                        className="delete-button"
                         onClick={() => handleRemoveFund(portfolioFund)}
                       >
                         Remove Fund
@@ -1130,7 +1075,7 @@ const PortfolioDetail = () => {
                     <td>{formatNumber(transaction.shares, 6)}</td>
                     <td>{formatCurrency(transaction.cost_per_share)}</td>
                     <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
-                    <td className="transaction-actions">
+                    <td className="action-buttons">
                       {transaction.type !== 'dividend' && ( // Only show actions if not a dividend transaction
                         <>
                           <button
@@ -1206,7 +1151,7 @@ const PortfolioDetail = () => {
                             {status}
                           </span>
                         </td>
-                        <td className="dividend-actions">
+                        <td className="action-buttons">
                           <button
                             className="edit-button"
                             onClick={() => handleEditDividend(dividend)}
@@ -1331,8 +1276,8 @@ const PortfolioDetail = () => {
                 </div>
               </div>
               <div className="modal-actions">
-                <button type="submit">Create Transaction</button>
-                <button type="button" onClick={() => setIsTransactionModalOpen(false)}>
+                <button className="add-button" type="submit">Create Transaction</button>
+                <button className="cancel-button" type="button" onClick={() => setIsTransactionModalOpen(false)}>
                   Cancel
                 </button>
               </div>
@@ -1410,8 +1355,9 @@ const PortfolioDetail = () => {
                   />
                 </div>
                 <div className="modal-actions">
-                  <button type="submit">Update</button>
+                  <button className="add-button" type="submit">Update</button>
                   <button
+                    className="cancel-button"
                     type="button"
                     onClick={() => {
                       setIsTransactionEditModalOpen(false);
@@ -1560,8 +1506,9 @@ const PortfolioDetail = () => {
                 </div>
               )}
               <div className="modal-actions">
-                <button type="submit">Create Dividend</button>
+                <button className="add-button" type="submit">Create Dividend</button>
                 <button
+                  className="cancel-button"
                   type="button"
                   onClick={() => {
                     setIsDividendModalOpen(false);
@@ -1694,6 +1641,7 @@ const PortfolioDetail = () => {
                 )}
                 <div className="modal-actions">
                   <button
+                    className="add-button"
                     type="submit"
                     disabled={
                       selectedFund?.dividend_type === 'stock' &&
@@ -1704,6 +1652,7 @@ const PortfolioDetail = () => {
                     Update
                   </button>
                   <button
+                    className="cancel-button"
                     type="button"
                     onClick={() => {
                       setIsDividendEditModalOpen(false);

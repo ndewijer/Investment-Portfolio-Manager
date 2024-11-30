@@ -16,9 +16,11 @@ const ValueChart = ({
   data,
   height = 400,
   lines = [],
-  timeRange,
+  timeRange = false,
   onTimeRangeChange,
   showTimeRangeButtons = false,
+  visibleMetrics = false,
+  setVisibleMetrics,
 }) => {
   const { formatCurrency } = useFormat();
 
@@ -73,16 +75,66 @@ const ValueChart = ({
 
   return (
     <div className="chart-wrapper">
-      {showTimeRangeButtons && (
-        <div className="chart-controls">
+      { visibleMetrics && (
+      <div className="chart-controls">
+        <div className="metric-toggles">
           <button
-            className={`chart-button ${timeRange === '1M' ? 'active' : ''}`}
+            className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+            onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+          >
+            Value
+          </button>
+          <button
+            className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+            onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
+          >
+            Cost
+          </button>
+          <button
+            className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+            onClick={() =>
+              setVisibleMetrics((prev) => ({
+                ...prev,
+                realizedGain: !prev.realizedGain,
+              }))
+            }
+          >
+            Realized Gain/Loss
+          </button>
+          <button
+            className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+            onClick={() =>
+              setVisibleMetrics((prev) => ({
+                ...prev,
+                unrealizedGain: !prev.unrealizedGain,
+              }))
+            }
+          >
+            Unrealized Gain/Loss
+          </button>
+          <button
+            className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+            onClick={() =>
+              setVisibleMetrics((prev) => ({
+                ...prev,
+                totalGain: !prev.totalGain,
+              }))
+            }
+          >
+            Total Gain/Loss
+          </button>
+        </div>
+      </div>)}
+      {showTimeRangeButtons && (
+        <div className="time-range-buttons">
+          <button
+            className={`time-range-button ${timeRange === '1M' ? 'active' : ''}`}
             onClick={() => onTimeRangeChange('1M')}
           >
             Last Month
           </button>
           <button
-            className={`chart-button ${timeRange === 'ALL' ? 'active' : ''}`}
+            className={`time-range-button ${timeRange === 'ALL' ? 'active' : ''}`}
             onClick={() => onTimeRangeChange('ALL')}
           >
             All Time

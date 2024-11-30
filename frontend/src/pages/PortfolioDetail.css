@@ -160,7 +160,3 @@
 .portfolio-detail-container .negative {
   color: var(--negative-color);
 }
-
-.portfolio-detail-container .chart-controls {
-  flex-direction: column;
-}

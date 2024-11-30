@@ -257,7 +257,7 @@ const Funds = () => {
       <div className="funds-header">
         <h1>Funds & Stocks</h1>
         <div className="add-buttons">
-          <button onClick={handleAddFund} className="add-fund-button">
+          <button  onClick={handleAddFund} className="add-fund-button">
             Add Fund
           </button>
           <button onClick={handleAddStock} className="add-stock-button">
@@ -466,8 +466,9 @@ const Funds = () => {
             </select>
           </div>
           <div className="modal-actions">
-            <button type="submit">{editingFund ? 'Update' : 'Create'}</button>
+            <button className={editingFund ? 'edit-button' : 'add-button'} type="submit">{editingFund ? 'Update' : 'Create'}</button>
             <button
+              className="cancel-button"
               type="button"
               onClick={() => {
                 setIsModalOpen(false);

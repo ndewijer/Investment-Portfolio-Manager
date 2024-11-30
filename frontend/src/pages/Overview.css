@@ -100,7 +100,3 @@
 .overview-container .no-portfolios-message button:hover {
   background-color: #1976d2;
 }
-
-.overview-container .chart-controls {
-  flex-direction: column;
-}
