@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
@@ -32,41 +32,51 @@ const FundDetail = () => {
   const [filteredPriceHistory, setFilteredPriceHistory] = useState([]);
   const [timeRange, setTimeRange] = useState('1M'); // Default to last month view
 
-  const fetchFundData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/funds/${id}`);
-      setFund(response.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching fund:', err);
-      setError(err.response?.data?.user_message || 'Error fetching fund details');
-      // Don't set fund to null if it fails - keep existing data if any
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  const fetchPriceHistory = useCallback(async () => {
-    try {
-      setLoadingPrices(true);
-      const response = await api.get(`/fund-prices/${id}`);
-      const sortedPrices = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
-      setPriceHistory(sortedPrices);
-      setFilteredPriceHistory(filterLastMonth(sortedPrices));
-      setPriceError(null);
-    } catch (err) {
-      console.error('Error fetching price history:', err);
-      setPriceError(err.response?.data?.user_message || 'Error fetching price history');
-    } finally {
-      setLoadingPrices(false);
-    }
-  }, [id]);
-
   useEffect(() => {
-    fetchFundData();
-    fetchPriceHistory();
-  }, [fetchFundData, fetchPriceHistory]);
+    let mounted = true;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setLoadingPrices(true);
+
+        const [fundResponse, pricesResponse] = await Promise.all([
+          api.get(`/funds/${id}`),
+          api.get(`/fund-prices/${id}`),
+        ]);
+
+        if (mounted) {
+          // Update fund data
+          setFund(fundResponse.data);
+          setError(null);
+
+          // Update price history
+          const sortedPrices = pricesResponse.data.sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+          );
+          setPriceHistory(sortedPrices);
+          setFilteredPriceHistory(filterLastMonth(sortedPrices));
+          setPriceError(null);
+        }
+      } catch (err) {
+        if (mounted) {
+          console.error('Error fetching data:', err);
+          setError(err.response?.data?.user_message || 'Error fetching data');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setLoadingPrices(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (priceHistory.length > 0) {

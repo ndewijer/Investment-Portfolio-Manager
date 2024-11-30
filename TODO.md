@@ -27,7 +27,7 @@
 - [X] Add logging system
 - [ ] Optimize database queries
 - [ ] Add API documentation
-- [ ] Set up CI/CD pipeline
+- [X] Set up CI/CD pipeline
 
 ## Bug Fixes
 - [X] Fix CORS issues with trailing slashes

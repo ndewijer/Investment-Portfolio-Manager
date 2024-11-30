@@ -8,11 +8,8 @@ This module provides routes for:
 - Symbol information lookup
 """
 
-import yfinance as yf
 from flask import Blueprint, jsonify, request
-from requests.exceptions import ConnectionError, RequestException
 from sqlalchemy.exc import IntegrityError
-from urllib3.exceptions import MaxRetryError, NewConnectionError
 
 from ..models import (
     DividendType,
