@@ -225,7 +225,7 @@ const Overview = () => {
   const totals = calculateTotalPerformance();
 
   return (
-    <div className="overview">
+    <div className="overview-container">
       <h1>Investment Portfolio Overview</h1>
 
       <div className="summary-cards">

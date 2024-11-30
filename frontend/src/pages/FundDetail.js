@@ -189,7 +189,7 @@ const FundDetail = () => {
   }
 
   return (
-    <div className="fund-detail">
+    <div className="fund-detail-container">
       {error && <Toast message={error} type="error" onClose={() => setError(null)} />}
 
       {priceError && (

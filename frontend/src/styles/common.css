@@ -1,0 +1,161 @@
+/* Color variables */
+:root {
+  --primary-color: #1976d2;
+  --edit-color: #ff9800;
+  --delete-color: #f44336;
+  --archive-color: #9e9e9e;
+  --positive-color: #4caf50;
+  --negative-color: #f44336;
+}
+
+/* Common button styles */
+.btn {
+  @apply px-4 py-2 rounded-md text-white font-medium transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-[#1976d2] hover:opacity-90;
+}
+
+.btn-edit {
+  @apply bg-[#ff9800] hover:opacity-90;
+}
+
+.btn-delete {
+  @apply bg-[#f44336] hover:opacity-90;
+}
+
+.btn-archive {
+  @apply bg-[#9e9e9e] hover:opacity-90;
+}
+
+/* Common toggle button styles */
+.toggle-btn {
+  @apply px-3 py-1 rounded-md text-white font-medium transition-all duration-200 bg-[#1976d2] hover:opacity-90;
+}
+
+/* Summary Cards Styles */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.summary-card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.summary-card h3 {
+  margin: 0;
+  color: #666;
+  font-size: 0.9em;
+  font-weight: normal;
+}
+
+.summary-card .value {
+  margin: 10px 0 0;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #333;
+}
+
+.summary-card .change {
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+.summary-card .change.positive {
+  color: var(--positive-color);
+}
+
+.summary-card .change.negative {
+  color: var(--negative-color);
+}
+
+/* Transaction Button Styles */
+.transaction-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  background-color: white;
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.transaction-button.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.transaction-button:hover {
+  opacity: 0.9;
+}
+
+.transaction-button.active:hover {
+  opacity: 0.9;
+}
+
+/* Chart Section Styles */
+.chart-section {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-section h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.chart-container {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.chart-controls {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.time-range-buttons,
+.metric-toggles {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Time Range Button Styles */
+.time-range-button {
+  padding: 8px 16px;
+  background-color: var(--archive-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.time-range-button:hover {
+  opacity: 0.9;
+}
+
+.time-range-button.active {
+  background-color: var(--primary-color);
+}
+
+.time-range-button.active:hover {
+  opacity: 0.9;
+} 

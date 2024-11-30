@@ -793,7 +793,7 @@ const PortfolioDetail = () => {
   }, [fundHistory, portfolioFunds, formatChartData, getChartLines]);
 
   return (
-    <div className="portfolio-detail-page">
+    <div className="portfolio-detail-container">
       {loading ? (
         <div>Loading...</div>
       ) : error ? (
@@ -807,36 +807,36 @@ const PortfolioDetail = () => {
             <p>{portfolio.description}</p>
           </div>
 
-          <div className="portfolio-summary">
+          <div className="summary-cards">
             <div className="summary-card">
               <h3>Total Value</h3>
-              <p>{formatCurrency(portfolio.totalValue || 0)}</p>
+              <div className="value">{formatCurrency(portfolio.totalValue || 0)}</div>
             </div>
             <div className="summary-card">
               <h3>Total Cost</h3>
-              <p>{formatCurrency(portfolio.totalCost || 0)}</p>
+              <div className="value">{formatCurrency(portfolio.totalCost || 0)}</div>
             </div>
             <div className="summary-card">
               <h3>Total Dividends</h3>
-              <p>{formatCurrency(portfolio.totalDividends || 0)}</p>
+              <div className="value">{formatCurrency(portfolio.totalDividends || 0)}</div>
             </div>
             <div className="summary-card">
               <h3>Unrealized Gain/Loss</h3>
-              <p className={portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}>
+              <div className={`value ${portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}`}>
                 {formatCurrency(portfolio.totalUnrealizedGainLoss)}
-              </p>
+              </div>
             </div>
             <div className="summary-card">
               <h3>Realized Gain/Loss</h3>
-              <p className={portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}>
+              <div className={`value ${portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}>
                 {formatCurrency(portfolio.totalRealizedGainLoss)}
-              </p>
+              </div>
             </div>
             <div className="summary-card">
               <h3>Gain/Loss</h3>
-              <p className={portfolio.totalGainLoss >= 0 ? 'positive' : 'negative'}>
+              <div className={`value ${portfolio.totalGainLoss >= 0 ? 'positive' : 'negative'}`}>
                 {formatCurrency(portfolio.totalGainLoss)}
-              </p>
+              </div>
             </div>
           </div>
 
