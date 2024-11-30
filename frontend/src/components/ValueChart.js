@@ -75,56 +75,57 @@ const ValueChart = ({
 
   return (
     <div className="chart-wrapper">
-      { visibleMetrics && (
-      <div className="chart-controls">
-        <div className="metric-toggles">
-          <button
-            className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
-            onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
-          >
-            Value
-          </button>
-          <button
-            className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
-            onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
-          >
-            Cost
-          </button>
-          <button
-            className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
-            onClick={() =>
-              setVisibleMetrics((prev) => ({
-                ...prev,
-                realizedGain: !prev.realizedGain,
-              }))
-            }
-          >
-            Realized Gain/Loss
-          </button>
-          <button
-            className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
-            onClick={() =>
-              setVisibleMetrics((prev) => ({
-                ...prev,
-                unrealizedGain: !prev.unrealizedGain,
-              }))
-            }
-          >
-            Unrealized Gain/Loss
-          </button>
-          <button
-            className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
-            onClick={() =>
-              setVisibleMetrics((prev) => ({
-                ...prev,
-                totalGain: !prev.totalGain,
-              }))
-            }
-          >
-            Total Gain/Loss
-          </button>
+      {visibleMetrics && (
+        <div className="chart-controls">
+          <div className="metric-toggles">
+            <button
+              className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+              onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+            >
+              Value
+            </button>
+            <button
+              className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+              onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
+            >
+              Cost
+            </button>
+            <button
+              className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+              onClick={() =>
+                setVisibleMetrics((prev) => ({
+                  ...prev,
+                  realizedGain: !prev.realizedGain,
+                }))
+              }
+            >
+              Realized Gain/Loss
+            </button>
+            <button
+              className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+              onClick={() =>
+                setVisibleMetrics((prev) => ({
+                  ...prev,
+                  unrealizedGain: !prev.unrealizedGain,
+                }))
+              }
+            >
+              Unrealized Gain/Loss
+            </button>
+            <button
+              className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+              onClick={() =>
+                setVisibleMetrics((prev) => ({
+                  ...prev,
+                  totalGain: !prev.totalGain,
+                }))
+              }
+            >
+              Total Gain/Loss
+            </button>
+          </div>
         </div>
-      </div>)}
+      )}
       {showTimeRangeButtons && (
         <div className="time-range-buttons">
           <button

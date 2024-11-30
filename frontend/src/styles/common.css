@@ -9,36 +9,6 @@
   --negative-color: #f44336;
 }
 
-/* Common button styles */
-.btn {
-  @apply px-4 py-2 rounded-md text-white font-medium transition-all duration-200;
-}
-
-.btn-primary {
-  @apply bg-[#1976d2] hover:opacity-90;
-}
-
-.btn-add {
-    @apply bg-[#4caf50] hover:opacity-90;
-  }
-
-.btn-edit {
-  @apply bg-[#ff9800] hover:opacity-90;
-}
-
-.btn-delete {
-  @apply bg-[#f44336] hover:opacity-90;
-}
-
-.btn-archive {
-  @apply bg-[#9e9e9e] hover:opacity-90;
-}
-
-/* Common toggle button styles */
-.toggle-btn {
-  @apply px-3 py-1 rounded-md text-white font-medium transition-all duration-200 bg-[#1976d2] hover:opacity-90;
-}
-
 /* Summary Cards Styles */
 .summary-cards {
   display: grid;
@@ -95,7 +65,7 @@
   transition: background-color 0.2s;
 }
 
-.transaction-button.active, 
+.transaction-button.active,
 .time-range-button.active {
   background-color: var(--primary-color);
   color: white;
@@ -147,32 +117,32 @@
 }
 
 .action-buttons button {
-    margin: 4px;
-    padding: 4px 8px;
-    border-radius: 3px;
-  }
-  
+  margin: 4px;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
 .action-buttons button:hover {
-    opacity: 0.9;
-  }
+  opacity: 0.9;
+}
 
 .add-button {
-    background-color: var(--add-color);
+  background-color: var(--add-color);
 }
 
 .dividend-button {
-    background-color: var(--add-color);
+  background-color: var(--add-color);
 }
 
 .edit-button {
-    background-color: var(--edit-color);
-    color: black;
+  background-color: var(--edit-color);
+  color: black;
 }
 
 .delete-button {
-    background-color: var(--delete-color);
+  background-color: var(--delete-color);
 }
 
 .cancel-button {
-    background-color: var(--archive-color);
+  background-color: var(--archive-color);
 }

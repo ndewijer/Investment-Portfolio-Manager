@@ -190,7 +190,9 @@ const Portfolios = () => {
             </label>
           </div>
           <div className="modal-actions">
-            <button className={editingPortfolio ? 'edit-button' : 'add-button'} type="submit">{editingPortfolio ? 'Update' : 'Create'}</button>
+            <button className={editingPortfolio ? 'edit-button' : 'add-button'} type="submit">
+              {editingPortfolio ? 'Update' : 'Create'}
+            </button>
             <button
               className="cancel-button"
               type="button"

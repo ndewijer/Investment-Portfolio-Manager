@@ -1,5 +1,6 @@
 """
 Add exclude_from_overview column to table portfolio.
+
 Revision ID: 1.1.0
 Revises: None
 Create Date: 2024-11-22
@@ -16,6 +17,7 @@ depends_on = None
 
 
 def upgrade():
+    """Add exclude_from_overview column to portfolio table."""
     # Check if exclude_from_overview column already exists
     conn = op.get_bind()
     inspector = sa.inspect(conn)
@@ -31,8 +33,8 @@ def upgrade():
         # Set default value for new column
         op.execute(
             """
-            UPDATE portfolio 
-            SET exclude_from_overview = FALSE 
+            UPDATE portfolio
+            SET exclude_from_overview = FALSE
             WHERE exclude_from_overview IS NULL
         """
         )
@@ -42,7 +44,7 @@ def upgrade():
         # Migrate values from is_hidden to exclude_from_overview
         op.execute(
             """
-            UPDATE portfolio 
+            UPDATE portfolio
             SET exclude_from_overview = is_hidden
         """
         )
@@ -71,13 +73,15 @@ def upgrade():
 
 
 def downgrade():
+    """Remove exclude_from_overview column from portfolio table."""
+
     # Add back is_hidden column if it existed
     op.add_column("portfolio", sa.Column("is_hidden", sa.Boolean(), nullable=True))
 
     # Migrate values back to is_hidden
     op.execute(
         """
-        UPDATE portfolio 
+        UPDATE portfolio
         SET is_hidden = exclude_from_overview
     """
     )

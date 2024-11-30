@@ -254,12 +254,12 @@ const Overview = () => {
       <div className="charts-section">
         <div className="chart-container">
           <h2>Portfolio Value Over Time</h2>
-          <ValueChart 
-                data={formatChartData()} 
-                lines={getChartLines()} 
-                visibleMetrics={visibleMetrics}
-                setVisibleMetrics={setVisibleMetrics}
-              />
+          <ValueChart
+            data={formatChartData()}
+            lines={getChartLines()}
+            visibleMetrics={visibleMetrics}
+            setVisibleMetrics={setVisibleMetrics}
+          />
         </div>
       </div>
 

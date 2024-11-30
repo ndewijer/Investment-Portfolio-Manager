@@ -822,13 +822,21 @@ const PortfolioDetail = () => {
             </div>
             <div className="summary-card">
               <h3>Unrealized Gain/Loss</h3>
-              <div className={`value ${portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}`}>
+              <div
+                className={`value ${
+                  portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'
+                }`}
+              >
                 {formatCurrency(portfolio.totalUnrealizedGainLoss)}
               </div>
             </div>
             <div className="summary-card">
               <h3>Realized Gain/Loss</h3>
-              <div className={`value ${portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}>
+              <div
+                className={`value ${
+                  portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'
+                }`}
+              >
                 {formatCurrency(portfolio.totalRealizedGainLoss)}
               </div>
             </div>
@@ -843,9 +851,9 @@ const PortfolioDetail = () => {
           <div className="chart-section">
             <div className="chart-container">
               <h2>Portfolio Value Over Time</h2>
-              <ValueChart 
-                data={formatChartData()} 
-                lines={getChartLines()} 
+              <ValueChart
+                data={formatChartData()}
+                lines={getChartLines()}
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
                 showTimeRangeButtons={true}
@@ -1276,8 +1284,14 @@ const PortfolioDetail = () => {
                 </div>
               </div>
               <div className="modal-actions">
-                <button className="add-button" type="submit">Create Transaction</button>
-                <button className="cancel-button" type="button" onClick={() => setIsTransactionModalOpen(false)}>
+                <button className="add-button" type="submit">
+                  Create Transaction
+                </button>
+                <button
+                  className="cancel-button"
+                  type="button"
+                  onClick={() => setIsTransactionModalOpen(false)}
+                >
                   Cancel
                 </button>
               </div>
@@ -1355,7 +1369,9 @@ const PortfolioDetail = () => {
                   />
                 </div>
                 <div className="modal-actions">
-                  <button className="add-button" type="submit">Update</button>
+                  <button className="add-button" type="submit">
+                    Update
+                  </button>
                   <button
                     className="cancel-button"
                     type="button"
@@ -1506,7 +1522,9 @@ const PortfolioDetail = () => {
                 </div>
               )}
               <div className="modal-actions">
-                <button className="add-button" type="submit">Create Dividend</button>
+                <button className="add-button" type="submit">
+                  Create Dividend
+                </button>
                 <button
                   className="cancel-button"
                   type="button"
