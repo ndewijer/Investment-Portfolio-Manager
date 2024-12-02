@@ -24,9 +24,17 @@ from app.tasks.price_updates import update_all_fund_prices
 load_dotenv()
 
 
+def get_version():
+    """Get application version from VERSION file."""
+    version_file = os.path.join(os.path.dirname(__file__), "VERSION")
+    with open(version_file) as f:
+        return f.read().strip()
+
+
 def create_app():
     """Create and configure the Flask application."""
     app = Flask(__name__)
+    app.config["VERSION"] = get_version()  # Add version to app config
     app.wsgi_app = ProxyFix(app.wsgi_app)
 
     # Get database directory from environment variable or use default
