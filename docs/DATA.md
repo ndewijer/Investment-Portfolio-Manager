@@ -1,5 +1,7 @@
 # Data Structure and Management
 
+For detailed information about data models and their relationships, see [Data Models](MODELS.md).
+
 ## Database Management
 
 ### Version Control

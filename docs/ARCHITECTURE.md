@@ -50,3 +50,58 @@ Investment-Portfolio-Manager/
 - Dividend Handling
 - Price History Tracking
 - Data Import/Export
+
+## Transaction and Gain/Loss Tracking
+
+### Overview
+The system tracks both realized and unrealized gains/losses for investments:
+- Realized gains/losses are recorded when selling investments
+- Unrealized gains/losses are calculated based on current market value vs. cost basis
+- Historical performance data is maintained even after shares are sold and reinvested
+
+### Key Components
+
+#### RealizedGainLoss Model
+- Tracks gains/losses from selling investments
+- Maintains direct relationship with transactions via `transaction_id`
+- Records:
+  - Cost basis of sold shares
+  - Sale proceeds
+  - Realized gain/loss amount
+  - Transaction date and details
+
+#### Transaction Processing
+When processing sell transactions:
+1. Calculate current position and average cost
+2. Record the sale transaction
+3. Calculate and store realized gain/loss
+4. Maintain relationship between transaction and realized gain
+
+#### Portfolio Calculations
+Portfolio values include:
+- Current market value of holdings
+- Total cost basis
+- Unrealized gains/losses on current positions
+- Realized gains/losses from past sales
+- Total gains/losses (realized + unrealized)
+
+### Example Flow
+```mermaid
+sequenceDiagram
+participant User
+participant API
+participant TransactionService
+participant Database
+User->>API: Create sell transaction
+API->>TransactionService: Process sell transaction
+TransactionService->>Database: Calculate current position
+TransactionService->>Database: Record transaction
+TransactionService->>Database: Record realized gain/loss
+Database-->>API: Return transaction details
+API-->>User: Return response with gain/loss info
+```
+
+### Performance Considerations
+- Direct foreign key relationship between Transaction and RealizedGainLoss
+- Indexed queries for efficient gain/loss calculations
+- Cached calculations where appropriate
