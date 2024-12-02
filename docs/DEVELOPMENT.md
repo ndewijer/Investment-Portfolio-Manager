@@ -45,4 +45,61 @@ These tasks require:
 - Proper application context
 - Database access
 
+## Database Management
+
+### Version Control
+The application uses a centralized version management system:
+```bash
+# Check current version
+cat backend/VERSION
+
+# Create new migration
+flask db revision -m "description"
+
+# Apply migrations
+flask db upgrade
+
+# Rollback if needed
+flask db downgrade
+```
+
+### Database Setup
+```bash
+# Fresh installation
+flask db upgrade   # Creates and initializes database
+
+# Development reset
+flask db downgrade base  # Reset to empty state
+flask db upgrade        # Apply all migrations
+flask seed-db           # Add sample data
+```
+
+### Migration Development
+When creating new migrations:
+1. Update VERSION file with new version
+2. Create migration script
+3. Include proper error handling for:
+   - Existing tables/indexes
+   - Missing tables/indexes
+   - Transaction management
+
+Example migration pattern:
+```python
+from sqlalchemy.exc import OperationalError
+
+def upgrade():
+    try:
+        # Create tables/indexes
+    except OperationalError as e:
+        if "already exists" not in str(e):
+            raise e
+
+def downgrade():
+    try:
+        # Drop tables/indexes
+    except OperationalError as e:
+        if "no such table" not in str(e):
+            raise e
+```
+
 [Detailed development documentation...]
