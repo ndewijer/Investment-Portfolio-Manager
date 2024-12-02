@@ -194,6 +194,12 @@ class Transaction(db.Model):
     cost_per_share = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
+    __table_args__ = (
+        db.Index("ix_transaction_date", "date"),
+        db.Index("ix_transaction_portfolio_fund_id", "portfolio_fund_id"),
+        db.Index("ix_transaction_portfolio_fund_id_date", "portfolio_fund_id", "date"),
+    )
+
 
 class FundPrice(db.Model):
     """
@@ -211,6 +217,12 @@ class FundPrice(db.Model):
     fund_id = db.Column(db.String(36), db.ForeignKey("fund.id"), nullable=False)
     date = db.Column(db.Date, nullable=False)
     price = db.Column(db.Float, nullable=False)
+
+    __table_args__ = (
+        db.Index("ix_fund_price_date", "date"),
+        db.Index("ix_fund_price_fund_id", "fund_id"),
+        db.Index("ix_fund_price_fund_id_date", "fund_id", "date"),
+    )
 
 
 class ExchangeRate(db.Model):
@@ -237,6 +249,7 @@ class ExchangeRate(db.Model):
         db.UniqueConstraint(
             "from_currency", "to_currency", "date", name="unique_exchange_rate"
         ),
+        db.Index("ix_exchange_rate_date", "date"),
     )
 
 
@@ -277,6 +290,12 @@ class Dividend(db.Model):
         db.String(36), db.ForeignKey("transaction.id"), nullable=True
     )
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    __table_args__ = (
+        db.Index("ix_dividend_fund_id", "fund_id"),
+        db.Index("ix_dividend_portfolio_fund_id", "portfolio_fund_id"),
+        db.Index("ix_dividend_record_date", "record_date"),
+    )
 
 
 class LogLevel(Enum):
@@ -482,4 +501,11 @@ class RealizedGainLoss(db.Model):
     fund = db.relationship("Fund", backref="realized_gains_losses")
     transaction = db.relationship(
         "Transaction", backref="realized_gain_loss", uselist=False
+    )
+
+    __table_args__ = (
+        db.Index("ix_realized_gain_loss_portfolio_id", "portfolio_id"),
+        db.Index("ix_realized_gain_loss_fund_id", "fund_id"),
+        db.Index("ix_realized_gain_loss_transaction_date", "transaction_date"),
+        db.Index("ix_realized_gain_loss_transaction_id", "transaction_id"),
     )
