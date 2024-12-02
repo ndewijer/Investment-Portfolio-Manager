@@ -8,6 +8,7 @@
 !data/seed/
 !requirements.txt
 !run.py
+!VERSION
 
 # Exclude any cache/temp files from included directories
 **/__pycache__
