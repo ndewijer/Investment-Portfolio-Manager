@@ -24,12 +24,26 @@ docker compose exec backend flask seed-db
 Access at http://localhost (or your configured domain)
 
 ## Documentation
+### Architecture
 - [Architecture](docs/ARCHITECTURE.md)
-- [Contributing](docs/CONTRIBUTING.md)
-- [Data Management](docs/DATA.md)
 - [Data Models](docs/MODELS.md)
-- [Development Guide](docs/DEVELOPMENT.md)
+
+
+### Contributing
+- [Contributing](docs/CONTRIBUTING.md)
 - [Docker Setup](docs/DOCKER.md)
+
+#$## Frontend Development
+- [CSS](docs/CSS.md)
+
+#### Backend Development
+- [Development Guide](docs/DEVELOPMENT.md)
+- [Data Management](docs/DATA.md)
+
+
+
+
+
 
 ## Features
 - Portfolio management with transaction tracking
