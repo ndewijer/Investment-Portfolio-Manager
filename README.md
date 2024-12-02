@@ -33,7 +33,7 @@ Access at http://localhost (or your configured domain)
 - [Contributing](docs/CONTRIBUTING.md)
 - [Docker Setup](docs/DOCKER.md)
 
-#$## Frontend Development
+#### Frontend Development
 - [CSS](docs/CSS.md)
 
 #### Backend Development
