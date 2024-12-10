@@ -14,7 +14,6 @@ from ..models import (
     LogLevel,
     Transaction,
     db,
-    PortfolioFund,
     RealizedGainLoss,
 )
 from ..services.logging_service import logger, track_request
@@ -99,16 +98,9 @@ def create_transaction():
         response = service.format_transaction(transaction)
         if data["type"] == "sell":
             # Add realized gain/loss info to response for sell transactions
-            portfolio_fund = PortfolioFund.query.get(data["portfolio_fund_id"])
-            realized_records = (
-                RealizedGainLoss.query.filter_by(
-                    portfolio_id=portfolio_fund.portfolio_id,
-                    fund_id=portfolio_fund.fund_id,
-                    transaction_date=transaction.date,
-                )
-                .order_by(RealizedGainLoss.created_at.desc())
-                .first()
-            )
+            realized_records = RealizedGainLoss.query.filter_by(
+                transaction_id=transaction.id
+            ).first()
 
             if realized_records:
                 response["realized_gain_loss"] = realized_records.realized_gain_loss
@@ -126,19 +118,6 @@ def create_transaction():
         )
 
         return jsonify(response)
-    except ValueError as e:
-        response, status = logger.log(
-            level=LogLevel.ERROR,
-            category=LogCategory.TRANSACTION,
-            message=f"Error creating transaction: {str(e)}",
-            details={
-                "user_message": "Error creating transaction",
-                "error": str(e),
-                "request_data": data,
-            },
-            http_status=500,
-        )
-        return jsonify(response), status
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,

@@ -273,6 +273,8 @@ class TransactionService:
         realized_gain_loss = sale_proceeds - cost_basis
 
         try:
+            db.session.begin_nested()
+
             # Create the sell transaction first
             transaction = Transaction(
                 portfolio_fund_id=portfolio_fund_id,
@@ -282,6 +284,7 @@ class TransactionService:
                 cost_per_share=price,
             )
             db.session.add(transaction)
+            db.session.flush()  # Flush to get transaction.id without committing
 
             # Record the realized gain/loss
             gain_loss_record = RealizedGainLoss(
@@ -296,10 +299,11 @@ class TransactionService:
             )
             db.session.add(gain_loss_record)
 
+            # Commit the savepoint
+            db.session.commit()
+
         except Exception as e:
             db.session.rollback()
             raise e
-
-        db.session.commit()
 
         return {"transaction": transaction, "realized_gain_loss": realized_gain_loss}
