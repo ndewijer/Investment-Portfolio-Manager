@@ -234,37 +234,32 @@ class TransactionService:
                 total_shares += transaction.shares
                 total_cost += transaction.shares * transaction.cost_per_share
             elif transaction.type == "sell":
-                if total_shares >= transaction.shares:
-                    # Calculate cost basis for sold shares
-                    cost_per_share = total_cost / total_shares
-                    cost_basis = cost_per_share * transaction.shares
-
-                    # Update totals
+                if (
+                    total_shares >= transaction.shares
+                    or abs(total_shares - transaction.shares) < 1e-09  # noqa: W503
+                ):
                     total_shares -= transaction.shares
-                    total_cost -= cost_basis
+                    total_cost -= transaction.cost_per_share * transaction.shares
                 else:
                     raise ValueError("Insufficient shares for sale")
+
+        # If total shares is less than 0.000001, set it to 0
+        if total_shares <= 0.000001:
+            total_shares = 0
+            total_cost = 0
 
         return {
             "total_shares": total_shares,
             "total_cost": total_cost,
-            "average_cost": total_cost / total_shares if total_shares > 0 else 0,
+            "average_cost": (
+                total_cost / total_shares if total_shares > 0 else 0
+            ),  # Set to None if no shares
         }
 
     @staticmethod
     def process_sell_transaction(portfolio_fund_id, shares, price, date):
         """Process a sell transaction and record realized gains/losses."""
         pf = PortfolioFund.query.get_or_404(portfolio_fund_id)
-
-        # Create the sell transaction first
-        transaction = Transaction(
-            portfolio_fund_id=portfolio_fund_id,
-            date=date,
-            type="sell",
-            shares=shares,
-            cost_per_share=price,
-        )
-        db.session.add(transaction)
 
         # Calculate and record the realized gain/loss
         current_position = TransactionService.calculate_current_position(
@@ -277,19 +272,34 @@ class TransactionService:
         sale_proceeds = shares * price
         realized_gain_loss = sale_proceeds - cost_basis
 
-        # Record the realized gain/loss
-        gain_loss_record = RealizedGainLoss(
-            portfolio_id=pf.portfolio_id,
-            fund_id=pf.fund_id,
-            transaction_id=transaction.id,
-            transaction_date=date,
-            shares_sold=shares,
-            cost_basis=cost_basis,
-            sale_proceeds=sale_proceeds,
-            realized_gain_loss=realized_gain_loss,
-        )
+        try:
+            # Create the sell transaction first
+            transaction = Transaction(
+                portfolio_fund_id=portfolio_fund_id,
+                date=date,
+                type="sell",
+                shares=shares,
+                cost_per_share=price,
+            )
+            db.session.add(transaction)
 
-        db.session.add(gain_loss_record)
+            # Record the realized gain/loss
+            gain_loss_record = RealizedGainLoss(
+                portfolio_id=pf.portfolio_id,
+                fund_id=pf.fund_id,
+                transaction_id=transaction.id,
+                transaction_date=date,
+                shares_sold=shares,
+                cost_basis=cost_basis,
+                sale_proceeds=sale_proceeds,
+                realized_gain_loss=realized_gain_loss,
+            )
+            db.session.add(gain_loss_record)
+
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
         db.session.commit()
 
         return {"transaction": transaction, "realized_gain_loss": realized_gain_loss}

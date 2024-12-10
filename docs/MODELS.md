@@ -161,4 +161,4 @@
 | isin | String(12) | ISIN if available |
 | last_updated | DateTime | Last update timestamp |
 | data_source | String(50) | Data source identifier |
-| is_valid | Boolean | Validity flag | 
+| is_valid | Boolean | Validity flag |
