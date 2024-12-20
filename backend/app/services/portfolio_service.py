@@ -162,6 +162,8 @@ class PortfolioService:
                 - totalDividends: Total dividends received
                 - totalUnrealizedGainLoss: Total unrealized gain/loss
                 - totalRealizedGainLoss: Total realized gain/loss
+                - totalSaleProceeds: Total proceeds from sales
+                - totalOriginalCost: Total original cost of sold positions
                 - totalGainLoss: Total gain/loss
                 - is_archived: Whether portfolio is archived
 
@@ -184,7 +186,11 @@ class PortfolioService:
                 )
 
                 if has_transactions:
-                    # Calculate totals from portfolio_funds_data
+                    # Get realized gains records
+                    realized_gains = RealizedGainLoss.query.filter_by(
+                        portfolio_id=portfolio.id
+                    ).all()
+
                     totals = {
                         "totalValue": sum(
                             pf["current_value"] for pf in portfolio_funds_data
@@ -200,6 +206,12 @@ class PortfolioService:
                         ),
                         "totalRealizedGainLoss": sum(
                             pf["realized_gain_loss"] for pf in portfolio_funds_data
+                        ),
+                        "totalSaleProceeds": sum(
+                            gain.sale_proceeds for gain in realized_gains
+                        ),
+                        "totalOriginalCost": sum(
+                            gain.cost_basis for gain in realized_gains
                         ),
                         "totalGainLoss": sum(
                             pf["total_gain_loss"] for pf in portfolio_funds_data
