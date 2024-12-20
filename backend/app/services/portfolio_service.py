@@ -77,6 +77,22 @@ class PortfolioService:
                 .all()
             )
 
+            # Get all dividend shares
+            dividend_shares = (
+                Dividend.query.filter_by(portfolio_fund_id=pf.id)
+                # Get the reinvestment transactions for stock dividends
+                .join(
+                    Transaction,
+                    Dividend.reinvestment_transaction_id == Transaction.id,
+                    isouter=True,
+                )
+                .with_entities(Transaction.shares)
+                .all()
+            )
+            # Add dividend shares to total
+            total_dividend_shares = sum(d.shares or 0 for d in dividend_shares)
+            shares += total_dividend_shares
+
             # Calculate current position
             for transaction in transactions:
                 if transaction.type == "buy":
@@ -90,6 +106,12 @@ class PortfolioService:
                         cost = (cost / (shares + transaction.shares)) * shares
                     else:
                         cost = 0
+
+            # In case of empty fund, set all values to 0
+            if round(shares, 6) == 0:
+                shares = 0
+                cost = 0
+                current_value = 0
 
             # Get latest price
             latest_price = (
