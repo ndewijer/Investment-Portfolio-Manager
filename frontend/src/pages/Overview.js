@@ -43,6 +43,8 @@ const Overview = () => {
           totalCost: acc.totalCost + portfolio.totalCost,
           totalUnrealizedGainLoss: acc.totalUnrealizedGainLoss + portfolio.totalUnrealizedGainLoss,
           totalRealizedGainLoss: acc.totalRealizedGainLoss + portfolio.totalRealizedGainLoss,
+          totalSaleProceeds: acc.totalSaleProceeds + portfolio.totalSaleProceeds,
+          totalOriginalCost: acc.totalOriginalCost + portfolio.totalOriginalCost,
           totalGainLoss: acc.totalGainLoss + portfolio.totalGainLoss,
         };
       },
@@ -51,14 +53,19 @@ const Overview = () => {
         totalCost: 0,
         totalUnrealizedGainLoss: 0,
         totalRealizedGainLoss: 0,
+        totalSaleProceeds: 0,
+        totalOriginalCost: 0,
         totalGainLoss: 0,
       }
     );
 
     const performance = (
-      (totals.totalValue / (totals.totalCost + totals.totalRealizedGainLoss) - 1) *
+      ((totals.totalValue + totals.totalSaleProceeds) /
+        (totals.totalCost + totals.totalOriginalCost) -
+        1) *
       100
     ).toFixed(2);
+
     return {
       ...totals,
       performance: performance,
@@ -270,7 +277,7 @@ const Overview = () => {
             <tr>
               <th>Portfolio</th>
               <th>Current Value</th>
-              <th>Cost Basis</th>
+              <th>Current Cost Basis</th>
               <th>Unrealized Gain/Loss</th>
               <th>Realized Gain/Loss</th>
               <th>Performance</th>
@@ -279,7 +286,8 @@ const Overview = () => {
           <tbody>
             {portfolioSummary.map((portfolio) => {
               const performance = (
-                (portfolio.totalValue / (portfolio.totalCost + portfolio.totalRealizedGainLoss) -
+                ((portfolio.totalValue + portfolio.totalSaleProceeds) /
+                  (portfolio.totalCost + portfolio.totalOriginalCost) -
                   1) *
                 100
               ).toFixed(2);
