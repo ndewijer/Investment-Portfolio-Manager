@@ -9,7 +9,7 @@ This module provides methods for:
 
 from datetime import datetime
 
-from ..models import PortfolioFund, Transaction, db, RealizedGainLoss
+from ..models import PortfolioFund, Transaction, db, RealizedGainLoss, Dividend
 
 
 class TransactionService:
@@ -226,6 +226,20 @@ class TransactionService:
             .all()
         )
 
+        # Get dividend shares
+        dividend_shares = (
+            Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id)
+            # Get the reinvestment transactions for stock dividends
+            .join(
+                Transaction,
+                Dividend.reinvestment_transaction_id == Transaction.id,
+                isouter=True,
+            )
+            .with_entities(Transaction.shares)
+            .all()
+        )
+        total_dividend_shares = sum(d.shares or 0 for d in dividend_shares)
+
         total_shares = 0
         total_cost = 0
 
@@ -236,7 +250,7 @@ class TransactionService:
             elif transaction.type == "sell":
                 if (
                     total_shares >= transaction.shares
-                    or abs(total_shares - transaction.shares) < 1e-09  # noqa: W503
+                    or abs(total_shares - transaction.shares) < 1e-07  # noqa: W503
                 ):
                     total_shares -= transaction.shares
                     total_cost -= transaction.cost_per_share * transaction.shares
@@ -244,13 +258,16 @@ class TransactionService:
                     raise ValueError("Insufficient shares for sale")
 
         # If total shares is less than 0.000001, set it to 0
-        if total_shares <= 0.000001:
+        if round(total_shares, 6) == 0:
             total_shares = 0
             total_cost = 0
 
+        # Add dividend shares to total
+        total_shares += total_dividend_shares
+
         return {
-            "total_shares": total_shares,
-            "total_cost": total_cost,
+            "total_shares": round(total_shares, 6),
+            "total_cost": round(total_cost, 6),
             "average_cost": (
                 total_cost / total_shares if total_shares > 0 else 0
             ),  # Set to None if no shares
