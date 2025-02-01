@@ -18,7 +18,7 @@
     "html-webpack-plugin": "^5.6.3",
     "react": "^18.3.1",
     "react-datepicker": "^7.5.0",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.0.0",
     "react-multi-select-component": "^4.3.4",
     "react-router-dom": "^7.1.1",
     "recharts": "^2.15.0",
