@@ -13,9 +13,9 @@ import {
   faChartLine,
   faCheck,
 } from '@fortawesome/free-solid-svg-icons';
-import { MultiSelect } from 'react-multi-select-component';
 import FilterPopup from '../components/FilterPopup';
 import ValueChart from '../components/ValueChart';
+import Select from 'react-select';
 
 const TYPE_OPTIONS = [
   { label: 'Buy', value: 'buy' },
@@ -104,6 +104,11 @@ const PortfolioDetail = () => {
     realizedGain: false,
     unrealizedGain: false,
     totalGain: false,
+  });
+
+  const [tempFilters, setTempFilters] = useState({
+    fund_names: [],
+    type: '',
   });
 
   const fetchFundPrice = async (fundId) => {
@@ -306,6 +311,14 @@ const PortfolioDetail = () => {
       ...prev,
       [field]: !prev[field],
     }));
+    
+    // Initialize temp filters with current filter values when opening
+    if (!filterPopups[field]) {
+      setTempFilters((prev) => ({
+        ...prev,
+        [field]: filters[field],
+      }));
+    }
   };
 
   const handleEditTransaction = (transaction) => {
@@ -991,24 +1004,27 @@ const PortfolioDetail = () => {
                     <FilterPopup
                       type="multiselect"
                       isOpen={filterPopups.fund}
-                      onClose={() => setFilterPopups((prev) => ({ ...prev, fund: false }))}
+                      onClose={() => {
+                        setFilterPopups((prev) => ({ ...prev, fund: false }));
+                        setFilters((prev) => ({ ...prev, fund_names: tempFilters.fund_names }));
+                      }}
                       position={filterPosition}
-                      value={filters.fund_names.map((name) => ({
+                      value={tempFilters.fund_names.map((name) => ({
                         label: name,
                         value: name,
                       }))}
                       onChange={(selected) => {
-                        setFilters((prev) => ({
+                        setTempFilters((prev) => ({
                           ...prev,
-                          fund_names: selected.map((option) => option.value),
+                          fund_names: selected ? selected.map((option) => option.value) : [],
                         }));
-                        setFilterPopups((prev) => ({ ...prev, fund_names: false }));
                       }}
                       options={getUniqueFundNames().map((name) => ({
                         label: name,
                         value: name,
                       }))}
-                      Component={MultiSelect}
+                      Component={Select}
+                      isMulti={true}
                     />
                   </th>
                   <th>
@@ -1028,26 +1044,30 @@ const PortfolioDetail = () => {
                     <FilterPopup
                       type="multiselect"
                       isOpen={filterPopups.type}
-                      onClose={() => setFilterPopups((prev) => ({ ...prev, type: false }))}
+                      onClose={() => {
+                        setFilterPopups((prev) => ({ ...prev, type: false }));
+                        setFilters((prev) => ({ ...prev, type: tempFilters.type }));
+                      }}
                       position={filterPosition}
                       value={
-                        filters.type
+                        tempFilters.type
                           ? [
                               {
-                                label: filters.type.charAt(0).toUpperCase() + filters.type.slice(1),
-                                value: filters.type,
+                                label: tempFilters.type.charAt(0).toUpperCase() + tempFilters.type.slice(1),
+                                value: tempFilters.type,
                               },
                             ]
                           : []
                       }
                       onChange={(selected) => {
-                        setFilters((prev) => ({
+                        setTempFilters((prev) => ({
                           ...prev,
-                          type: selected.length > 0 ? selected[0].value : '',
+                          type: selected ? selected.value : '',
                         }));
                       }}
                       options={TYPE_OPTIONS}
-                      Component={MultiSelect}
+                      Component={Select}
+                      isMulti={false}
                     />
                   </th>
                   <th>
