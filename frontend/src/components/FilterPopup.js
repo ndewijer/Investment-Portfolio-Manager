@@ -15,6 +15,7 @@ const FilterPopup = ({
   onFromDateChange,
   onToDateChange,
   Component,
+  isMulti,
 }) => {
   const popupRef = useRef(null);
 
@@ -78,9 +79,29 @@ const FilterPopup = ({
               options={options}
               value={value}
               onChange={onChange}
-              labelledBy="Select options"
-              hasSelectAll={true}
-              disableSearch={true}
+              isMulti={isMulti}
+              isClearable={true}
+              closeMenuOnSelect={false}
+              styles={{
+                control: (base) => ({
+                  ...base,
+                  minWidth: '200px'
+                }),
+                menu: (base) => ({
+                  ...base,
+                  position: 'relative',
+                  zIndex: 2
+                }),
+                clearIndicator: (base) => ({
+                  ...base,
+                  cursor: 'pointer',
+                  padding: '6px',
+                  ':hover': {
+                    color: '#666'
+                  }
+                })
+              }}
+              classNamePrefix="react-select"
             />
           );
         }

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFilter, faSort } from '@fortawesome/free-solid-svg-icons';
-import { MultiSelect } from 'react-multi-select-component';
 import api from '../utils/api';
 import './LogViewer.css';
 import FilterPopup from '../components/FilterPopup';
+import Select from 'react-select';
 
 const LogViewer = () => {
   const [logs, setLogs] = useState([]);
@@ -32,6 +32,12 @@ const LogViewer = () => {
   });
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
   const [clearing, setClearing] = useState(false);
+
+  // Add new state for temporary filters
+  const [tempFilters, setTempFilters] = useState({
+    level: [],
+    category: [],
+  });
 
   const levelOptions = [
     { label: 'Debug', value: 'debug' },
@@ -142,6 +148,14 @@ const LogViewer = () => {
       ...prev,
       [field]: !prev[field],
     }));
+    
+    // Initialize temp filters with current filter values when opening
+    if (!filterPopups[field]) {
+      setTempFilters((prev) => ({
+        ...prev,
+        [field]: filters[field],
+      }));
+    }
   };
 
   const handleClearLogs = async () => {
@@ -328,29 +342,39 @@ const LogViewer = () => {
       <FilterPopup
         type="multiselect"
         isOpen={filterPopups.level}
-        onClose={() => setFilterPopups((prev) => ({ ...prev, level: false }))}
-        position={filterPosition}
-        value={filters.level}
-        onChange={(selected) => {
-          setFilters((prev) => ({ ...prev, level: selected }));
+        onClose={() => {
           setFilterPopups((prev) => ({ ...prev, level: false }));
+          // Apply the temporary filters when closing
+          setFilters((prev) => ({ ...prev, level: tempFilters.level }));
+        }}
+        position={filterPosition}
+        value={tempFilters.level}
+        onChange={(selected) => {
+          // Update temporary filters instead of actual filters
+          setTempFilters((prev) => ({ ...prev, level: selected }));
         }}
         options={levelOptions}
-        Component={MultiSelect}
+        Component={Select}
+        isMulti={true}
       />
 
       <FilterPopup
         type="multiselect"
         isOpen={filterPopups.category}
-        onClose={() => setFilterPopups((prev) => ({ ...prev, category: false }))}
-        position={filterPosition}
-        value={filters.category}
-        onChange={(selected) => {
-          setFilters((prev) => ({ ...prev, category: selected }));
+        onClose={() => {
           setFilterPopups((prev) => ({ ...prev, category: false }));
+          // Apply the temporary filters when closing
+          setFilters((prev) => ({ ...prev, category: tempFilters.category }));
+        }}
+        position={filterPosition}
+        value={tempFilters.category}
+        onChange={(selected) => {
+          // Update temporary filters instead of actual filters
+          setTempFilters((prev) => ({ ...prev, category: selected }));
         }}
         options={categoryOptions}
-        Component={MultiSelect}
+        Component={Select}
+        isMulti={true}
       />
 
       <FilterPopup
