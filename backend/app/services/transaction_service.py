@@ -240,6 +240,7 @@ class TransactionService:
         )
         total_dividend_shares = sum(d.shares or 0 for d in dividend_shares)
 
+        # Add dividend shares to total
         total_shares = 0 + total_dividend_shares
         total_cost = 0
 
@@ -261,9 +262,6 @@ class TransactionService:
         if round(total_shares, 6) == 0:
             total_shares = 0
             total_cost = 0
-
-        # Add dividend shares to total
-        total_shares += total_dividend_shares
 
         return {
             "total_shares": round(total_shares, 6),
