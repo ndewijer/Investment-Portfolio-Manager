@@ -55,7 +55,7 @@ const PortfolioDetail = () => {
     shares: '',
     cost_per_share: '',
   });
-  const { formatNumber, formatCurrency, isEUFormat } = useFormat();
+  const { formatNumber, formatCurrency } = useFormat();
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: null,
