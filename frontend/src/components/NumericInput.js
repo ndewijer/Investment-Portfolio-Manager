@@ -24,4 +24,4 @@ const NumericInput = ({
   );
 };
 
-export default NumericInput; 
+export default NumericInput;

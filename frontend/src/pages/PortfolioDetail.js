@@ -115,20 +115,20 @@ const PortfolioDetail = () => {
   // Add this state for raw input values
   const [rawInputs, setRawInputs] = useState({
     shares: '',
-    cost_per_share: ''
+    cost_per_share: '',
   });
 
   // Add to state
   const [editRawInputs, setEditRawInputs] = useState({
     shares: '',
-    cost_per_share: ''
+    cost_per_share: '',
   });
 
   // Add to state
   const [dividendRawInputs, setDividendRawInputs] = useState({
     dividend_per_share: '',
     reinvestment_shares: '',
-    reinvestment_price: ''
+    reinvestment_price: '',
   });
 
   const fetchFundPrice = async (fundId) => {
@@ -248,7 +248,7 @@ const PortfolioDetail = () => {
 
   const handleCreateTransaction = async (e) => {
     e.preventDefault();
-    
+
     // Parse any remaining raw inputs
     if (rawInputs.shares) {
       const cleanValue = rawInputs.shares
@@ -258,9 +258,9 @@ const PortfolioDetail = () => {
         .replace('X', '.');
 
       const numericValue = parseFloat(cleanValue);
-      setNewTransaction(prev => ({
+      setNewTransaction((prev) => ({
         ...prev,
-        shares: isNaN(numericValue) ? 0 : numericValue
+        shares: isNaN(numericValue) ? 0 : numericValue,
       }));
     }
 
@@ -347,7 +347,7 @@ const PortfolioDetail = () => {
       ...prev,
       [field]: !prev[field],
     }));
-    
+
     // Initialize temp filters with current filter values when opening
     if (!filterPopups[field]) {
       setTempFilters((prev) => ({
@@ -1069,7 +1069,9 @@ const PortfolioDetail = () => {
                         tempFilters.type
                           ? [
                               {
-                                label: tempFilters.type.charAt(0).toUpperCase() + tempFilters.type.slice(1),
+                                label:
+                                  tempFilters.type.charAt(0).toUpperCase() +
+                                  tempFilters.type.slice(1),
                                 value: tempFilters.type,
                               },
                             ]
@@ -1289,10 +1291,12 @@ const PortfolioDetail = () => {
                 <label>Shares:</label>
                 <NumericInput
                   value={newTransaction.shares}
-                  onChange={(value) => setNewTransaction(prev => ({
-                    ...prev,
-                    shares: value
-                  }))}
+                  onChange={(value) =>
+                    setNewTransaction((prev) => ({
+                      ...prev,
+                      shares: value,
+                    }))
+                  }
                   decimals={6}
                   required
                 />
@@ -1304,9 +1308,9 @@ const PortfolioDetail = () => {
                     value={newTransaction.cost_per_share}
                     onChange={(value) => {
                       setPriceFound(false);
-                      setNewTransaction(prev => ({
+                      setNewTransaction((prev) => ({
                         ...prev,
-                        cost_per_share: value
+                        cost_per_share: value,
                       }));
                     }}
                     decimals={2}
@@ -1377,9 +1381,9 @@ const PortfolioDetail = () => {
                   <NumericInput
                     value={editRawInputs.shares || formatNumber(editingTransaction.shares, 6)}
                     onChange={(value) => {
-                      setEditRawInputs(prev => ({
+                      setEditRawInputs((prev) => ({
                         ...prev,
-                        shares: value
+                        shares: value,
                       }));
                     }}
                     decimals={6}
@@ -1389,11 +1393,14 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Cost per Share:</label>
                   <NumericInput
-                    value={editRawInputs.cost_per_share || formatNumber(editingTransaction.cost_per_share, 2)}
+                    value={
+                      editRawInputs.cost_per_share ||
+                      formatNumber(editingTransaction.cost_per_share, 2)
+                    }
                     onChange={(value) => {
-                      setEditRawInputs(prev => ({
+                      setEditRawInputs((prev) => ({
                         ...prev,
-                        cost_per_share: value
+                        cost_per_share: value,
                       }));
                     }}
                     decimals={2}
@@ -1482,11 +1489,14 @@ const PortfolioDetail = () => {
               <div className="form-group">
                 <label>Dividend per Share:</label>
                 <NumericInput
-                  value={dividendRawInputs.dividend_per_share || formatNumber(newDividend.dividend_per_share, 2)}
+                  value={
+                    dividendRawInputs.dividend_per_share ||
+                    formatNumber(newDividend.dividend_per_share, 2)
+                  }
                   onChange={(value) => {
-                    setDividendRawInputs(prev => ({
+                    setDividendRawInputs((prev) => ({
                       ...prev,
-                      dividend_per_share: value
+                      dividend_per_share: value,
                     }));
                   }}
                   decimals={2}
@@ -1520,11 +1530,14 @@ const PortfolioDetail = () => {
                   <div className="form-group">
                     <label>Reinvestment Shares:</label>
                     <NumericInput
-                      value={dividendRawInputs.reinvestment_shares || formatNumber(newDividend.reinvestment_shares, 6)}
+                      value={
+                        dividendRawInputs.reinvestment_shares ||
+                        formatNumber(newDividend.reinvestment_shares, 6)
+                      }
                       onChange={(value) => {
-                        setDividendRawInputs(prev => ({
+                        setDividendRawInputs((prev) => ({
                           ...prev,
-                          reinvestment_shares: value
+                          reinvestment_shares: value,
                         }));
                       }}
                       decimals={6}
@@ -1536,11 +1549,14 @@ const PortfolioDetail = () => {
                   <div className="form-group">
                     <label>Reinvestment Cost per Share:</label>
                     <NumericInput
-                      value={dividendRawInputs.reinvestment_price || formatNumber(newDividend.reinvestment_price, 2)}
+                      value={
+                        dividendRawInputs.reinvestment_price ||
+                        formatNumber(newDividend.reinvestment_price, 2)
+                      }
                       onChange={(value) => {
-                        setDividendRawInputs(prev => ({
+                        setDividendRawInputs((prev) => ({
                           ...prev,
-                          reinvestment_price: value
+                          reinvestment_price: value,
                         }));
                       }}
                       decimals={2}
@@ -1613,11 +1629,14 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Dividend per Share:</label>
                   <NumericInput
-                    value={dividendRawInputs.dividend_per_share || formatNumber(editingDividend.dividend_per_share, 2)}
+                    value={
+                      dividendRawInputs.dividend_per_share ||
+                      formatNumber(editingDividend.dividend_per_share, 2)
+                    }
                     onChange={(value) => {
-                      setDividendRawInputs(prev => ({
+                      setDividendRawInputs((prev) => ({
                         ...prev,
-                        dividend_per_share: value
+                        dividend_per_share: value,
                       }));
                     }}
                     decimals={2}
@@ -1648,27 +1667,35 @@ const PortfolioDetail = () => {
                     <div className="form-group">
                       <label>Reinvestment Shares:</label>
                       <NumericInput
-                        value={dividendRawInputs.reinvestment_shares || formatNumber(editingDividend.reinvestment_shares, 6)}
+                        value={
+                          dividendRawInputs.reinvestment_shares ||
+                          formatNumber(editingDividend.reinvestment_shares, 6)
+                        }
                         onChange={(value) => {
-                          setDividendRawInputs(prev => ({
+                          setDividendRawInputs((prev) => ({
                             ...prev,
-                            reinvestment_shares: value
+                            reinvestment_shares: value,
                           }));
                         }}
                         decimals={6}
                         disabled={isDateInFuture(editingDividend.buy_order_date)}
                         required={!isDateInFuture(editingDividend.buy_order_date)}
-                        className={isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''}
+                        className={
+                          isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''
+                        }
                       />
                     </div>
                     <div className="form-group">
                       <label>Reinvestment Price:</label>
                       <NumericInput
-                        value={dividendRawInputs.reinvestment_price || formatNumber(editingDividend.reinvestment_price, 2)}
+                        value={
+                          dividendRawInputs.reinvestment_price ||
+                          formatNumber(editingDividend.reinvestment_price, 2)
+                        }
                         onChange={(value) => {
-                          setDividendRawInputs(prev => ({
+                          setDividendRawInputs((prev) => ({
                             ...prev,
-                            reinvestment_price: value
+                            reinvestment_price: value,
                           }));
                         }}
                         decimals={2}
