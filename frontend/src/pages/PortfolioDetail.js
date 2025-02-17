@@ -16,6 +16,7 @@ import {
 import FilterPopup from '../components/FilterPopup';
 import ValueChart from '../components/ValueChart';
 import Select from 'react-select';
+import NumericInput from '../components/NumericInput';
 
 const TYPE_OPTIONS = [
   { label: 'Buy', value: 'buy' },
@@ -54,7 +55,7 @@ const PortfolioDetail = () => {
     shares: '',
     cost_per_share: '',
   });
-  const { formatNumber, formatCurrency, isEUFormat } = useFormat();
+  const { formatNumber, formatCurrency } = useFormat();
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: null,
@@ -228,6 +229,7 @@ const PortfolioDetail = () => {
 
   const handleCreateTransaction = async (e) => {
     e.preventDefault();
+
     try {
       const response = await api.post(`/transactions`, newTransaction);
       setTransactions([...transactions, response.data]);
@@ -311,7 +313,7 @@ const PortfolioDetail = () => {
       ...prev,
       [field]: !prev[field],
     }));
-    
+
     // Initialize temp filters with current filter values when opening
     if (!filterPopups[field]) {
       setTempFilters((prev) => ({
@@ -657,26 +659,6 @@ const PortfolioDetail = () => {
 
   const handleFundClick = (fundId) => {
     navigate(`/funds/${fundId}`);
-  };
-
-  // Update handleNumericInput to properly handle pasted values
-  const handleNumericInput = (value) => {
-    // First, check if this is a pasted value with a comma as decimal separator
-    if (value.includes(',') && !value.includes('.')) {
-      // Direct comma to period conversion for pasted values
-      return value.replace(',', '.');
-    }
-
-    // For manually typed values
-    const cleanValue = value.trim();
-
-    if (isEUFormat) {
-      // Replace any dots (thousand separators) and convert comma to period
-      return cleanValue.replace(/\./g, '').replace(',', '.');
-    } else {
-      // For US format, remove any commas (thousand separators)
-      return cleanValue.replace(/,/g, '');
-    }
   };
 
   // First, memoize the formatting functions using useCallback
@@ -1053,7 +1035,9 @@ const PortfolioDetail = () => {
                         tempFilters.type
                           ? [
                               {
-                                label: tempFilters.type.charAt(0).toUpperCase() + tempFilters.type.slice(1),
+                                label:
+                                  tempFilters.type.charAt(0).toUpperCase() +
+                                  tempFilters.type.slice(1),
                                 value: tempFilters.type,
                               },
                             ]
@@ -1271,31 +1255,31 @@ const PortfolioDetail = () => {
               </div>
               <div className="form-group">
                 <label>Shares:</label>
-                <input
-                  type="text"
-                  value={formatNumber(newTransaction.shares, 6)}
-                  onChange={(e) =>
-                    setNewTransaction({
-                      ...newTransaction,
-                      shares: handleNumericInput(e.target.value),
-                    })
+                <NumericInput
+                  value={newTransaction.shares}
+                  onChange={(value) =>
+                    setNewTransaction((prev) => ({
+                      ...prev,
+                      shares: value,
+                    }))
                   }
+                  decimals={6}
                   required
                 />
               </div>
               <div className="form-group">
                 <label>Cost per Share:</label>
                 <div className="input-with-indicator">
-                  <input
-                    type="text"
-                    value={formatNumber(newTransaction.cost_per_share, 2)}
-                    onChange={(e) => {
+                  <NumericInput
+                    value={newTransaction.cost_per_share}
+                    onChange={(value) => {
                       setPriceFound(false);
-                      setNewTransaction({
-                        ...newTransaction,
-                        cost_per_share: handleNumericInput(e.target.value),
-                      });
+                      setNewTransaction((prev) => ({
+                        ...prev,
+                        cost_per_share: value,
+                      }));
                     }}
+                    decimals={2}
                     required
                   />
                   {priceFound && (
@@ -1360,31 +1344,30 @@ const PortfolioDetail = () => {
                 </div>
                 <div className="form-group">
                   <label>Shares:</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={Number(editingTransaction.shares).toFixed(6)}
-                    onChange={(e) =>
-                      setEditingTransaction({
-                        ...editingTransaction,
-                        shares: e.target.value,
-                      })
-                    }
+                  <NumericInput
+                    value={newTransaction.shares}
+                    onChange={(value) => {
+                      setNewTransaction((prev) => ({
+                        ...prev,
+                        shares: value,
+                      }));
+                    }}
+                    decimals={6}
                     required
                   />
                 </div>
                 <div className="form-group">
                   <label>Cost per Share:</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={Number(editingTransaction.cost_per_share).toFixed(2)}
-                    onChange={(e) =>
-                      setEditingTransaction({
-                        ...editingTransaction,
-                        cost_per_share: e.target.value,
-                      })
-                    }
+                  <NumericInput
+                    value={newTransaction.cost_per_share}
+                    onChange={(value) => {
+                      setPriceFound(false);
+                      setNewTransaction((prev) => ({
+                        ...prev,
+                        cost_per_share: value,
+                      }));
+                    }}
+                    decimals={2}
                     required
                   />
                 </div>
@@ -1469,15 +1452,15 @@ const PortfolioDetail = () => {
               </div>
               <div className="form-group">
                 <label>Dividend per Share:</label>
-                <input
-                  type="text"
-                  value={formatNumber(newDividend.dividend_per_share, 2)}
-                  onChange={(e) =>
-                    setNewDividend({
-                      ...newDividend,
-                      dividend_per_share: handleNumericInput(e.target.value),
-                    })
-                  }
+                <NumericInput
+                  value={newDividend.dividend_per_share}
+                  onChange={(value) => {
+                    setNewDividend((prev) => ({
+                      ...prev,
+                      dividend_per_share: value,
+                    }));
+                  }}
+                  decimals={2}
                   required
                 />
               </div>
@@ -1507,16 +1490,15 @@ const PortfolioDetail = () => {
                   </div>
                   <div className="form-group">
                     <label>Reinvestment Shares:</label>
-                    <input
-                      type="number"
-                      step="0.000001"
-                      value={Number(newDividend.reinvestment_shares).toFixed(6) || ''}
-                      onChange={(e) =>
-                        setNewDividend({
-                          ...newDividend,
-                          reinvestment_shares: e.target.value,
-                        })
-                      }
+                    <NumericInput
+                      value={newDividend.reinvestment_shares}
+                      onChange={(value) => {
+                        setNewDividend((prev) => ({
+                          ...prev,
+                          reinvestment_shares: value,
+                        }));
+                      }}
+                      decimals={6}
                       disabled={isDateInFuture(newDividend.buy_order_date)}
                       required={!isDateInFuture(newDividend.buy_order_date)}
                       className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
@@ -1524,19 +1506,16 @@ const PortfolioDetail = () => {
                   </div>
                   <div className="form-group">
                     <label>Reinvestment Cost per Share:</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={Number(newDividend.reinvestment_price).toFixed(2) || ''}
-                      onChange={(e) =>
-                        setNewDividend({
-                          ...newDividend,
-                          reinvestment_price: e.target.value,
-                        })
-                      }
-                      disabled={isDateInFuture(newDividend.buy_order_date)}
-                      required={!isDateInFuture(newDividend.buy_order_date)}
-                      className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
+                    <NumericInput
+                      value={newDividend.reinvestment_price}
+                      onChange={(value) => {
+                        setNewDividend((prev) => ({
+                          ...prev,
+                          reinvestment_price: value,
+                        }));
+                      }}
+                      decimals={2}
+                      required
                     />
                   </div>
                 </div>
@@ -1604,15 +1583,15 @@ const PortfolioDetail = () => {
                 </div>
                 <div className="form-group">
                   <label>Dividend per Share:</label>
-                  <input
-                    type="text"
-                    value={formatNumber(editingDividend.dividend_per_share, 2)}
-                    onChange={(e) =>
-                      setEditingDividend({
-                        ...editingDividend,
-                        dividend_per_share: handleNumericInput(e.target.value),
-                      })
-                    }
+                  <NumericInput
+                    value={editingDividend.dividend_per_share}
+                    onChange={(value) => {
+                      setEditingDividend((prev) => ({
+                        ...prev,
+                        dividend_per_share: value,
+                      }));
+                    }}
+                    decimals={2}
                     required
                   />
                 </div>
@@ -1639,16 +1618,15 @@ const PortfolioDetail = () => {
                     </div>
                     <div className="form-group">
                       <label>Reinvestment Shares:</label>
-                      <input
-                        type="number"
-                        step="0.000001"
-                        value={Number(editingDividend.reinvestment_shares).toFixed(6) || ''}
-                        onChange={(e) =>
-                          setEditingDividend({
-                            ...editingDividend,
-                            reinvestment_shares: e.target.value,
-                          })
-                        }
+                      <NumericInput
+                        value={editingDividend.reinvestment_shares}
+                        onChange={(value) => {
+                          setEditingDividend((prev) => ({
+                            ...prev,
+                            reinvestment_shares: value,
+                          }));
+                        }}
+                        decimals={6}
                         disabled={isDateInFuture(editingDividend.buy_order_date)}
                         required={!isDateInFuture(editingDividend.buy_order_date)}
                         className={
@@ -1658,21 +1636,16 @@ const PortfolioDetail = () => {
                     </div>
                     <div className="form-group">
                       <label>Reinvestment Price:</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={Number(editingDividend.reinvestment_price).toFixed(2) || ''}
-                        onChange={(e) =>
-                          setEditingDividend({
-                            ...editingDividend,
-                            reinvestment_price: e.target.value,
-                          })
-                        }
-                        disabled={isDateInFuture(editingDividend.buy_order_date)}
-                        required={!isDateInFuture(editingDividend.buy_order_date)}
-                        className={
-                          isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''
-                        }
+                      <NumericInput
+                        value={editingDividend.reinvestment_price}
+                        onChange={(value) => {
+                          setEditingDividend((prev) => ({
+                            ...prev,
+                            reinvestment_price: value,
+                          }));
+                        }}
+                        decimals={2}
+                        required
                       />
                     </div>
                   </div>

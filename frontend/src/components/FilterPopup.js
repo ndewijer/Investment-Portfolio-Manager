@@ -85,21 +85,21 @@ const FilterPopup = ({
               styles={{
                 control: (base) => ({
                   ...base,
-                  minWidth: '200px'
+                  minWidth: '200px',
                 }),
                 menu: (base) => ({
                   ...base,
                   position: 'relative',
-                  zIndex: 2
+                  zIndex: 2,
                 }),
                 clearIndicator: (base) => ({
                   ...base,
                   cursor: 'pointer',
                   padding: '6px',
                   ':hover': {
-                    color: '#666'
-                  }
-                })
+                    color: '#666',
+                  },
+                }),
               }}
               classNamePrefix="react-select"
             />

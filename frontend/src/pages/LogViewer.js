@@ -148,7 +148,7 @@ const LogViewer = () => {
       ...prev,
       [field]: !prev[field],
     }));
-    
+
     // Initialize temp filters with current filter values when opening
     if (!filterPopups[field]) {
       setTempFilters((prev) => ({
