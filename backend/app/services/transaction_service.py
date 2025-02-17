@@ -240,7 +240,7 @@ class TransactionService:
         )
         total_dividend_shares = sum(d.shares or 0 for d in dividend_shares)
 
-        total_shares = 0
+        total_shares = 0 + total_dividend_shares
         total_cost = 0
 
         for transaction in transactions:
