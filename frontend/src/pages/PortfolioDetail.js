@@ -112,25 +112,6 @@ const PortfolioDetail = () => {
     type: '',
   });
 
-  // Add this state for raw input values
-  const [rawInputs, setRawInputs] = useState({
-    shares: '',
-    cost_per_share: '',
-  });
-
-  // Add to state
-  const [editRawInputs, setEditRawInputs] = useState({
-    shares: '',
-    cost_per_share: '',
-  });
-
-  // Add to state
-  const [dividendRawInputs, setDividendRawInputs] = useState({
-    dividend_per_share: '',
-    reinvestment_shares: '',
-    reinvestment_price: '',
-  });
-
   const fetchFundPrice = async (fundId) => {
     try {
       const response = await api.get(`/fund-prices/${fundId}`);
@@ -248,21 +229,6 @@ const PortfolioDetail = () => {
 
   const handleCreateTransaction = async (e) => {
     e.preventDefault();
-
-    // Parse any remaining raw inputs
-    if (rawInputs.shares) {
-      const cleanValue = rawInputs.shares
-        .replace(/[^\d,.-]/g, '')
-        .replace(/[,.]/, 'X')
-        .replace(/[,.]/g, '')
-        .replace('X', '.');
-
-      const numericValue = parseFloat(cleanValue);
-      setNewTransaction((prev) => ({
-        ...prev,
-        shares: isNaN(numericValue) ? 0 : numericValue,
-      }));
-    }
 
     try {
       const response = await api.post(`/transactions`, newTransaction);
@@ -1379,9 +1345,9 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Shares:</label>
                   <NumericInput
-                    value={editRawInputs.shares || formatNumber(editingTransaction.shares, 6)}
+                    value={newTransaction.shares}
                     onChange={(value) => {
-                      setEditRawInputs((prev) => ({
+                      setNewTransaction((prev) => ({
                         ...prev,
                         shares: value,
                       }));
@@ -1393,12 +1359,10 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Cost per Share:</label>
                   <NumericInput
-                    value={
-                      editRawInputs.cost_per_share ||
-                      formatNumber(editingTransaction.cost_per_share, 2)
-                    }
+                    value={newTransaction.cost_per_share}
                     onChange={(value) => {
-                      setEditRawInputs((prev) => ({
+                      setPriceFound(false);
+                      setNewTransaction((prev) => ({
                         ...prev,
                         cost_per_share: value,
                       }));
@@ -1489,12 +1453,9 @@ const PortfolioDetail = () => {
               <div className="form-group">
                 <label>Dividend per Share:</label>
                 <NumericInput
-                  value={
-                    dividendRawInputs.dividend_per_share ||
-                    formatNumber(newDividend.dividend_per_share, 2)
-                  }
+                  value={newDividend.dividend_per_share}
                   onChange={(value) => {
-                    setDividendRawInputs((prev) => ({
+                    setNewDividend((prev) => ({
                       ...prev,
                       dividend_per_share: value,
                     }));
@@ -1530,12 +1491,9 @@ const PortfolioDetail = () => {
                   <div className="form-group">
                     <label>Reinvestment Shares:</label>
                     <NumericInput
-                      value={
-                        dividendRawInputs.reinvestment_shares ||
-                        formatNumber(newDividend.reinvestment_shares, 6)
-                      }
+                      value={newDividend.reinvestment_shares}
                       onChange={(value) => {
-                        setDividendRawInputs((prev) => ({
+                        setNewDividend((prev) => ({
                           ...prev,
                           reinvestment_shares: value,
                         }));
@@ -1549,12 +1507,9 @@ const PortfolioDetail = () => {
                   <div className="form-group">
                     <label>Reinvestment Cost per Share:</label>
                     <NumericInput
-                      value={
-                        dividendRawInputs.reinvestment_price ||
-                        formatNumber(newDividend.reinvestment_price, 2)
-                      }
+                      value={newDividend.reinvestment_price}
                       onChange={(value) => {
-                        setDividendRawInputs((prev) => ({
+                        setNewDividend((prev) => ({
                           ...prev,
                           reinvestment_price: value,
                         }));
@@ -1629,12 +1584,9 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Dividend per Share:</label>
                   <NumericInput
-                    value={
-                      dividendRawInputs.dividend_per_share ||
-                      formatNumber(editingDividend.dividend_per_share, 2)
-                    }
+                    value={editingDividend.dividend_per_share}
                     onChange={(value) => {
-                      setDividendRawInputs((prev) => ({
+                      setEditingDividend((prev) => ({
                         ...prev,
                         dividend_per_share: value,
                       }));
@@ -1667,12 +1619,9 @@ const PortfolioDetail = () => {
                     <div className="form-group">
                       <label>Reinvestment Shares:</label>
                       <NumericInput
-                        value={
-                          dividendRawInputs.reinvestment_shares ||
-                          formatNumber(editingDividend.reinvestment_shares, 6)
-                        }
+                        value={editingDividend.reinvestment_shares}
                         onChange={(value) => {
-                          setDividendRawInputs((prev) => ({
+                          setEditingDividend((prev) => ({
                             ...prev,
                             reinvestment_shares: value,
                           }));
@@ -1688,12 +1637,9 @@ const PortfolioDetail = () => {
                     <div className="form-group">
                       <label>Reinvestment Price:</label>
                       <NumericInput
-                        value={
-                          dividendRawInputs.reinvestment_price ||
-                          formatNumber(editingDividend.reinvestment_price, 2)
-                        }
+                        value={editingDividend.reinvestment_price}
                         onChange={(value) => {
-                          setDividendRawInputs((prev) => ({
+                          setEditingDividend((prev) => ({
                             ...prev,
                             reinvestment_price: value,
                           }));
