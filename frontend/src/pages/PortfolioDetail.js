@@ -1345,9 +1345,9 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Shares:</label>
                   <NumericInput
-                    value={newTransaction.shares}
+                    value={editingTransaction.shares}
                     onChange={(value) => {
-                      setNewTransaction((prev) => ({
+                      setEditingTransaction((prev) => ({
                         ...prev,
                         shares: value,
                       }));
@@ -1359,10 +1359,9 @@ const PortfolioDetail = () => {
                 <div className="form-group">
                   <label>Cost per Share:</label>
                   <NumericInput
-                    value={newTransaction.cost_per_share}
+                    value={editingTransaction.cost_per_share}
                     onChange={(value) => {
-                      setPriceFound(false);
-                      setNewTransaction((prev) => ({
+                      setEditingTransaction((prev) => ({
                         ...prev,
                         cost_per_share: value,
                       }));
