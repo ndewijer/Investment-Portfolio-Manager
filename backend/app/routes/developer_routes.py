@@ -554,7 +554,7 @@ def get_logging_settings():
             "enabled": SystemSetting.get_value(
                 SystemSettingKey.LOGGING_ENABLED, "true"
             ).lower()
-            == "true",  # noqa: W503
+            == "true",
             "level": SystemSetting.get_value(
                 SystemSettingKey.LOGGING_LEVEL, LogLevel.INFO.value
             ),

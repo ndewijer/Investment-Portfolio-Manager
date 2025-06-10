@@ -18,7 +18,7 @@ repos:
     rev: 7.1.1
     hooks:
       - id: flake8
-        args: ["--docstring-convention=google", "--max-line-length=100", "--ignore=D202,D212,D400,D403,F541"]
+        args: ["--docstring-convention=google", "--max-line-length=100", "--extend-ignore=D202,D212,D400,D403,F541"]
         additional_dependencies: [flake8-docstrings]
 
   - repo: https://github.com/pre-commit/mirrors-prettier

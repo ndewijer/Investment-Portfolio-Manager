@@ -28,6 +28,263 @@ class PortfolioService:
     """
 
     @staticmethod
+    def _process_transactions_for_date(transactions, date, dividend_shares=0):
+        """
+        Process transactions up to a specific date to calculate shares and cost.
+
+        Args:
+            transactions (list): List of Transaction objects
+            date (date): Date to process up to
+            dividend_shares (float): Additional dividend shares to include
+
+        Returns:
+            tuple: (total_shares, total_cost)
+        """
+        shares = dividend_shares
+        cost = 0
+
+        for transaction in transactions:
+            if transaction.date <= date:
+                if transaction.type == "buy":
+                    shares += transaction.shares
+                    cost += transaction.shares * transaction.cost_per_share
+                elif transaction.type == "sell":
+                    shares -= transaction.shares
+                    # Adjust cost proportionally to remaining shares
+                    if shares > 0:
+                        cost = (cost / (shares + transaction.shares)) * shares
+                    else:
+                        cost = 0
+
+        return max(0, round(shares, 6)), max(0, cost)
+
+    @staticmethod
+    def _get_fund_price_for_date(fund_id, date):
+        """
+        Get the latest fund price on or before a specific date.
+
+        Args:
+            fund_id: Fund identifier
+            date: Target date
+
+        Returns:
+            FundPrice object or None
+        """
+        return (
+            FundPrice.query.filter(FundPrice.fund_id == fund_id, FundPrice.date <= date)
+            .order_by(FundPrice.date.desc())
+            .first()
+        )
+
+    @staticmethod
+    def _get_dividend_shares_for_date(portfolio_fund_id, date, all_dividends=None):
+        """
+        Get total dividend shares for a portfolio fund up to a specific date.
+
+        Args:
+            portfolio_fund_id: Portfolio fund identifier
+            date: Target date
+            all_dividends: Pre-fetched dividend data (optional)
+
+        Returns:
+            float: Total dividend shares
+        """
+        if all_dividends and portfolio_fund_id in all_dividends:
+            return sum(
+                dividend["shares"]
+                for dividend in all_dividends[portfolio_fund_id]
+                if dividend["ex_dividend_date"] <= date
+            )
+
+        # Fallback to database query
+        dividend_shares = (
+            Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id)
+            .filter(Dividend.ex_dividend_date <= date)
+            .join(
+                Transaction,
+                Dividend.reinvestment_transaction_id == Transaction.id,
+                isouter=True,
+            )
+            .with_entities(Transaction.shares)
+            .all()
+        )
+        return sum(d.shares or 0 for d in dividend_shares)
+
+    @staticmethod
+    def _calculate_fund_metrics(
+        portfolio_fund,
+        target_date=None,
+        all_dividends=None,
+        force_historical_format=False,
+    ):
+        """
+        Calculate metrics for a single portfolio fund.
+
+        Args:
+            portfolio_fund: PortfolioFund object
+            target_date: Date to calculate for (None for current)
+            all_dividends: Pre-fetched dividend data (optional)
+
+        Returns:
+            dict: Fund metrics including shares, cost, value, etc.
+        """
+        if target_date is None:
+            target_date = datetime.now().date()
+
+        # Get dividend shares
+        dividend_shares = PortfolioService._get_dividend_shares_for_date(
+            portfolio_fund.id, target_date, all_dividends
+        )
+
+        # Get transactions sorted by date
+        transactions = (
+            Transaction.query.filter_by(portfolio_fund_id=portfolio_fund.id)
+            .filter(Transaction.date <= target_date)
+            .order_by(Transaction.date.asc())
+            .all()
+        )
+
+        # Process transactions
+        shares, cost = PortfolioService._process_transactions_for_date(
+            transactions, target_date, dividend_shares
+        )
+
+        # Get latest price
+        latest_price = PortfolioService._get_fund_price_for_date(
+            portfolio_fund.fund_id, target_date
+        )
+        price_value = latest_price.price if latest_price else 0
+
+        # Calculate values
+        current_value = shares * price_value
+
+        # For current date calculations, include realized gains and dividends
+        if target_date == datetime.now().date() and not force_historical_format:
+            # Calculate realized gains/losses
+            realized_records = RealizedGainLoss.query.filter_by(
+                portfolio_id=portfolio_fund.portfolio_id, fund_id=portfolio_fund.fund_id
+            ).all()
+            realized_gain_loss = sum(r.realized_gain_loss for r in realized_records)
+
+            # Calculate total dividends
+            dividends = Dividend.query.filter_by(
+                portfolio_fund_id=portfolio_fund.id
+            ).all()
+            total_dividends = sum(d.total_amount for d in dividends)
+
+            return {
+                "id": portfolio_fund.id,
+                "fund_id": portfolio_fund.fund_id,
+                "fund_name": portfolio_fund.fund.name,
+                "total_shares": shares,
+                "latest_price": price_value,
+                "average_cost": cost / shares if shares > 0 else 0,
+                "total_cost": cost,
+                "current_value": current_value,
+                "unrealized_gain_loss": current_value - cost,
+                "realized_gain_loss": realized_gain_loss,
+                "total_gain_loss": realized_gain_loss + (current_value - cost),
+                "total_dividends": total_dividends,
+                "dividend_type": portfolio_fund.fund.dividend_type.value,
+            }
+        else:
+            # Historical calculation - simpler return
+            return {
+                "fund_id": portfolio_fund.fund_id,
+                "fund_name": portfolio_fund.fund.name,
+                "shares": shares,
+                "cost": cost,
+                "value": current_value,
+                "price": price_value,
+            }
+
+    @staticmethod
+    def _format_portfolio_summary(portfolio, portfolio_funds_data):
+        """
+        Format portfolio data for summary response.
+
+        Args:
+            portfolio: Portfolio object
+            portfolio_funds_data: List of fund metrics
+
+        Returns:
+            dict: Formatted portfolio summary
+        """
+        # Get realized gains records for additional metrics
+        realized_gains = RealizedGainLoss.query.filter_by(
+            portfolio_id=portfolio.id
+        ).all()
+
+        totals = {
+            "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
+            "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
+            "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
+            "totalUnrealizedGainLoss": sum(
+                pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+            ),
+            "totalRealizedGainLoss": sum(
+                pf["realized_gain_loss"] for pf in portfolio_funds_data
+            ),
+            "totalSaleProceeds": sum(gain.sale_proceeds for gain in realized_gains),
+            "totalOriginalCost": sum(gain.cost_basis for gain in realized_gains),
+            "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
+        }
+
+        return {
+            "id": portfolio.id,
+            "name": portfolio.name,
+            **totals,
+            "is_archived": portfolio.is_archived,
+        }
+
+    @staticmethod
+    def _preload_dividend_data(portfolios):
+        """
+        Preload dividend data for multiple portfolios to avoid N+1 queries.
+
+        Args:
+            portfolios: List of Portfolio objects
+
+        Returns:
+            dict: Dividend data grouped by portfolio_fund_id
+        """
+        all_dividends = {}
+
+        for portfolio in portfolios:
+            portfolio_fund_ids = [pf.id for pf in portfolio.funds]
+            if portfolio_fund_ids:
+                dividends = (
+                    Dividend.query.filter(
+                        Dividend.portfolio_fund_id.in_(portfolio_fund_ids)
+                    )
+                    .join(
+                        Transaction,
+                        Dividend.reinvestment_transaction_id == Transaction.id,
+                        isouter=True,
+                    )
+                    .with_entities(
+                        Dividend.portfolio_fund_id,
+                        Dividend.ex_dividend_date,
+                        Transaction.shares,
+                    )
+                    .all()
+                )
+
+                # Group dividends by portfolio_fund_id
+                for dividend in dividends:
+                    pf_id = dividend.portfolio_fund_id
+                    if pf_id not in all_dividends:
+                        all_dividends[pf_id] = []
+                    all_dividends[pf_id].append(
+                        {
+                            "ex_dividend_date": dividend.ex_dividend_date,
+                            "shares": dividend.shares or 0,
+                        }
+                    )
+
+        return all_dividends
+
+    @staticmethod
     def calculate_portfolio_fund_values(portfolio_funds):
         """
         Calculate current values and metrics for a list of portfolio funds.
@@ -36,117 +293,9 @@ class PortfolioService:
             portfolio_funds (list): List of PortfolioFund objects
 
         Returns:
-            list: List of dictionaries containing:
-                - id: Portfolio fund ID
-                - fund_id: Fund ID
-                - fund_name: Fund name
-                - total_shares: Total shares held
-                - latest_price: Most recent price
-                - average_cost: Average cost per share
-                - total_cost: Total investment cost
-                - current_value: Current market value
-                - unrealized_gain_loss: Unrealized gain/loss
-                - realized_gain_loss: Realized gain/loss
-                - total_gain_loss: Total gain/loss
-                - total_dividends: Total dividends received
-                - dividend_type: Type of dividends
-
-        Raises:
-            None
+            list: List of dictionaries containing fund metrics
         """
-        result = []
-
-        for pf in portfolio_funds:
-            shares = 0
-            cost = 0
-            total_dividends = 0
-
-            # Calculate realized gains/losses
-            realized_records = RealizedGainLoss.query.filter_by(
-                portfolio_id=pf.portfolio_id, fund_id=pf.fund_id
-            ).all()
-
-            historical_realized_gain = sum(
-                r.realized_gain_loss for r in realized_records
-            )
-
-            # Get all transactions sorted by date
-            transactions = (
-                Transaction.query.filter_by(portfolio_fund_id=pf.id)
-                .order_by(Transaction.date.asc())
-                .all()
-            )
-
-            # Get all dividend shares
-            dividend_shares = (
-                Dividend.query.filter_by(portfolio_fund_id=pf.id)
-                # Get the reinvestment transactions for stock dividends
-                .join(
-                    Transaction,
-                    Dividend.reinvestment_transaction_id == Transaction.id,
-                    isouter=True,
-                )
-                .with_entities(Transaction.shares)
-                .all()
-            )
-            # Add dividend shares to total
-            total_dividend_shares = sum(d.shares or 0 for d in dividend_shares)
-            shares += total_dividend_shares
-
-            # Calculate current position
-            for transaction in transactions:
-                if transaction.type == "buy":
-                    shares += transaction.shares
-                    cost += transaction.shares * transaction.cost_per_share
-                elif transaction.type == "sell":
-                    # For sell transactions, subtract shares and adjust cost proportionally
-                    shares -= transaction.shares
-                    if shares > 0:
-                        # Adjust cost proportionally to remaining shares
-                        cost = (cost / (shares + transaction.shares)) * shares
-                    else:
-                        cost = 0
-
-            # In case of empty fund, set all values to 0
-            if round(shares, 6) == 0:
-                shares = 0
-                cost = 0
-                current_value = 0
-
-            # Get latest price
-            latest_price = (
-                FundPrice.query.filter_by(fund_id=pf.fund_id)
-                .order_by(FundPrice.date.desc())
-                .first()
-            )
-
-            current_value = shares * (latest_price.price if latest_price else 0)
-            unrealized_gain_loss = current_value - cost
-            total_gain_loss = historical_realized_gain + unrealized_gain_loss
-
-            # Calculate total dividends
-            dividends = Dividend.query.filter_by(portfolio_fund_id=pf.id).all()
-            total_dividends = sum(d.total_amount for d in dividends)
-
-            result.append(
-                {
-                    "id": pf.id,
-                    "fund_id": pf.fund_id,
-                    "fund_name": pf.fund.name,
-                    "total_shares": shares,
-                    "latest_price": latest_price.price if latest_price else 0,
-                    "average_cost": cost / shares if shares > 0 else 0,
-                    "total_cost": cost,
-                    "current_value": current_value,
-                    "unrealized_gain_loss": unrealized_gain_loss,
-                    "realized_gain_loss": historical_realized_gain,
-                    "total_gain_loss": total_gain_loss,
-                    "total_dividends": total_dividends,
-                    "dividend_type": pf.fund.dividend_type.value,
-                }
-            )
-
-        return result
+        return [PortfolioService._calculate_fund_metrics(pf) for pf in portfolio_funds]
 
     @staticmethod
     def get_portfolio_summary():
@@ -154,27 +303,13 @@ class PortfolioService:
         Get summary of all non-archived and visible portfolios.
 
         Returns:
-            list: List of dictionaries containing:
-                - id: Portfolio ID
-                - name: Portfolio name
-                - totalValue: Current total value
-                - totalCost: Total investment cost
-                - totalDividends: Total dividends received
-                - totalUnrealizedGainLoss: Total unrealized gain/loss
-                - totalRealizedGainLoss: Total realized gain/loss
-                - totalSaleProceeds: Total proceeds from sales
-                - totalOriginalCost: Total original cost of sold positions
-                - totalGainLoss: Total gain/loss
-                - is_archived: Whether portfolio is archived
-
-        Raises:
-            None
+            list: List of portfolio summary dictionaries
         """
         portfolios = Portfolio.query.filter_by(
             is_archived=False, exclude_from_overview=False
         ).all()
-        summary = []
 
+        summary = []
         for portfolio in portfolios:
             portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(
                 portfolio.funds
@@ -186,45 +321,10 @@ class PortfolioService:
                 )
 
                 if has_transactions:
-                    # Get realized gains records
-                    realized_gains = RealizedGainLoss.query.filter_by(
-                        portfolio_id=portfolio.id
-                    ).all()
-
-                    totals = {
-                        "totalValue": sum(
-                            pf["current_value"] for pf in portfolio_funds_data
-                        ),
-                        "totalCost": sum(
-                            pf["total_cost"] for pf in portfolio_funds_data
-                        ),
-                        "totalDividends": sum(
-                            pf["total_dividends"] for pf in portfolio_funds_data
-                        ),
-                        "totalUnrealizedGainLoss": sum(
-                            pf["unrealized_gain_loss"] for pf in portfolio_funds_data
-                        ),
-                        "totalRealizedGainLoss": sum(
-                            pf["realized_gain_loss"] for pf in portfolio_funds_data
-                        ),
-                        "totalSaleProceeds": sum(
-                            gain.sale_proceeds for gain in realized_gains
-                        ),
-                        "totalOriginalCost": sum(
-                            gain.cost_basis for gain in realized_gains
-                        ),
-                        "totalGainLoss": sum(
-                            pf["total_gain_loss"] for pf in portfolio_funds_data
-                        ),
-                    }
-
                     summary.append(
-                        {
-                            "id": portfolio.id,
-                            "name": portfolio.name,
-                            **totals,
-                            "is_archived": portfolio.is_archived,
-                        }
+                        PortfolioService._format_portfolio_summary(
+                            portfolio, portfolio_funds_data
+                        )
                     )
 
         return summary
@@ -239,9 +339,6 @@ class PortfolioService:
 
         Returns:
             list: List of dictionaries containing portfolio fund details
-
-        Raises:
-            None
         """
         portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
         return PortfolioService.calculate_portfolio_fund_values(portfolio_funds)
@@ -253,9 +350,6 @@ class PortfolioService:
 
         Returns:
             list: List of dictionaries containing portfolio fund details
-
-        Raises:
-            None
         """
         portfolio_funds = PortfolioFund.query.all()
         return [
@@ -275,22 +369,16 @@ class PortfolioService:
         Get historical value data for all non-archived and visible portfolios.
 
         Returns:
-            list: List of daily values containing:
-                - date: ISO format date
-                - portfolios: List of portfolio values
-                    - id: Portfolio ID
-                    - name: Portfolio name
-                    - value: Portfolio value on date
-                    - cost: Portfolio cost on date
-
-        Raises:
-            None
+            list: List of daily values containing portfolio history
         """
         portfolios = Portfolio.query.filter_by(
             is_archived=False, exclude_from_overview=False
         ).all()
-        history = []
 
+        if not portfolios:
+            return []
+
+        # Get portfolio date ranges
         portfolio_date_ranges = {}
         for portfolio in portfolios:
             portfolio_transactions = (
@@ -309,17 +397,24 @@ class PortfolioService:
         if not portfolio_date_ranges:
             return []
 
+        # Preload dividend data
+        all_dividends = PortfolioService._preload_dividend_data(portfolios)
+
+        # Calculate date range
         one_year_ago = datetime.now().date() - timedelta(days=365)
         start_date = max(
             one_year_ago,
             min(range["start_date"] for range in portfolio_date_ranges.values()),
         )
+
+        # Generate history
+        history = []
         current_date = start_date
         today = datetime.now().date()
 
         while current_date <= today:
             daily_values = PortfolioService._calculate_daily_values(
-                current_date, portfolios, portfolio_date_ranges
+                current_date, portfolios, portfolio_date_ranges, all_dividends
             )
             history.append(daily_values)
             current_date += timedelta(days=1)
@@ -327,95 +422,43 @@ class PortfolioService:
         return history
 
     @staticmethod
-    def _calculate_daily_values(current_date, portfolios, portfolio_date_ranges):
-        """
-        Calculate portfolio values for a specific date.
-
-        Args:
-            current_date (date): Date to calculate values for
-            portfolios (list): List of Portfolio objects
-            portfolio_date_ranges (dict): Date ranges for each portfolio
-
-        Returns:
-            dict: Daily values containing date and portfolio values
-
-        Raises:
-            None
-        """
+    def _calculate_daily_values(
+        current_date, portfolios, portfolio_date_ranges, all_dividends
+    ):
+        """Calculate portfolio values for a specific date."""
         daily_values = {"date": current_date.isoformat(), "portfolios": []}
 
         for portfolio in portfolios:
             if (
                 portfolio.id not in portfolio_date_ranges
-                or current_date  # noqa: W503
-                < portfolio_date_ranges[portfolio.id]["start_date"]  # noqa: W503
+                or current_date < portfolio_date_ranges[portfolio.id]["start_date"]
             ):
                 continue
 
-            portfolio_value = PortfolioService._calculate_portfolio_value(
-                portfolio, current_date
-            )
+            total_value = 0
+            total_cost = 0
 
-            if portfolio_value["total_value"] > 0 or portfolio_value["total_cost"] > 0:
+            for pf in portfolio.funds:
+                fund_metrics = PortfolioService._calculate_fund_metrics(
+                    pf, current_date, all_dividends, force_historical_format=True
+                )
+                try:
+                    total_value += fund_metrics["value"]
+                    total_cost += fund_metrics["cost"]
+                except Exception as e:
+                    print(f"Error processing fund metrics: {e}")
+
+            if total_value > 0 or total_cost > 0:
                 daily_values["portfolios"].append(
                     {
                         "id": portfolio.id,
                         "name": portfolio.name,
-                        "value": portfolio_value["total_value"],
-                        "cost": portfolio_value["total_cost"],
+                        "value": total_value,
+                        "cost": total_cost,
                     }
                 )
 
         return daily_values
-
-    @staticmethod
-    def _calculate_portfolio_value(portfolio, date):
-        """
-        Calculate total value and cost for a portfolio on a specific date.
-
-        Args:
-            portfolio (Portfolio): Portfolio object
-            date (date): Date to calculate value for
-
-        Returns:
-            dict: Dictionary containing total_value and total_cost
-
-        Raises:
-            None
-        """
-        total_value = 0
-        total_cost = 0
-
-        for pf in portfolio.funds:
-            shares = 0
-            cost = 0
-
-            for transaction in pf.transactions:
-                if transaction.date <= date:
-                    if transaction.type == "buy":
-                        shares += transaction.shares
-                        cost += transaction.shares * transaction.cost_per_share
-                    else:
-                        shares -= transaction.shares
-                        cost = (
-                            (cost / (shares + transaction.shares)) * shares
-                            if shares > 0
-                            else 0
-                        )
-
-            price = (
-                FundPrice.query.filter(
-                    FundPrice.fund_id == pf.fund_id, FundPrice.date <= date
-                )
-                .order_by(FundPrice.date.desc())
-                .first()
-            )
-
-            if price and shares > 0:
-                total_value += shares * price.price
-                total_cost += cost
-
-        return {"total_value": total_value, "total_cost": total_cost}
 
     @staticmethod
     def get_portfolio_fund_history(portfolio_id):
@@ -426,21 +469,9 @@ class PortfolioService:
             portfolio_id (str): Portfolio identifier
 
         Returns:
-            list: List of daily values containing:
-                - date: ISO format date
-                - funds: List of fund values
-                    - fund_id: Fund ID
-                    - fund_name: Fund name
-                    - value: Fund value on date
-                    - cost: Fund cost on date
-                    - shares: Shares held
-                    - price: Share price
-
-        Raises:
-            None
+            list: List of daily fund values
         """
         portfolio = Portfolio.query.get_or_404(portfolio_id)
-        history = []
 
         # Get the earliest transaction date for this portfolio
         earliest_transaction = (
@@ -453,55 +484,33 @@ class PortfolioService:
         if not earliest_transaction:
             return []
 
-        start_date = earliest_transaction.date
-        current_date = start_date
+        history = []
+        current_date = earliest_transaction.date
         today = datetime.now().date()
 
         while current_date <= today:
             daily_values = {"date": current_date.isoformat(), "funds": []}
 
             for pf in portfolio.funds:
-                shares = 0
-                cost = 0
-
-                # Calculate shares and cost up to current_date
-                for transaction in pf.transactions:
-                    if transaction.date <= current_date:
-                        if transaction.type == "buy":
-                            shares += transaction.shares
-                            cost += transaction.shares * transaction.cost_per_share
-                        else:
-                            shares -= transaction.shares
-                            cost = (
-                                (cost / (shares + transaction.shares)) * shares
-                                if shares > 0
-                                else 0
-                            )
-
-                # Get the price for this date
-                price = (
-                    FundPrice.query.filter(
-                        FundPrice.fund_id == pf.fund_id, FundPrice.date <= current_date
-                    )
-                    .order_by(FundPrice.date.desc())
-                    .first()
+                fund_metrics = PortfolioService._calculate_fund_metrics(
+                    pf, current_date, force_historical_format=True
                 )
 
-                if price and shares > 0:
-                    value = shares * price.price
+                if fund_metrics["shares"] > 0:
                     daily_values["funds"].append(
                         {
-                            "fund_id": pf.fund.id,
-                            "fund_name": pf.fund.name,
-                            "value": value,
-                            "cost": cost,
-                            "shares": shares,
-                            "price": price.price,
+                            "fund_id": fund_metrics["fund_id"],
+                            "fund_name": fund_metrics["fund_name"],
+                            "value": fund_metrics["value"],
+                            "cost": fund_metrics["cost"],
+                            "shares": fund_metrics["shares"],
+                            "price": fund_metrics["price"],
                         }
                     )
 
             if daily_values["funds"]:
                 history.append(daily_values)
+
             current_date += timedelta(days=1)
 
         return history

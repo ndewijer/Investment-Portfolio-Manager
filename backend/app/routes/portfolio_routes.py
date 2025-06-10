@@ -43,6 +43,37 @@ class PortfolioAPI(MethodView):
     All methods include proper error handling and logging.
     """
 
+    @staticmethod
+    def _format_portfolio_list_item(portfolio):
+        """Format a portfolio for list responses."""
+        return {
+            "id": portfolio.id,
+            "name": portfolio.name,
+            "description": portfolio.description,
+            "is_archived": portfolio.is_archived,
+            "exclude_from_overview": portfolio.exclude_from_overview,
+        }
+
+    @staticmethod
+    def _format_portfolio_detail(portfolio, portfolio_funds_data):
+        """Format a portfolio with detailed metrics."""
+        return {
+            "id": portfolio.id,
+            "name": portfolio.name,
+            "description": portfolio.description,
+            "is_archived": portfolio.is_archived,
+            "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
+            "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
+            "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
+            "totalUnrealizedGainLoss": sum(
+                pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+            ),
+            "totalRealizedGainLoss": sum(
+                pf["realized_gain_loss"] for pf in portfolio_funds_data
+            ),
+            "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
+        }
+
     def get(self, portfolio_id=None):
         """
         Retrieve portfolio(s).
@@ -55,54 +86,17 @@ class PortfolioAPI(MethodView):
         """
         if portfolio_id is None:
             portfolios = Portfolio.query.all()
-            return jsonify(
-                [
-                    {
-                        "id": p.id,
-                        "name": p.name,
-                        "description": p.description,
-                        "is_archived": p.is_archived,
-                        "exclude_from_overview": p.exclude_from_overview,
-                    }
-                    for p in portfolios
-                ]
-            )
-        else:
-            portfolio = Portfolio.query.get_or_404(portfolio_id)
-            if portfolio.is_archived:
-                return jsonify({"error": "Portfolio is archived"}), 404
+            return jsonify([self._format_portfolio_list_item(p) for p in portfolios])
 
-            service = PortfolioService()
-            portfolio_funds_data = service.calculate_portfolio_fund_values(
-                portfolio.funds
-            )
+        portfolio = Portfolio.query.get_or_404(portfolio_id)
+        if portfolio.is_archived:
+            return jsonify({"error": "Portfolio is archived"}), 404
 
-            # Calculate totals from portfolio_funds_data
-            total_value = sum(pf["current_value"] for pf in portfolio_funds_data)
-            total_cost = sum(pf["total_cost"] for pf in portfolio_funds_data)
-            total_dividends = sum(pf["total_dividends"] for pf in portfolio_funds_data)
-            total_unrealized_gain_loss = sum(
-                pf["unrealized_gain_loss"] for pf in portfolio_funds_data
-            )
-            total_realized_gain_loss = sum(
-                pf["realized_gain_loss"] for pf in portfolio_funds_data
-            )
-            total_gain_loss = sum(pf["total_gain_loss"] for pf in portfolio_funds_data)
+        portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(
+            portfolio.funds
+        )
 
-            return jsonify(
-                {
-                    "id": portfolio.id,
-                    "name": portfolio.name,
-                    "description": portfolio.description,
-                    "is_archived": portfolio.is_archived,
-                    "totalValue": total_value,
-                    "totalCost": total_cost,
-                    "totalDividends": total_dividends,
-                    "totalUnrealizedGainLoss": total_unrealized_gain_loss,
-                    "totalRealizedGainLoss": total_realized_gain_loss,
-                    "totalGainLoss": total_gain_loss,
-                }
-            )
+        return jsonify(self._format_portfolio_detail(portfolio, portfolio_funds_data))
 
     def post(self):
         """
@@ -121,13 +115,8 @@ class PortfolioAPI(MethodView):
         )
         db.session.add(portfolio)
         db.session.commit()
-        return jsonify(
-            {
-                "id": portfolio.id,
-                "name": portfolio.name,
-                "description": portfolio.description,
-            }
-        )
+
+        return jsonify(self._format_portfolio_list_item(portfolio))
 
     def put(self, portfolio_id):
         """
@@ -145,18 +134,13 @@ class PortfolioAPI(MethodView):
         """
         portfolio = Portfolio.query.get_or_404(portfolio_id)
         data = request.json
+
         portfolio.name = data["name"]
         portfolio.description = data.get("description", "")
         portfolio.exclude_from_overview = data.get("exclude_from_overview", False)
+
         db.session.commit()
-        return jsonify(
-            {
-                "id": portfolio.id,
-                "name": portfolio.name,
-                "description": portfolio.description,
-                "exclude_from_overview": portfolio.exclude_from_overview,
-            }
-        )
+        return jsonify(self._format_portfolio_list_item(portfolio))
 
     def delete(self, portfolio_id):
         """
@@ -174,52 +158,34 @@ class PortfolioAPI(MethodView):
         return "", 204
 
 
-@portfolios.route("/portfolios/<string:portfolio_id>/archive", methods=["POST"])
-def archive_portfolio(portfolio_id):
+def _update_portfolio_archive_status(portfolio_id, is_archived):
     """
-    Archive a portfolio.
+    Helper function to update portfolio archive status.
 
     Args:
         portfolio_id (str): Portfolio identifier
+        is_archived (bool): Archive status
 
     Returns:
         JSON response containing updated portfolio details
     """
     portfolio = Portfolio.query.get_or_404(portfolio_id)
-    portfolio.is_archived = True
+    portfolio.is_archived = is_archived
     db.session.commit()
-    return jsonify(
-        {
-            "id": portfolio.id,
-            "name": portfolio.name,
-            "description": portfolio.description,
-            "is_archived": portfolio.is_archived,
-        }
-    )
+
+    return jsonify(PortfolioAPI._format_portfolio_list_item(portfolio))
+
+
+@portfolios.route("/portfolios/<string:portfolio_id>/archive", methods=["POST"])
+def archive_portfolio(portfolio_id):
+    """Archive a portfolio."""
+    return _update_portfolio_archive_status(portfolio_id, True)
 
 
 @portfolios.route("/portfolios/<string:portfolio_id>/unarchive", methods=["POST"])
 def unarchive_portfolio(portfolio_id):
-    """
-    Unarchive a portfolio.
-
-    Args:
-        portfolio_id (str): Portfolio identifier
-
-    Returns:
-        JSON response containing updated portfolio details
-    """
-    portfolio = Portfolio.query.get_or_404(portfolio_id)
-    portfolio.is_archived = False
-    db.session.commit()
-    return jsonify(
-        {
-            "id": portfolio.id,
-            "name": portfolio.name,
-            "description": portfolio.description,
-            "is_archived": portfolio.is_archived,
-        }
-    )
+    """Unarchive a portfolio."""
+    return _update_portfolio_archive_status(portfolio_id, False)
 
 
 # Register the views
@@ -244,23 +210,10 @@ def get_portfolio_summary():
     """
     Get summary of all portfolios.
 
-    Query Parameters:
-        include_archived (bool, optional): Include archived portfolios
-
     Returns:
-        JSON response containing portfolio summaries with:
-        - id: Portfolio ID
-        - name: Portfolio name
-        - totalValue: Current total value
-        - totalCost: Total investment cost
-        - totalDividends: Total dividends received
-        - totalUnrealizedGainLoss: Total unrealized gain/loss
-        - totalRealizedGainLoss: Total realized gain/loss
-        - totalGainLoss: Total gain/loss
-        - is_archived: Whether portfolio is archived
+        JSON response containing portfolio summaries
     """
-    service = PortfolioService()
-    return jsonify(service.get_portfolio_summary())
+    return jsonify(PortfolioService.get_portfolio_summary())
 
 
 @portfolios.route("/portfolio-history", methods=["GET"])
@@ -268,19 +221,10 @@ def get_portfolio_history():
     """
     Get historical data for all portfolios.
 
-    Query Parameters:
-        start_date (str, optional): Start date in YYYY-MM-DD format
-        end_date (str, optional): End date in YYYY-MM-DD format
-        interval (str, optional): Data interval ('daily', 'weekly', 'monthly')
-
     Returns:
-        JSON response containing:
-        - Historical values
-        - Performance metrics
-        - Transaction history
+        JSON response containing historical portfolio data
     """
-    service = PortfolioService()
-    return jsonify(service.get_portfolio_history())
+    return jsonify(PortfolioService.get_portfolio_history())
 
 
 @portfolios.route("/portfolio-funds", methods=["GET", "POST"])
@@ -302,37 +246,38 @@ def handle_portfolio_funds():
     """
     if request.method == "GET":
         portfolio_id = request.args.get("portfolio_id")
-        service = PortfolioService()
 
         if portfolio_id:
-            portfolio_funds = service.get_portfolio_funds(portfolio_id)
+            portfolio_funds = PortfolioService.get_portfolio_funds(portfolio_id)
         else:
-            portfolio_funds = service.get_all_portfolio_funds()
+            portfolio_funds = PortfolioService.get_all_portfolio_funds()
 
         # Add dividend_type to each portfolio fund
         for pf in portfolio_funds:
-            fund = Fund.query.get(pf["fund_id"])
-            if fund:
-                pf["dividend_type"] = fund.dividend_type.value
+            if "fund_id" in pf:  # Only for detailed fund data
+                fund = Fund.query.get(pf["fund_id"])
+                if fund:
+                    pf["dividend_type"] = fund.dividend_type.value
 
         return jsonify(portfolio_funds)
-    else:
-        data = request.json
-        portfolio_fund = PortfolioFund(
-            portfolio_id=data["portfolio_id"], fund_id=data["fund_id"]
-        )
-        db.session.add(portfolio_fund)
-        db.session.commit()
-        return jsonify(
-            {
-                "id": portfolio_fund.id,
-                "portfolio_id": portfolio_fund.portfolio_id,
-                "fund_id": portfolio_fund.fund_id,
-            }
-        )
+
+    # POST - Create new portfolio-fund relationship
+    data = request.json
+    portfolio_fund = PortfolioFund(
+        portfolio_id=data["portfolio_id"], fund_id=data["fund_id"]
+    )
+    db.session.add(portfolio_fund)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "id": portfolio_fund.id,
+            "portfolio_id": portfolio_fund.portfolio_id,
+            "fund_id": portfolio_fund.fund_id,
+        }
+    )
 
 
-# Add this new route
 @portfolios.route("/portfolios/<string:portfolio_id>/fund-history", methods=["GET"])
 def get_portfolio_fund_history(portfolio_id):
     """
@@ -344,9 +289,7 @@ def get_portfolio_fund_history(portfolio_id):
     Returns:
         JSON response containing fund value history
     """
-    service = PortfolioService()
-    history = service.get_portfolio_fund_history(portfolio_id)
-    return jsonify(history)
+    return jsonify(PortfolioService.get_portfolio_fund_history(portfolio_id))
 
 
 @portfolios.route("/portfolio-funds/<string:portfolio_fund_id>", methods=["DELETE"])
@@ -463,19 +406,12 @@ def delete_portfolio_fund(portfolio_fund_id):
 def get_portfolios():
     """Get all portfolios."""
     include_excluded = request.args.get("include_excluded", "false").lower() == "true"
+
     query = Portfolio.query
     if not include_excluded:
         query = query.filter_by(exclude_from_overview=False)
-    portfolios = query.all()
+
+    portfolios_list = query.all()
     return jsonify(
-        [
-            {
-                "id": p.id,
-                "name": p.name,
-                "description": p.description,
-                "is_archived": p.is_archived,
-                "exclude_from_overview": p.exclude_from_overview,
-            }
-            for p in portfolios
-        ]
+        [PortfolioAPI._format_portfolio_list_item(p) for p in portfolios_list]
     )
