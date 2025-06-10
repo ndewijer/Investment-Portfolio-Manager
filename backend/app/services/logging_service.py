@@ -64,7 +64,7 @@ class LoggingService:
                 SystemSetting.get_value(
                     SystemSettingKey.LOGGING_ENABLED, "true"
                 ).lower()
-                == "true"  # noqa: W503
+                == "true"
             )
             if not logging_enabled:
                 return False
@@ -137,9 +137,7 @@ class LoggingService:
             source=source or traceback.extract_stack()[-2][2],
             request_id=getattr(g, "request_id", None),
             stack_trace=stack_trace
-            or (  # noqa: W503
-                traceback.format_exc() if level == LogLevel.ERROR else None
-            ),
+            or (traceback.format_exc() if level == LogLevel.ERROR else None),
             http_status=http_status,
             ip_address=request.remote_addr if request else None,
             user_agent=request.user_agent.string if request else None,

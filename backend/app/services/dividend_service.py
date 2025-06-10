@@ -128,8 +128,8 @@ class DividendService:
         # Handle stock dividend with immediate reinvestment
         if (
             portfolio_fund.fund.dividend_type == DividendType.STOCK
-            and data.get("reinvestment_shares")  # noqa: W503
-            and data.get("reinvestment_price")  # noqa: W503
+            and data.get("reinvestment_shares")
+            and data.get("reinvestment_price")
         ):
             try:
                 reinvestment_shares = float(data["reinvestment_shares"])

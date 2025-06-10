@@ -168,7 +168,7 @@ class TransactionService:
                 )
                 if (
                     current_position["total_shares"] + transaction.shares
-                    < transaction.shares  # noqa: W503
+                    < transaction.shares
                 ):  # Add back the shares being edited
                     raise ValueError("Insufficient shares for sale")
 
@@ -251,7 +251,7 @@ class TransactionService:
             elif transaction.type == "sell":
                 if (
                     total_shares >= transaction.shares
-                    or abs(total_shares - transaction.shares) < 1e-07  # noqa: W503
+                    or abs(total_shares - transaction.shares) < 1e-07
                 ):
                     total_shares -= transaction.shares
                     total_cost -= transaction.cost_per_share * transaction.shares
