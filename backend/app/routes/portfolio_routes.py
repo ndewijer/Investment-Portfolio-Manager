@@ -221,10 +221,17 @@ def get_portfolio_history():
     """
     Get historical data for all portfolios.
 
+    Query Parameters:
+        start_date (str, optional): Start date in YYYY-MM-DD format
+        end_date (str, optional): End date in YYYY-MM-DD format
+
     Returns:
         JSON response containing historical portfolio data
     """
-    return jsonify(PortfolioService.get_portfolio_history())
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    return jsonify(PortfolioService.get_portfolio_history(start_date, end_date))
 
 
 @portfolios.route("/portfolio-funds", methods=["GET", "POST"])
@@ -286,10 +293,17 @@ def get_portfolio_fund_history(portfolio_id):
     Args:
         portfolio_id (str): Portfolio identifier
 
+    Query Parameters:
+        start_date (str, optional): Start date in YYYY-MM-DD format
+        end_date (str, optional): End date in YYYY-MM-DD format
+
     Returns:
         JSON response containing fund value history
     """
-    return jsonify(PortfolioService.get_portfolio_fund_history(portfolio_id))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    return jsonify(PortfolioService.get_portfolio_fund_history(portfolio_id, start_date, end_date))
 
 
 @portfolios.route("/portfolio-funds/<string:portfolio_fund_id>", methods=["DELETE"])

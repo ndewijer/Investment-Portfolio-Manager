@@ -23,6 +23,10 @@ const ValueChart = ({
   visibleMetrics = false,
   setVisibleMetrics,
   defaultZoomDays = null, // New prop: number of days to show by default (e.g., 365 for last year)
+  onZoomChange, // New prop: callback for zoom state changes
+  loading = false, // New prop: loading state
+  onLoadAllData, // New prop: callback to load all available data
+  totalDataRange = null, // New prop: information about the total data range
 }) => {
   const { formatCurrency } = useFormat();
   
@@ -177,14 +181,21 @@ const ValueChart = ({
       newXDomain = [start, start + range];
     }
     
-    setZoomState(prev => ({
-      ...prev,
+    const newZoomState = {
+      ...zoomState,
       isZoomed: true,
       zoomLevel: newZoomLevel,
       xDomain: newXDomain,
       yDomain: null
-    }));
-  }, [data, zoomState]);
+    };
+    
+    setZoomState(newZoomState);
+    
+    // Notify parent component of zoom change
+    if (onZoomChange) {
+      onZoomChange(newZoomState);
+    }
+  }, [data, zoomState, onZoomChange]);
 
   const handleZoomOut = useCallback(() => {
     if (!data || data.length === 0 || zoomState.zoomLevel <= 1) return;
@@ -204,23 +215,37 @@ const ValueChart = ({
     const newStart = Math.max(0, center - Math.floor(newRange / 2));
     const newEnd = Math.min(dataLength - 1, newStart + newRange);
     
-    setZoomState(prev => ({
-      ...prev,
+    const newZoomState = {
+      ...zoomState,
       zoomLevel: newZoomLevel,
       xDomain: [newStart, newEnd],
       yDomain: null
-    }));
-  }, [data, zoomState]);
+    };
+    
+    setZoomState(newZoomState);
+    
+    // Notify parent component of zoom change
+    if (onZoomChange) {
+      onZoomChange(newZoomState);
+    }
+  }, [data, zoomState, onZoomChange]);
 
   const handleZoomReset = useCallback(() => {
-    setZoomState({
+    const newZoomState = {
       isZoomed: false,
       zoomLevel: 1,
       xDomain: null,
       yDomain: null,
       panOffset: { x: 0, y: 0 }
-    });
-  }, []);
+    };
+    
+    setZoomState(newZoomState);
+    
+    // Notify parent component of zoom change
+    if (onZoomChange) {
+      onZoomChange(newZoomState);
+    }
+  }, [onZoomChange]);
 
   const handleZoomToPeriod = useCallback((days) => {
     if (!data || data.length === 0) return;
@@ -236,13 +261,18 @@ const ValueChart = ({
       const range = endIndex - startIndex + 1;
       const newZoomLevel = dataLength / range;
       
-      setZoomState({
+      const newZoomState = {
         isZoomed: true,
         zoomLevel: newZoomLevel,
         xDomain: [startIndex, endIndex],
         yDomain: null,
         panOffset: { x: 0, y: 0 }
-      });
+      };
+      
+      setZoomState(newZoomState);
+      
+      // Don't notify parent component for period buttons to avoid triggering data loading
+      // Period buttons (1Y, 3M, 1M) should only adjust the view, not load more data
     }
   }, [data]);
 
@@ -460,6 +490,12 @@ const ValueChart = ({
   // Apply initial zoom when data is loaded
   useEffect(() => {
     if (data && data.length > 0 && defaultZoomDays && !initialZoomApplied) {
+      // Don't apply initial zoom if we have the full dataset loaded
+      if (totalDataRange && totalDataRange.isFullDataset) {
+        setInitialZoomApplied(true);
+        return;
+      }
+      
       const dataLength = data.length;
       
       // Calculate how many data points represent the default zoom period
@@ -484,7 +520,7 @@ const ValueChart = ({
       
       setInitialZoomApplied(true);
     }
-  }, [data, defaultZoomDays, initialZoomApplied]);
+  }, [data, defaultZoomDays, initialZoomApplied, totalDataRange]);
 
   useEffect(() => {
     const chartElement = chartRef.current;
@@ -576,8 +612,17 @@ const ValueChart = ({
         </button>
         <button
           className="zoom-button"
-          onClick={handleZoomReset}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleZoomReset();
+            // Only load all data if we don't already have the full dataset
+            if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
+              onLoadAllData();
+            }
+          }}
           title="Show All Data"
+          type="button"
         >
           All
         </button>
