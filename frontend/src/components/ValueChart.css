@@ -110,13 +110,13 @@
   .zoom-controls {
     justify-content: center;
   }
-  
+
   .zoom-button {
     min-width: 40px;
     min-height: 40px;
     font-size: 11px;
   }
-  
+
   .zoom-instructions {
     font-size: 10px;
     padding: 6px 10px;
@@ -196,19 +196,19 @@
     justify-content: center;
     margin-bottom: 10px;
   }
-  
+
   .zoom-button {
     padding: 8px 12px;
     font-size: 16px;
     min-width: 44px;
     min-height: 44px;
   }
-  
+
   .zoom-level {
     font-size: 14px;
     padding: 6px 10px;
   }
-  
+
   .zoom-instructions p {
     font-size: 11px;
   }

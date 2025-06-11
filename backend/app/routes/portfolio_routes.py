@@ -230,7 +230,7 @@ def get_portfolio_history():
     """
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
-    
+
     return jsonify(PortfolioService.get_portfolio_history(start_date, end_date))
 
 
@@ -302,8 +302,10 @@ def get_portfolio_fund_history(portfolio_id):
     """
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
-    
-    return jsonify(PortfolioService.get_portfolio_fund_history(portfolio_id, start_date, end_date))
+
+    return jsonify(
+        PortfolioService.get_portfolio_fund_history(portfolio_id, start_date, end_date)
+    )
 
 
 @portfolios.route("/portfolio-funds/<string:portfolio_fund_id>", methods=["DELETE"])

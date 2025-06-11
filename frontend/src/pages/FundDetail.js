@@ -247,11 +247,7 @@ const FundDetail = () => {
       <div className="chart-section">
         <div className="chart-container">
           <h2>Fund Value Over Time</h2>
-          <ValueChart
-            data={formatChartData()}
-            lines={getChartLines()}
-            defaultZoomDays={365}
-          />
+          <ValueChart data={formatChartData()} lines={getChartLines()} defaultZoomDays={365} />
         </div>
       </div>
 

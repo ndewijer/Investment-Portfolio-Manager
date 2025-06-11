@@ -97,7 +97,6 @@ const PortfolioDetail = () => {
 
   const [priceFound, setPriceFound] = useState(false);
 
-
   const [visibleMetrics, setVisibleMetrics] = useState({
     value: true,
     cost: true,

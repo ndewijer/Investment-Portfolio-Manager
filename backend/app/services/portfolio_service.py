@@ -405,8 +405,10 @@ class PortfolioService:
         all_dividends = PortfolioService._preload_dividend_data(portfolios)
 
         # Calculate date range - start from the earliest transaction date or provided start_date
-        earliest_transaction_date = min(range["start_date"] for range in portfolio_date_ranges.values())
-        
+        earliest_transaction_date = min(
+            range["start_date"] for range in portfolio_date_ranges.values()
+        )
+
         # Parse provided dates
         if start_date:
             try:
@@ -416,7 +418,7 @@ class PortfolioService:
                 start_date_to_use = earliest_transaction_date
         else:
             start_date_to_use = earliest_transaction_date
-            
+
         if end_date:
             try:
                 end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
@@ -506,7 +508,7 @@ class PortfolioService:
 
         # Parse provided dates
         earliest_date = earliest_transaction.date
-        
+
         if start_date:
             try:
                 start_date_parsed = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -515,7 +517,7 @@ class PortfolioService:
                 start_date_to_use = earliest_date
         else:
             start_date_to_use = earliest_date
-            
+
         if end_date:
             try:
                 end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
