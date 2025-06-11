@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 import './ValueChart.css';
 import { useFormat } from '../context/FormatContext';
@@ -45,6 +46,45 @@ const ValueChart = ({
   
   // Track if initial zoom has been applied
   const [initialZoomApplied, setInitialZoomApplied] = useState(false);
+
+  // Calculate the maximum value from visible data for specific metrics only
+  const getMaxValue = useCallback(() => {
+    if (!data || data.length === 0) return null;
+
+    let max = -Infinity;
+    let targetDataKey = null;
+
+    // Determine which data key to use for peak calculation
+    // Priority: totalValue (for portfolios) > price (for funds)
+    const priorityKeys = ['totalValue', 'price'];
+    for (const key of priorityKeys) {
+      const lineExists = lines.some(line => line.dataKey === key);
+      if (lineExists) {
+        targetDataKey = key;
+        break;
+      }
+    }
+
+    // If no priority key found, don't show peak line
+    if (!targetDataKey) return null;
+
+    // Determine data range to analyze based on zoom
+    let dataToAnalyze = data;
+    if (zoomState.isZoomed && zoomState.xDomain) {
+      const [startIndex, endIndex] = zoomState.xDomain;
+      dataToAnalyze = data.slice(startIndex, endIndex + 1);
+    }
+
+    // Check only the target data key for max value
+    dataToAnalyze.forEach((point) => {
+      const value = point[targetDataKey];
+      if (value !== null && value !== undefined) {
+        max = Math.max(max, value);
+      }
+    });
+
+    return max === -Infinity ? null : max;
+  }, [data, lines, zoomState]);
 
   // Calculate Y-axis domain based on data and zoom state
   const calculateDomain = useCallback(() => {
@@ -84,21 +124,29 @@ const ValueChart = ({
     ];
   }, [data, lines, zoomState]);
 
-  // Format Y-axis ticks based on value range
+  // Format Y-axis ticks based on value range with special formatting for max value
   const formatYAxis = (value) => {
     const domain = calculateDomain();
     const maxValue = domain[1];
+    const actualMaxValue = getMaxValue();
 
     // Round the value to whole numbers
     const roundedValue = Math.round(value);
 
+    // Check if this tick is close to the actual maximum value (within 1% tolerance)
+    const isMaxValue = actualMaxValue && Math.abs(roundedValue - actualMaxValue) / actualMaxValue < 0.01;
+
+    let formattedValue;
     if (maxValue >= 1000000) {
-      return formatCurrency(roundedValue / 1000000, 0) + 'M';
+      formattedValue = formatCurrency(roundedValue / 1000000, 0) + 'M';
     } else if (maxValue >= 1000) {
-      return formatCurrency(roundedValue / 1000, 0) + 'k';
+      formattedValue = formatCurrency(roundedValue / 1000, 0) + 'k';
     } else {
-      return formatCurrency(roundedValue, 0);
+      formattedValue = formatCurrency(roundedValue, 0);
     }
+
+    // Add special notation for the maximum value
+    return isMaxValue ? `${formattedValue} ★` : formattedValue;
   };
 
   // Format tooltip values with full precision
@@ -597,6 +645,26 @@ const ValueChart = ({
             />
             <Tooltip formatter={formatTooltip} labelFormatter={(label) => `Date: ${label}`} />
             <Legend />
+            {/* Reference line for maximum value */}
+            {getMaxValue() && (
+              <ReferenceLine
+                y={getMaxValue()}
+                stroke="#ff6b35"
+                strokeDasharray="8 8"
+                strokeWidth={2}
+                label={{
+                  value: `Peak: ${formatCurrency(getMaxValue())}`,
+                  position: "top",
+                  offset: 10,
+                  style: {
+                    textAnchor: "middle",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    fill: "#ff6b35"
+                  }
+                }}
+              />
+            )}
             {lines.map((line) => (
               <Line
                 key={line.dataKey}
