@@ -42,3 +42,219 @@
 .chart-container .recharts-responsive-container {
   margin: 20px 0;
 }
+
+.zoom-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.zoom-button {
+  padding: 6px 12px;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  background-color: white;
+  color: #1976d2;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  font-size: 12px;
+  min-width: 44px;
+  min-height: 32px;
+}
+
+.zoom-button:hover:not(:disabled) {
+  background-color: #f0f7ff;
+}
+
+.zoom-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.zoom-level {
+  font-size: 12px;
+  color: #666;
+  margin-left: 10px;
+  font-weight: 500;
+}
+
+.chart-container {
+  position: relative;
+  cursor: crosshair;
+}
+
+.chart-container.dragging {
+  cursor: grabbing;
+}
+
+.zoom-instructions {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  pointer-events: none;
+  z-index: 5;
+  max-width: 90%;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .zoom-controls {
+    justify-content: center;
+  }
+
+  .zoom-button {
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 11px;
+  }
+
+  .zoom-instructions {
+    font-size: 10px;
+    padding: 6px 10px;
+  }
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.zoom-button {
+  padding: 6px 12px;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  background-color: white;
+  color: #1976d2;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  font-size: 14px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-button:hover:not(:disabled) {
+  background-color: #f0f7ff;
+  transform: translateY(-1px);
+}
+
+.zoom-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.zoom-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+  color: #999;
+  border-color: #ddd;
+}
+
+.zoom-level {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  padding: 4px 8px;
+  background-color: #f0f7ff;
+  border-radius: 4px;
+  border: 1px solid #e3f2fd;
+}
+
+.zoom-instructions {
+  text-align: center;
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #1976d2;
+}
+
+.zoom-instructions p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .zoom-controls {
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  .zoom-button {
+    padding: 8px 12px;
+    font-size: 16px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .zoom-level {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+
+  .zoom-instructions p {
+    font-size: 11px;
+  }
+}
+
+/* Chart container touch handling */
+.chart-container {
+  position: relative;
+  touch-action: pan-x pan-y;
+  user-select: none;
+  cursor: crosshair;
+}
+
+.chart-container.zoomed {
+  touch-action: manipulation;
+}
+
+.chart-container.dragging {
+  cursor: col-resize;
+}
+
+/* Drag selection overlay */
+.drag-selection-overlay {
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Hide crosshair cursor on mobile */
+@media (max-width: 768px) {
+  .chart-container {
+    cursor: default;
+  }
+}
+
+/* Zoom instructions styling */
+.zoom-instructions {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

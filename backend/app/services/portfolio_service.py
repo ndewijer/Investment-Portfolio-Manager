@@ -364,9 +364,13 @@ class PortfolioService:
         ]
 
     @staticmethod
-    def get_portfolio_history():
+    def get_portfolio_history(start_date=None, end_date=None):
         """
         Get historical value data for all non-archived and visible portfolios.
+
+        Args:
+            start_date (str, optional): Start date in YYYY-MM-DD format
+            end_date (str, optional): End date in YYYY-MM-DD format
 
         Returns:
             list: List of daily values containing portfolio history
@@ -400,19 +404,35 @@ class PortfolioService:
         # Preload dividend data
         all_dividends = PortfolioService._preload_dividend_data(portfolios)
 
-        # Calculate date range
-        one_year_ago = datetime.now().date() - timedelta(days=365)
-        start_date = max(
-            one_year_ago,
-            min(range["start_date"] for range in portfolio_date_ranges.values()),
+        # Calculate date range - start from the earliest transaction date or provided start_date
+        earliest_transaction_date = min(
+            range["start_date"] for range in portfolio_date_ranges.values()
         )
+
+        # Parse provided dates
+        if start_date:
+            try:
+                start_date_parsed = datetime.strptime(start_date, "%Y-%m-%d").date()
+                start_date_to_use = max(earliest_transaction_date, start_date_parsed)
+            except ValueError:
+                start_date_to_use = earliest_transaction_date
+        else:
+            start_date_to_use = earliest_transaction_date
+
+        if end_date:
+            try:
+                end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
+                end_date_to_use = min(datetime.now().date(), end_date_parsed)
+            except ValueError:
+                end_date_to_use = datetime.now().date()
+        else:
+            end_date_to_use = datetime.now().date()
 
         # Generate history
         history = []
-        current_date = start_date
-        today = datetime.now().date()
+        current_date = start_date_to_use
 
-        while current_date <= today:
+        while current_date <= end_date_to_use:
             daily_values = PortfolioService._calculate_daily_values(
                 current_date, portfolios, portfolio_date_ranges, all_dividends
             )
@@ -461,12 +481,14 @@ class PortfolioService:
         return daily_values
 
     @staticmethod
-    def get_portfolio_fund_history(portfolio_id):
+    def get_portfolio_fund_history(portfolio_id, start_date=None, end_date=None):
         """
         Get historical value data for funds in a portfolio.
 
         Args:
             portfolio_id (str): Portfolio identifier
+            start_date (str, optional): Start date in YYYY-MM-DD format
+            end_date (str, optional): End date in YYYY-MM-DD format
 
         Returns:
             list: List of daily fund values
@@ -484,11 +506,31 @@ class PortfolioService:
         if not earliest_transaction:
             return []
 
-        history = []
-        current_date = earliest_transaction.date
-        today = datetime.now().date()
+        # Parse provided dates
+        earliest_date = earliest_transaction.date
 
-        while current_date <= today:
+        if start_date:
+            try:
+                start_date_parsed = datetime.strptime(start_date, "%Y-%m-%d").date()
+                start_date_to_use = max(earliest_date, start_date_parsed)
+            except ValueError:
+                start_date_to_use = earliest_date
+        else:
+            start_date_to_use = earliest_date
+
+        if end_date:
+            try:
+                end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
+                end_date_to_use = min(datetime.now().date(), end_date_parsed)
+            except ValueError:
+                end_date_to_use = datetime.now().date()
+        else:
+            end_date_to_use = datetime.now().date()
+
+        history = []
+        current_date = start_date_to_use
+
+        while current_date <= end_date_to_use:
             daily_values = {"date": current_date.isoformat(), "funds": []}
 
             for pf in portfolio.funds:

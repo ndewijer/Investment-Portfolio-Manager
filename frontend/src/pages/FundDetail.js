@@ -30,7 +30,6 @@ const FundDetail = () => {
   const [updating, setUpdating] = useState(false);
   const [showAllTableHistory, setShowAllTableHistory] = useState(false);
   const [filteredPriceHistory, setFilteredPriceHistory] = useState([]);
-  const [timeRange, setTimeRange] = useState('1M'); // Default to last month view
 
   useEffect(() => {
     let mounted = true;
@@ -55,7 +54,7 @@ const FundDetail = () => {
             (a, b) => new Date(a.date) - new Date(b.date)
           );
           setPriceHistory(sortedPrices);
-          setFilteredPriceHistory(filterLastMonth(sortedPrices));
+          setFilteredPriceHistory(sortedPrices);
           setPriceError(null);
         }
       } catch (err) {
@@ -80,10 +79,9 @@ const FundDetail = () => {
 
   useEffect(() => {
     if (priceHistory.length > 0) {
-      const filtered = timeRange === '1M' ? filterLastMonth(priceHistory) : priceHistory;
-      setFilteredPriceHistory(filtered);
+      setFilteredPriceHistory(priceHistory);
     }
-  }, [timeRange, priceHistory]);
+  }, [priceHistory]);
 
   const handleSort = (key) => {
     setSortConfig((prevConfig) => ({
@@ -148,12 +146,6 @@ const FundDetail = () => {
     return prices;
   };
 
-  const filterLastMonth = (prices) => {
-    const today = new Date();
-    const lastMonth = subMonths(today, 1);
-    return prices.filter((price) => new Date(price.date) >= lastMonth);
-  };
-
   const handleUpdateHistoricalPrices = async () => {
     try {
       setUpdating(true);
@@ -162,7 +154,7 @@ const FundDetail = () => {
       const pricesRes = await api.get(`/fund-prices/${id}`);
       const sortedPrices = pricesRes.data.sort((a, b) => new Date(a.date) - new Date(b.date));
       setPriceHistory(sortedPrices);
-      setFilteredPriceHistory(timeRange === '1M' ? filterLastMonth(sortedPrices) : sortedPrices);
+      setFilteredPriceHistory(sortedPrices);
     } catch (error) {
       console.error('Error updating historical prices:', error);
       alert(error.response?.data?.user_message || 'Error updating historical prices');
@@ -249,13 +241,7 @@ const FundDetail = () => {
       <div className="chart-section">
         <div className="chart-container">
           <h2>Fund Value Over Time</h2>
-          <ValueChart
-            data={formatChartData()}
-            lines={getChartLines()}
-            timeRange={timeRange}
-            onTimeRangeChange={setTimeRange}
-            showTimeRangeButtons={true}
-          />
+          <ValueChart data={formatChartData()} lines={getChartLines()} defaultZoomDays={365} />
         </div>
       </div>
 

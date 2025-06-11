@@ -97,8 +97,6 @@ const PortfolioDetail = () => {
 
   const [priceFound, setPriceFound] = useState(false);
 
-  const [timeRange, setTimeRange] = useState('1M'); // Default to last month view
-
   const [visibleMetrics, setVisibleMetrics] = useState({
     value: true,
     cost: true,
@@ -360,20 +358,7 @@ const PortfolioDetail = () => {
     const fetchFundHistory = async () => {
       try {
         const response = await api.get(`/portfolios/${id}/fund-history`);
-        const historyData = response.data;
-
-        // Filter based on timeRange
-        const filtered =
-          timeRange === '1M'
-            ? historyData.filter((day) => {
-                const date = new Date(day.date);
-                const monthAgo = new Date();
-                monthAgo.setMonth(monthAgo.getMonth() - 1);
-                return date >= monthAgo;
-              })
-            : historyData;
-
-        setFundHistory(filtered);
+        setFundHistory(response.data);
       } catch (error) {
         console.error('Error fetching fund history:', error);
       }
@@ -382,7 +367,7 @@ const PortfolioDetail = () => {
     if (portfolio) {
       fetchFundHistory();
     }
-  }, [portfolio, id, timeRange]); // Added timeRange as dependency
+  }, [portfolio, id]);
 
   useEffect(() => {
     const fetchDividends = async () => {
@@ -849,11 +834,9 @@ const PortfolioDetail = () => {
               <ValueChart
                 data={formatChartData()}
                 lines={getChartLines()}
-                timeRange={timeRange}
-                onTimeRangeChange={setTimeRange}
-                showTimeRangeButtons={true}
                 visibleMetrics={visibleMetrics}
                 setVisibleMetrics={setVisibleMetrics}
+                defaultZoomDays={365}
               />
             </div>
           </div>

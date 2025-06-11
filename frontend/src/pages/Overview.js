@@ -2,36 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import ValueChart from '../components/ValueChart';
+import useChartData from '../hooks/useChartData';
 import './Overview.css';
 import { useFormat } from '../context/FormatContext';
 
 const Overview = () => {
   const [portfolioSummary, setPortfolioSummary] = useState([]);
-  const [portfolioHistory, setPortfolioHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState(null);
   const navigate = useNavigate();
   const { formatCurrency, formatPercentage } = useFormat();
 
+  // Use the new chart data hook for intelligent loading
+  const {
+    data: portfolioHistory,
+    loading: historyLoading,
+    error: historyError,
+    onZoomChange,
+    loadAllData,
+    totalDataRange,
+  } = useChartData('/portfolio-history', {}, 365);
+
   useEffect(() => {
-    fetchData();
+    fetchPortfolioSummary();
   }, []);
 
-  const fetchData = async () => {
+  const fetchPortfolioSummary = async () => {
     try {
-      const [summaryRes, historyRes] = await Promise.all([
-        api.get('/portfolio-summary'),
-        api.get('/portfolio-history'),
-      ]);
-
+      const summaryRes = await api.get('/portfolio-summary');
       setPortfolioSummary(summaryRes.data);
-      setPortfolioHistory(historyRes.data);
-      setError(null);
+      setSummaryError(null);
     } catch (err) {
-      setError('Error fetching portfolio data');
+      setSummaryError('Error fetching portfolio summary');
       console.error('Error:', err);
     } finally {
-      setLoading(false);
+      setSummaryLoading(false);
     }
   };
 
@@ -214,6 +219,10 @@ const Overview = () => {
     return lines;
   };
 
+  // Show loading if either summary or history is loading
+  const loading = summaryLoading || historyLoading;
+  const error = summaryError || historyError;
+
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
   if (portfolioSummary.length === 0) {
@@ -266,6 +275,11 @@ const Overview = () => {
             lines={getChartLines()}
             visibleMetrics={visibleMetrics}
             setVisibleMetrics={setVisibleMetrics}
+            defaultZoomDays={365}
+            onZoomChange={onZoomChange}
+            loading={historyLoading}
+            onLoadAllData={loadAllData}
+            totalDataRange={totalDataRange}
           />
         </div>
       </div>
