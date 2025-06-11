@@ -24,7 +24,6 @@ const ValueChart = ({
   setVisibleMetrics,
   defaultZoomDays = null, // New prop: number of days to show by default (e.g., 365 for last year)
   onZoomChange, // New prop: callback for zoom state changes
-  loading = false, // New prop: loading state
   onLoadAllData, // New prop: callback to load all available data
   totalDataRange = null, // New prop: information about the total data range
 }) => {
@@ -160,6 +159,24 @@ const ValueChart = ({
     return formatCurrency(value);
   };
 
+  // Zoom reset function - defined early to avoid circular dependencies
+  const handleZoomReset = useCallback(() => {
+    const newZoomState = {
+      isZoomed: false,
+      zoomLevel: 1,
+      xDomain: null,
+      yDomain: null,
+      panOffset: { x: 0, y: 0 },
+    };
+
+    setZoomState(newZoomState);
+
+    // Notify parent component of zoom change
+    if (onZoomChange) {
+      onZoomChange(newZoomState);
+    }
+  }, [onZoomChange]);
+
   // Zoom functionality
   const handleZoomIn = useCallback(() => {
     if (!data || data.length === 0) return;
@@ -229,24 +246,7 @@ const ValueChart = ({
     if (onZoomChange) {
       onZoomChange(newZoomState);
     }
-  }, [data, zoomState, onZoomChange]);
-
-  const handleZoomReset = useCallback(() => {
-    const newZoomState = {
-      isZoomed: false,
-      zoomLevel: 1,
-      xDomain: null,
-      yDomain: null,
-      panOffset: { x: 0, y: 0 },
-    };
-
-    setZoomState(newZoomState);
-
-    // Notify parent component of zoom change
-    if (onZoomChange) {
-      onZoomChange(newZoomState);
-    }
-  }, [onZoomChange]);
+  }, [data, zoomState, onZoomChange, handleZoomReset]); // Now includes handleZoomReset
 
   const handleZoomToPeriod = useCallback(
     (days) => {
@@ -278,6 +278,35 @@ const ValueChart = ({
       }
     },
     [data]
+  );
+
+  const handlePan = useCallback(
+    (deltaX) => {
+      if (!zoomState.isZoomed || !data || data.length === 0) return;
+
+      const [currentStart, currentEnd] = zoomState.xDomain || [0, data.length - 1];
+      const range = currentEnd - currentStart;
+      const panSensitivity = range / 200;
+
+      const panAmount = Math.floor(deltaX * panSensitivity);
+      let newStart = currentStart - panAmount;
+      let newEnd = currentEnd - panAmount;
+
+      if (newStart < 0) {
+        newStart = 0;
+        newEnd = range;
+      } else if (newEnd >= data.length) {
+        newEnd = data.length - 1;
+        newStart = newEnd - range;
+      }
+
+      setZoomState((prev) => ({
+        ...prev,
+        xDomain: [newStart, newEnd],
+        yDomain: null,
+      }));
+    },
+    [data, zoomState]
   );
 
   // Mouse wheel zoom
@@ -353,35 +382,6 @@ const ValueChart = ({
     isPanningRef.current = false;
   }, []);
 
-  const handlePan = useCallback(
-    (deltaX) => {
-      if (!zoomState.isZoomed || !data || data.length === 0) return;
-
-      const [currentStart, currentEnd] = zoomState.xDomain || [0, data.length - 1];
-      const range = currentEnd - currentStart;
-      const panSensitivity = range / 200;
-
-      const panAmount = Math.floor(deltaX * panSensitivity);
-      let newStart = currentStart - panAmount;
-      let newEnd = currentEnd - panAmount;
-
-      if (newStart < 0) {
-        newStart = 0;
-        newEnd = range;
-      } else if (newEnd >= data.length) {
-        newEnd = data.length - 1;
-        newStart = newEnd - range;
-      }
-
-      setZoomState((prev) => ({
-        ...prev,
-        xDomain: [newStart, newEnd],
-        yDomain: null,
-      }));
-    },
-    [data, zoomState]
-  );
-
   const getVisibleData = useCallback(() => {
     if (!zoomState.isZoomed || !zoomState.xDomain || !data) {
       return data;
@@ -391,28 +391,7 @@ const ValueChart = ({
     return data.slice(start, end + 1);
   }, [data, zoomState]);
 
-  // Mouse drag selection for desktop zoom
-  const handleMouseDown = useCallback((e) => {
-    if (e.button !== 0) return; // Only left mouse button
-    if (e.ctrlKey || e.metaKey) return; // Don't interfere with wheel zoom
-
-    const rect = chartRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = e.clientX - rect.left;
-
-    // More lenient boundary check - allow starting anywhere in the chart container
-    const yAxisWidth = 80;
-    if (x < yAxisWidth) return; // Only prevent starting on Y-axis
-
-    dragStartRef.current = { x, startTime: Date.now() };
-    isDraggingRef.current = false;
-
-    // Add global mouse event listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, []);
-
+  // Mouse drag selection for desktop zoom - define these functions early
   const handleMouseMove = useCallback((e) => {
     if (!dragStartRef.current) return;
 
@@ -502,6 +481,27 @@ const ValueChart = ({
     },
     [data, handleMouseMove]
   );
+
+  const handleMouseDown = useCallback((e) => {
+    if (e.button !== 0) return; // Only left mouse button
+    if (e.ctrlKey || e.metaKey) return; // Don't interfere with wheel zoom
+
+    const rect = chartRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const x = e.clientX - rect.left;
+
+    // More lenient boundary check - allow starting anywhere in the chart container
+    const yAxisWidth = 80;
+    if (x < yAxisWidth) return; // Only prevent starting on Y-axis
+
+    dragStartRef.current = { x, startTime: Date.now() };
+    isDraggingRef.current = false;
+
+    // Add global mouse event listeners
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [handleMouseMove, handleMouseUp]); // Include both functions in dependencies
 
   // Apply initial zoom when data is loaded
   useEffect(() => {

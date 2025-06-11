@@ -146,12 +146,6 @@ const FundDetail = () => {
     return prices;
   };
 
-  const filterLastMonth = (prices) => {
-    const today = new Date();
-    const lastMonth = subMonths(today, 1);
-    return prices.filter((price) => new Date(price.date) >= lastMonth);
-  };
-
   const handleUpdateHistoricalPrices = async () => {
     try {
       setUpdating(true);

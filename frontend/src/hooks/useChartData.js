@@ -21,7 +21,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
   const initializedRef = useRef(false);
 
   // Fetch data for a specific date range
-  const fetchDataRange = async (startDate, endDate, append = false) => {
+  const fetchDataRange = useCallback(async (startDate, endDate, append = false) => {
     if (isLoadingRef.current) return;
 
     try {
@@ -90,7 +90,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
       setLoading(false);
       isLoadingRef.current = false;
     }
-  };
+  }, [endpoint, params]);
 
   // Initial data load - only run once when the hook is first used
   useEffect(() => {
@@ -103,7 +103,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
 
       fetchDataRange(startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]);
     }
-  }, []); // Empty dependency array - only run once
+  }, [defaultZoomDays, fetchDataRange]);
 
   // Check if we need to load more data based on zoom state
   const checkAndLoadMoreData = useCallback(
@@ -153,7 +153,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
         }
       }
     },
-    [data, loadedRange, defaultZoomDays]
+    [data, loadedRange, defaultZoomDays, fetchDataRange]
   );
 
   // Function to handle zoom state changes from the chart
@@ -170,7 +170,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
   // Function to manually load a specific date range
   const loadDateRange = useCallback((startDate, endDate) => {
     fetchDataRange(startDate, endDate, false);
-  }, []);
+  }, [fetchDataRange]);
 
   // Function to reset to initial data range
   const resetToInitialRange = useCallback(() => {
@@ -183,7 +183,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
       endDate.toISOString().split('T')[0],
       false
     );
-  }, [defaultZoomDays]);
+  }, [defaultZoomDays, fetchDataRange]);
 
   // Function to load all available data
   const loadAllData = useCallback(() => {
@@ -191,7 +191,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
     fetchDataRange(null, null, false);
     // Mark that we've loaded all data to prevent initial zoom from being reapplied
     setTotalDataRange({ isFullDataset: true });
-  }, []);
+  }, [fetchDataRange]);
 
   return {
     data,
