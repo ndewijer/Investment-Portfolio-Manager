@@ -400,12 +400,8 @@ class PortfolioService:
         # Preload dividend data
         all_dividends = PortfolioService._preload_dividend_data(portfolios)
 
-        # Calculate date range
-        one_year_ago = datetime.now().date() - timedelta(days=365)
-        start_date = max(
-            one_year_ago,
-            min(range["start_date"] for range in portfolio_date_ranges.values()),
-        )
+        # Calculate date range - start from the earliest transaction date
+        start_date = min(range["start_date"] for range in portfolio_date_ranges.values())
 
         # Generate history
         history = []

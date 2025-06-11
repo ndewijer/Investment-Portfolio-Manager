@@ -266,6 +266,7 @@ const Overview = () => {
             lines={getChartLines()}
             visibleMetrics={visibleMetrics}
             setVisibleMetrics={setVisibleMetrics}
+            defaultZoomDays={365}
           />
         </div>
       </div>
