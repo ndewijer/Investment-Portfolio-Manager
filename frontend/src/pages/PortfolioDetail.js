@@ -1006,16 +1006,16 @@ const PortfolioDetail = () => {
                           <span className="label">Total Cost</span>
                           <span className="value">{formatCurrency(portfolioFund.total_cost)}</span>
                         </div>
+                        <div className="stat-item dividends-stat">
+                          <span className="label">Dividends</span>
+                          <span className="value">
+                            {formatCurrency(portfolioFund.total_dividends)}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
                     <div className="card-footer">
-                      <div className="dividends-info">
-                        <span className="label">Dividends:</span>
-                        <span className="value">
-                          {formatCurrency(portfolioFund.total_dividends)}
-                        </span>
-                      </div>
                       <div className="action-buttons">
                         <button
                           className="add-button mobile-btn"
