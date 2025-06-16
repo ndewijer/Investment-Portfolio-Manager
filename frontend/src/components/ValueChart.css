@@ -258,3 +258,63 @@
     transform: translateY(0);
   }
 }
+
+/* Custom tooltip styles */
+.custom-tooltip {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+  max-width: 200px;
+  z-index: 1000;
+}
+
+.tooltip-label {
+  font-weight: bold;
+  margin: 0 0 5px 0;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 3px;
+}
+
+.tooltip-entry {
+  margin: 2px 0;
+  font-weight: 500;
+}
+
+/* Mobile-specific tooltip adjustments */
+@media (max-width: 768px) {
+  .custom-tooltip {
+    font-size: 14px;
+    padding: 12px;
+    max-width: 250px;
+    background-color: rgba(255, 255, 255, 0.98);
+    border-width: 2px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .tooltip-label {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  
+  .tooltip-entry {
+    font-size: 13px;
+    margin: 3px 0;
+  }
+}
+
+/* Touch-friendly chart interaction */
+@media (max-width: 768px) {
+  .chart-container {
+    /* Improve touch target size */
+    min-height: 400px;
+  }
+  
+  /* Add visual feedback for touch interactions */
+  .chart-container:active {
+    background-color: rgba(25, 118, 210, 0.02);
+  }
+}

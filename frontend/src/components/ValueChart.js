@@ -50,6 +50,14 @@ const ValueChart = ({
   // Track if initial zoom has been applied
   const [initialZoomApplied, setInitialZoomApplied] = useState(false);
 
+  // Mobile tooltip management
+  const [isMobile, setIsMobile] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(true);
+  const [tooltipTimeout, setTooltipTimeout] = useState(null);
+  
+  // Track if user has interacted with the chart to hide instructions
+  const [hasInteracted, setHasInteracted] = useState(false);
+
   // Calculate the maximum value from visible data for specific metrics only
   const getMaxValue = useCallback(() => {
     if (!data || data.length === 0) return null;
@@ -181,6 +189,9 @@ const ValueChart = ({
   const handleZoomIn = useCallback(() => {
     if (!data || data.length === 0) return;
 
+    // Mark as interacted
+    setHasInteracted(true);
+
     const newZoomLevel = Math.min(zoomState.zoomLevel * 1.5, 10);
     const dataLength = data.length;
 
@@ -218,6 +229,9 @@ const ValueChart = ({
   const handleZoomOut = useCallback(() => {
     if (!data || data.length === 0 || zoomState.zoomLevel <= 1) return;
 
+    // Mark as interacted
+    setHasInteracted(true);
+
     const newZoomLevel = Math.max(zoomState.zoomLevel / 1.5, 1);
 
     if (newZoomLevel <= 1) {
@@ -251,6 +265,9 @@ const ValueChart = ({
   const handleZoomToPeriod = useCallback(
     (days) => {
       if (!data || data.length === 0) return;
+
+      // Mark as interacted
+      setHasInteracted(true);
 
       const dataLength = data.length;
       const targetDataPoints = Math.min(days, dataLength);
@@ -325,8 +342,46 @@ const ValueChart = ({
     [handleZoomIn, handleZoomOut]
   );
 
+  // Detect if device is mobile
+  useEffect(() => {
+    const checkIsMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) || window.innerWidth <= 768;
+      setIsMobile(isMobileDevice);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  // Auto-hide tooltip on mobile after delay
+  const scheduleTooltipHide = useCallback(() => {
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      setShowTooltip(false);
+    }, 2000); // Hide after 2 seconds
+    
+    setTooltipTimeout(timeout);
+  }, [tooltipTimeout]);
+
+  // Show tooltip temporarily on mobile
+  const showTooltipTemporarily = useCallback(() => {
+    if (isMobile) {
+      setShowTooltip(true);
+      scheduleTooltipHide();
+    }
+  }, [isMobile, scheduleTooltipHide]);
+
   // Touch handling for mobile
   const handleTouchStart = useCallback((e) => {
+    // Mark as interacted on any touch
+    setHasInteracted(true);
+    
     if (e.touches.length === 1) {
       touchStartRef.current = {
         x: e.touches[0].clientX,
@@ -334,6 +389,9 @@ const ValueChart = ({
         time: Date.now(),
       };
       isPanningRef.current = false;
+      
+      // Show tooltip temporarily on touch
+      showTooltipTemporarily();
     } else if (e.touches.length === 2) {
       const distance = Math.sqrt(
         Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
@@ -341,8 +399,13 @@ const ValueChart = ({
       );
       lastTouchDistanceRef.current = distance;
       isPanningRef.current = false;
+      
+      // Hide tooltip during pinch zoom
+      if (isMobile) {
+        setShowTooltip(false);
+      }
     }
-  }, []);
+  }, [isMobile, showTooltipTemporarily]);
 
   const handleTouchMove = useCallback(
     (e) => {
@@ -370,10 +433,15 @@ const ValueChart = ({
           isPanningRef.current = true;
           handlePan(deltaX);
           touchStartRef.current.x = e.touches[0].clientX;
+          
+          // Hide tooltip during panning
+          if (isMobile) {
+            setShowTooltip(false);
+          }
         }
       }
     },
-    [zoomState.isZoomed, handleZoomIn, handleZoomOut, handlePan]
+    [zoomState.isZoomed, handleZoomIn, handleZoomOut, handlePan, isMobile]
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -381,6 +449,47 @@ const ValueChart = ({
     lastTouchDistanceRef.current = null;
     isPanningRef.current = false;
   }, []);
+
+  // Handle chart click/tap to toggle tooltip on mobile
+  const handleChartClick = useCallback((e) => {
+    if (isMobile && e) {
+      // If tooltip is currently hidden, show it temporarily
+      if (!showTooltip) {
+        showTooltipTemporarily();
+      } else {
+        // If tooltip is showing, hide it
+        setShowTooltip(false);
+        if (tooltipTimeout) {
+          clearTimeout(tooltipTimeout);
+          setTooltipTimeout(null);
+        }
+      }
+    }
+  }, [isMobile, showTooltip, showTooltipTemporarily, tooltipTimeout]);
+
+  // Custom tooltip component that respects mobile visibility state
+  const CustomTooltip = useCallback(({ active, payload, label }) => {
+    // Don't show tooltip on mobile if showTooltip is false
+    if (isMobile && !showTooltip) {
+      return null;
+    }
+
+    // Don't show tooltip if not active or no payload
+    if (!active || !payload || !payload.length) {
+      return null;
+    }
+
+    return (
+      <div className="custom-tooltip">
+        <p className="tooltip-label">{`Date: ${label}`}</p>
+        {payload.map((entry, index) => (
+          <p key={index} className="tooltip-entry" style={{ color: entry.color }}>
+            {`${entry.name}: ${formatTooltip(entry.value)}`}
+          </p>
+        ))}
+      </div>
+    );
+  }, [isMobile, showTooltip, formatTooltip]);
 
   const getVisibleData = useCallback(() => {
     if (!zoomState.isZoomed || !zoomState.xDomain || !data) {
@@ -495,6 +604,9 @@ const ValueChart = ({
     const yAxisWidth = 80;
     if (x < yAxisWidth) return; // Only prevent starting on Y-axis
 
+    // Mark as interacted on mouse interaction
+    setHasInteracted(true);
+
     dragStartRef.current = { x, startTime: Date.now() };
     isDraggingRef.current = false;
 
@@ -553,6 +665,15 @@ const ValueChart = ({
       };
     }
   }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
+
+  // Cleanup tooltip timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout);
+      }
+    };
+  }, [tooltipTimeout]);
 
   return (
     <div className="chart-wrapper">
@@ -685,7 +806,10 @@ const ValueChart = ({
         onTouchEnd={handleTouchEnd}
       >
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={getVisibleData()}>
+          <LineChart 
+            data={getVisibleData()}
+            onClick={handleChartClick}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
             <YAxis
@@ -694,7 +818,10 @@ const ValueChart = ({
               tickFormatter={formatYAxis}
               width={80}
             />
-            <Tooltip formatter={formatTooltip} labelFormatter={(label) => `Date: ${label}`} />
+            <Tooltip 
+              content={<CustomTooltip />}
+              cursor={{ stroke: '#1976d2', strokeWidth: 1 }}
+            />
             <Legend />
             {/* Reference line for maximum value */}
             {getMaxValue() && (
@@ -752,20 +879,20 @@ const ValueChart = ({
           />
         )}
 
-        {zoomState.isZoomed && (
+        {!hasInteracted && zoomState.isZoomed && (
           <div className="zoom-instructions">
             <p>
               💡 Desktop: Drag to select area, Hold Ctrl/Cmd + scroll to zoom | Mobile: Pinch to
-              zoom, swipe to pan
+              zoom, swipe to pan, tap chart to toggle tooltip
             </p>
           </div>
         )}
 
-        {!zoomState.isZoomed && (
+        {!hasInteracted && !zoomState.isZoomed && (
           <div className="zoom-instructions">
             <p>
               💡 Desktop: Click and drag to zoom to selection, Hold Ctrl/Cmd + scroll to zoom |
-              Mobile: Pinch to zoom
+              Mobile: Pinch to zoom, tap chart to show values
             </p>
           </div>
         )}
