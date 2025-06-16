@@ -1,25 +1,28 @@
 .PHONY: build up down clean logs test
 
+# Detect docker compose command
+DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo docker compose)
+
 # Build all services
 build:
-	docker-compose build
+	$(DOCKER_COMPOSE) build
 
 # Start all services
 up:
-	docker-compose up -d
+	$(DOCKER_COMPOSE) up -d
 
 # Stop all services
 down:
-	docker-compose down
+	$(DOCKER_COMPOSE) down
 
 # Clean up containers and images
 clean:
-	docker-compose down --rmi all --volumes --remove-orphans
+	$(DOCKER_COMPOSE) down --rmi all --volumes --remove-orphans
 
 # View logs
 logs:
-	docker-compose logs -f
+	$(DOCKER_COMPOSE) logs -f
 
 # Initialize database
 init-db:
-	docker-compose exec backend flask seed-db
+	$(DOCKER_COMPOSE) exec backend flask seed-db
