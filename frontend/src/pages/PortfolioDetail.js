@@ -900,71 +900,158 @@ const PortfolioDetail = () => {
                 <FontAwesomeIcon icon={faPlus} /> Add Fund
               </button>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Fund</th>
-                  <th>Latest Share Price</th>
-                  <th>Total Shares</th>
-                  <th>Average Cost / Share</th>
-                  <th>Total Cost</th>
-                  <th>Current Value</th>
-                  <th>Total Dividends</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+            <div className="table-container">
+              <table className="desktop-table">
+                <thead>
+                  <tr>
+                    <th>Fund</th>
+                    <th>Latest Share Price</th>
+                    <th>Total Shares</th>
+                    <th>Average Cost / Share</th>
+                    <th>Total Cost</th>
+                    <th>Current Value</th>
+                    <th>Total Dividends</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {portfolioFunds.map((portfolioFund) => (
+                    <tr key={portfolioFund.id}>
+                      <td>
+                        <span
+                          className="clickable-fund-name"
+                          onClick={() => handleFundClick(portfolioFund.fund_id)}
+                        >
+                          {portfolioFund.fund_name}
+                        </span>
+                      </td>
+                      <td>{formatCurrency(portfolioFund.latest_price)}</td>
+                      <td>{formatNumber(portfolioFund.total_shares, 6)}</td>
+                      <td>{formatCurrency(portfolioFund.average_cost)}</td>
+                      <td>{formatCurrency(portfolioFund.total_cost)}</td>
+                      <td>{formatCurrency(portfolioFund.current_value)}</td>
+                      <td>{formatCurrency(portfolioFund.total_dividends)}</td>
+                      <td className="action-buttons">
+                        <button
+                          className="add-button"
+                          onClick={() => {
+                            setNewTransaction({
+                              portfolio_fund_id: portfolioFund.id,
+                              date: new Date().toISOString().split('T')[0],
+                              type: 'buy',
+                              shares: '',
+                              cost_per_share: '',
+                            });
+                            setIsTransactionModalOpen(true);
+                          }}
+                        >
+                          Add Transaction
+                        </button>
+                        {portfolioFund.dividend_type !== 'none' && (
+                          <button
+                            className="dividend-button"
+                            onClick={() => handleAddDividend(portfolioFund)}
+                          >
+                            Add Dividend
+                          </button>
+                        )}
+                        <button
+                          className="delete-button"
+                          onClick={() => handleRemoveFund(portfolioFund)}
+                        >
+                          Remove Fund
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="mobile-cards">
                 {portfolioFunds.map((portfolioFund) => (
-                  <tr key={portfolioFund.id}>
-                    <td>
-                      <span
-                        className="clickable-fund-name"
+                  <div key={portfolioFund.id} className="fund-card">
+                    <div className="card-header">
+                      <h3
+                        className="fund-name clickable-fund-name"
                         onClick={() => handleFundClick(portfolioFund.fund_id)}
                       >
                         {portfolioFund.fund_name}
-                      </span>
-                    </td>
-                    <td>{formatCurrency(portfolioFund.latest_price)}</td>
-                    <td>{formatNumber(portfolioFund.total_shares, 6)}</td>
-                    <td>{formatCurrency(portfolioFund.average_cost)}</td>
-                    <td>{formatCurrency(portfolioFund.total_cost)}</td>
-                    <td>{formatCurrency(portfolioFund.current_value)}</td>
-                    <td>{formatCurrency(portfolioFund.total_dividends)}</td>
-                    <td className="action-buttons">
-                      <button
-                        className="add-button"
-                        onClick={() => {
-                          setNewTransaction({
-                            portfolio_fund_id: portfolioFund.id,
-                            date: new Date().toISOString().split('T')[0],
-                            type: 'buy',
-                            shares: '',
-                            cost_per_share: '',
-                          });
-                          setIsTransactionModalOpen(true);
-                        }}
-                      >
-                        Add Transaction
-                      </button>
-                      {portfolioFund.dividend_type !== 'none' && (
+                      </h3>
+                      <div className="current-value">
+                        {formatCurrency(portfolioFund.current_value)}
+                      </div>
+                    </div>
+
+                    <div className="card-main">
+                      <div className="main-stats">
+                        <div className="stat-item">
+                          <span className="label">Shares</span>
+                          <span className="value">
+                            {formatNumber(portfolioFund.total_shares, 6)}
+                          </span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="label">Latest Price</span>
+                          <span className="value">
+                            {formatCurrency(portfolioFund.latest_price)}
+                          </span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="label">Avg Cost</span>
+                          <span className="value">
+                            {formatCurrency(portfolioFund.average_cost)}
+                          </span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="label">Total Cost</span>
+                          <span className="value">{formatCurrency(portfolioFund.total_cost)}</span>
+                        </div>
+                        <div className="stat-item dividends-stat">
+                          <span className="label">Dividends</span>
+                          <span className="value">
+                            {formatCurrency(portfolioFund.total_dividends)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="card-footer">
+                      <div className="action-buttons">
                         <button
-                          className="dividend-button"
-                          onClick={() => handleAddDividend(portfolioFund)}
+                          className="add-button mobile-btn"
+                          onClick={() => {
+                            setNewTransaction({
+                              portfolio_fund_id: portfolioFund.id,
+                              date: new Date().toISOString().split('T')[0],
+                              type: 'buy',
+                              shares: '',
+                              cost_per_share: '',
+                            });
+                            setIsTransactionModalOpen(true);
+                          }}
                         >
-                          Add Dividend
+                          Transaction
                         </button>
-                      )}
-                      <button
-                        className="delete-button"
-                        onClick={() => handleRemoveFund(portfolioFund)}
-                      >
-                        Remove Fund
-                      </button>
-                    </td>
-                  </tr>
+                        {portfolioFund.dividend_type !== 'none' && (
+                          <button
+                            className="dividend-button mobile-btn"
+                            onClick={() => handleAddDividend(portfolioFund)}
+                          >
+                            Dividend
+                          </button>
+                        )}
+                        <button
+                          className="delete-button mobile-btn"
+                          onClick={() => handleRemoveFund(portfolioFund)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </section>
 
           <section className="portfolio-transactions">
@@ -972,178 +1059,345 @@ const PortfolioDetail = () => {
               <h2>Transactions</h2>
             </div>
 
-            <table>
-              <thead>
-                <tr>
-                  <th>
-                    <div className="header-content">
-                      <FontAwesomeIcon
-                        icon={faFilter}
-                        className={`filter-icon ${
-                          filters.dateFrom || filters.dateTo ? 'active' : ''
-                        }`}
-                        onClick={(e) => handleFilterClick(e, 'date')}
+            <div className="table-container">
+              <table className="desktop-table">
+                <thead>
+                  <tr>
+                    <th>
+                      <div className="header-content">
+                        <FontAwesomeIcon
+                          icon={faFilter}
+                          className={`filter-icon ${
+                            filters.dateFrom || filters.dateTo ? 'active' : ''
+                          }`}
+                          onClick={(e) => handleFilterClick(e, 'date')}
+                        />
+                        <span>Date</span>
+                        <FontAwesomeIcon
+                          icon={faSort}
+                          className="sort-icon"
+                          onClick={() => handleSort('date')}
+                        />
+                      </div>
+                      <FilterPopup
+                        type="date"
+                        isOpen={filterPopups.date}
+                        onClose={() => setFilterPopups((prev) => ({ ...prev, date: false }))}
+                        position={filterPosition}
+                        fromDate={filters.dateFrom}
+                        toDate={filters.dateTo}
+                        onFromDateChange={(date) =>
+                          setFilters((prev) => ({ ...prev, dateFrom: date }))
+                        }
+                        onToDateChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
                       />
-                      <span>Date</span>
-                      <FontAwesomeIcon
-                        icon={faSort}
-                        className="sort-icon"
-                        onClick={() => handleSort('date')}
+                    </th>
+                    <th>
+                      <div className="header-content">
+                        <FontAwesomeIcon
+                          icon={faFilter}
+                          className={`filter-icon ${filters.fund_names.length > 0 ? 'active' : ''}`}
+                          onClick={(e) => handleFilterClick(e, 'fund')}
+                        />
+                        <span>Fund</span>
+                        <FontAwesomeIcon
+                          icon={faSort}
+                          className="sort-icon"
+                          onClick={() => handleSort('fund_name')}
+                        />
+                      </div>
+                      <FilterPopup
+                        type="multiselect"
+                        isOpen={filterPopups.fund}
+                        onClose={() => {
+                          setFilterPopups((prev) => ({ ...prev, fund: false }));
+                          setFilters((prev) => ({ ...prev, fund_names: tempFilters.fund_names }));
+                        }}
+                        position={filterPosition}
+                        value={tempFilters.fund_names.map((name) => ({
+                          label: name,
+                          value: name,
+                        }))}
+                        onChange={(selected) => {
+                          setTempFilters((prev) => ({
+                            ...prev,
+                            fund_names: selected ? selected.map((option) => option.value) : [],
+                          }));
+                        }}
+                        options={getUniqueFundNames().map((name) => ({
+                          label: name,
+                          value: name,
+                        }))}
+                        Component={Select}
+                        isMulti={true}
                       />
-                    </div>
-                    <FilterPopup
-                      type="date"
-                      isOpen={filterPopups.date}
-                      onClose={() => setFilterPopups((prev) => ({ ...prev, date: false }))}
-                      position={filterPosition}
-                      fromDate={filters.dateFrom}
-                      toDate={filters.dateTo}
-                      onFromDateChange={(date) =>
-                        setFilters((prev) => ({ ...prev, dateFrom: date }))
-                      }
-                      onToDateChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
-                    />
-                  </th>
-                  <th>
-                    <div className="header-content">
-                      <FontAwesomeIcon
-                        icon={faFilter}
-                        className={`filter-icon ${filters.fund_names.length > 0 ? 'active' : ''}`}
-                        onClick={(e) => handleFilterClick(e, 'fund')}
+                    </th>
+                    <th>
+                      <div className="header-content">
+                        <FontAwesomeIcon
+                          icon={faFilter}
+                          className={`filter-icon ${filters.type ? 'active' : ''}`}
+                          onClick={(e) => handleFilterClick(e, 'type')}
+                        />
+                        <span>Type</span>
+                        <FontAwesomeIcon
+                          icon={faSort}
+                          className="sort-icon"
+                          onClick={() => handleSort('type')}
+                        />
+                      </div>
+                      <FilterPopup
+                        type="multiselect"
+                        isOpen={filterPopups.type}
+                        onClose={() => {
+                          setFilterPopups((prev) => ({ ...prev, type: false }));
+                          setFilters((prev) => ({ ...prev, type: tempFilters.type }));
+                        }}
+                        position={filterPosition}
+                        value={
+                          tempFilters.type
+                            ? [
+                                {
+                                  label:
+                                    tempFilters.type.charAt(0).toUpperCase() +
+                                    tempFilters.type.slice(1),
+                                  value: tempFilters.type,
+                                },
+                              ]
+                            : []
+                        }
+                        onChange={(selected) => {
+                          setTempFilters((prev) => ({
+                            ...prev,
+                            type: selected ? selected.value : '',
+                          }));
+                        }}
+                        options={TYPE_OPTIONS}
+                        Component={Select}
+                        isMulti={false}
                       />
-                      <span>Fund</span>
-                      <FontAwesomeIcon
-                        icon={faSort}
-                        className="sort-icon"
-                        onClick={() => handleSort('fund_name')}
-                      />
-                    </div>
-                    <FilterPopup
-                      type="multiselect"
-                      isOpen={filterPopups.fund}
-                      onClose={() => {
-                        setFilterPopups((prev) => ({ ...prev, fund: false }));
-                        setFilters((prev) => ({ ...prev, fund_names: tempFilters.fund_names }));
-                      }}
-                      position={filterPosition}
-                      value={tempFilters.fund_names.map((name) => ({
-                        label: name,
-                        value: name,
-                      }))}
-                      onChange={(selected) => {
-                        setTempFilters((prev) => ({
-                          ...prev,
-                          fund_names: selected ? selected.map((option) => option.value) : [],
-                        }));
-                      }}
-                      options={getUniqueFundNames().map((name) => ({
-                        label: name,
-                        value: name,
-                      }))}
-                      Component={Select}
-                      isMulti={true}
-                    />
-                  </th>
-                  <th>
-                    <div className="header-content">
-                      <FontAwesomeIcon
-                        icon={faFilter}
-                        className={`filter-icon ${filters.type ? 'active' : ''}`}
-                        onClick={(e) => handleFilterClick(e, 'type')}
-                      />
-                      <span>Type</span>
-                      <FontAwesomeIcon
-                        icon={faSort}
-                        className="sort-icon"
-                        onClick={() => handleSort('type')}
-                      />
-                    </div>
-                    <FilterPopup
-                      type="multiselect"
-                      isOpen={filterPopups.type}
-                      onClose={() => {
-                        setFilterPopups((prev) => ({ ...prev, type: false }));
-                        setFilters((prev) => ({ ...prev, type: tempFilters.type }));
-                      }}
-                      position={filterPosition}
-                      value={
-                        tempFilters.type
-                          ? [
-                              {
-                                label:
-                                  tempFilters.type.charAt(0).toUpperCase() +
-                                  tempFilters.type.slice(1),
-                                value: tempFilters.type,
-                              },
-                            ]
-                          : []
-                      }
-                      onChange={(selected) => {
-                        setTempFilters((prev) => ({
-                          ...prev,
-                          type: selected ? selected.value : '',
-                        }));
-                      }}
-                      options={TYPE_OPTIONS}
-                      Component={Select}
-                      isMulti={false}
-                    />
-                  </th>
-                  <th>
-                    <div className="header-content">
-                      <span>Shares</span>
-                      <FontAwesomeIcon
-                        icon={faSort}
-                        className="sort-icon"
-                        onClick={() => handleSort('shares')}
-                      />
-                    </div>
-                  </th>
-                  <th>
-                    <div className="header-content">
-                      <span>Cost per Share</span>
-                      <FontAwesomeIcon
-                        icon={faSort}
-                        className="sort-icon"
-                        onClick={() => handleSort('cost_per_share')}
-                      />
-                    </div>
-                  </th>
-                  <th>Total</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {getFilteredTransactions().map((transaction) => (
-                  <tr key={transaction.id}>
-                    <td>{new Date(transaction.date).toLocaleDateString()}</td>
-                    <td>{transaction.fund_name}</td>
-                    <td>{transaction.type}</td>
-                    <td>{formatNumber(transaction.shares, 6)}</td>
-                    <td>{formatCurrency(transaction.cost_per_share)}</td>
-                    <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
-                    <td className="action-buttons">
-                      {transaction.type !== 'dividend' && ( // Only show actions if not a dividend transaction
-                        <>
-                          <button
-                            className="edit-button"
-                            onClick={() => handleEditTransaction(transaction)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="delete-button"
-                            onClick={() => handleDeleteTransaction(transaction.id)}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </td>
+                    </th>
+                    <th>
+                      <div className="header-content">
+                        <span>Shares</span>
+                        <FontAwesomeIcon
+                          icon={faSort}
+                          className="sort-icon"
+                          onClick={() => handleSort('shares')}
+                        />
+                      </div>
+                    </th>
+                    <th>
+                      <div className="header-content">
+                        <span>Cost per Share</span>
+                        <FontAwesomeIcon
+                          icon={faSort}
+                          className="sort-icon"
+                          onClick={() => handleSort('cost_per_share')}
+                        />
+                      </div>
+                    </th>
+                    <th>Total</th>
+                    <th>Actions</th>
                   </tr>
+                </thead>
+                <tbody>
+                  {getFilteredTransactions().map((transaction) => (
+                    <tr key={transaction.id}>
+                      <td>{new Date(transaction.date).toLocaleDateString()}</td>
+                      <td>{transaction.fund_name}</td>
+                      <td>{transaction.type}</td>
+                      <td>{formatNumber(transaction.shares, 6)}</td>
+                      <td>{formatCurrency(transaction.cost_per_share)}</td>
+                      <td>{formatCurrency(transaction.shares * transaction.cost_per_share)}</td>
+                      <td className="action-buttons">
+                        {transaction.type !== 'dividend' && ( // Only show actions if not a dividend transaction
+                          <>
+                            <button
+                              className="edit-button"
+                              onClick={() => handleEditTransaction(transaction)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="delete-button"
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="mobile-cards">
+                <div className="mobile-controls">
+                  <div className="mobile-filter-controls">
+                    <button
+                      className={`mobile-filter-btn ${
+                        filters.dateFrom || filters.dateTo ? 'active' : ''
+                      }`}
+                      onClick={(e) => handleFilterClick(e, 'date')}
+                    >
+                      <FontAwesomeIcon icon={faFilter} /> Date
+                    </button>
+                    <button
+                      className={`mobile-filter-btn ${
+                        filters.fund_names.length > 0 ? 'active' : ''
+                      }`}
+                      onClick={(e) => handleFilterClick(e, 'fund')}
+                    >
+                      <FontAwesomeIcon icon={faFilter} /> Fund
+                    </button>
+                    <button
+                      className={`mobile-filter-btn ${filters.type ? 'active' : ''}`}
+                      onClick={(e) => handleFilterClick(e, 'type')}
+                    >
+                      <FontAwesomeIcon icon={faFilter} /> Type
+                    </button>
+                    <button className="mobile-sort-btn" onClick={() => handleSort('date')}>
+                      <FontAwesomeIcon icon={faSort} /> Sort
+                    </button>
+                  </div>
+
+                  {filterPopups.date && (
+                    <div className="mobile-filter-popup">
+                      <FilterPopup
+                        type="date"
+                        isOpen={true}
+                        onClose={() => setFilterPopups((prev) => ({ ...prev, date: false }))}
+                        position={{ top: 0, left: 0 }}
+                        fromDate={filters.dateFrom}
+                        toDate={filters.dateTo}
+                        onFromDateChange={(date) =>
+                          setFilters((prev) => ({ ...prev, dateFrom: date }))
+                        }
+                        onToDateChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
+                      />
+                    </div>
+                  )}
+
+                  {filterPopups.fund && (
+                    <div className="mobile-filter-popup">
+                      <FilterPopup
+                        type="multiselect"
+                        isOpen={true}
+                        onClose={() => {
+                          setFilterPopups((prev) => ({ ...prev, fund: false }));
+                          setFilters((prev) => ({ ...prev, fund_names: tempFilters.fund_names }));
+                        }}
+                        position={{ top: 0, left: 0 }}
+                        value={tempFilters.fund_names.map((name) => ({
+                          label: name,
+                          value: name,
+                        }))}
+                        onChange={(selected) => {
+                          setTempFilters((prev) => ({
+                            ...prev,
+                            fund_names: selected ? selected.map((option) => option.value) : [],
+                          }));
+                        }}
+                        options={getUniqueFundNames().map((name) => ({
+                          label: name,
+                          value: name,
+                        }))}
+                        Component={Select}
+                        isMulti={true}
+                      />
+                    </div>
+                  )}
+
+                  {filterPopups.type && (
+                    <div className="mobile-filter-popup">
+                      <FilterPopup
+                        type="multiselect"
+                        isOpen={true}
+                        onClose={() => {
+                          setFilterPopups((prev) => ({ ...prev, type: false }));
+                          setFilters((prev) => ({ ...prev, type: tempFilters.type }));
+                        }}
+                        position={{ top: 0, left: 0 }}
+                        value={
+                          tempFilters.type
+                            ? [
+                                {
+                                  label:
+                                    tempFilters.type.charAt(0).toUpperCase() +
+                                    tempFilters.type.slice(1),
+                                  value: tempFilters.type,
+                                },
+                              ]
+                            : []
+                        }
+                        onChange={(selected) => {
+                          setTempFilters((prev) => ({
+                            ...prev,
+                            type: selected ? selected.value : '',
+                          }));
+                        }}
+                        options={TYPE_OPTIONS}
+                        Component={Select}
+                        isMulti={false}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {getFilteredTransactions().map((transaction) => (
+                  <div key={transaction.id} className="transaction-card">
+                    <div className="card-header">
+                      <div className="transaction-main">
+                        <span className="date">
+                          {new Date(transaction.date).toLocaleDateString()}
+                        </span>
+                        <span className={`type type-${transaction.type}`}>
+                          {transaction.type.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="total-amount">
+                        {formatCurrency(transaction.shares * transaction.cost_per_share)}
+                      </div>
+                    </div>
+
+                    <div className="card-body">
+                      <div className="fund-name">{transaction.fund_name}</div>
+                      <div className="transaction-details">
+                        <div className="detail-item">
+                          <span className="label">Shares:</span>
+                          <span className="value">{formatNumber(transaction.shares, 6)}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="label">Price per Share:</span>
+                          <span className="value">
+                            {formatCurrency(transaction.cost_per_share)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {transaction.type !== 'dividend' && (
+                      <div className="card-actions">
+                        <button
+                          className="edit-button mobile-btn"
+                          onClick={() => handleEditTransaction(transaction)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="delete-button mobile-btn"
+                          onClick={() => handleDeleteTransaction(transaction.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           </section>
 
           {hasDividendFunds && (
@@ -1151,21 +1405,75 @@ const PortfolioDetail = () => {
               <div className="section-header">
                 <h2>Dividends</h2>
               </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Record Date</th>
-                    <th>Ex-Dividend Date</th>
-                    <th>Fund</th>
-                    <th>Type</th>
-                    <th>Shares Owned</th>
-                    <th>Dividend per Share</th>
-                    <th>Total Amount</th>
-                    <th>Dividend Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <div className="table-container">
+                <table className="desktop-table">
+                  <thead>
+                    <tr>
+                      <th>Record Date</th>
+                      <th>Ex-Dividend Date</th>
+                      <th>Fund</th>
+                      <th>Type</th>
+                      <th>Shares Owned</th>
+                      <th>Dividend per Share</th>
+                      <th>Total Amount</th>
+                      <th>Dividend Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dividends.map((dividend) => {
+                      let status;
+                      if (dividend.dividend_type === 'cash') {
+                        status = 'PAID OUT';
+                      } else {
+                        status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
+                      }
+
+                      return (
+                        <tr key={dividend.id}>
+                          <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
+                          <td>{new Date(dividend.ex_dividend_date).toLocaleDateString()}</td>
+                          <td>{dividend.fund_name}</td>
+                          <td>
+                            {dividend.dividend_type === 'stock' ? (
+                              <>
+                                <FontAwesomeIcon icon={faChartLine} /> Stock
+                              </>
+                            ) : (
+                              <>
+                                <FontAwesomeIcon icon={faMoneyBill} /> Cash
+                              </>
+                            )}
+                          </td>
+                          <td>{formatNumber(dividend.shares_owned, 6)}</td>
+                          <td>{formatCurrency(dividend.dividend_per_share)}</td>
+                          <td>{formatCurrency(dividend.total_amount)}</td>
+                          <td>
+                            <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>
+                              {status}
+                            </span>
+                          </td>
+                          <td className="action-buttons">
+                            <button
+                              className="edit-button"
+                              onClick={() => handleEditDividend(dividend)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="delete-button"
+                              onClick={() => handleDeleteDividend(dividend.id)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                <div className="mobile-cards">
                   {dividends.map((dividend) => {
                     let status;
                     if (dividend.dividend_type === 'cash') {
@@ -1175,48 +1483,82 @@ const PortfolioDetail = () => {
                     }
 
                     return (
-                      <tr key={dividend.id}>
-                        <td>{new Date(dividend.record_date).toLocaleDateString()}</td>
-                        <td>{new Date(dividend.ex_dividend_date).toLocaleDateString()}</td>
-                        <td>{dividend.fund_name}</td>
-                        <td>
-                          {dividend.dividend_type === 'stock' ? (
-                            <>
-                              <FontAwesomeIcon icon={faChartLine} /> Stock
-                            </>
-                          ) : (
-                            <>
-                              <FontAwesomeIcon icon={faMoneyBill} /> Cash
-                            </>
-                          )}
-                        </td>
-                        <td>{formatNumber(dividend.shares_owned, 6)}</td>
-                        <td>{formatCurrency(dividend.dividend_per_share)}</td>
-                        <td>{formatCurrency(dividend.total_amount)}</td>
-                        <td>
-                          <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>
-                            {status}
-                          </span>
-                        </td>
-                        <td className="action-buttons">
+                      <div key={dividend.id} className="dividend-card">
+                        <div className="card-header">
+                          <div className="dividend-main">
+                            <span className="record-date">
+                              {new Date(dividend.record_date).toLocaleDateString()}
+                            </span>
+                            <div className="dividend-type">
+                              {dividend.dividend_type === 'stock' ? (
+                                <>
+                                  <FontAwesomeIcon icon={faChartLine} /> Stock
+                                </>
+                              ) : (
+                                <>
+                                  <FontAwesomeIcon icon={faMoneyBill} /> Cash
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="total-amount">
+                            {formatCurrency(dividend.total_amount)}
+                          </div>
+                        </div>
+
+                        <div className="card-body">
+                          <div className="fund-name">{dividend.fund_name}</div>
+                          <div className="dividend-details">
+                            <div className="detail-row">
+                              <span className="label">Ex-Dividend Date:</span>
+                              <span className="value">
+                                {new Date(dividend.ex_dividend_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="detail-row">
+                              <span className="label">Shares Owned:</span>
+                              <span className="value">
+                                {formatNumber(dividend.shares_owned, 6)}
+                              </span>
+                            </div>
+                            <div className="detail-row">
+                              <span className="label">Per Share:</span>
+                              <span className="value">
+                                {formatCurrency(dividend.dividend_per_share)}
+                              </span>
+                            </div>
+                            <div className="detail-row">
+                              <span className="label">Status:</span>
+                              <span
+                                className={`status status-${status
+                                  .toLowerCase()
+                                  .replace(' ', '-')}`}
+                              >
+                                {status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="card-actions">
                           <button
-                            className="edit-button"
+                            className="edit-button mobile-btn"
                             onClick={() => handleEditDividend(dividend)}
                           >
                             Edit
                           </button>
                           <button
-                            className="delete-button"
+                            className="delete-button mobile-btn"
                             onClick={() => handleDeleteDividend(dividend.id)}
                           >
                             Delete
                           </button>
-                        </td>
-                      </tr>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+              </div>
             </section>
           )}
 

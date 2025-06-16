@@ -100,3 +100,173 @@
 .overview-container .no-portfolios-message button:hover {
   background-color: #1976d2;
 }
+
+/* Mobile-responsive table styles */
+.overview-container .table-container {
+  position: relative;
+}
+
+.overview-container .mobile-cards {
+  display: none;
+}
+
+.overview-container .desktop-table {
+  display: table;
+}
+
+/* Mobile card styles */
+@media (max-width: 768px) {
+  .overview-container .desktop-table {
+    display: none;
+  }
+
+  .overview-container .mobile-cards {
+    display: block;
+  }
+
+  .overview-container .portfolio-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition:
+      box-shadow 0.2s,
+      transform 0.1s;
+    border: 1px solid #e0e0e0;
+  }
+
+  .overview-container .portfolio-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .overview-container .portfolio-card:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .overview-container .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .overview-container .portfolio-name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+  }
+
+  .overview-container .performance {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+  }
+
+  .overview-container .card-main {
+    margin-bottom: 12px;
+  }
+
+  .overview-container .main-values {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .overview-container .value-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .overview-container .value-item .label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .overview-container .value-item .value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .overview-container .card-details {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+  }
+
+  .overview-container .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .overview-container .detail-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .overview-container .detail-row .label {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .overview-container .detail-row .value {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+}
+
+/* Ensure summary cards are also mobile-friendly */
+@media (max-width: 768px) {
+  .overview-container .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .overview-container .summary-card {
+    padding: 16px;
+  }
+
+  .overview-container .summary-card h3 {
+    font-size: 0.8rem;
+  }
+
+  .overview-container .summary-card .value {
+    font-size: 1.2rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .overview-container {
+    padding: 12px;
+  }
+
+  .overview-container .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .overview-container .portfolio-card {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+
+  .overview-container .main-values {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

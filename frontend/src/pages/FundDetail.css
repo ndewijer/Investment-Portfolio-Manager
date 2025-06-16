@@ -161,3 +161,179 @@
 .fund-detail-container .update-prices-button:nth-of-type(2):hover {
   background-color: #f57c00;
 }
+
+/* Mobile-responsive table styles */
+.fund-detail-container .table-container {
+  position: relative;
+}
+
+.fund-detail-container .mobile-cards {
+  display: none;
+}
+
+.fund-detail-container .desktop-table {
+  display: table;
+}
+
+/* Mobile card styles */
+@media (max-width: 768px) {
+  .fund-detail-container .desktop-table {
+    display: none;
+  }
+
+  .fund-detail-container .mobile-cards {
+    display: block;
+  }
+
+  .fund-detail-container .mobile-controls {
+    margin-bottom: 16px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+  }
+
+  .fund-detail-container .mobile-filter-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .fund-detail-container .mobile-filter-btn,
+  .fund-detail-container .mobile-sort-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    color: #333;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .fund-detail-container .mobile-filter-btn:hover,
+  .fund-detail-container .mobile-sort-btn:hover {
+    background-color: #f0f7ff;
+    border-color: #2196f3;
+  }
+
+  .fund-detail-container .mobile-filter-btn.active {
+    background-color: #2196f3;
+    color: white;
+    border-color: #2196f3;
+  }
+
+  .fund-detail-container .mobile-filter-popup {
+    margin-top: 12px;
+    padding: 12px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .fund-detail-container .price-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    transition: box-shadow 0.2s;
+  }
+
+  .fund-detail-container .price-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .fund-detail-container .price-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .fund-detail-container .price-card .date {
+    font-size: 1rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .fund-detail-container .price-card .price {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  /* Adjust fund info grid for mobile */
+  .fund-detail-container .fund-info {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .fund-detail-container .info-item {
+    gap: 2px;
+  }
+
+  .fund-detail-container .info-item label {
+    font-size: 0.8rem;
+  }
+
+  .fund-detail-container .info-item span {
+    font-size: 1rem;
+  }
+
+  /* Adjust section header for mobile */
+  .fund-detail-container .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .fund-detail-container .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .fund-detail-container .toggle-history-button,
+  .fund-detail-container .update-prices-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .fund-detail-container {
+    padding: 12px;
+  }
+
+  .fund-detail-container .fund-info {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .fund-detail-container .mobile-controls {
+    padding: 8px;
+  }
+
+  .fund-detail-container .mobile-filter-controls {
+    flex-direction: column;
+  }
+
+  .fund-detail-container .mobile-filter-btn,
+  .fund-detail-container .mobile-sort-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .fund-detail-container .price-card {
+    padding: 12px;
+    margin-bottom: 6px;
+  }
+}

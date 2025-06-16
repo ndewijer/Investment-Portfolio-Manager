@@ -286,18 +286,50 @@ const Overview = () => {
 
       <div className="portfolios-table">
         <h2>Portfolio Details</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Portfolio</th>
-              <th>Current Value</th>
-              <th>Current Cost Basis</th>
-              <th>Unrealized Gain/Loss</th>
-              <th>Realized Gain/Loss</th>
-              <th>Performance</th>
-            </tr>
-          </thead>
-          <tbody>
+        <div className="table-container">
+          <table className="desktop-table">
+            <thead>
+              <tr>
+                <th>Portfolio</th>
+                <th>Current Value</th>
+                <th>Current Cost Basis</th>
+                <th>Unrealized Gain/Loss</th>
+                <th>Realized Gain/Loss</th>
+                <th>Performance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {portfolioSummary.map((portfolio) => {
+                const performance = (
+                  ((portfolio.totalValue + portfolio.totalSaleProceeds) /
+                    (portfolio.totalCost + portfolio.totalOriginalCost) -
+                    1) *
+                  100
+                ).toFixed(2);
+
+                return (
+                  <tr key={portfolio.id} onClick={() => handlePortfolioClick(portfolio.id)}>
+                    <td>{portfolio.name}</td>
+                    <td>{formatCurrency(portfolio.totalValue)}</td>
+                    <td>{formatCurrency(portfolio.totalCost)}</td>
+                    <td
+                      className={portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}
+                    >
+                      {formatCurrency(portfolio.totalUnrealizedGainLoss)}
+                    </td>
+                    <td className={portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}>
+                      {formatCurrency(portfolio.totalRealizedGainLoss)}
+                    </td>
+                    <td className={performance >= 0 ? 'positive' : 'negative'}>
+                      {formatPercentage(performance)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <div className="mobile-cards">
             {portfolioSummary.map((portfolio) => {
               const performance = (
                 ((portfolio.totalValue + portfolio.totalSaleProceeds) /
@@ -307,24 +339,58 @@ const Overview = () => {
               ).toFixed(2);
 
               return (
-                <tr key={portfolio.id} onClick={() => handlePortfolioClick(portfolio.id)}>
-                  <td>{portfolio.name}</td>
-                  <td>{formatCurrency(portfolio.totalValue)}</td>
-                  <td>{formatCurrency(portfolio.totalCost)}</td>
-                  <td className={portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}>
-                    {formatCurrency(portfolio.totalUnrealizedGainLoss)}
-                  </td>
-                  <td className={portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}>
-                    {formatCurrency(portfolio.totalRealizedGainLoss)}
-                  </td>
-                  <td className={performance >= 0 ? 'positive' : 'negative'}>
-                    {formatPercentage(performance)}
-                  </td>
-                </tr>
+                <div
+                  key={portfolio.id}
+                  className="portfolio-card"
+                  onClick={() => handlePortfolioClick(portfolio.id)}
+                >
+                  <div className="card-header">
+                    <h3 className="portfolio-name">{portfolio.name}</h3>
+                    <div className={`performance ${performance >= 0 ? 'positive' : 'negative'}`}>
+                      {formatPercentage(performance)}
+                    </div>
+                  </div>
+
+                  <div className="card-main">
+                    <div className="main-values">
+                      <div className="value-item">
+                        <span className="label">Current Value</span>
+                        <span className="value">{formatCurrency(portfolio.totalValue)}</span>
+                      </div>
+                      <div className="value-item">
+                        <span className="label">Cost Basis</span>
+                        <span className="value">{formatCurrency(portfolio.totalCost)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card-details">
+                    <div className="detail-row">
+                      <span className="label">Unrealized Gain/Loss</span>
+                      <span
+                        className={`value ${
+                          portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'
+                        }`}
+                      >
+                        {formatCurrency(portfolio.totalUnrealizedGainLoss)}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="label">Realized Gain/Loss</span>
+                      <span
+                        className={`value ${
+                          portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'
+                        }`}
+                      >
+                        {formatCurrency(portfolio.totalRealizedGainLoss)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>
   );
