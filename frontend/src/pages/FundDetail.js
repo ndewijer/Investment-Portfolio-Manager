@@ -273,77 +273,129 @@ const FundDetail = () => {
         {loadingPrices ? (
           <div className="loading">Loading price history...</div>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>
-                  <div className="header-content">
-                    <FontAwesomeIcon
-                      icon={faFilter}
-                      className={`filter-icon ${
-                        filters.dateFrom || filters.dateTo ? 'active' : ''
-                      }`}
-                      onClick={(e) => handleFilterClick(e, 'date')}
-                    />
-                    <span>Date</span>
-                    <FontAwesomeIcon
-                      icon={faSort}
-                      className="sort-icon"
-                      onClick={() => handleSort('date')}
-                    />
-                  </div>
-                  {activeFilter === 'date' && (
-                    <div
-                      className="filter-popup"
-                      style={{
-                        top: filterPosition.top,
-                        left: filterPosition.left,
-                        position: 'fixed',
-                      }}
-                    >
-                      <div className="date-picker-container">
-                        <label>From:</label>
-                        <DatePicker
-                          selected={filters.dateFrom}
-                          onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
-                          dateFormat="yyyy-MM-dd"
-                          isClearable
-                          placeholderText="Start Date"
-                        />
-                        <label>To:</label>
-                        <DatePicker
-                          selected={filters.dateTo}
-                          onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
-                          dateFormat="yyyy-MM-dd"
-                          isClearable
-                          placeholderText="End Date"
-                          minDate={filters.dateFrom}
-                        />
-                      </div>
+          <div className="table-container">
+            <table className="desktop-table">
+              <thead>
+                <tr>
+                  <th>
+                    <div className="header-content">
+                      <FontAwesomeIcon
+                        icon={faFilter}
+                        className={`filter-icon ${
+                          filters.dateFrom || filters.dateTo ? 'active' : ''
+                        }`}
+                        onClick={(e) => handleFilterClick(e, 'date')}
+                      />
+                      <span>Date</span>
+                      <FontAwesomeIcon
+                        icon={faSort}
+                        className="sort-icon"
+                        onClick={() => handleSort('date')}
+                      />
                     </div>
-                  )}
-                </th>
-                <th>
-                  <div className="header-content">
-                    <span>Price</span>
-                    <FontAwesomeIcon
-                      icon={faSort}
-                      className="sort-icon"
-                      onClick={() => handleSort('price')}
-                    />
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {getFilteredPrices().map((price) => (
-                <tr key={price.id}>
-                  <td>{new Date(price.date).toLocaleDateString()}</td>
-                  <td>{formatCurrency(price.price)}</td>
+                    {activeFilter === 'date' && (
+                      <div
+                        className="filter-popup"
+                        style={{
+                          top: filterPosition.top,
+                          left: filterPosition.left,
+                          position: 'fixed',
+                        }}
+                      >
+                        <div className="date-picker-container">
+                          <label>From:</label>
+                          <DatePicker
+                            selected={filters.dateFrom}
+                            onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
+                            dateFormat="yyyy-MM-dd"
+                            isClearable
+                            placeholderText="Start Date"
+                          />
+                          <label>To:</label>
+                          <DatePicker
+                            selected={filters.dateTo}
+                            onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
+                            dateFormat="yyyy-MM-dd"
+                            isClearable
+                            placeholderText="End Date"
+                            minDate={filters.dateFrom}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </th>
+                  <th>
+                    <div className="header-content">
+                      <span>Price</span>
+                      <FontAwesomeIcon
+                        icon={faSort}
+                        className="sort-icon"
+                        onClick={() => handleSort('price')}
+                      />
+                    </div>
+                  </th>
                 </tr>
+              </thead>
+              <tbody>
+                {getFilteredPrices().map((price) => (
+                  <tr key={price.id}>
+                    <td>{new Date(price.date).toLocaleDateString()}</td>
+                    <td>{formatCurrency(price.price)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="mobile-cards">
+              <div className="mobile-controls">
+                <div className="mobile-filter-controls">
+                  <button
+                    className={`mobile-filter-btn ${
+                      filters.dateFrom || filters.dateTo ? 'active' : ''
+                    }`}
+                    onClick={(e) => handleFilterClick(e, 'date')}
+                  >
+                    <FontAwesomeIcon icon={faFilter} /> Filter by Date
+                  </button>
+                  <button className="mobile-sort-btn" onClick={() => handleSort('date')}>
+                    <FontAwesomeIcon icon={faSort} /> Sort by Date
+                  </button>
+                </div>
+                {activeFilter === 'date' && (
+                  <div className="mobile-filter-popup">
+                    <div className="date-picker-container">
+                      <label>From:</label>
+                      <DatePicker
+                        selected={filters.dateFrom}
+                        onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
+                        dateFormat="yyyy-MM-dd"
+                        isClearable
+                        placeholderText="Start Date"
+                      />
+                      <label>To:</label>
+                      <DatePicker
+                        selected={filters.dateTo}
+                        onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
+                        dateFormat="yyyy-MM-dd"
+                        isClearable
+                        placeholderText="End Date"
+                        minDate={filters.dateFrom}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {getFilteredPrices().map((price) => (
+                <div key={price.id} className="price-card">
+                  <div className="card-header">
+                    <span className="date">{new Date(price.date).toLocaleDateString()}</span>
+                    <span className="price">{formatCurrency(price.price)}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
         )}
       </section>
     </div>

@@ -160,3 +160,549 @@
 .portfolio-detail-container .negative {
   color: var(--negative-color);
 }
+
+/* Mobile-responsive table styles */
+.portfolio-detail-container .table-container {
+  position: relative;
+}
+
+.portfolio-detail-container .mobile-cards {
+  display: none;
+}
+
+.portfolio-detail-container .desktop-table {
+  display: table;
+}
+
+/* Mobile card styles */
+@media (max-width: 768px) {
+  .portfolio-detail-container .desktop-table {
+    display: none;
+  }
+
+  .portfolio-detail-container .mobile-cards {
+    display: block;
+  }
+
+  /* Fund cards */
+  .portfolio-detail-container .fund-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    transition: box-shadow 0.2s;
+  }
+
+  .portfolio-detail-container .fund-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .portfolio-detail-container .fund-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .portfolio-detail-container .fund-card .fund-name {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+    cursor: pointer;
+  }
+
+  .portfolio-detail-container .fund-card .fund-name:hover {
+    color: #2196f3;
+  }
+
+  .portfolio-detail-container .fund-card .current-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    padding: 4px 8px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+  }
+
+  .portfolio-detail-container .fund-card .card-main {
+    margin-bottom: 12px;
+  }
+
+  .portfolio-detail-container .fund-card .main-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .portfolio-detail-container .fund-card .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .portfolio-detail-container .fund-card .stat-item .label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .portfolio-detail-container .fund-card .stat-item .value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .portfolio-detail-container .fund-card .card-footer {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .portfolio-detail-container .fund-card .dividends-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+  }
+
+  .portfolio-detail-container .fund-card .dividends-info .label {
+    color: #666;
+    font-weight: 500;
+  }
+
+  .portfolio-detail-container .fund-card .dividends-info .value {
+    color: #333;
+    font-weight: 600;
+  }
+
+  .portfolio-detail-container .fund-card .action-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .portfolio-detail-container .fund-card .mobile-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.2s;
+  }
+
+  .portfolio-detail-container .fund-card .mobile-btn:hover {
+    opacity: 0.9;
+  }
+
+  /* Adjust summary cards for mobile */
+  .portfolio-detail-container .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .portfolio-detail-container .summary-card {
+    padding: 16px;
+  }
+
+  .portfolio-detail-container .summary-card h3 {
+    font-size: 0.8rem;
+  }
+
+  .portfolio-detail-container .summary-card .value {
+    font-size: 1.2rem;
+  }
+
+  /* Adjust section headers for mobile */
+  .portfolio-detail-container .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .portfolio-detail-container .section-header h2 {
+    margin: 0;
+  }
+
+  .portfolio-detail-container .section-header .add-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .portfolio-detail-container {
+    padding: 12px;
+  }
+
+  .portfolio-detail-container .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .portfolio-detail-container .fund-card {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+
+  .portfolio-detail-container .fund-card .main-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .portfolio-detail-container .fund-card .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .portfolio-detail-container .fund-card .action-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .portfolio-detail-container .fund-card .mobile-btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  /* Transaction card styles */
+  .portfolio-detail-container .mobile-controls {
+    margin-bottom: 16px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+  }
+
+  .portfolio-detail-container .mobile-filter-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .portfolio-detail-container .mobile-filter-btn,
+  .portfolio-detail-container .mobile-sort-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    color: #333;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .portfolio-detail-container .mobile-filter-btn:hover,
+  .portfolio-detail-container .mobile-sort-btn:hover {
+    background-color: #f0f7ff;
+    border-color: #2196f3;
+  }
+
+  .portfolio-detail-container .mobile-filter-btn.active {
+    background-color: #2196f3;
+    color: white;
+    border-color: #2196f3;
+  }
+
+  .portfolio-detail-container .mobile-filter-popup {
+    margin-top: 12px;
+    padding: 12px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .portfolio-detail-container .transaction-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    transition: box-shadow 0.2s;
+  }
+
+  .portfolio-detail-container .transaction-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .portfolio-detail-container .transaction-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .portfolio-detail-container .transaction-card .transaction-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .portfolio-detail-container .transaction-card .date {
+    font-size: 1rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .portfolio-detail-container .transaction-card .type {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .portfolio-detail-container .transaction-card .type-buy {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .portfolio-detail-container .transaction-card .type-sell {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+
+  .portfolio-detail-container .transaction-card .type-dividend {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+
+  .portfolio-detail-container .transaction-card .total-amount {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .portfolio-detail-container .transaction-card .card-body {
+    margin-bottom: 12px;
+  }
+
+  .portfolio-detail-container .transaction-card .fund-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .portfolio-detail-container .transaction-card .transaction-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .portfolio-detail-container .transaction-card .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+
+  .portfolio-detail-container .transaction-card .detail-item .label {
+    color: #666;
+    font-weight: 500;
+  }
+
+  .portfolio-detail-container .transaction-card .detail-item .value {
+    color: #333;
+    font-weight: 600;
+  }
+
+  .portfolio-detail-container .transaction-card .card-actions {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+}
+
+/* Additional mobile styles for very small screens */
+@media (max-width: 480px) {
+  .portfolio-detail-container .mobile-controls {
+    padding: 8px;
+  }
+
+  .portfolio-detail-container .mobile-filter-controls {
+    flex-direction: column;
+  }
+
+  .portfolio-detail-container .mobile-filter-btn,
+  .portfolio-detail-container .mobile-sort-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .portfolio-detail-container .transaction-card {
+    padding: 12px;
+    margin-bottom: 6px;
+  }
+
+  .portfolio-detail-container .transaction-card .transaction-details {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .portfolio-detail-container .transaction-card .card-actions {
+    justify-content: stretch;
+  }
+
+  .portfolio-detail-container .transaction-card .mobile-btn {
+    flex: 1;
+  }
+
+  /* Dividend card styles */
+  .portfolio-detail-container .dividend-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+    transition: box-shadow 0.2s;
+  }
+
+  .portfolio-detail-container .dividend-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .portfolio-detail-container .dividend-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .portfolio-detail-container .dividend-card .dividend-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .portfolio-detail-container .dividend-card .record-date {
+    font-size: 1rem;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .portfolio-detail-container .dividend-card .dividend-type {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+
+  .portfolio-detail-container .dividend-card .total-amount {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .portfolio-detail-container .dividend-card .card-body {
+    margin-bottom: 12px;
+  }
+
+  .portfolio-detail-container .dividend-card .fund-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .portfolio-detail-container .dividend-card .dividend-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .portfolio-detail-container .dividend-card .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+
+  .portfolio-detail-container .dividend-card .detail-row .label {
+    color: #666;
+    font-weight: 500;
+  }
+
+  .portfolio-detail-container .dividend-card .detail-row .value {
+    color: #333;
+    font-weight: 600;
+  }
+
+  .portfolio-detail-container .dividend-card .status {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .portfolio-detail-container .dividend-card .status-paid-out {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+
+  .portfolio-detail-container .dividend-card .status-reinvested {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
+
+  .portfolio-detail-container .dividend-card .status-pending {
+    background-color: #fff3e0;
+    color: #f57c00;
+  }
+
+  .portfolio-detail-container .dividend-card .card-actions {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+}
+
+/* Additional mobile styles for dividend cards on very small screens */
+@media (max-width: 480px) {
+  .portfolio-detail-container .dividend-card {
+    padding: 12px;
+    margin-bottom: 6px;
+  }
+
+  .portfolio-detail-container .dividend-card .dividend-details {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .portfolio-detail-container .dividend-card .card-actions {
+    justify-content: stretch;
+  }
+
+  .portfolio-detail-container .dividend-card .mobile-btn {
+    flex: 1;
+  }
+}
