@@ -230,8 +230,11 @@ const Overview = () => {
       <div className="overview">
         <h1>Investment Portfolio Overview</h1>
         <div className="no-portfolios-message">
-          <p>No visible portfolios to display.</p>
-          <p>Portfolios might be hidden from the overview or archived.</p>
+          <p>No portfolios found.</p>
+          <p>
+            It looks like you haven't created any portfolios yet, or all portfolios are currently hidden or archived.<br />
+            To get started, create a new portfolio or unarchive an existing one.
+          </p>
           <button onClick={() => navigate('/portfolios')}>Manage Portfolios</button>
         </div>
       </div>
