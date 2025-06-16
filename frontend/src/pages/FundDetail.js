@@ -149,12 +149,22 @@ const FundDetail = () => {
   const handleUpdateHistoricalPrices = async () => {
     try {
       setUpdating(true);
-      await api.post(`/fund-prices/${id}/update?type=historical`);
-      // Refresh the price data
-      const pricesRes = await api.get(`/fund-prices/${id}`);
-      const sortedPrices = pricesRes.data.sort((a, b) => new Date(a.date) - new Date(b.date));
-      setPriceHistory(sortedPrices);
-      setFilteredPriceHistory(sortedPrices);
+      const response = await api.post(`/fund-prices/${id}/update?type=historical`);
+
+      // Check if new prices were added
+      if (response.data && response.data.new_prices) {
+        // Only fetch new data if prices were actually updated
+        try {
+          const pricesRes = await api.get(`/fund-prices/${id}`);
+          const sortedPrices = pricesRes.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+          setPriceHistory(sortedPrices);
+          setFilteredPriceHistory(sortedPrices);
+        } catch (refreshError) {
+          console.error('Error refreshing price data:', refreshError);
+          // Don't show error to user if the update succeeded but refresh failed
+        }
+      }
+      // If no new prices were added, don't refresh the data unnecessarily
     } catch (error) {
       console.error('Error updating historical prices:', error);
       alert(error.response?.data?.user_message || 'Error updating historical prices');
@@ -170,15 +180,14 @@ const FundDetail = () => {
   const formatChartData = () => {
     return filteredPriceHistory.map((price) => ({
       date: new Date(price.date).toLocaleDateString(),
-      value: price.price,
-      cost: null,
+      price: price.price, // Use 'price' as the dataKey to match fund data structure
     }));
   };
 
   const getChartLines = () => {
     return [
       {
-        dataKey: 'value',
+        dataKey: 'price',
         name: 'Price',
         color: '#8884d8',
         strokeWidth: 2,

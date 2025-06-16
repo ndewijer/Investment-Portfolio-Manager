@@ -230,7 +230,11 @@ const PortfolioDetail = () => {
 
     try {
       const response = await api.post(`/transactions`, newTransaction);
+
+      // Update transactions state incrementally
       setTransactions([...transactions, response.data]);
+
+      // Close modal and reset form
       setIsTransactionModalOpen(false);
       setNewTransaction({
         portfolio_fund_id: '',
@@ -239,7 +243,20 @@ const PortfolioDetail = () => {
         shares: '',
         cost_per_share: '',
       });
-      fetchPortfolioData(); // Refresh data to update totals
+
+      // Only refresh portfolio summary data, not everything
+      try {
+        const [portfolioRes, portfolioFundsRes] = await Promise.all([
+          api.get(`/portfolios/${id}`),
+          api.get(`/portfolio-funds?portfolio_id=${id}`),
+        ]);
+        setPortfolio(portfolioRes.data);
+        setPortfolioFunds(portfolioFundsRes.data);
+      } catch (refreshError) {
+        console.error('Error refreshing portfolio data:', refreshError);
+        // Fallback to full refresh if partial refresh fails
+        fetchPortfolioData();
+      }
     } catch (error) {
       console.error('Error creating transaction:', error);
       alert(error.response?.data?.user_message || 'Error creating transaction');
@@ -332,10 +349,29 @@ const PortfolioDetail = () => {
   const handleUpdateTransaction = async (e) => {
     e.preventDefault();
     try {
-      await api.put(`/transactions/${editingTransaction.id}`, editingTransaction);
+      const response = await api.put(`/transactions/${editingTransaction.id}`, editingTransaction);
+
+      // Update transactions state incrementally
+      setTransactions(
+        transactions.map((t) => (t.id === editingTransaction.id ? response.data : t))
+      );
+
       setIsTransactionEditModalOpen(false);
       setEditingTransaction(null);
-      fetchPortfolioData(); // Refresh data
+
+      // Only refresh portfolio summary data, not everything
+      try {
+        const [portfolioRes, portfolioFundsRes] = await Promise.all([
+          api.get(`/portfolios/${id}`),
+          api.get(`/portfolio-funds?portfolio_id=${id}`),
+        ]);
+        setPortfolio(portfolioRes.data);
+        setPortfolioFunds(portfolioFundsRes.data);
+      } catch (refreshError) {
+        console.error('Error refreshing portfolio data:', refreshError);
+        // Fallback to full refresh if partial refresh fails
+        fetchPortfolioData();
+      }
     } catch (error) {
       console.error('Error updating transaction:', error);
       alert(error.response?.data?.user_message || 'Error updating transaction');
@@ -346,7 +382,23 @@ const PortfolioDetail = () => {
     if (window.confirm('Are you sure you want to delete this transaction?')) {
       try {
         await api.delete(`/transactions/${transactionId}`);
-        fetchPortfolioData(); // Refresh data
+
+        // Update transactions state incrementally
+        setTransactions(transactions.filter((t) => t.id !== transactionId));
+
+        // Only refresh portfolio summary data, not everything
+        try {
+          const [portfolioRes, portfolioFundsRes] = await Promise.all([
+            api.get(`/portfolios/${id}`),
+            api.get(`/portfolio-funds?portfolio_id=${id}`),
+          ]);
+          setPortfolio(portfolioRes.data);
+          setPortfolioFunds(portfolioFundsRes.data);
+        } catch (refreshError) {
+          console.error('Error refreshing portfolio data:', refreshError);
+          // Fallback to full refresh if partial refresh fails
+          fetchPortfolioData();
+        }
       } catch (error) {
         console.error('Error deleting transaction:', error);
         alert(error.response?.data?.user_message || 'Error deleting transaction');

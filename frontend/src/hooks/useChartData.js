@@ -21,76 +21,79 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
   const initializedRef = useRef(false);
 
   // Fetch data for a specific date range
-  const fetchDataRange = useCallback(async (startDate, endDate, append = false) => {
-    if (isLoadingRef.current) return;
+  const fetchDataRange = useCallback(
+    async (startDate, endDate, append = false) => {
+      if (isLoadingRef.current) return;
 
-    try {
-      isLoadingRef.current = true;
-      setLoading(true);
-      setError(null);
+      try {
+        isLoadingRef.current = true;
+        setLoading(true);
+        setError(null);
 
-      const queryParams = new URLSearchParams({
-        ...params,
-        ...(startDate && { start_date: startDate }),
-        ...(endDate && { end_date: endDate }),
-      });
-
-      const response = await api.get(`${endpoint}?${queryParams}`);
-      const newData = response.data;
-
-      if (append) {
-        // Merge new data with existing data, avoiding duplicates
-        setData((prevData) => {
-          const existingDates = new Set(prevData.map((item) => item.date));
-          const uniqueNewData = newData.filter((item) => !existingDates.has(item.date));
-
-          // Sort combined data by date
-          const combined = [...prevData, ...uniqueNewData];
-          return combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const queryParams = new URLSearchParams({
+          ...params,
+          ...(startDate && { start_date: startDate }),
+          ...(endDate && { end_date: endDate }),
         });
-      } else {
-        setData(newData);
-      }
 
-      // Update loaded range
-      const newLoadedRange = {
-        start: startDate || (newData.length > 0 ? newData[0].date : null),
-        end: endDate || (newData.length > 0 ? newData[newData.length - 1].date : null),
-      };
+        const response = await api.get(`${endpoint}?${queryParams}`);
+        const newData = response.data;
 
-      if (append) {
-        setLoadedRange((prevRange) => {
-          if (!prevRange) return newLoadedRange;
+        if (append) {
+          // Merge new data with existing data, avoiding duplicates
+          setData((prevData) => {
+            const existingDates = new Set(prevData.map((item) => item.date));
+            const uniqueNewData = newData.filter((item) => !existingDates.has(item.date));
+
+            // Sort combined data by date
+            const combined = [...prevData, ...uniqueNewData];
+            return combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+          });
+        } else {
+          setData(newData);
+        }
+
+        // Update loaded range
+        const newLoadedRange = {
+          start: startDate || (newData.length > 0 ? newData[0].date : null),
+          end: endDate || (newData.length > 0 ? newData[newData.length - 1].date : null),
+        };
+
+        if (append) {
+          setLoadedRange((prevRange) => {
+            if (!prevRange) return newLoadedRange;
+            return {
+              start:
+                startDate && new Date(startDate) < new Date(prevRange.start)
+                  ? startDate
+                  : prevRange.start,
+              end: endDate && new Date(endDate) > new Date(prevRange.end) ? endDate : prevRange.end,
+            };
+          });
+        } else {
+          setLoadedRange(newLoadedRange);
+        }
+
+        // Set total data range on first load if not already set
+        setTotalDataRange((prevRange) => {
+          if (prevRange || newData.length === 0) return prevRange;
+
+          // For now, we'll estimate the total range based on the current data
           return {
-            start:
-              startDate && new Date(startDate) < new Date(prevRange.start)
-                ? startDate
-                : prevRange.start,
-            end: endDate && new Date(endDate) > new Date(prevRange.end) ? endDate : prevRange.end,
+            start: newData[0].date,
+            end: newData[newData.length - 1].date,
           };
         });
-      } else {
-        setLoadedRange(newLoadedRange);
+      } catch (err) {
+        setError('Error fetching chart data');
+        console.error('Error fetching chart data:', err);
+      } finally {
+        setLoading(false);
+        isLoadingRef.current = false;
       }
-
-      // Set total data range on first load if not already set
-      setTotalDataRange((prevRange) => {
-        if (prevRange || newData.length === 0) return prevRange;
-
-        // For now, we'll estimate the total range based on the current data
-        return {
-          start: newData[0].date,
-          end: newData[newData.length - 1].date,
-        };
-      });
-    } catch (err) {
-      setError('Error fetching chart data');
-      console.error('Error fetching chart data:', err);
-    } finally {
-      setLoading(false);
-      isLoadingRef.current = false;
-    }
-  }, [endpoint, params]);
+    },
+    [endpoint, params]
+  );
 
   // Initial data load - only run once when the hook is first used
   useEffect(() => {
@@ -168,9 +171,12 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
   );
 
   // Function to manually load a specific date range
-  const loadDateRange = useCallback((startDate, endDate) => {
-    fetchDataRange(startDate, endDate, false);
-  }, [fetchDataRange]);
+  const loadDateRange = useCallback(
+    (startDate, endDate) => {
+      fetchDataRange(startDate, endDate, false);
+    },
+    [fetchDataRange]
+  );
 
   // Function to reset to initial data range
   const resetToInitialRange = useCallback(() => {
@@ -187,11 +193,14 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
 
   // Function to load all available data
   const loadAllData = useCallback(() => {
-    // Load all data by not specifying date range
-    fetchDataRange(null, null, false);
-    // Mark that we've loaded all data to prevent initial zoom from being reapplied
-    setTotalDataRange({ isFullDataset: true });
-  }, [fetchDataRange]);
+    // Only fetch if we don't already have all data
+    if (!totalDataRange || !totalDataRange.isFullDataset) {
+      // Load all data by not specifying date range
+      fetchDataRange(null, null, false);
+      // Mark that we've loaded all data to prevent initial zoom from being reapplied
+      setTotalDataRange({ isFullDataset: true });
+    }
+  }, [fetchDataRange, totalDataRange]);
 
   return {
     data,
