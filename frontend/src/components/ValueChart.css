@@ -294,12 +294,12 @@
     border-width: 2px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
-  
+
   .tooltip-label {
     font-size: 14px;
     margin-bottom: 6px;
   }
-  
+
   .tooltip-entry {
     font-size: 13px;
     margin: 3px 0;
@@ -312,7 +312,7 @@
     /* Improve touch target size */
     min-height: 400px;
   }
-  
+
   /* Add visual feedback for touch interactions */
   .chart-container:active {
     background-color: rgba(25, 118, 210, 0.02);

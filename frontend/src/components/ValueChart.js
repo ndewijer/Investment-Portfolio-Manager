@@ -54,7 +54,7 @@ const ValueChart = ({
   const [isMobile, setIsMobile] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
   const [tooltipTimeout, setTooltipTimeout] = useState(null);
-  
+
   // Track if user has interacted with the chart to hide instructions
   const [hasInteracted, setHasInteracted] = useState(false);
 
@@ -345,9 +345,10 @@ const ValueChart = ({
   // Detect if device is mobile
   useEffect(() => {
     const checkIsMobile = () => {
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      ) || window.innerWidth <= 768;
+      const isMobileDevice =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) || window.innerWidth <= 768;
       setIsMobile(isMobileDevice);
     };
 
@@ -361,11 +362,11 @@ const ValueChart = ({
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
     }
-    
+
     const timeout = setTimeout(() => {
       setShowTooltip(false);
     }, 2000); // Hide after 2 seconds
-    
+
     setTooltipTimeout(timeout);
   }, [tooltipTimeout]);
 
@@ -378,34 +379,37 @@ const ValueChart = ({
   }, [isMobile, scheduleTooltipHide]);
 
   // Touch handling for mobile
-  const handleTouchStart = useCallback((e) => {
-    // Mark as interacted on any touch
-    setHasInteracted(true);
-    
-    if (e.touches.length === 1) {
-      touchStartRef.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-        time: Date.now(),
-      };
-      isPanningRef.current = false;
-      
-      // Show tooltip temporarily on touch
-      showTooltipTemporarily();
-    } else if (e.touches.length === 2) {
-      const distance = Math.sqrt(
-        Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
-          Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2)
-      );
-      lastTouchDistanceRef.current = distance;
-      isPanningRef.current = false;
-      
-      // Hide tooltip during pinch zoom
-      if (isMobile) {
-        setShowTooltip(false);
+  const handleTouchStart = useCallback(
+    (e) => {
+      // Mark as interacted on any touch
+      setHasInteracted(true);
+
+      if (e.touches.length === 1) {
+        touchStartRef.current = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+          time: Date.now(),
+        };
+        isPanningRef.current = false;
+
+        // Show tooltip temporarily on touch
+        showTooltipTemporarily();
+      } else if (e.touches.length === 2) {
+        const distance = Math.sqrt(
+          Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
+            Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2)
+        );
+        lastTouchDistanceRef.current = distance;
+        isPanningRef.current = false;
+
+        // Hide tooltip during pinch zoom
+        if (isMobile) {
+          setShowTooltip(false);
+        }
       }
-    }
-  }, [isMobile, showTooltipTemporarily]);
+    },
+    [isMobile, showTooltipTemporarily]
+  );
 
   const handleTouchMove = useCallback(
     (e) => {
@@ -433,7 +437,7 @@ const ValueChart = ({
           isPanningRef.current = true;
           handlePan(deltaX);
           touchStartRef.current.x = e.touches[0].clientX;
-          
+
           // Hide tooltip during panning
           if (isMobile) {
             setShowTooltip(false);
@@ -451,45 +455,51 @@ const ValueChart = ({
   }, []);
 
   // Handle chart click/tap to toggle tooltip on mobile
-  const handleChartClick = useCallback((e) => {
-    if (isMobile && e) {
-      // If tooltip is currently hidden, show it temporarily
-      if (!showTooltip) {
-        showTooltipTemporarily();
-      } else {
-        // If tooltip is showing, hide it
-        setShowTooltip(false);
-        if (tooltipTimeout) {
-          clearTimeout(tooltipTimeout);
-          setTooltipTimeout(null);
+  const handleChartClick = useCallback(
+    (e) => {
+      if (isMobile && e) {
+        // If tooltip is currently hidden, show it temporarily
+        if (!showTooltip) {
+          showTooltipTemporarily();
+        } else {
+          // If tooltip is showing, hide it
+          setShowTooltip(false);
+          if (tooltipTimeout) {
+            clearTimeout(tooltipTimeout);
+            setTooltipTimeout(null);
+          }
         }
       }
-    }
-  }, [isMobile, showTooltip, showTooltipTemporarily, tooltipTimeout]);
+    },
+    [isMobile, showTooltip, showTooltipTemporarily, tooltipTimeout]
+  );
 
   // Custom tooltip component that respects mobile visibility state
-  const CustomTooltip = useCallback(({ active, payload, label }) => {
-    // Don't show tooltip on mobile if showTooltip is false
-    if (isMobile && !showTooltip) {
-      return null;
-    }
+  const CustomTooltip = useCallback(
+    ({ active, payload, label }) => {
+      // Don't show tooltip on mobile if showTooltip is false
+      if (isMobile && !showTooltip) {
+        return null;
+      }
 
-    // Don't show tooltip if not active or no payload
-    if (!active || !payload || !payload.length) {
-      return null;
-    }
+      // Don't show tooltip if not active or no payload
+      if (!active || !payload || !payload.length) {
+        return null;
+      }
 
-    return (
-      <div className="custom-tooltip">
-        <p className="tooltip-label">{`Date: ${label}`}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="tooltip-entry" style={{ color: entry.color }}>
-            {`${entry.name}: ${formatTooltip(entry.value)}`}
-          </p>
-        ))}
-      </div>
-    );
-  }, [isMobile, showTooltip, formatTooltip]);
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{`Date: ${label}`}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="tooltip-entry" style={{ color: entry.color }}>
+              {`${entry.name}: ${formatTooltip(entry.value)}`}
+            </p>
+          ))}
+        </div>
+      );
+    },
+    [isMobile, showTooltip, formatTooltip]
+  );
 
   const getVisibleData = useCallback(() => {
     if (!zoomState.isZoomed || !zoomState.xDomain || !data) {
@@ -591,29 +601,32 @@ const ValueChart = ({
     [data, handleMouseMove]
   );
 
-  const handleMouseDown = useCallback((e) => {
-    if (e.button !== 0) return; // Only left mouse button
-    if (e.ctrlKey || e.metaKey) return; // Don't interfere with wheel zoom
+  const handleMouseDown = useCallback(
+    (e) => {
+      if (e.button !== 0) return; // Only left mouse button
+      if (e.ctrlKey || e.metaKey) return; // Don't interfere with wheel zoom
 
-    const rect = chartRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      const rect = chartRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    const x = e.clientX - rect.left;
+      const x = e.clientX - rect.left;
 
-    // More lenient boundary check - allow starting anywhere in the chart container
-    const yAxisWidth = 80;
-    if (x < yAxisWidth) return; // Only prevent starting on Y-axis
+      // More lenient boundary check - allow starting anywhere in the chart container
+      const yAxisWidth = 80;
+      if (x < yAxisWidth) return; // Only prevent starting on Y-axis
 
-    // Mark as interacted on mouse interaction
-    setHasInteracted(true);
+      // Mark as interacted on mouse interaction
+      setHasInteracted(true);
 
-    dragStartRef.current = { x, startTime: Date.now() };
-    isDraggingRef.current = false;
+      dragStartRef.current = { x, startTime: Date.now() };
+      isDraggingRef.current = false;
 
-    // Add global mouse event listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [handleMouseMove, handleMouseUp]); // Include both functions in dependencies
+      // Add global mouse event listeners
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [handleMouseMove, handleMouseUp]
+  ); // Include both functions in dependencies
 
   // Apply initial zoom when data is loaded
   useEffect(() => {
@@ -806,10 +819,7 @@ const ValueChart = ({
         onTouchEnd={handleTouchEnd}
       >
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart 
-            data={getVisibleData()}
-            onClick={handleChartClick}
-          >
+          <LineChart data={getVisibleData()} onClick={handleChartClick}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
             <YAxis
@@ -818,10 +828,7 @@ const ValueChart = ({
               tickFormatter={formatYAxis}
               width={80}
             />
-            <Tooltip 
-              content={<CustomTooltip />}
-              cursor={{ stroke: '#1976d2', strokeWidth: 1 }}
-            />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#1976d2', strokeWidth: 1 }} />
             <Legend />
             {/* Reference line for maximum value */}
             {getMaxValue() && (
