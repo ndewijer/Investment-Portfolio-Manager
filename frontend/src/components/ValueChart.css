@@ -30,6 +30,47 @@
   opacity: 0.9;
 }
 
+/* Transaction button styles (metric toggles) */
+.transaction-button {
+  padding: 8px 16px;
+  border: 1px solid #1976d2;
+  border-radius: 4px;
+  background-color: white;
+  color: #1976d2;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  font-size: 14px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transaction-button:hover {
+  background-color: #f0f7ff;
+  transform: translateY(-1px);
+}
+
+.transaction-button:active {
+  transform: translateY(0);
+}
+
+.transaction-button.active {
+  background-color: #1976d2;
+  color: white;
+  opacity: 0.9;
+}
+
+/* Mobile responsive adjustments for transaction buttons */
+@media (max-width: 768px) {
+  .transaction-button {
+    padding: 10px 14px;
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
+
 .chart-container {
   width: 100%;
   padding: 20px;
@@ -43,86 +84,6 @@
   margin: 20px 0;
 }
 
-.zoom-controls {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 15px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.zoom-button {
-  padding: 6px 12px;
-  border: 1px solid #1976d2;
-  border-radius: 4px;
-  background-color: white;
-  color: #1976d2;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  font-size: 12px;
-  min-width: 44px;
-  min-height: 32px;
-}
-
-.zoom-button:hover:not(:disabled) {
-  background-color: #f0f7ff;
-}
-
-.zoom-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.zoom-level {
-  font-size: 12px;
-  color: #666;
-  margin-left: 10px;
-  font-weight: 500;
-}
-
-.chart-container {
-  position: relative;
-  cursor: crosshair;
-}
-
-.chart-container.dragging {
-  cursor: grabbing;
-}
-
-.zoom-instructions {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 11px;
-  pointer-events: none;
-  z-index: 5;
-  max-width: 90%;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
-  .zoom-controls {
-    justify-content: center;
-  }
-
-  .zoom-button {
-    min-width: 40px;
-    min-height: 40px;
-    font-size: 11px;
-  }
-
-  .zoom-instructions {
-    font-size: 10px;
-    padding: 6px 10px;
-  }
-}
-
 /* Zoom Controls */
 .zoom-controls {
   display: flex;
@@ -133,7 +94,7 @@
 }
 
 .zoom-button {
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: 1px solid #1976d2;
   border-radius: 4px;
   background-color: white;
@@ -143,6 +104,7 @@
   font-weight: 500;
   font-size: 14px;
   min-width: 40px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,7 +160,7 @@
   }
 
   .zoom-button {
-    padding: 8px 12px;
+    padding: 10px 14px;
     font-size: 16px;
     min-width: 44px;
     min-height: 44px;
