@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm:install",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "python: setup-backend",
+      "type": "shell",
+      "command": "if [ ! -d 'venv' ]; then python3.11 -m venv venv; fi && source venv/bin/activate && pip install -r requirements.txt -r dev-requirements.txt",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "problemMatcher": []
+    }
+  ]
+} 
