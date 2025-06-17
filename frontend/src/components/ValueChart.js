@@ -162,10 +162,13 @@ const ValueChart = ({
   };
 
   // Format tooltip values with full precision
-  const formatTooltip = (value) => {
-    if (!value && value !== 0) return 'N/A';
-    return formatCurrency(value);
-  };
+  const formatTooltip = useCallback(
+    (value) => {
+      if (!value && value !== 0) return 'N/A';
+      return formatCurrency(value);
+    },
+    [formatCurrency]
+  );
 
   // Zoom reset function - defined early to avoid circular dependencies
   const handleZoomReset = useCallback(() => {
