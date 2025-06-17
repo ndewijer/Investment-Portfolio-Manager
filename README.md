@@ -13,11 +13,13 @@ While functional for personal use, replacing my manual Excel tracking, it is not
 This project supports two main ways to run and develop:
 
 ### 1. Docker (Recommended for most users)
+
 - Run the entire stack in containers with a single command.
 - Handles all dependencies and environment setup for you.
 - See [docs/DOCKER.md](docs/DOCKER.md) for full instructions and environment details.
 
 ### 2. Local Development (For contributors and advanced users)
+
 - Run the frontend and backend directly on your machine for rapid development and debugging.
 - Supports a one-click full stack workflow in VSCode/Cursor, or manual setup if you prefer.
 - See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed local setup, environment variables, and database management.
@@ -29,12 +31,14 @@ This project supports two main ways to run and develop:
 This project is set up for a seamless development experience in VSCode or Cursor. You can set up, run, and debug both the frontend and backend with a single click using the pre-configured launch and task files.
 
 **How it works:**
+
 - The backend virtual environment is created automatically if missing, and all requirements (including dev requirements) are installed.
 - The frontend dependencies are installed automatically if missing.
 - The backend and frontend servers are started, and Chrome is launched for frontend debugging.
 - The backend debug session always uses the correct Python interpreter from the venv.
 
 **To use:**
+
 1. Open the project in VSCode or Cursor.
 2. Open the Run and Debug panel.
 3. Select **"Debug Full Stack"** and click the green play button.
@@ -59,11 +63,13 @@ For Docker-based setup and deployment, see [docs/DOCKER.md](docs/DOCKER.md).
 If you want to run the frontend manually (outside of VSCode/Cursor):
 
 1. Open a terminal and navigate to the frontend directory:
+
    ```bash
    cd frontend
    npm install
    npm start
    ```
+
 2. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
@@ -73,6 +79,7 @@ If you want to run the frontend manually (outside of VSCode/Cursor):
 If you want to run the backend manually (outside of VSCode/Cursor):
 
 1. Open a terminal and navigate to the backend directory:
+
    ```bash
    cd backend
    python3.11 -m venv venv
@@ -80,6 +87,7 @@ If you want to run the backend manually (outside of VSCode/Cursor):
    pip install -r requirements.txt -r dev-requirements.txt
    python run.py
    ```
+
 2. The backend will be available at [http://localhost:5000](http://localhost:5000).
 
 ---
