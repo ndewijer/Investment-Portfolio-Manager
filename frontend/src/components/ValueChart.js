@@ -54,6 +54,7 @@ const ValueChart = ({
   const [isMobile, setIsMobile] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
   const [tooltipTimeout, setTooltipTimeout] = useState(null);
+  const [tooltipPinned, setTooltipPinned] = useState(false);
 
   // Track if user has interacted with the chart to hide instructions
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -360,10 +361,15 @@ const ValueChart = ({
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Auto-hide tooltip on mobile after delay
+  // Auto-hide tooltip on mobile after delay (only if not pinned)
   const scheduleTooltipHide = useCallback(() => {
     if (tooltipTimeout) {
       clearTimeout(tooltipTimeout);
+    }
+
+    // Don't auto-hide if tooltip is pinned
+    if (tooltipPinned) {
+      return;
     }
 
     const timeout = setTimeout(() => {
@@ -371,15 +377,15 @@ const ValueChart = ({
     }, 2000); // Hide after 2 seconds
 
     setTooltipTimeout(timeout);
-  }, [tooltipTimeout]);
+  }, [tooltipTimeout, tooltipPinned]);
 
-  // Show tooltip temporarily on mobile
+  // Show tooltip temporarily on mobile (only if not pinned)
   const showTooltipTemporarily = useCallback(() => {
-    if (isMobile) {
+    if (isMobile && !tooltipPinned) {
       setShowTooltip(true);
       scheduleTooltipHide();
     }
-  }, [isMobile, scheduleTooltipHide]);
+  }, [isMobile, scheduleTooltipHide, tooltipPinned]);
 
   // Touch handling for mobile
   const handleTouchStart = useCallback(
@@ -395,8 +401,10 @@ const ValueChart = ({
         };
         isPanningRef.current = false;
 
-        // Show tooltip temporarily on touch
-        showTooltipTemporarily();
+        // Only show tooltip temporarily if not pinned
+        if (!tooltipPinned) {
+          showTooltipTemporarily();
+        }
       } else if (e.touches.length === 2) {
         const distance = Math.sqrt(
           Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
@@ -405,13 +413,14 @@ const ValueChart = ({
         lastTouchDistanceRef.current = distance;
         isPanningRef.current = false;
 
-        // Hide tooltip during pinch zoom
+        // Hide tooltip during pinch zoom and unpin it
         if (isMobile) {
           setShowTooltip(false);
+          setTooltipPinned(false);
         }
       }
     },
-    [isMobile, showTooltipTemporarily]
+    [isMobile, showTooltipTemporarily, tooltipPinned]
   );
 
   const handleTouchMove = useCallback(
@@ -441,9 +450,10 @@ const ValueChart = ({
           handlePan(deltaX);
           touchStartRef.current.x = e.touches[0].clientX;
 
-          // Hide tooltip during panning
+          // Hide tooltip during panning and unpin it
           if (isMobile) {
             setShowTooltip(false);
+            setTooltipPinned(false);
           }
         }
       }
@@ -452,10 +462,35 @@ const ValueChart = ({
   );
 
   const handleTouchEnd = useCallback(() => {
+    // Check if this was a tap (not a pan/swipe)
+    if (touchStartRef.current && !isPanningRef.current && isMobile) {
+      const touchDuration = Date.now() - touchStartRef.current.time;
+      // Consider it a tap if it was quick (less than 200ms) and didn't involve panning
+      if (touchDuration < 200) {
+        // Toggle tooltip pinned state on tap
+        if (tooltipPinned) {
+          setTooltipPinned(false);
+          setShowTooltip(false);
+          if (tooltipTimeout) {
+            clearTimeout(tooltipTimeout);
+            setTooltipTimeout(null);
+          }
+        } else {
+          setTooltipPinned(true);
+          setShowTooltip(true);
+          // Clear any existing timeout since tooltip is now pinned
+          if (tooltipTimeout) {
+            clearTimeout(tooltipTimeout);
+            setTooltipTimeout(null);
+          }
+        }
+      }
+    }
+
     touchStartRef.current = null;
     lastTouchDistanceRef.current = null;
     isPanningRef.current = false;
-  }, []);
+  }, [isMobile, tooltipPinned, tooltipTimeout]);
 
   // Handle chart click/tap to toggle tooltip on mobile
   const handleChartClick = useCallback(
@@ -792,9 +827,6 @@ const ValueChart = ({
         <button className="zoom-button" onClick={() => handleZoomToPeriod(30)} title="Last Month">
           1M
         </button>
-        {zoomState.isZoomed && (
-          <span className="zoom-level">Zoom: {zoomState.zoomLevel.toFixed(1)}x</span>
-        )}
       </div>
 
       {showTimeRangeButtons && (
