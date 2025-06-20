@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import Modal from '../components/Modal';
+import {
+  useApiState,
+  FormModal,
+  FormField,
+  ActionButtons,
+  ActionButton,
+  LoadingSpinner,
+  ErrorMessage,
+} from '../components/shared';
 import './Portfolios.css';
 
 const Portfolios = () => {
-  const [portfolios, setPortfolios] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: portfolios, loading, error, execute: fetchPortfolios } = useApiState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState(null);
   const [newPortfolio, setNewPortfolio] = useState({
@@ -15,40 +21,40 @@ const Portfolios = () => {
     description: '',
     exclude_from_overview: false,
   });
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchPortfolios();
-  }, []);
-
-  const fetchPortfolios = async () => {
-    try {
-      const response = await api.get('/portfolios');
-      setPortfolios(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Error fetching portfolios');
-      console.error('Error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchPortfolios(() => api.get('/portfolios'));
+  }, [fetchPortfolios]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+
     try {
       if (editingPortfolio) {
-        const response = await api.put(`/portfolios/${editingPortfolio.id}`, editingPortfolio);
-        setPortfolios(portfolios.map((p) => (p.id === editingPortfolio.id ? response.data : p)));
+        await fetchPortfolios(
+          () => api.put(`/portfolios/${editingPortfolio.id}`, editingPortfolio),
+          {
+            onSuccess: () => {
+              setIsModalOpen(false);
+              setEditingPortfolio(null);
+            },
+          }
+        );
       } else {
-        const response = await api.post('/portfolios', newPortfolio);
-        setPortfolios([...portfolios, response.data]);
+        await fetchPortfolios(() => api.post('/portfolios', newPortfolio), {
+          onSuccess: () => {
+            setIsModalOpen(false);
+            setNewPortfolio({ name: '', description: '', exclude_from_overview: false });
+          },
+        });
       }
-      setIsModalOpen(false);
-      setEditingPortfolio(null);
-      setNewPortfolio({ name: '', description: '', exclude_from_overview: false });
     } catch (error) {
       console.error('Error saving portfolio:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -56,7 +62,7 @@ const Portfolios = () => {
     if (window.confirm('Are you sure you want to delete this portfolio?')) {
       try {
         await api.delete(`/portfolios/${id}`);
-        setPortfolios(portfolios.filter((p) => p.id !== id));
+        fetchPortfolios(() => api.get('/portfolios'));
       } catch (error) {
         console.error('Error deleting portfolio:', error);
       }
@@ -70,7 +76,7 @@ const Portfolios = () => {
   const handleArchive = async (portfolioId) => {
     try {
       await api.post(`/portfolios/${portfolioId}/archive`);
-      fetchPortfolios();
+      fetchPortfolios(() => api.get('/portfolios'));
     } catch (error) {
       console.error('Error archiving portfolio:', error);
     }
@@ -79,14 +85,17 @@ const Portfolios = () => {
   const handleUnarchive = async (portfolioId) => {
     try {
       await api.post(`/portfolios/${portfolioId}/unarchive`);
-      fetchPortfolios();
+      fetchPortfolios(() => api.get('/portfolios'));
     } catch (error) {
       console.error('Error unarchiving portfolio:', error);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <LoadingSpinner message="Loading portfolios..." />;
+  if (error)
+    return (
+      <ErrorMessage error={error} onRetry={() => fetchPortfolios(() => api.get('/portfolios'))} />
+    );
 
   return (
     <div className="portfolios-page">
@@ -100,9 +109,12 @@ const Portfolios = () => {
           <div key={portfolio.id} className="portfolio-card">
             <h2>{portfolio.name}</h2>
             <p>{portfolio.description}</p>
-            <div className="portfolio-actions">
-              <button onClick={() => handleViewPortfolio(portfolio.id)}>View Details</button>
-              <button
+            <ActionButtons className="portfolio-actions">
+              <ActionButton variant="primary" onClick={() => handleViewPortfolio(portfolio.id)}>
+                View Details
+              </ActionButton>
+              <ActionButton
+                variant="secondary"
                 onClick={() => {
                   setEditingPortfolio({
                     id: portfolio.id,
@@ -114,98 +126,86 @@ const Portfolios = () => {
                 }}
               >
                 Edit
-              </button>
-              <button onClick={() => handleDelete(portfolio.id)}>Delete</button>
+              </ActionButton>
+              <ActionButton variant="danger" onClick={() => handleDelete(portfolio.id)}>
+                Delete
+              </ActionButton>
               {portfolio.is_archived ? (
-                <button onClick={() => handleUnarchive(portfolio.id)}>Unarchive</button>
+                <ActionButton variant="info" onClick={() => handleUnarchive(portfolio.id)}>
+                  Unarchive
+                </ActionButton>
               ) : (
-                <button onClick={() => handleArchive(portfolio.id)}>Archive</button>
+                <ActionButton variant="warning" onClick={() => handleArchive(portfolio.id)}>
+                  Archive
+                </ActionButton>
               )}
-            </div>
+            </ActionButtons>
           </div>
         ))}
       </div>
 
-      <Modal
+      <FormModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
           setEditingPortfolio(null);
         }}
         title={editingPortfolio ? 'Edit Portfolio' : 'Add Portfolio'}
+        onSubmit={handleSubmit}
+        loading={submitting}
+        submitText={editingPortfolio ? 'Update' : 'Create'}
+        submitVariant={editingPortfolio ? 'primary' : 'success'}
       >
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Name:</label>
-            <input
-              type="text"
-              value={editingPortfolio ? editingPortfolio.name : newPortfolio.name}
-              onChange={(e) => {
-                if (editingPortfolio) {
-                  setEditingPortfolio({ ...editingPortfolio, name: e.target.value });
-                } else {
-                  setNewPortfolio({ ...newPortfolio, name: e.target.value });
-                }
-              }}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Description:</label>
-            <textarea
-              value={editingPortfolio ? editingPortfolio.description : newPortfolio.description}
-              onChange={(e) => {
-                if (editingPortfolio) {
-                  setEditingPortfolio({ ...editingPortfolio, description: e.target.value });
-                } else {
-                  setNewPortfolio({ ...newPortfolio, description: e.target.value });
-                }
-              }}
-            />
-          </div>
-          <div className="form-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={
-                  editingPortfolio
-                    ? editingPortfolio.exclude_from_overview
-                    : newPortfolio.exclude_from_overview
-                }
-                onChange={(e) => {
-                  if (editingPortfolio) {
-                    setEditingPortfolio({
-                      ...editingPortfolio,
-                      exclude_from_overview: e.target.checked,
-                    });
-                  } else {
-                    setNewPortfolio({
-                      ...newPortfolio,
-                      exclude_from_overview: e.target.checked,
-                    });
-                  }
-                }}
-              />
-              Exclude from overview page
-            </label>
-          </div>
-          <div className="modal-actions">
-            <button className={editingPortfolio ? 'edit-button' : 'add-button'} type="submit">
-              {editingPortfolio ? 'Update' : 'Create'}
-            </button>
-            <button
-              className="cancel-button"
-              type="button"
-              onClick={() => {
-                setIsModalOpen(false);
-                setEditingPortfolio(null);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </Modal>
+        <FormField
+          label="Name"
+          type="text"
+          value={editingPortfolio ? editingPortfolio.name : newPortfolio.name}
+          onChange={(value) => {
+            if (editingPortfolio) {
+              setEditingPortfolio({ ...editingPortfolio, name: value });
+            } else {
+              setNewPortfolio({ ...newPortfolio, name: value });
+            }
+          }}
+          required
+        />
+
+        <FormField
+          label="Description"
+          type="textarea"
+          value={editingPortfolio ? editingPortfolio.description : newPortfolio.description}
+          onChange={(value) => {
+            if (editingPortfolio) {
+              setEditingPortfolio({ ...editingPortfolio, description: value });
+            } else {
+              setNewPortfolio({ ...newPortfolio, description: value });
+            }
+          }}
+        />
+
+        <FormField
+          label="Exclude from overview page"
+          type="checkbox"
+          value={
+            editingPortfolio
+              ? editingPortfolio.exclude_from_overview
+              : newPortfolio.exclude_from_overview
+          }
+          onChange={(value) => {
+            if (editingPortfolio) {
+              setEditingPortfolio({
+                ...editingPortfolio,
+                exclude_from_overview: value,
+              });
+            } else {
+              setNewPortfolio({
+                ...newPortfolio,
+                exclude_from_overview: value,
+              });
+            }
+          }}
+        />
+      </FormModal>
     </div>
   );
 };

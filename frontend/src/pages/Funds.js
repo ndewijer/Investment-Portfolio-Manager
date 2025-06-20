@@ -2,15 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import api from '../utils/api';
-import Modal from '../components/Modal';
+import {
+  useApiState,
+  FormModal,
+  FormField,
+  ActionButtons,
+  ActionButton,
+  LoadingSpinner,
+  ErrorMessage,
+} from '../components/shared';
 import './Funds.css';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 
 const Funds = () => {
-  const [funds, setFunds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: funds, loading, error, execute: fetchFunds } = useApiState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [message, setMessage] = useState('');
@@ -29,11 +35,12 @@ const Funds = () => {
     info: null,
     useInfo: false,
   });
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchFunds();
-  }, []);
+    fetchFunds(() => api.get('/funds'));
+  }, [fetchFunds]);
 
   useEffect(() => {
     const fetchSymbolInfo = async () => {
@@ -58,19 +65,6 @@ const Funds = () => {
     }
   }, [funds]);
 
-  const fetchFunds = async () => {
-    try {
-      const response = await api.get('/funds');
-      setFunds(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Error fetching funds');
-      console.error('Error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const clearMessages = () => {
     setMessage('');
     setErrorMessage('');
@@ -78,29 +72,38 @@ const Funds = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+
     try {
       if (editingFund) {
-        const response = await api.put(`/funds/${editingFund.id}`, editingFund);
-        setFunds(funds.map((f) => (f.id === editingFund.id ? response.data : f)));
-        setMessage('Fund updated successfully');
+        await fetchFunds(() => api.put(`/funds/${editingFund.id}`, editingFund), {
+          onSuccess: () => {
+            setMessage('Fund updated successfully');
+            setIsModalOpen(false);
+            setEditingFund(null);
+          },
+        });
       } else {
-        const response = await api.post('/funds', newFund);
-        setFunds([...funds, response.data]);
-        setMessage('Fund created successfully');
+        await fetchFunds(() => api.post('/funds', newFund), {
+          onSuccess: () => {
+            setMessage('Fund created successfully');
+            setIsModalOpen(false);
+            setNewFund({
+              name: '',
+              isin: '',
+              symbol: '',
+              currency: '',
+              exchange: '',
+              investment_type: 'fund',
+            });
+          },
+        });
       }
-      setIsModalOpen(false);
-      setEditingFund(null);
-      setNewFund({
-        name: '',
-        isin: '',
-        symbol: '',
-        currency: '',
-        exchange: '',
-        investment_type: 'fund',
-      });
     } catch (error) {
       console.error('Error saving fund:', error);
       setErrorMessage(error.response?.data?.message || 'Error saving fund');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -119,7 +122,7 @@ const Funds = () => {
 
       if (window.confirm('Are you sure you want to delete this fund?')) {
         await api.delete(`/funds/${id}`);
-        setFunds(funds.filter((f) => f.id !== id));
+        fetchFunds(() => api.get('/funds'));
         setMessage('Fund deleted successfully');
       }
     } catch (error) {
@@ -267,9 +270,9 @@ const Funds = () => {
       </div>
 
       {loading ? (
-        <div>Loading...</div>
+        <LoadingSpinner message="Loading funds..." />
       ) : error ? (
-        <div>Error: {error}</div>
+        <ErrorMessage error={error} onRetry={() => fetchFunds(() => api.get('/funds'))} />
       ) : (
         <div className="funds-grid">
           {funds.map((fund) => (
@@ -325,17 +328,23 @@ const Funds = () => {
                   </p>
                 )}
               </div>
-              <div className="fund-actions">
-                <button onClick={() => handleViewFund(fund.id)}>View Details</button>
-                <button onClick={() => handleEditFund(fund)}>Edit</button>
-                <button onClick={() => handleDeleteFund(fund.id)}>Delete</button>
-              </div>
+              <ActionButtons className="fund-actions">
+                <ActionButton variant="primary" onClick={() => handleViewFund(fund.id)}>
+                  View Details
+                </ActionButton>
+                <ActionButton variant="secondary" onClick={() => handleEditFund(fund)}>
+                  Edit
+                </ActionButton>
+                <ActionButton variant="danger" onClick={() => handleDeleteFund(fund.id)}>
+                  Delete
+                </ActionButton>
+              </ActionButtons>
             </div>
           ))}
         </div>
       )}
 
-      <Modal
+      <FormModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
@@ -345,64 +354,42 @@ const Funds = () => {
         title={
           editingFund ? 'Edit Fund' : `Add ${newFund.investment_type === 'fund' ? 'Fund' : 'Stock'}`
         }
+        onSubmit={handleSubmit}
+        loading={submitting}
+        submitText={editingFund ? 'Update' : 'Create'}
+        submitVariant={editingFund ? 'primary' : 'success'}
+        error={errorMessage}
       >
-        {errorMessage && <div className="error-message">{errorMessage}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Name:</label>
-            <input
-              type="text"
-              value={editingFund?.name || newFund.name}
-              onChange={(e) =>
-                editingFund
-                  ? setEditingFund({ ...editingFund, name: e.target.value })
-                  : setNewFund({ ...newFund, name: e.target.value })
-              }
-              required
-            />
-          </div>
-          {newFund.investment_type === 'fund' ? (
-            <>
-              <div className="form-group">
-                <label>ISIN:</label>
-                <input
-                  type="text"
-                  value={editingFund?.isin || newFund.isin}
-                  onChange={handleIsinChange}
-                  required
-                />
-              </div>
-              <div className="form-group symbol-group">
-                <label>Symbol (Optional):</label>
-                <div className="symbol-input-container">
-                  <input
-                    type="text"
-                    value={editingFund?.symbol || newFund.symbol}
-                    onChange={handleSymbolChange}
-                  />
-                  {symbolValidation.isValid && (
-                    <div className="symbol-validation">
-                      <input
-                        type="checkbox"
-                        checked={symbolValidation.useInfo}
-                        onChange={handleUseSymbolInfo}
-                        id="useSymbolInfo"
-                      />
-                      <label htmlFor="useSymbolInfo">Use symbol information</label>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
+        <FormField
+          label="Name"
+          type="text"
+          value={editingFund?.name || newFund.name}
+          onChange={(value) =>
+            editingFund
+              ? setEditingFund({ ...editingFund, name: value })
+              : setNewFund({ ...newFund, name: value })
+          }
+          required
+        />
+        {/* For now, keep the complex form fields as-is since they have custom logic */}
+        {newFund.investment_type === 'fund' ? (
+          <>
+            <div className="form-group">
+              <label>ISIN:</label>
+              <input
+                type="text"
+                value={editingFund?.isin || newFund.isin}
+                onChange={handleIsinChange}
+                required
+              />
+            </div>
             <div className="form-group symbol-group">
-              <label>Symbol:</label>
+              <label>Symbol (Optional):</label>
               <div className="symbol-input-container">
                 <input
                   type="text"
                   value={editingFund?.symbol || newFund.symbol}
                   onChange={handleSymbolChange}
-                  required
                 />
                 {symbolValidation.isValid && (
                   <div className="symbol-validation">
@@ -417,72 +404,78 @@ const Funds = () => {
                 )}
               </div>
             </div>
-          )}
-          <div className="form-group">
-            <label>Currency:</label>
-            <input
-              type="text"
-              value={editingFund ? editingFund.currency : newFund.currency}
-              onChange={(e) => {
-                if (editingFund) {
-                  setEditingFund({ ...editingFund, currency: e.target.value });
-                } else {
-                  setNewFund({ ...newFund, currency: e.target.value });
-                }
-              }}
-              required
-            />
+          </>
+        ) : (
+          <div className="form-group symbol-group">
+            <label>Symbol:</label>
+            <div className="symbol-input-container">
+              <input
+                type="text"
+                value={editingFund?.symbol || newFund.symbol}
+                onChange={handleSymbolChange}
+                required
+              />
+              {symbolValidation.isValid && (
+                <div className="symbol-validation">
+                  <input
+                    type="checkbox"
+                    checked={symbolValidation.useInfo}
+                    onChange={handleUseSymbolInfo}
+                    id="useSymbolInfo"
+                  />
+                  <label htmlFor="useSymbolInfo">Use symbol information</label>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="form-group">
-            <label>Exchange:</label>
-            <input
-              type="text"
-              value={editingFund ? editingFund.exchange : newFund.exchange}
-              onChange={(e) => {
-                if (editingFund) {
-                  setEditingFund({ ...editingFund, exchange: e.target.value });
-                } else {
-                  setNewFund({ ...newFund, exchange: e.target.value });
-                }
-              }}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Dividend Type:</label>
-            <select
-              value={editingFund?.dividend_type || newFund.dividend_type || 'none'}
-              onChange={(e) => {
-                if (editingFund) {
-                  setEditingFund({ ...editingFund, dividend_type: e.target.value });
-                } else {
-                  setNewFund({ ...newFund, dividend_type: e.target.value });
-                }
-              }}
-            >
-              <option value="none">No Dividend</option>
-              <option value="cash">Cash Dividend</option>
-              <option value="stock">Stock Dividend</option>
-            </select>
-          </div>
-          <div className="modal-actions">
-            <button className={editingFund ? 'edit-button' : 'add-button'} type="submit">
-              {editingFund ? 'Update' : 'Create'}
-            </button>
-            <button
-              className="cancel-button"
-              type="button"
-              onClick={() => {
-                setIsModalOpen(false);
-                setEditingFund(null);
-                setErrorMessage('');
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </Modal>
+        )}
+
+        <FormField
+          label="Currency"
+          type="text"
+          value={editingFund ? editingFund.currency : newFund.currency}
+          onChange={(value) => {
+            if (editingFund) {
+              setEditingFund({ ...editingFund, currency: value });
+            } else {
+              setNewFund({ ...newFund, currency: value });
+            }
+          }}
+          required
+        />
+
+        <FormField
+          label="Exchange"
+          type="text"
+          value={editingFund ? editingFund.exchange : newFund.exchange}
+          onChange={(value) => {
+            if (editingFund) {
+              setEditingFund({ ...editingFund, exchange: value });
+            } else {
+              setNewFund({ ...newFund, exchange: value });
+            }
+          }}
+          required
+        />
+
+        <FormField
+          label="Dividend Type"
+          type="select"
+          value={editingFund?.dividend_type || newFund.dividend_type || 'none'}
+          onChange={(value) => {
+            if (editingFund) {
+              setEditingFund({ ...editingFund, dividend_type: value });
+            } else {
+              setNewFund({ ...newFund, dividend_type: value });
+            }
+          }}
+          options={[
+            { label: 'No Dividend', value: 'none' },
+            { label: 'Cash Dividend', value: 'cash' },
+            { label: 'Stock Dividend', value: 'stock' },
+          ]}
+        />
+      </FormModal>
     </div>
   );
 };
