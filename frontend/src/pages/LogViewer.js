@@ -21,7 +21,17 @@ const LogViewer = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'timestamp', direction: 'desc' });
   const [clearing, setClearing] = useState(false);
 
-  // State for FilterPopup components (keeping existing filter functionality)
+  // State matching original working code
+  const [filters, setFilters] = useState({
+    level: [],
+    category: [],
+    startDate: null, // null, not empty string
+    endDate: null, // null, not empty string
+    message: '',
+    source: '',
+  });
+
+  // State for FilterPopup components
   const [filterPopups, setFilterPopups] = useState({
     timestamp: false,
     level: false,
@@ -30,39 +40,33 @@ const LogViewer = () => {
     source: false,
   });
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
+
+  // Temporary filters for multi-select (matching original pattern)
   const [tempFilters, setTempFilters] = useState({
     level: [],
     category: [],
   });
 
-  const [filters, setFilters] = useState({
-    level: [],
-    category: [],
-    startDate: '',
-    endDate: '',
-    message: '',
-    source: '',
-  });
-
-  // Filter options
+  // Filter options (matching original order)
   const levelOptions = [
-    { value: 'debug', label: 'Debug' },
-    { value: 'info', label: 'Info' },
-    { value: 'warning', label: 'Warning' },
-    { value: 'error', label: 'Error' },
-    { value: 'critical', label: 'Critical' },
+    { label: 'Debug', value: 'debug' },
+    { label: 'Info', value: 'info' },
+    { label: 'Warning', value: 'warning' },
+    { label: 'Error', value: 'error' },
+    { label: 'Critical', value: 'critical' },
   ];
 
   const categoryOptions = [
-    { value: 'portfolio', label: 'Portfolio' },
-    { value: 'fund', label: 'Fund' },
-    { value: 'transaction', label: 'Transaction' },
-    { value: 'dividend', label: 'Dividend' },
-    { value: 'system', label: 'System' },
-    { value: 'database', label: 'Database' },
-    { value: 'security', label: 'Security' },
+    { label: 'Portfolio', value: 'portfolio' },
+    { label: 'Fund', value: 'fund' },
+    { label: 'Transaction', value: 'transaction' },
+    { label: 'Dividend', value: 'dividend' },
+    { label: 'System', value: 'system' },
+    { label: 'Database', value: 'database' },
+    { label: 'Security', value: 'security' },
   ];
 
+  // Load logs function matching original pattern
   const loadLogs = useCallback(
     async (page = 1, sortBy = 'timestamp', sortDir = 'desc') => {
       const params = new URLSearchParams();
@@ -101,7 +105,7 @@ const LogViewer = () => {
   // Load logs on component mount and when filters change
   useEffect(() => {
     fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
-  }, [fetchLogs, loadLogs, sortConfig.key, sortConfig.direction, filters]);
+  }, [fetchLogs, loadLogs, sortConfig.key, sortConfig.direction]);
 
   const handleClearLogs = async () => {
     if (window.confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
@@ -137,43 +141,34 @@ const LogViewer = () => {
     }
   };
 
-  // Handle filter icon clicks to open custom FilterPopups
-  const handleFilterClick = (e, columnKey) => {
+  // Handle filter icon clicks (matching original pattern)
+  const handleFilterClick = (e, field) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setFilterPosition({
       top: rect.bottom + window.scrollY,
       left: rect.left + window.scrollX,
     });
-
     setFilterPopups((prev) => ({
       ...prev,
-      [columnKey]: !prev[columnKey],
+      [field]: !prev[field],
     }));
 
-    // Initialize temp filters with current filter values when opening
-    if (!filterPopups[columnKey]) {
-      if (columnKey === 'level') {
-        setTempFilters((prev) => ({ ...prev, level: filters.level }));
-      } else if (columnKey === 'category') {
-        setTempFilters((prev) => ({ ...prev, category: filters.category }));
-      }
+    // Initialize temp filters with current filter values when opening (original pattern)
+    if (!filterPopups[field]) {
+      setTempFilters((prev) => ({
+        ...prev,
+        [field]: filters[field],
+      }));
     }
   };
 
-  // Define columns for DataTable with custom filter configurations
+  // Define columns for DataTable
   const columns = [
     {
       key: 'timestamp',
       header: 'Timestamp',
       sortable: true,
       filterable: true,
-      filterType: 'datetime',
-      filterProps: {
-        fromDate: filters.startDate,
-        toDate: filters.endDate,
-        onFromDateChange: (date) => setFilters((prev) => ({ ...prev, startDate: date })),
-        onToDateChange: (date) => setFilters((prev) => ({ ...prev, endDate: date })),
-      },
       onFilterClick: (e) => handleFilterClick(e, 'timestamp'),
       render: (value, log) => {
         if (!value && !log?.timestamp) {
@@ -181,8 +176,7 @@ const LogViewer = () => {
         }
         const timestamp = value || log.timestamp;
         try {
-          // The timestamp comes as "YYYY-MM-DD HH:MM:SS.ffffff" format from backend
-          const date = new Date(timestamp + 'Z'); // Add Z to indicate UTC
+          const date = new Date(timestamp + 'Z');
           return (
             <span>
               {date.toLocaleString('en-GB', {
@@ -208,15 +202,6 @@ const LogViewer = () => {
       header: 'Level',
       sortable: true,
       filterable: true,
-      filterType: 'multiselect',
-      filterOptions: levelOptions,
-      filterProps: {
-        value: tempFilters.level,
-        onChange: (selected) => setTempFilters((prev) => ({ ...prev, level: selected })),
-        options: levelOptions,
-        Component: Select,
-        isMulti: true,
-      },
       onFilterClick: (e) => handleFilterClick(e, 'level'),
       render: (value, log) => {
         const level = value || log?.level;
@@ -231,15 +216,6 @@ const LogViewer = () => {
       header: 'Category',
       sortable: true,
       filterable: true,
-      filterType: 'multiselect',
-      filterOptions: categoryOptions,
-      filterProps: {
-        value: tempFilters.category,
-        onChange: (selected) => setTempFilters((prev) => ({ ...prev, category: selected })),
-        options: categoryOptions,
-        Component: Select,
-        isMulti: true,
-      },
       onFilterClick: (e) => handleFilterClick(e, 'category'),
       render: (value, log) => value || log?.category || 'Unknown',
     },
@@ -248,11 +224,6 @@ const LogViewer = () => {
       header: 'Message',
       sortable: true,
       filterable: true,
-      filterType: 'text',
-      filterProps: {
-        value: filters.message,
-        onChange: (value) => setFilters((prev) => ({ ...prev, message: value })),
-      },
       onFilterClick: (e) => handleFilterClick(e, 'message'),
       render: (value, log) => value || log?.message || 'No message',
     },
@@ -270,11 +241,6 @@ const LogViewer = () => {
       header: 'Source',
       sortable: true,
       filterable: true,
-      filterType: 'text',
-      filterProps: {
-        value: filters.source,
-        onChange: (value) => setFilters((prev) => ({ ...prev, source: value })),
-      },
       onFilterClick: (e) => handleFilterClick(e, 'source'),
       render: (value, log) => value || log?.source || 'Unknown',
     },
@@ -289,33 +255,6 @@ const LogViewer = () => {
       render: (value, log) => value || log?.http_status || '-',
     },
   ];
-
-  const applyFilters = (field, value) => {
-    console.log('Applying filter:', field, value); // Debug log
-    setFilters((prev) => {
-      const newFilters = { ...prev, [field]: value };
-      console.log('New filters state:', newFilters); // Debug log
-      return newFilters;
-    });
-    setFilterPopups((prev) => ({ ...prev, [field]: false }));
-
-    // Explicitly trigger a reload after a short delay to ensure state is updated
-    setTimeout(() => {
-      fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
-    }, 100);
-  };
-
-  const clearFilters = (field) => {
-    if (field === 'level' || field === 'category') {
-      setFilters((prev) => ({ ...prev, [field]: [] }));
-      setTempFilters((prev) => ({ ...prev, [field]: [] }));
-    } else if (field === 'timestamp') {
-      setFilters((prev) => ({ ...prev, startDate: '', endDate: '' }));
-    } else {
-      setFilters((prev) => ({ ...prev, [field]: '' }));
-    }
-    setFilterPopups((prev) => ({ ...prev, [field]: false }));
-  };
 
   return (
     <div className="log-viewer">
@@ -356,88 +295,73 @@ const LogViewer = () => {
         className="logs-table"
       />
 
-      {/* Custom FilterPopups for advanced filtering */}
-      {filterPopups.timestamp && (
-        <FilterPopup
-          type="datetime"
-          isOpen={filterPopups.timestamp}
-          onClose={() => setFilterPopups((prev) => ({ ...prev, timestamp: false }))}
-          position={filterPosition}
-          fromDate={filters.startDate}
-          toDate={filters.endDate}
-          onFromDateChange={(date) => setFilters((prev) => ({ ...prev, startDate: date }))}
-          onToDateChange={(date) => setFilters((prev) => ({ ...prev, endDate: date }))}
-          onApply={() => {
-            setFilterPopups((prev) => ({ ...prev, timestamp: false }));
-            fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
-          }}
-          onClear={() => clearFilters('timestamp')}
-        />
-      )}
+      {/* FilterPopups matching original working pattern */}
+      <FilterPopup
+        type="datetime"
+        isOpen={filterPopups.timestamp}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, timestamp: false }))}
+        position={filterPosition}
+        fromDate={filters.startDate}
+        toDate={filters.endDate}
+        onFromDateChange={(date) => setFilters((prev) => ({ ...prev, startDate: date }))}
+        onToDateChange={(date) => setFilters((prev) => ({ ...prev, endDate: date }))}
+      />
 
-      {filterPopups.level && (
-        <FilterPopup
-          type="multiselect"
-          isOpen={filterPopups.level}
-          onClose={() => setFilterPopups((prev) => ({ ...prev, level: false }))}
-          position={filterPosition}
-          value={tempFilters.level}
-          onChange={(selected) => setTempFilters((prev) => ({ ...prev, level: selected }))}
-          options={levelOptions}
-          Component={Select}
-          isMulti={true}
-          onApply={() => applyFilters('level', tempFilters.level)}
-          onClear={() => clearFilters('level')}
-        />
-      )}
+      <FilterPopup
+        type="multiselect"
+        isOpen={filterPopups.level}
+        onClose={() => {
+          setFilterPopups((prev) => ({ ...prev, level: false }));
+          // Apply the temporary filters when closing (ORIGINAL WORKING PATTERN)
+          setFilters((prev) => ({ ...prev, level: tempFilters.level }));
+        }}
+        position={filterPosition}
+        value={tempFilters.level}
+        onChange={(selected) => {
+          // Update temporary filters instead of actual filters (ORIGINAL PATTERN)
+          setTempFilters((prev) => ({ ...prev, level: selected }));
+        }}
+        options={levelOptions}
+        Component={Select}
+        isMulti={true}
+      />
 
-      {filterPopups.category && (
-        <FilterPopup
-          type="multiselect"
-          isOpen={filterPopups.category}
-          onClose={() => setFilterPopups((prev) => ({ ...prev, category: false }))}
-          position={filterPosition}
-          value={tempFilters.category}
-          onChange={(selected) => setTempFilters((prev) => ({ ...prev, category: selected }))}
-          options={categoryOptions}
-          Component={Select}
-          isMulti={true}
-          onApply={() => applyFilters('category', tempFilters.category)}
-          onClear={() => clearFilters('category')}
-        />
-      )}
+      <FilterPopup
+        type="multiselect"
+        isOpen={filterPopups.category}
+        onClose={() => {
+          setFilterPopups((prev) => ({ ...prev, category: false }));
+          // Apply the temporary filters when closing (ORIGINAL WORKING PATTERN)
+          setFilters((prev) => ({ ...prev, category: tempFilters.category }));
+        }}
+        position={filterPosition}
+        value={tempFilters.category}
+        onChange={(selected) => {
+          // Update temporary filters instead of actual filters (ORIGINAL PATTERN)
+          setTempFilters((prev) => ({ ...prev, category: selected }));
+        }}
+        options={categoryOptions}
+        Component={Select}
+        isMulti={true}
+      />
 
-      {filterPopups.message && (
-        <FilterPopup
-          type="text"
-          isOpen={filterPopups.message}
-          onClose={() => setFilterPopups((prev) => ({ ...prev, message: false }))}
-          position={filterPosition}
-          value={filters.message}
-          onChange={(value) => setFilters((prev) => ({ ...prev, message: value }))}
-          onApply={() => {
-            setFilterPopups((prev) => ({ ...prev, message: false }));
-            fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
-          }}
-          onClear={() => clearFilters('message')}
-        />
-      )}
+      <FilterPopup
+        type="text"
+        isOpen={filterPopups.message}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, message: false }))}
+        position={filterPosition}
+        value={filters.message}
+        onChange={(value) => setFilters((prev) => ({ ...prev, message: value }))}
+      />
 
-      {filterPopups.source && (
-        <FilterPopup
-          type="text"
-          isOpen={filterPopups.source}
-          onClose={() => setFilterPopups((prev) => ({ ...prev, source: false }))}
-          position={filterPosition}
-          value={filters.source}
-          onChange={(value) => setFilters((prev) => ({ ...prev, source: value }))}
-          onApply={() => {
-            setFilterPopups((prev) => ({ ...prev, source: false }));
-            fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
-          }}
-          onClear={() => clearFilters('source')}
-        />
-      )}
+      <FilterPopup
+        type="text"
+        isOpen={filterPopups.source}
+        onClose={() => setFilterPopups((prev) => ({ ...prev, source: false }))}
+        position={filterPosition}
+        value={filters.source}
+        onChange={(value) => setFilters((prev) => ({ ...prev, source: value }))}
+      />
     </div>
   );
 };

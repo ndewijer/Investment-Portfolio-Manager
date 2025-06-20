@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for managing API state consistently across components
@@ -8,67 +8,68 @@ const useApiState = (initialData = null) => {
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const initialDataRef = useRef(initialData);
 
-  const execute = useCallback(
-    async (apiCall, options = {}) => {
-      const {
-        onSuccess,
-        onError,
-        showSuccessMessage = false,
-        successMessage = 'Operation completed successfully',
-        resetOnStart = false,
-      } = options;
+  // Update ref when initialData changes
+  initialDataRef.current = initialData;
 
-      try {
-        setLoading(true);
-        setError(null);
+  const execute = useCallback(async (apiCall, options = {}) => {
+    const {
+      onSuccess,
+      onError,
+      showSuccessMessage = false,
+      successMessage = 'Operation completed successfully',
+      resetOnStart = false,
+    } = options;
 
-        if (resetOnStart) {
-          setData(initialData);
-        }
+    try {
+      setLoading(true);
+      setError(null);
 
-        const response = await apiCall();
-        setData(response.data || response);
-
-        if (onSuccess) {
-          onSuccess(response.data || response);
-        }
-
-        if (showSuccessMessage) {
-          // This could be enhanced to use a toast notification system
-          console.log(successMessage);
-        }
-
-        return response.data || response;
-      } catch (err) {
-        const errorMessage =
-          err.response?.data?.user_message ||
-          err.response?.data?.message ||
-          err.response?.data?.error ||
-          err.message ||
-          'An unexpected error occurred';
-
-        setError(errorMessage);
-
-        if (onError) {
-          onError(err, errorMessage);
-        } else {
-          console.error('API Error:', err);
-        }
-
-        throw err;
-      } finally {
-        setLoading(false);
+      if (resetOnStart) {
+        setData(initialDataRef.current);
       }
-    },
-    [initialData]
-  ); // Remove initialData dependency to prevent recreation
+
+      const response = await apiCall();
+      setData(response.data || response);
+
+      if (onSuccess) {
+        onSuccess(response.data || response);
+      }
+
+      if (showSuccessMessage) {
+        // This could be enhanced to use a toast notification system
+        console.log(successMessage);
+      }
+
+      return response.data || response;
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.user_message ||
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'An unexpected error occurred';
+
+      setError(errorMessage);
+
+      if (onError) {
+        onError(err, errorMessage);
+      } else {
+        console.error('API Error:', err);
+      }
+
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Include initialData dependency as required by ESLint
 
   const reset = useCallback(() => {
-    setData(initialData);
+    setData(initialDataRef.current);
     setLoading(false);
     setError(null);
-  }, [initialData]);
+  }, []);
 
   const setDataDirectly = useCallback((newData) => {
     setData(newData);
