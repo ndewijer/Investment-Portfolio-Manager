@@ -3,15 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import ValueChart from '../components/ValueChart';
 import useChartData from '../hooks/useChartData';
+import { useApiState, DataTable } from '../components/shared';
 import './Overview.css';
 import { useFormat } from '../context/FormatContext';
 
 const Overview = () => {
-  const [portfolioSummary, setPortfolioSummary] = useState([]);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState(null);
   const navigate = useNavigate();
   const { formatCurrency, formatPercentage } = useFormat();
+
+  // Replace manual API state management with useApiState hook
+  const {
+    data: portfolioSummary,
+    loading: summaryLoading,
+    error: summaryError,
+    execute: fetchPortfolioSummary,
+  } = useApiState([]);
 
   // Use the new chart data hook for intelligent loading
   const {
@@ -24,20 +30,17 @@ const Overview = () => {
   } = useChartData('/portfolio-history', {}, 365);
 
   useEffect(() => {
-    fetchPortfolioSummary();
-  }, []);
+    fetchPortfolioSummary(() => api.get('/portfolio-summary'));
+  }, [fetchPortfolioSummary]);
 
-  const fetchPortfolioSummary = async () => {
-    try {
-      const summaryRes = await api.get('/portfolio-summary');
-      setPortfolioSummary(summaryRes.data);
-      setSummaryError(null);
-    } catch (err) {
-      setSummaryError('Error fetching portfolio summary');
-      console.error('Error:', err);
-    } finally {
-      setSummaryLoading(false);
-    }
+  // Extract performance calculation logic
+  const calculatePortfolioPerformance = (portfolio) => {
+    return (
+      ((portfolio.totalValue + portfolio.totalSaleProceeds) /
+        (portfolio.totalCost + portfolio.totalOriginalCost) -
+        1) *
+      100
+    ).toFixed(2);
   };
 
   const calculateTotalPerformance = () => {
@@ -139,8 +142,8 @@ const Overview = () => {
     return colors[index + 2]; // +2 to skip the total value/cost colors
   };
 
-  const handlePortfolioClick = (portfolioId) => {
-    navigate(`/portfolios/${portfolioId}`);
+  const handlePortfolioClick = (portfolio) => {
+    navigate(`/portfolios/${portfolio.id}`);
   };
 
   const getChartLines = () => {
@@ -219,6 +222,107 @@ const Overview = () => {
     return lines;
   };
 
+  // Define columns for DataTable
+  const columns = [
+    {
+      key: 'name',
+      header: 'Portfolio',
+      sortable: true,
+      render: (value) => value,
+    },
+    {
+      key: 'totalValue',
+      header: 'Current Value',
+      sortable: true,
+      render: (value) => formatCurrency(value),
+    },
+    {
+      key: 'totalCost',
+      header: 'Current Cost Basis',
+      sortable: true,
+      render: (value) => formatCurrency(value),
+    },
+    {
+      key: 'totalUnrealizedGainLoss',
+      header: 'Unrealized Gain/Loss',
+      sortable: true,
+      render: (value) => (
+        <span className={value >= 0 ? 'positive' : 'negative'}>{formatCurrency(value)}</span>
+      ),
+    },
+    {
+      key: 'totalRealizedGainLoss',
+      header: 'Realized Gain/Loss',
+      sortable: true,
+      render: (value) => (
+        <span className={value >= 0 ? 'positive' : 'negative'}>{formatCurrency(value)}</span>
+      ),
+    },
+    {
+      key: 'performance',
+      header: 'Performance',
+      sortable: true,
+      render: (value, portfolio) => {
+        const performance = calculatePortfolioPerformance(portfolio);
+        return (
+          <span className={performance >= 0 ? 'positive' : 'negative'}>
+            {formatPercentage(performance)}
+          </span>
+        );
+      },
+    },
+  ];
+
+  // Custom mobile card renderer for portfolios
+  const renderMobileCard = (portfolio) => {
+    const performance = calculatePortfolioPerformance(portfolio);
+
+    return (
+      <div className="portfolio-card" onClick={() => handlePortfolioClick(portfolio)}>
+        <div className="card-header">
+          <h3 className="portfolio-name">{portfolio.name}</h3>
+          <div className={`performance ${performance >= 0 ? 'positive' : 'negative'}`}>
+            {formatPercentage(performance)}
+          </div>
+        </div>
+
+        <div className="card-main">
+          <div className="main-values">
+            <div className="value-item">
+              <span className="label">Current Value</span>
+              <span className="value">{formatCurrency(portfolio.totalValue)}</span>
+            </div>
+            <div className="value-item">
+              <span className="label">Cost Basis</span>
+              <span className="value">{formatCurrency(portfolio.totalCost)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="card-details">
+          <div className="detail-row">
+            <span className="label">Unrealized Gain/Loss</span>
+            <span
+              className={`value ${
+                portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'
+              }`}
+            >
+              {formatCurrency(portfolio.totalUnrealizedGainLoss)}
+            </span>
+          </div>
+          <div className="detail-row">
+            <span className="label">Realized Gain/Loss</span>
+            <span
+              className={`value ${portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
+            >
+              {formatCurrency(portfolio.totalRealizedGainLoss)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Show loading if either summary or history is loading
   const loading = summaryLoading || historyLoading;
   const error = summaryError || historyError;
@@ -286,111 +390,17 @@ const Overview = () => {
 
       <div className="portfolios-table">
         <h2>Portfolio Details</h2>
-        <div className="table-container">
-          <table className="desktop-table">
-            <thead>
-              <tr>
-                <th>Portfolio</th>
-                <th>Current Value</th>
-                <th>Current Cost Basis</th>
-                <th>Unrealized Gain/Loss</th>
-                <th>Realized Gain/Loss</th>
-                <th>Performance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {portfolioSummary.map((portfolio) => {
-                const performance = (
-                  ((portfolio.totalValue + portfolio.totalSaleProceeds) /
-                    (portfolio.totalCost + portfolio.totalOriginalCost) -
-                    1) *
-                  100
-                ).toFixed(2);
-
-                return (
-                  <tr key={portfolio.id} onClick={() => handlePortfolioClick(portfolio.id)}>
-                    <td>{portfolio.name}</td>
-                    <td>{formatCurrency(portfolio.totalValue)}</td>
-                    <td>{formatCurrency(portfolio.totalCost)}</td>
-                    <td
-                      className={portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}
-                    >
-                      {formatCurrency(portfolio.totalUnrealizedGainLoss)}
-                    </td>
-                    <td className={portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}>
-                      {formatCurrency(portfolio.totalRealizedGainLoss)}
-                    </td>
-                    <td className={performance >= 0 ? 'positive' : 'negative'}>
-                      {formatPercentage(performance)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          <div className="mobile-cards">
-            {portfolioSummary.map((portfolio) => {
-              const performance = (
-                ((portfolio.totalValue + portfolio.totalSaleProceeds) /
-                  (portfolio.totalCost + portfolio.totalOriginalCost) -
-                  1) *
-                100
-              ).toFixed(2);
-
-              return (
-                <div
-                  key={portfolio.id}
-                  className="portfolio-card"
-                  onClick={() => handlePortfolioClick(portfolio.id)}
-                >
-                  <div className="card-header">
-                    <h3 className="portfolio-name">{portfolio.name}</h3>
-                    <div className={`performance ${performance >= 0 ? 'positive' : 'negative'}`}>
-                      {formatPercentage(performance)}
-                    </div>
-                  </div>
-
-                  <div className="card-main">
-                    <div className="main-values">
-                      <div className="value-item">
-                        <span className="label">Current Value</span>
-                        <span className="value">{formatCurrency(portfolio.totalValue)}</span>
-                      </div>
-                      <div className="value-item">
-                        <span className="label">Cost Basis</span>
-                        <span className="value">{formatCurrency(portfolio.totalCost)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="card-details">
-                    <div className="detail-row">
-                      <span className="label">Unrealized Gain/Loss</span>
-                      <span
-                        className={`value ${
-                          portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'
-                        }`}
-                      >
-                        {formatCurrency(portfolio.totalUnrealizedGainLoss)}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="label">Realized Gain/Loss</span>
-                      <span
-                        className={`value ${
-                          portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'
-                        }`}
-                      >
-                        {formatCurrency(portfolio.totalRealizedGainLoss)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <DataTable
+          data={portfolioSummary}
+          columns={columns}
+          loading={summaryLoading}
+          error={summaryError}
+          onRetry={() => fetchPortfolioSummary(() => api.get('/portfolio-summary'))}
+          onRowClick={handlePortfolioClick}
+          mobileCardRenderer={renderMobileCard}
+          emptyMessage="No portfolios found"
+          className="portfolios-table"
+        />
       </div>
     </div>
   );
