@@ -113,40 +113,74 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .error-default {
-    background-color: #2d1b1b;
-    border-color: #4a2c2c;
-    color: #f56565;
-  }
+/* Dark mode support - class-based with feature flag control */
+.dark-theme .error-default {
+  background-color: #2d1b1b;
+  border-color: #4a2c2c;
+  color: #f56565;
+}
 
-  .error-inline {
-    background-color: #2d1b1b;
-    border-color: #4a2c2c;
-    color: #fc8181;
-  }
+.dark-theme .error-inline {
+  background-color: #2d1b1b;
+  border-color: #4a2c2c;
+  color: #fc8181;
+}
 
-  .error-banner {
-    background-color: #4a2c2c;
-    border-color: #f56565;
-    color: #fed7d7;
-  }
+.dark-theme .error-banner {
+  background-color: #4a2c2c;
+  border-color: #f56565;
+  color: #fed7d7;
+}
 
-  .error-retry-btn {
-    background-color: #f56565;
-    color: #1a202c;
-  }
+.dark-theme .error-retry-btn {
+  background-color: #f56565;
+  color: #1a202c;
+}
 
-  .error-retry-btn:hover {
-    background-color: #fc8181;
-  }
+.dark-theme .error-retry-btn:hover {
+  background-color: #fc8181;
+}
 
-  .error-dismiss-btn {
-    color: #f56565;
-  }
+.dark-theme .error-dismiss-btn {
+  color: #f56565;
+}
 
-  .error-dismiss-btn:hover {
-    background-color: rgba(245, 101, 101, 0.1);
-  }
+.dark-theme .error-dismiss-btn:hover {
+  background-color: rgba(245, 101, 101, 0.1);
+}
+
+/* Light theme explicit styles */
+.light-theme .error-default {
+  background-color: #fee;
+  border-color: #fcc;
+  color: #c33;
+}
+
+.light-theme .error-inline {
+  background-color: #fff5f5;
+  border-color: #fed7d7;
+  color: #c53030;
+}
+
+.light-theme .error-banner {
+  background-color: #fed7d7;
+  border-color: #fc8181;
+  color: #742a2a;
+}
+
+.light-theme .error-retry-btn {
+  background-color: #c53030;
+  color: white;
+}
+
+.light-theme .error-retry-btn:hover {
+  background-color: #9c2626;
+}
+
+.light-theme .error-dismiss-btn {
+  color: #c53030;
+}
+
+.light-theme .error-dismiss-btn:hover {
+  background-color: rgba(197, 48, 48, 0.1);
 }

@@ -61,18 +61,30 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .loading-overlay {
-    background-color: rgba(0, 0, 0, 0.8);
-  }
+/* Dark mode support - class-based with feature flag control */
+.dark-theme .loading-overlay {
+  background-color: rgba(0, 0, 0, 0.8);
+}
 
-  .loading-message {
-    color: #ccc;
-  }
+.dark-theme .loading-message {
+  color: #ccc;
+}
 
-  .spinner {
-    border-color: #444;
-    border-top-color: #007bff;
-  }
+.dark-theme .spinner {
+  border-color: #444;
+  border-top-color: #007bff;
+}
+
+/* Light theme explicit styles */
+.light-theme .loading-overlay {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.light-theme .loading-message {
+  color: #666;
+}
+
+.light-theme .spinner {
+  border-color: #f3f3f3;
+  border-top-color: #007bff;
 }

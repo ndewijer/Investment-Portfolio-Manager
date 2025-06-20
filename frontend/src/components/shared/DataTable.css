@@ -251,54 +251,100 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .table-container,
-  .default-card,
-  .empty-state,
-  .table-pagination {
-    background-color: #343a40;
-    border-color: #495057;
-  }
+/* Dark mode support - class-based with feature flag control */
+.dark-theme .table-container,
+.dark-theme .default-card,
+.dark-theme .empty-state,
+.dark-theme .table-pagination {
+  background-color: #343a40;
+  border-color: #495057;
+}
 
-  .data-table th {
-    background-color: #495057;
-    color: #f8f9fa;
-    border-bottom-color: #6c757d;
-  }
+.dark-theme .data-table th {
+  background-color: #495057;
+  color: #f8f9fa;
+  border-bottom-color: #6c757d;
+}
 
-  .data-table td {
-    color: #f8f9fa;
-    border-bottom-color: #495057;
-  }
+.dark-theme .data-table td {
+  color: #f8f9fa;
+  border-bottom-color: #495057;
+}
 
-  .data-table tbody tr:hover {
-    background-color: #495057;
-  }
+.dark-theme .data-table tbody tr:hover {
+  background-color: #495057;
+}
 
-  .clickable-row:hover {
-    background-color: #6c757d !important;
-  }
+.dark-theme .clickable-row:hover {
+  background-color: #6c757d !important;
+}
 
-  .field-label {
-    color: #adb5bd;
-  }
+.dark-theme .field-label {
+  color: #adb5bd;
+}
 
-  .field-value {
-    color: #f8f9fa;
-  }
+.dark-theme .field-value {
+  color: #f8f9fa;
+}
 
-  .empty-state p {
-    color: #adb5bd;
-  }
+.dark-theme .empty-state p {
+  color: #adb5bd;
+}
 
-  .pagination-info {
-    color: #adb5bd;
-  }
+.dark-theme .pagination-info {
+  color: #adb5bd;
+}
 
-  .clickable-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
+.dark-theme .clickable-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Light theme explicit styles */
+.light-theme .table-container,
+.light-theme .default-card,
+.light-theme .empty-state,
+.light-theme .table-pagination {
+  background-color: white;
+  border-color: #e9ecef;
+}
+
+.light-theme .data-table th {
+  background-color: #f8f9fa;
+  color: #495057;
+  border-bottom-color: #dee2e6;
+}
+
+.light-theme .data-table td {
+  color: #495057;
+  border-bottom-color: #dee2e6;
+}
+
+.light-theme .data-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.light-theme .clickable-row:hover {
+  background-color: #e9ecef !important;
+}
+
+.light-theme .field-label {
+  color: #6c757d;
+}
+
+.light-theme .field-value {
+  color: #495057;
+}
+
+.light-theme .empty-state p {
+  color: #6c757d;
+}
+
+.light-theme .pagination-info {
+  color: #6c757d;
+}
+
+.light-theme .clickable-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* High contrast mode support */
