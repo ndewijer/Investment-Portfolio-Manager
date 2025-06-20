@@ -748,7 +748,7 @@ const PortfolioDetail = () => {
       render: (value, fund) => (
         <div className="action-buttons">
           <ActionButton
-            variant="success"
+            variant="primary"
             size="small"
             onClick={() => {
               setNewTransaction({
@@ -764,7 +764,7 @@ const PortfolioDetail = () => {
             Add Transaction
           </ActionButton>
           {fund.dividend_type !== 'none' && (
-            <ActionButton variant="info" size="small" onClick={() => handleAddDividend(fund)}>
+            <ActionButton variant="primary" size="small" onClick={() => handleAddDividend(fund)}>
               Add Dividend
             </ActionButton>
           )}
@@ -971,7 +971,7 @@ const PortfolioDetail = () => {
       <div className="card-footer">
         <div className="action-buttons">
           <ActionButton
-            variant="success"
+            variant="primary"
             size="small"
             onClick={() => {
               setNewTransaction({
@@ -987,7 +987,7 @@ const PortfolioDetail = () => {
             Add Transaction
           </ActionButton>
           {fund.dividend_type !== 'none' && (
-            <ActionButton variant="info" size="small" onClick={() => handleAddDividend(fund)}>
+            <ActionButton variant="primary" size="small" onClick={() => handleAddDividend(fund)}>
               Add Dividend
             </ActionButton>
           )}
