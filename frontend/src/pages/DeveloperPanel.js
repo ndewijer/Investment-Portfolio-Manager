@@ -5,6 +5,7 @@ import CollapsibleInfo from '../components/CollapsibleInfo';
 import Toast from '../components/Toast';
 import { useFormat } from '../context/FormatContext';
 import { API_BASE_URL } from '../config';
+import { useApiState } from '../components/shared';
 
 const DeveloperPanel = () => {
   const [exchangeRate, setExchangeRate] = useState({
@@ -23,20 +24,23 @@ const DeveloperPanel = () => {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [funds, setFunds] = useState([]);
-  const [portfolios, setPortfolios] = useState([]);
-  const [csvTemplate, setCsvTemplate] = useState(null);
+
+  // Use useApiState for data fetching
+  const { data: funds, execute: fetchFunds } = useApiState([]);
+  const { data: portfolios, execute: fetchPortfolios } = useApiState([]);
+  const { data: csvTemplate, execute: fetchCsvTemplate } = useApiState(null);
+  const { data: fundPriceTemplate, execute: fetchFundPriceTemplate } = useApiState(null);
+  const { data: portfolioFunds, execute: fetchPortfolioFunds } = useApiState([]);
+  const { data: loggingSettings, execute: fetchLoggingSettings } = useApiState({
+    enabled: true,
+    level: 'info',
+  });
+
   const [selectedPortfolioId, setSelectedPortfolioId] = useState('');
   const [selectedFundId, setSelectedFundId] = useState('');
   const [fundPriceFile, setFundPriceFile] = useState(null);
   const [selectedPriceFundId, setSelectedPriceFundId] = useState('');
-  const [fundPriceTemplate, setFundPriceTemplate] = useState(null);
-  const [portfolioFunds, setPortfolioFunds] = useState([]);
   const { isEuropeanFormat, setIsEuropeanFormat } = useFormat();
-  const [loggingSettings, setLoggingSettings] = useState({
-    enabled: true,
-    level: 'info',
-  });
 
   const fetchCurrentExchangeRate = useCallback(async () => {
     try {
@@ -61,72 +65,32 @@ const DeveloperPanel = () => {
   }, [exchangeRate.from_currency, exchangeRate.to_currency, exchangeRate.date]);
 
   useEffect(() => {
-    fetchFundsAndPortfolios();
-    fetchCsvTemplate();
+    // Fetch initial data using useApiState hooks
+    fetchFunds(() => axios.get(`${API_BASE_URL}/funds`));
+    fetchPortfolios(() => axios.get(`${API_BASE_URL}/portfolios`));
+    fetchCsvTemplate(() => axios.get(`${API_BASE_URL}/csv-template`));
+    fetchFundPriceTemplate(() => axios.get(`${API_BASE_URL}/fund-price-template`));
+    fetchLoggingSettings(() => axios.get(`${API_BASE_URL}/system-settings/logging`));
     fetchCurrentExchangeRate();
-    fetchFundPriceTemplate();
-    fetchLoggingSettings();
-  }, [fetchCurrentExchangeRate]);
-
-  const fetchFundsAndPortfolios = async () => {
-    try {
-      const [fundsRes, portfoliosRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/funds`),
-        axios.get(`${API_BASE_URL}/portfolios`),
-      ]);
-      setFunds(fundsRes.data);
-      setPortfolios(portfoliosRes.data);
-    } catch (error) {
-      setError(
-        error.response?.data?.message || error.response?.data?.error || 'Error fetching data'
-      );
-    }
-  };
-
-  const fetchCsvTemplate = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/csv-template`);
-      setCsvTemplate(response.data);
-    } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Error fetching CSV template'
-      );
-    }
-  };
-
-  const fetchFundPriceTemplate = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/fund-price-template`);
-      setFundPriceTemplate(response.data);
-    } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Error fetching fund price template'
-      );
-    }
-  };
-
-  const fetchLoggingSettings = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/system-settings/logging`);
-      setLoggingSettings(response.data);
-    } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Error fetching logging settings'
-      );
-    }
-  };
+  }, [
+    fetchFunds,
+    fetchPortfolios,
+    fetchCsvTemplate,
+    fetchFundPriceTemplate,
+    fetchLoggingSettings,
+    fetchCurrentExchangeRate,
+  ]);
 
   const handleLoggingSettingsUpdate = async (newSettings) => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/system-settings/logging`, newSettings);
-      setLoggingSettings(response.data);
-      setMessage('Logging settings updated successfully');
+      await fetchLoggingSettings(
+        () => axios.put(`${API_BASE_URL}/system-settings/logging`, newSettings),
+        {
+          onSuccess: () => {
+            setMessage('Logging settings updated successfully');
+          },
+        }
+      );
     } catch (error) {
       setError(
         error.response?.data?.message ||
@@ -247,29 +211,16 @@ const DeveloperPanel = () => {
     setError('');
   };
 
-  const fetchPortfolioFunds = async (portfolioId) => {
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/portfolio-funds?portfolio_id=${portfolioId}`
-      );
-      setPortfolioFunds(response.data);
-    } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          'Error fetching portfolio funds'
-      );
-    }
-  };
-
   const handlePortfolioSelect = (e) => {
     const selectedId = e.target.value;
     setSelectedPortfolioId(selectedId);
     setSelectedFundId('');
     if (selectedId) {
-      fetchPortfolioFunds(selectedId);
+      fetchPortfolioFunds(() =>
+        axios.get(`${API_BASE_URL}/portfolio-funds?portfolio_id=${selectedId}`)
+      );
     } else {
-      setPortfolioFunds([]);
+      fetchPortfolioFunds(() => Promise.resolve({ data: [] }));
     }
   };
 

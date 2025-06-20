@@ -1,0 +1,285 @@
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-buttons-horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.action-buttons-vertical {
+  flex-direction: column;
+}
+
+.action-buttons-left {
+  justify-content: flex-start;
+}
+
+.action-buttons-center {
+  justify-content: center;
+}
+
+.action-buttons-right {
+  justify-content: flex-end;
+}
+
+.action-buttons-between {
+  justify-content: space-between;
+}
+
+.action-buttons-compact {
+  gap: 0.25rem;
+}
+
+.action-buttons-normal {
+  gap: 0.5rem;
+}
+
+.action-buttons-spacious {
+  gap: 1rem;
+}
+
+/* Button base styles */
+.action-btn {
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  white-space: nowrap;
+}
+
+.action-btn:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Button sizes */
+.action-btn-small {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+  min-height: 32px;
+}
+
+.action-btn-medium {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  min-height: 38px;
+}
+
+.action-btn-large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  min-height: 44px;
+}
+
+/* Button variants - Custom color scheme */
+.action-btn-default {
+  background-color: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.action-btn-default:hover:not(:disabled) {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+/* Add buttons - Green #4caf50 */
+.action-btn-primary {
+  background-color: #4caf50;
+  color: white;
+  border: 1px solid #4caf50;
+}
+
+.action-btn-primary:hover:not(:disabled) {
+  background-color: #45a049;
+  border-color: #45a049;
+}
+
+/* Edit buttons - Orange #ff9800 */
+.action-btn-secondary {
+  background-color: #ff9800;
+  color: white;
+  border: 1px solid #ff9800;
+}
+
+.action-btn-secondary:hover:not(:disabled) {
+  background-color: #e68900;
+  border-color: #e68900;
+}
+
+/* Add buttons (alternative) - Green #4caf50 */
+.action-btn-success {
+  background-color: #4caf50;
+  color: white;
+  border: 1px solid #4caf50;
+}
+
+.action-btn-success:hover:not(:disabled) {
+  background-color: #45a049;
+  border-color: #45a049;
+}
+
+/* Delete/Remove buttons - Red #f44336 */
+.action-btn-danger {
+  background-color: #f44336;
+  color: white;
+  border: 1px solid #f44336;
+}
+
+.action-btn-danger:hover:not(:disabled) {
+  background-color: #da190b;
+  border-color: #da190b;
+}
+
+/* Edit buttons (alternative) - Orange #ff9800 */
+.action-btn-warning {
+  background-color: #ff9800;
+  color: white;
+  border: 1px solid #ff9800;
+}
+
+.action-btn-warning:hover:not(:disabled) {
+  background-color: #e68900;
+  border-color: #e68900;
+}
+
+/* View buttons - Blue #2196f3 */
+.action-btn-info {
+  background-color: #2196f3;
+  color: white;
+  border: 1px solid #2196f3;
+}
+
+.action-btn-info:hover:not(:disabled) {
+  background-color: #0b7dda;
+  border-color: #0b7dda;
+}
+
+/* Archive/Cancel buttons - Light grey */
+.action-btn-cancel {
+  background-color: #d3d3d3;
+  color: #333333;
+  border: 1px solid #d3d3d3;
+}
+
+.action-btn-cancel:hover:not(:disabled) {
+  background-color: #c0c0c0;
+  border-color: #c0c0c0;
+}
+
+/* Outline variants */
+.action-btn-outline-primary {
+  background-color: transparent;
+  color: #007bff;
+  border: 1px solid #007bff;
+}
+
+.action-btn-outline-primary:hover:not(:disabled) {
+  background-color: #007bff;
+  color: white;
+}
+
+.action-btn-outline-secondary {
+  background-color: transparent;
+  color: #6c757d;
+  border: 1px solid #6c757d;
+}
+
+.action-btn-outline-secondary:hover:not(:disabled) {
+  background-color: #6c757d;
+  color: white;
+}
+
+.action-btn-outline-danger {
+  background-color: transparent;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+}
+
+.action-btn-outline-danger:hover:not(:disabled) {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Loading state */
+.action-btn-loading {
+  color: transparent;
+}
+
+.btn-spinner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .action-buttons-horizontal {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .action-btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    min-height: 36px;
+  }
+
+  .action-btn-medium {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.95rem;
+    min-height: 42px;
+  }
+
+  .action-btn-large {
+    padding: 0.875rem 1.75rem;
+    font-size: 1.05rem;
+    min-height: 48px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .action-btn-default {
+    background-color: #343a40;
+    color: #f8f9fa;
+    border-color: #495057;
+  }
+
+  .action-btn-default:hover:not(:disabled) {
+    background-color: #495057;
+    border-color: #6c757d;
+  }
+}
