@@ -270,16 +270,26 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .action-btn-default {
-    background-color: #343a40;
-    color: #f8f9fa;
-    border-color: #495057;
-  }
+/* Dark mode support - class-based with feature flag control */
+.dark-theme .action-btn-default {
+  background-color: #343a40;
+  color: #f8f9fa;
+  border-color: #495057;
+}
 
-  .action-btn-default:hover:not(:disabled) {
-    background-color: #495057;
-    border-color: #6c757d;
-  }
+.dark-theme .action-btn-default:hover:not(:disabled) {
+  background-color: #495057;
+  border-color: #6c757d;
+}
+
+/* Fallback for system preference when feature flag is disabled */
+.light-theme .action-btn-default {
+  background-color: #f8f9fa;
+  color: #495057;
+  border-color: #dee2e6;
+}
+
+.light-theme .action-btn-default:hover:not(:disabled) {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
 }

@@ -4,6 +4,7 @@ import './DeveloperPanel.css';
 import CollapsibleInfo from '../components/CollapsibleInfo';
 import Toast from '../components/Toast';
 import { useFormat } from '../context/FormatContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_BASE_URL } from '../config';
 import { useApiState } from '../components/shared';
 
@@ -41,6 +42,7 @@ const DeveloperPanel = () => {
   const [fundPriceFile, setFundPriceFile] = useState(null);
   const [selectedPriceFundId, setSelectedPriceFundId] = useState('');
   const { isEuropeanFormat, setIsEuropeanFormat } = useFormat();
+  const { darkModeEnabled, enableDarkModeFeature, theme, setThemePreference } = useTheme();
 
   const fetchCurrentExchangeRate = useCallback(async () => {
     try {
@@ -442,6 +444,49 @@ const DeveloperPanel = () => {
         </div>
         <div className="format-example">
           <p>Example: {isEuropeanFormat ? '€ 1.234,56' : '$1,234.56'}</p>
+        </div>
+      </section>
+
+      <section className="dark-mode-settings-section">
+        <h2>Dark Mode Settings</h2>
+        <div className="form-group">
+          <label>Dark Mode Feature:</label>
+          <select
+            value={darkModeEnabled ? 'enabled' : 'disabled'}
+            onChange={(e) => enableDarkModeFeature(e.target.value === 'enabled')}
+          >
+            <option value="disabled">Disabled (Feature Flag OFF)</option>
+            <option value="enabled">Enabled (Feature Flag ON)</option>
+          </select>
+        </div>
+        {darkModeEnabled && (
+          <div className="form-group">
+            <label>Theme Preference:</label>
+            <select value={theme} onChange={(e) => setThemePreference(e.target.value)}>
+              <option value="light">Light Theme</option>
+              <option value="dark">Dark Theme</option>
+            </select>
+          </div>
+        )}
+        <div className="dark-mode-info">
+          <p>Current dark mode configuration:</p>
+          <ul>
+            <li>
+              Feature Status: <strong>{darkModeEnabled ? 'Enabled' : 'Disabled'}</strong>
+            </li>
+            <li>
+              Current Theme: <strong>{theme === 'light' ? 'Light' : 'Dark'}</strong>
+            </li>
+            <li>
+              Active: <strong>{darkModeEnabled && theme === 'dark' ? 'Yes' : 'No'}</strong>
+            </li>
+          </ul>
+          {!darkModeEnabled && (
+            <p className="warning-text">
+              ⚠️ Dark mode is currently disabled via feature flag. Enable it above to access theme
+              controls.
+            </p>
+          )}
         </div>
       </section>
 

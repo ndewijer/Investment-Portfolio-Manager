@@ -220,55 +220,104 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .field-label {
-    color: #f8f9fa;
-  }
+/* Dark mode support - class-based with feature flag control */
+.dark-theme .field-label {
+  color: #f8f9fa;
+}
 
-  .form-field input,
-  .form-field select,
-  .form-field textarea {
-    background-color: #343a40;
-    border-color: #495057;
-    color: #f8f9fa;
-  }
+.dark-theme .form-field input,
+.dark-theme .form-field select,
+.dark-theme .form-field textarea {
+  background-color: #343a40;
+  border-color: #495057;
+  color: #f8f9fa;
+}
 
-  .form-field input:focus,
-  .form-field select:focus,
-  .form-field textarea:focus {
-    border-color: #007bff;
-    background-color: #343a40;
-  }
+.dark-theme .form-field input:focus,
+.dark-theme .form-field select:focus,
+.dark-theme .form-field textarea:focus {
+  border-color: #007bff;
+  background-color: #343a40;
+}
 
-  .form-field input:disabled,
-  .form-field select:disabled,
-  .form-field textarea:disabled {
-    background-color: #495057;
-    color: #adb5bd;
-  }
+.dark-theme .form-field input:disabled,
+.dark-theme .form-field select:disabled,
+.dark-theme .form-field textarea:disabled {
+  background-color: #495057;
+  color: #adb5bd;
+}
 
-  .static-field {
-    background-color: #343a40;
-    border-color: #495057;
-    color: #f8f9fa;
-  }
+.dark-theme .static-field {
+  background-color: #343a40;
+  border-color: #495057;
+  color: #f8f9fa;
+}
 
-  .input-group .input-addon {
-    background-color: #495057;
-    border-color: #6c757d;
-    color: #f8f9fa;
-  }
+.dark-theme .input-group .input-addon {
+  background-color: #495057;
+  border-color: #6c757d;
+  color: #f8f9fa;
+}
 
-  .form-modal-actions {
-    border-top-color: #495057;
-  }
+.dark-theme .form-modal-actions {
+  border-top-color: #495057;
+}
 
-  .form-section {
-    border-bottom-color: #495057;
-  }
+.dark-theme .form-section {
+  border-bottom-color: #495057;
+}
 
-  .form-section-title {
-    color: #f8f9fa;
-  }
+.dark-theme .form-section-title {
+  color: #f8f9fa;
+}
+
+/* Light theme explicit styles */
+.light-theme .field-label {
+  color: #333;
+}
+
+.light-theme .form-field input,
+.light-theme .form-field select,
+.light-theme .form-field textarea {
+  background-color: white;
+  border-color: #ddd;
+  color: #333;
+}
+
+.light-theme .form-field input:focus,
+.light-theme .form-field select:focus,
+.light-theme .form-field textarea:focus {
+  border-color: #007bff;
+  background-color: white;
+}
+
+.light-theme .form-field input:disabled,
+.light-theme .form-field select:disabled,
+.light-theme .form-field textarea:disabled {
+  background-color: #e9ecef;
+  color: #6c757d;
+}
+
+.light-theme .static-field {
+  background-color: #f8f9fa;
+  border-color: #e9ecef;
+  color: #495057;
+}
+
+.light-theme .input-group .input-addon {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+  color: #495057;
+}
+
+.light-theme .form-modal-actions {
+  border-top-color: #e9ecef;
+}
+
+.light-theme .form-section {
+  border-bottom-color: #e9ecef;
+}
+
+.light-theme .form-section-title {
+  color: #495057;
 }
