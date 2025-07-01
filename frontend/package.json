@@ -20,7 +20,7 @@
     "react-datepicker": "^8.4.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.2",
-    "recharts": "^2.15.3",
+    "recharts": "^3.0.2",
     "style-loader": "^4.0.0",
     "web-vitals": "^5.0.2",
     "webpack": "^5.99.9",
