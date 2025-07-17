@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "debugpy",
+      "request": "launch",
+      "name": "Debug Backend",
+      "python": "${workspaceFolder}/backend/venv/bin/python",
+      "program": "${workspaceFolder}/backend/run.py",
+      "console": "integratedTerminal",
+      "env": {
+        "DOMAIN": "localhost",
+        "DB_DIR": "${workspaceFolder}/backend/data/db",
+        "LOG_DIR": "${workspaceFolder}/backend/data/logs"
+      },
+      "justMyCode": true,
+      "preLaunchTask": "python: setup-backend"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Start Frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "preLaunchTask": "npm:install"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug Frontend",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "sourceMaps": true,
+      "trace": true,
+      "dependsOn": ["Start Frontend"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": ["Start Frontend", "Debug Backend", "Debug Frontend"],
+      "stopAll": true
+    }
+  ]
+} 
