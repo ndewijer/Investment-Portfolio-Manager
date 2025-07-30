@@ -63,9 +63,7 @@ class TodayPriceService:
             latest_date = TodayPriceService.get_latest_available_date()
 
             # Check if yesterday's price already exists - use exact date comparison
-            existing_price = FundPrice.query.filter_by(
-                fund_id=fund_id, date=latest_date
-            ).first()
+            existing_price = FundPrice.query.filter_by(fund_id=fund_id, date=latest_date).first()
 
             if existing_price:
                 response, status = logger.log(
@@ -94,9 +92,7 @@ class TodayPriceService:
                 last_date = history.index[-1].date()
 
                 # Only add if we don't already have this date
-                if not FundPrice.query.filter_by(
-                    fund_id=fund_id, date=last_date
-                ).first():
+                if not FundPrice.query.filter_by(fund_id=fund_id, date=last_date).first():
                     last_price = float(history["Close"][-1])
                     price = FundPrice(fund_id=fund_id, date=last_date, price=last_price)
                     db.session.add(price)

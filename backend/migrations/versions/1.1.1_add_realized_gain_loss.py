@@ -7,10 +7,9 @@ Create Date: 2024-11-29
 
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.exc import OperationalError
-
 
 # revision identifiers, used by Alembic.
 revision = "1.1.1"
@@ -32,9 +31,7 @@ def upgrade():
                 sa.ForeignKey("portfolio.id", ondelete="CASCADE"),
                 nullable=False,
             ),
-            sa.Column(
-                "fund_id", sa.String(36), sa.ForeignKey("fund.id"), nullable=False
-            ),
+            sa.Column("fund_id", sa.String(36), sa.ForeignKey("fund.id"), nullable=False),
             sa.Column(
                 "transaction_id",
                 sa.String(36),
@@ -46,9 +43,7 @@ def upgrade():
             sa.Column("cost_basis", sa.Float(), nullable=False),
             sa.Column("sale_proceeds", sa.Float(), nullable=False),
             sa.Column("realized_gain_loss", sa.Float(), nullable=False),
-            sa.Column(
-                "created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")
-            ),
+            sa.Column("created_at", sa.DateTime(), server_default=sa.text("CURRENT_TIMESTAMP")),
         )
     except OperationalError as e:
         if "already exists" not in str(e):

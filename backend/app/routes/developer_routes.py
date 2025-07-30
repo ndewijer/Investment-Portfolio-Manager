@@ -54,9 +54,7 @@ def get_exchange_rate():
         else:
             date = datetime.now().date()
 
-        exchange_rate = DeveloperService.get_exchange_rate(
-            from_currency, to_currency, date
-        )
+        exchange_rate = DeveloperService.get_exchange_rate(from_currency, to_currency, date)
 
         logger.log(
             level=LogLevel.INFO,
@@ -253,9 +251,7 @@ def import_transactions():
 
             # Re-encode the content without BOM for the service
             file_content = decoded_content.encode("utf-8")
-            count = DeveloperService.import_transactions_csv(
-                file_content, portfolio_fund_id
-            )
+            count = DeveloperService.import_transactions_csv(file_content, portfolio_fund_id)
 
             logger.log(
                 level=LogLevel.INFO,
@@ -551,13 +547,9 @@ def get_logging_settings():
     """
     try:
         settings = {
-            "enabled": SystemSetting.get_value(
-                SystemSettingKey.LOGGING_ENABLED, "true"
-            ).lower()
+            "enabled": SystemSetting.get_value(SystemSettingKey.LOGGING_ENABLED, "true").lower()
             == "true",
-            "level": SystemSetting.get_value(
-                SystemSettingKey.LOGGING_LEVEL, LogLevel.INFO.value
-            ),
+            "level": SystemSetting.get_value(SystemSettingKey.LOGGING_LEVEL, LogLevel.INFO.value),
         }
         return jsonify(settings)
     except Exception as e:
@@ -593,9 +585,7 @@ def update_logging_settings():
             enabled_setting = SystemSetting(key=SystemSettingKey.LOGGING_ENABLED)
         enabled_setting.value = str(data["enabled"]).lower()
 
-        level_setting = SystemSetting.query.filter_by(
-            key=SystemSettingKey.LOGGING_LEVEL
-        ).first()
+        level_setting = SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_LEVEL).first()
         if not level_setting:
             level_setting = SystemSetting(key=SystemSettingKey.LOGGING_LEVEL)
         level_setting.value = data["level"]
@@ -658,9 +648,7 @@ def get_logs():
             query = query.filter(db.or_(*level_filters))
         if categories:
             category_list = categories.split(",")
-            category_filters = [
-                Log.category == LogCategory(cat) for cat in category_list
-            ]
+            category_filters = [Log.category == LogCategory(cat) for cat in category_list]
             query = query.filter(db.or_(*category_filters))
         if start_date:
             # Parse ISO timestamp string (already in UTC)

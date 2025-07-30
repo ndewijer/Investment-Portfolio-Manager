@@ -137,9 +137,7 @@ class Fund(db.Model):
     )
     historical_prices = db.relationship("FundPrice", backref="fund", lazy=True)
     portfolios = db.relationship("PortfolioFund", backref="fund", lazy=True)
-    dividend_type = db.Column(
-        db.Enum(DividendType), nullable=False, default=DividendType.NONE
-    )
+    dividend_type = db.Column(db.Enum(DividendType), nullable=False, default=DividendType.NONE)
     dividends = db.relationship("Dividend", backref="fund", lazy=True)
 
 
@@ -163,9 +161,7 @@ class PortfolioFund(db.Model):
         "Transaction", backref="portfolio_fund", lazy=True, cascade="all, delete-orphan"
     )
 
-    __table_args__ = (
-        db.UniqueConstraint("portfolio_id", "fund_id", name="unique_portfolio_fund"),
-    )
+    __table_args__ = (db.UniqueConstraint("portfolio_id", "fund_id", name="unique_portfolio_fund"),)
 
 
 class Transaction(db.Model):
@@ -246,9 +242,7 @@ class ExchangeRate(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     __table_args__ = (
-        db.UniqueConstraint(
-            "from_currency", "to_currency", "date", name="unique_exchange_rate"
-        ),
+        db.UniqueConstraint("from_currency", "to_currency", "date", name="unique_exchange_rate"),
         db.Index("ix_exchange_rate_date", "date"),
     )
 
@@ -274,9 +268,7 @@ class Dividend(db.Model):
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     fund_id = db.Column(db.String(36), db.ForeignKey("fund.id"), nullable=False)
-    portfolio_fund_id = db.Column(
-        db.String(36), db.ForeignKey("portfolio_fund.id"), nullable=False
-    )
+    portfolio_fund_id = db.Column(db.String(36), db.ForeignKey("portfolio_fund.id"), nullable=False)
     record_date = db.Column(db.Date, nullable=False)
     ex_dividend_date = db.Column(db.Date, nullable=False)
     shares_owned = db.Column(db.Float, nullable=False)
@@ -361,9 +353,7 @@ class Log(db.Model):
     """
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    timestamp = db.Column(
-        db.DateTime, nullable=False, default=db.func.current_timestamp()
-    )
+    timestamp = db.Column(db.DateTime, nullable=False, default=db.func.current_timestamp())
     level = db.Column(db.Enum(LogLevel), nullable=False)
     category = db.Column(db.Enum(LogCategory), nullable=False)
     message = db.Column(db.Text, nullable=False)
@@ -499,9 +489,7 @@ class RealizedGainLoss(db.Model):
     # Add relationships
     portfolio = db.relationship("Portfolio", backref="realized_gains_losses")
     fund = db.relationship("Fund", backref="realized_gains_losses")
-    transaction = db.relationship(
-        "Transaction", backref="realized_gain_loss", uselist=False
-    )
+    transaction = db.relationship("Transaction", backref="realized_gain_loss", uselist=False)
 
     __table_args__ = (
         db.Index("ix_realized_gain_loss_portfolio_id", "portfolio_id"),

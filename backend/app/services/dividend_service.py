@@ -99,18 +99,14 @@ class DividendService:
         # Set initial status based on dividend type
         initial_status = ReinvestmentStatus.PENDING
         if portfolio_fund.fund.dividend_type == DividendType.CASH:
-            initial_status = (
-                ReinvestmentStatus.COMPLETED
-            )  # Cash dividends are marked as completed
+            initial_status = ReinvestmentStatus.COMPLETED  # Cash dividends are marked as completed
 
         dividend = Dividend(
             id=str(uuid.uuid4()),
             fund_id=portfolio_fund.fund_id,
             portfolio_fund_id=data["portfolio_fund_id"],
             record_date=datetime.strptime(data["record_date"], "%Y-%m-%d").date(),
-            ex_dividend_date=datetime.strptime(
-                data["ex_dividend_date"], "%Y-%m-%d"
-            ).date(),
+            ex_dividend_date=datetime.strptime(data["ex_dividend_date"], "%Y-%m-%d").date(),
             shares_owned=shares_owned,
             dividend_per_share=dividend_per_share,
             total_amount=total_amount,
@@ -136,9 +132,7 @@ class DividendService:
                 reinvestment_price = float(data["reinvestment_price"])
 
                 if reinvestment_shares <= 0 or reinvestment_price <= 0:
-                    raise ValueError(
-                        "Reinvestment shares and price must be positive numbers"
-                    )
+                    raise ValueError("Reinvestment shares and price must be positive numbers")
 
                 # Create transaction for reinvested dividend
                 transaction = Transaction(
@@ -254,9 +248,7 @@ class DividendService:
         try:
             # Delete associated transaction if it exists
             if dividend.reinvestment_transaction_id:
-                transaction = Transaction.query.get(
-                    dividend.reinvestment_transaction_id
-                )
+                transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
                 if transaction:
                     print(f"Deleting associated transaction {transaction.id}")
                     db.session.delete(transaction)

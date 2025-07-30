@@ -48,13 +48,3 @@ logs:
 # Clear logs
 clear-logs:
 	docker exec $(CONTAINER_NAME) sh -c "truncate -s 0 /data/logs/app.log"
-
-# Fix line length issues
-fix-style:
-	python scripts/fix_line_length.py
-	# Fix import order
-	isort .
-	# Fix general Python style issues
-	autopep8 --in-place --recursive .
-	# Run flake8 to check remaining issues
-	flake8

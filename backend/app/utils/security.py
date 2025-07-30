@@ -1,10 +1,11 @@
 """Security utilities for the API."""
 
-from functools import wraps
-from flask import request, jsonify
-from datetime import datetime, UTC
 import hashlib
 import os
+from datetime import UTC, datetime
+from functools import wraps
+
+from flask import jsonify, request
 
 
 def require_api_key(f):
@@ -40,9 +41,7 @@ def require_api_key(f):
 
         # Generate a time-based token (changes every hour)
         current_hour = datetime.now(UTC).strftime("%Y-%m-%d-%H")
-        time_token = hashlib.sha256(
-            f"{valid_api_key}{current_hour}".encode()
-        ).hexdigest()
+        time_token = hashlib.sha256(f"{valid_api_key}{current_hour}".encode()).hexdigest()
 
         # Check if time token matches
         provided_token = request.headers.get("X-Time-Token")

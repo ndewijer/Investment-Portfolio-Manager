@@ -186,16 +186,12 @@ def update_dividend(dividend_id):
 
         # Update basic dividend information
         dividend.record_date = datetime.strptime(data["record_date"], "%Y-%m-%d").date()
-        dividend.ex_dividend_date = datetime.strptime(
-            data["ex_dividend_date"], "%Y-%m-%d"
-        ).date()
+        dividend.ex_dividend_date = datetime.strptime(data["ex_dividend_date"], "%Y-%m-%d").date()
         dividend.dividend_per_share = float(data["dividend_per_share"])
 
         # Update buy_order_date if provided
         if "buy_order_date" in data and data["buy_order_date"]:
-            dividend.buy_order_date = datetime.strptime(
-                data["buy_order_date"], "%Y-%m-%d"
-            ).date()
+            dividend.buy_order_date = datetime.strptime(data["buy_order_date"], "%Y-%m-%d").date()
 
         # Recalculate total amount
         dividend.total_amount = dividend.shares_owned * dividend.dividend_per_share
@@ -205,13 +201,9 @@ def update_dividend(dividend_id):
             if data.get("reinvestment_shares") and data.get("reinvestment_price"):
                 if dividend.reinvestment_transaction_id:
                     # Update existing reinvestment transaction
-                    transaction = Transaction.query.get(
-                        dividend.reinvestment_transaction_id
-                    )
+                    transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
                     if transaction:
-                        transaction.date = (
-                            dividend.buy_order_date or dividend.ex_dividend_date
-                        )
+                        transaction.date = dividend.buy_order_date or dividend.ex_dividend_date
                         transaction.shares = float(data["reinvestment_shares"])
                         transaction.cost_per_share = float(data["reinvestment_price"])
                         db.session.add(transaction)
@@ -232,9 +224,7 @@ def update_dividend(dividend_id):
                     dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
             elif dividend.reinvestment_transaction_id:
                 # If reinvestment data is removed, delete the transaction
-                transaction = Transaction.query.get(
-                    dividend.reinvestment_transaction_id
-                )
+                transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
                 if transaction:
                     db.session.delete(transaction)
                 dividend.reinvestment_transaction_id = None

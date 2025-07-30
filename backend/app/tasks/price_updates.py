@@ -4,12 +4,14 @@ Task to update prices for all funds with symbols.
 Should be run once per day after market close.
 """
 
-import requests
-from datetime import datetime, UTC
 import hashlib
 import os
+from datetime import UTC, datetime
+
+import requests
+
+from ..models import LogCategory, LogLevel
 from ..services.logging_service import logger
-from ..models import LogLevel, LogCategory
 
 
 def update_all_fund_prices():
