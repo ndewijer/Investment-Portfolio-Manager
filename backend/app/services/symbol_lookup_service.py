@@ -42,18 +42,13 @@ class SymbolLookupService:
         """
         try:
             # Check cache first
-            cached_info = SymbolInfo.query.filter_by(
-                symbol=symbol, is_valid=True
-            ).first()
+            cached_info = SymbolInfo.query.filter_by(symbol=symbol, is_valid=True).first()
 
             if cached_info and not force_refresh:
                 # Ensure last_updated is timezone-aware
                 last_updated = cached_info.last_updated.replace(tzinfo=UTC)
                 # Check if cache is still valid
-                if (
-                    datetime.now(UTC) - last_updated
-                    < SymbolLookupService.CACHE_DURATION  # noqa: W503
-                ):
+                if datetime.now(UTC) - last_updated < SymbolLookupService.CACHE_DURATION:
                     return {
                         "symbol": cached_info.symbol,
                         "name": cached_info.name,
@@ -103,9 +98,7 @@ class SymbolLookupService:
                 "exchange": symbol_info.exchange,
                 "currency": symbol_info.currency,
                 "isin": symbol_info.isin,
-                "last_updated": symbol_info.last_updated.replace(
-                    tzinfo=UTC
-                ).isoformat(),
+                "last_updated": symbol_info.last_updated.replace(tzinfo=UTC).isoformat(),
             }
 
         except Exception as e:
@@ -139,9 +132,7 @@ class SymbolLookupService:
                     "exchange": cached_info.exchange,
                     "currency": cached_info.currency,
                     "isin": cached_info.isin,
-                    "last_updated": cached_info.last_updated.replace(
-                        tzinfo=UTC
-                    ).isoformat(),
+                    "last_updated": cached_info.last_updated.replace(tzinfo=UTC).isoformat(),
                 }
 
             # TODO: Implement ISIN lookup logic
@@ -202,9 +193,7 @@ class SymbolLookupService:
                 "exchange": symbol_info.exchange,
                 "currency": symbol_info.currency,
                 "isin": symbol_info.isin,
-                "last_updated": symbol_info.last_updated.replace(
-                    tzinfo=UTC
-                ).isoformat(),
+                "last_updated": symbol_info.last_updated.replace(tzinfo=UTC).isoformat(),
             }
 
         except Exception as e:

@@ -12,8 +12,8 @@ from ..models import (
     FundPrice,
     Portfolio,
     PortfolioFund,
-    Transaction,
     RealizedGainLoss,
+    Transaction,
 )
 
 
@@ -124,6 +124,8 @@ class PortfolioService:
             portfolio_fund: PortfolioFund object
             target_date: Date to calculate for (None for current)
             all_dividends: Pre-fetched dividend data (optional)
+            force_historical_format: Whether to force the historical format output
+                even for current date
 
         Returns:
             dict: Fund metrics including shares, cost, value, etc.
@@ -167,9 +169,7 @@ class PortfolioService:
             realized_gain_loss = sum(r.realized_gain_loss for r in realized_records)
 
             # Calculate total dividends
-            dividends = Dividend.query.filter_by(
-                portfolio_fund_id=portfolio_fund.id
-            ).all()
+            dividends = Dividend.query.filter_by(portfolio_fund_id=portfolio_fund.id).all()
             total_dividends = sum(d.total_amount for d in dividends)
 
             return {
@@ -211,9 +211,7 @@ class PortfolioService:
             dict: Formatted portfolio summary
         """
         # Get realized gains records for additional metrics
-        realized_gains = RealizedGainLoss.query.filter_by(
-            portfolio_id=portfolio.id
-        ).all()
+        realized_gains = RealizedGainLoss.query.filter_by(portfolio_id=portfolio.id).all()
 
         totals = {
             "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
@@ -222,9 +220,7 @@ class PortfolioService:
             "totalUnrealizedGainLoss": sum(
                 pf["unrealized_gain_loss"] for pf in portfolio_funds_data
             ),
-            "totalRealizedGainLoss": sum(
-                pf["realized_gain_loss"] for pf in portfolio_funds_data
-            ),
+            "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
             "totalSaleProceeds": sum(gain.sale_proceeds for gain in realized_gains),
             "totalOriginalCost": sum(gain.cost_basis for gain in realized_gains),
             "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
@@ -254,9 +250,7 @@ class PortfolioService:
             portfolio_fund_ids = [pf.id for pf in portfolio.funds]
             if portfolio_fund_ids:
                 dividends = (
-                    Dividend.query.filter(
-                        Dividend.portfolio_fund_id.in_(portfolio_fund_ids)
-                    )
+                    Dividend.query.filter(Dividend.portfolio_fund_id.in_(portfolio_fund_ids))
                     .join(
                         Transaction,
                         Dividend.reinvestment_transaction_id == Transaction.id,
@@ -305,26 +299,18 @@ class PortfolioService:
         Returns:
             list: List of portfolio summary dictionaries
         """
-        portfolios = Portfolio.query.filter_by(
-            is_archived=False, exclude_from_overview=False
-        ).all()
+        portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
 
         summary = []
         for portfolio in portfolios:
-            portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(
-                portfolio.funds
-            )
+            portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(portfolio.funds)
 
             if portfolio_funds_data:
-                has_transactions = any(
-                    pf["total_shares"] > 0 for pf in portfolio_funds_data
-                )
+                has_transactions = any(pf["total_shares"] > 0 for pf in portfolio_funds_data)
 
                 if has_transactions:
                     summary.append(
-                        PortfolioService._format_portfolio_summary(
-                            portfolio, portfolio_funds_data
-                        )
+                        PortfolioService._format_portfolio_summary(portfolio, portfolio_funds_data)
                     )
 
         return summary
@@ -375,9 +361,7 @@ class PortfolioService:
         Returns:
             list: List of daily values containing portfolio history
         """
-        portfolios = Portfolio.query.filter_by(
-            is_archived=False, exclude_from_overview=False
-        ).all()
+        portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
 
         if not portfolios:
             return []
@@ -442,9 +426,7 @@ class PortfolioService:
         return history
 
     @staticmethod
-    def _calculate_daily_values(
-        current_date, portfolios, portfolio_date_ranges, all_dividends
-    ):
+    def _calculate_daily_values(current_date, portfolios, portfolio_date_ranges, all_dividends):
         """Calculate portfolio values for a specific date."""
         daily_values = {"date": current_date.isoformat(), "portfolios": []}
 

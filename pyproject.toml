@@ -1,0 +1,35 @@
+[tool.ruff]
+
+# Same as Black
+line-length = 100
+indent-width = 4
+
+# Assume Python 3.13
+target-version = "py313"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+# Indent with spaces
+indent-style = "space"
+# Line ending style
+line-ending = "auto"
+
+[tool.ruff.lint]
+# Enable flake8-docstrings (pydocstyle)
+select = ["E", "F", "D", "I"]
+ignore = [
+    # D202: No blank lines allowed after function docstring
+    "D202",
+    # D212: No blank lines allowed after class docstring
+    "D212",
+    # D400: First line should end with a period
+    "D400",
+    # D403: First word of the first line should be properly capitalized
+    "D403",
+    # F541: f-string without any placeholders
+    "F541",
+]

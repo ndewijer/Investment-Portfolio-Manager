@@ -38,9 +38,7 @@ class LoggingService:
             os.makedirs(log_dir)
 
         file_handler = logging.FileHandler(f"{log_dir}/app.log")
-        file_handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        )
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
 
         self.logger = logging.getLogger("app")
         self.logger.addHandler(file_handler)
@@ -61,10 +59,7 @@ class LoggingService:
         """
         try:
             logging_enabled = (
-                SystemSetting.get_value(
-                    SystemSettingKey.LOGGING_ENABLED, "true"
-                ).lower()
-                == "true"
+                SystemSetting.get_value(SystemSettingKey.LOGGING_ENABLED, "true").lower() == "true"
             )
             if not logging_enabled:
                 return False
@@ -116,11 +111,7 @@ class LoggingService:
         if not self.should_log(level):
             # If logging is disabled or level is below threshold, just return the response
             response = {
-                "status": (
-                    "error"
-                    if level in [LogLevel.ERROR, LogLevel.CRITICAL]
-                    else "success"
-                ),
+                "status": ("error" if level in [LogLevel.ERROR, LogLevel.CRITICAL] else "success"),
                 "message": message,
             }
             if details and "user_message" in details:
@@ -149,9 +140,7 @@ class LoggingService:
             db.session.commit()
         except Exception as e:
             # Fallback to file logging if database is unavailable
-            self.logger.error(
-                f"Failed to write to database, falling back to file: {str(e)}"
-            )
+            self.logger.error(f"Failed to write to database, falling back to file: {str(e)}")
             self.logger.log(
                 self._get_logging_level(level),
                 f"{category.value.upper()} - {message} - {json.dumps(details) if details else ''}",
@@ -159,9 +148,7 @@ class LoggingService:
 
         # Return formatted response for API
         response = {
-            "status": (
-                "error" if level in [LogLevel.ERROR, LogLevel.CRITICAL] else "success"
-            ),
+            "status": ("error" if level in [LogLevel.ERROR, LogLevel.CRITICAL] else "success"),
             "message": message,
         }
 

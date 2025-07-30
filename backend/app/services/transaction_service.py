@@ -9,7 +9,7 @@ This module provides methods for:
 
 from datetime import datetime
 
-from ..models import PortfolioFund, Transaction, db, RealizedGainLoss, Dividend
+from ..models import Dividend, PortfolioFund, RealizedGainLoss, Transaction, db
 
 
 class TransactionService:
@@ -155,9 +155,7 @@ class TransactionService:
 
             # Delete old realized gain if it was a sell transaction
             if old_type == "sell":
-                old_gain = RealizedGainLoss.query.filter_by(
-                    transaction_id=transaction_id
-                ).first()
+                old_gain = RealizedGainLoss.query.filter_by(transaction_id=transaction_id).first()
                 if old_gain:
                     db.session.delete(old_gain)
 
@@ -167,8 +165,7 @@ class TransactionService:
                     transaction.portfolio_fund_id
                 )
                 if (
-                    current_position["total_shares"] + transaction.shares
-                    < transaction.shares
+                    current_position["total_shares"] + transaction.shares < transaction.shares
                 ):  # Add back the shares being edited
                     raise ValueError("Insufficient shares for sale")
 
@@ -277,9 +274,7 @@ class TransactionService:
         pf = PortfolioFund.query.get_or_404(portfolio_fund_id)
 
         # Calculate and record the realized gain/loss
-        current_position = TransactionService.calculate_current_position(
-            portfolio_fund_id
-        )
+        current_position = TransactionService.calculate_current_position(portfolio_fund_id)
         if current_position["total_shares"] < shares:
             raise ValueError("Insufficient shares for sale")
 

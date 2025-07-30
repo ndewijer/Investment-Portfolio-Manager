@@ -33,5 +33,5 @@ jobs:
     #     pytest
     - name: Run linting
       run: |
-        black --check .
-        flake8 .
+        ruff check .
+        ruff format --check .

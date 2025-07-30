@@ -25,9 +25,9 @@ from .models import (
     Portfolio,
     PortfolioFund,
     ReinvestmentStatus,
+    SymbolInfo,
     Transaction,
     db,
-    SymbolInfo,
 )
 
 
@@ -136,9 +136,7 @@ def generate_dividends(portfolio_fund_id, fund_id, fund_prices, dividend_type):
     years = set(price.date.year for price in sorted_prices)
 
     # Get all transactions for this portfolio_fund
-    all_transactions = Transaction.query.filter_by(
-        portfolio_fund_id=portfolio_fund_id
-    ).all()
+    all_transactions = Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).all()
 
     for year in years:
         # Set dividend date to April 15th of each year

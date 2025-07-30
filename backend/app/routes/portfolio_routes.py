@@ -68,9 +68,7 @@ class PortfolioAPI(MethodView):
             "totalUnrealizedGainLoss": sum(
                 pf["unrealized_gain_loss"] for pf in portfolio_funds_data
             ),
-            "totalRealizedGainLoss": sum(
-                pf["realized_gain_loss"] for pf in portfolio_funds_data
-            ),
+            "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
             "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
         }
 
@@ -92,9 +90,7 @@ class PortfolioAPI(MethodView):
         if portfolio.is_archived:
             return jsonify({"error": "Portfolio is archived"}), 404
 
-        portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(
-            portfolio.funds
-        )
+        portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(portfolio.funds)
 
         return jsonify(self._format_portfolio_detail(portfolio, portfolio_funds_data))
 
@@ -110,9 +106,7 @@ class PortfolioAPI(MethodView):
             JSON response containing created portfolio details
         """
         data = request.json
-        portfolio = Portfolio(
-            name=data["name"], description=data.get("description", "")
-        )
+        portfolio = Portfolio(name=data["name"], description=data.get("description", ""))
         db.session.add(portfolio)
         db.session.commit()
 
@@ -270,9 +264,7 @@ def handle_portfolio_funds():
 
     # POST - Create new portfolio-fund relationship
     data = request.json
-    portfolio_fund = PortfolioFund(
-        portfolio_id=data["portfolio_id"], fund_id=data["fund_id"]
-    )
+    portfolio_fund = PortfolioFund(portfolio_id=data["portfolio_id"], fund_id=data["fund_id"])
     db.session.add(portfolio_fund)
     db.session.commit()
 
@@ -303,9 +295,7 @@ def get_portfolio_fund_history(portfolio_id):
     start_date = request.args.get("start_date")
     end_date = request.args.get("end_date")
 
-    return jsonify(
-        PortfolioService.get_portfolio_fund_history(portfolio_id, start_date, end_date)
-    )
+    return jsonify(PortfolioService.get_portfolio_fund_history(portfolio_id, start_date, end_date))
 
 
 @portfolios.route("/portfolio-funds/<string:portfolio_fund_id>", methods=["DELETE"])
@@ -330,21 +320,15 @@ def delete_portfolio_fund(portfolio_fund_id):
         ).get_or_404(portfolio_fund_id)
 
         # Count associated transactions and dividends
-        transaction_count = Transaction.query.filter_by(
-            portfolio_fund_id=portfolio_fund_id
-        ).count()
-        dividend_count = Dividend.query.filter_by(
-            portfolio_fund_id=portfolio_fund_id
-        ).count()
+        transaction_count = Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).count()
+        dividend_count = Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id).count()
 
         # Store fund and portfolio names before potential deletion
         fund_name = portfolio_fund.fund.name
         portfolio_name = portfolio_fund.portfolio.name
 
         # If there are associated records and no confirmation, return count for confirmation
-        if (transaction_count > 0 or dividend_count > 0) and request.args.get(
-            "confirm"
-        ) != "true":
+        if (transaction_count > 0 or dividend_count > 0) and request.args.get("confirm") != "true":
             response, status = logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.PORTFOLIO,
@@ -364,9 +348,7 @@ def delete_portfolio_fund(portfolio_fund_id):
         try:
             # Delete associated records if they exist
             if transaction_count > 0:
-                Transaction.query.filter_by(
-                    portfolio_fund_id=portfolio_fund_id
-                ).delete()
+                Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).delete()
             if dividend_count > 0:
                 Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id).delete()
 
@@ -428,6 +410,4 @@ def get_portfolios():
         query = query.filter_by(exclude_from_overview=False)
 
     portfolios_list = query.all()
-    return jsonify(
-        [PortfolioAPI._format_portfolio_list_item(p) for p in portfolios_list]
-    )
+    return jsonify([PortfolioAPI._format_portfolio_list_item(p) for p in portfolios_list])

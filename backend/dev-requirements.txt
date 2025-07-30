@@ -11,10 +11,4 @@ Werkzeug
 yfinance
 
 # Python style and formatting
-autopep8
-black
-flake8
-flake8-docstrings
-isort
-pycodestyle
-pydocstyle
+ruff

@@ -3,14 +3,6 @@
 import os
 
 import click
-from dotenv import load_dotenv
-from flask import Flask
-from flask_cors import CORS
-from werkzeug.middleware.proxy_fix import ProxyFix
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-from flask_migrate import Migrate
-
 from app.models import LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
 from app.routes.developer_routes import developer
 from app.routes.dividend_routes import dividends
@@ -18,8 +10,14 @@ from app.routes.fund_routes import funds
 from app.routes.portfolio_routes import portfolios
 from app.routes.transaction_routes import transactions
 from app.seed_data import seed_database
-
 from app.tasks.price_updates import update_all_fund_prices
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from dotenv import load_dotenv
+from flask import Flask
+from flask_cors import CORS
+from flask_migrate import Migrate
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
@@ -108,17 +106,11 @@ def create_app():
             db.create_all()
         else:
             # Database exists, set default settings if needed
-            if not SystemSetting.query.filter_by(
-                key=SystemSettingKey.LOGGING_ENABLED
-            ).first():
-                logging_enabled = SystemSetting(
-                    key=SystemSettingKey.LOGGING_ENABLED, value="true"
-                )
+            if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_ENABLED).first():
+                logging_enabled = SystemSetting(key=SystemSettingKey.LOGGING_ENABLED, value="true")
                 db.session.add(logging_enabled)
 
-            if not SystemSetting.query.filter_by(
-                key=SystemSettingKey.LOGGING_LEVEL
-            ).first():
+            if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_LEVEL).first():
                 logging_level = SystemSetting(
                     key=SystemSettingKey.LOGGING_LEVEL, value=LogLevel.ERROR.value
                 )

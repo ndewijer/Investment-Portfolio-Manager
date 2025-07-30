@@ -3,9 +3,8 @@
 import logging
 from logging.config import fileConfig
 
-from flask import current_app
-
 from alembic import context
+from flask import current_app
 from sqlalchemy import engine_from_config, pool, text
 from sqlalchemy.exc import OperationalError
 

@@ -88,9 +88,7 @@ class DeveloperService:
             date_str = str(value).strip()
             return datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
-            raise ValueError(
-                f"Invalid date format: {value}. Expected format: YYYY-MM-DD"
-            )
+            raise ValueError(f"Invalid date format: {value}. Expected format: YYYY-MM-DD")
 
     @staticmethod
     def set_exchange_rate(from_currency, to_currency, rate, date=None):
@@ -259,9 +257,7 @@ class DeveloperService:
                         id=str(uuid.uuid4()),  # Generate UUID for transaction
                         portfolio_fund_id=portfolio_fund.id,
                         date=DeveloperService.sanitize_date(mapped_row["date"]),
-                        type=DeveloperService.sanitize_string(
-                            mapped_row["type"]
-                        ).lower(),
+                        type=DeveloperService.sanitize_string(mapped_row["type"]).lower(),
                         shares=DeveloperService.sanitize_float(mapped_row["shares"]),
                         cost_per_share=DeveloperService.sanitize_float(
                             mapped_row["cost_per_share"]
@@ -284,9 +280,7 @@ class DeveloperService:
                 raise ValueError(f"Database error while saving transactions: {str(e)}")
 
         except UnicodeDecodeError:
-            raise ValueError(
-                "Invalid file encoding. Please use UTF-8 encoded CSV files."
-            )
+            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.")
         except csv.Error as e:
             raise ValueError(f"CSV file error: {str(e)}")
         except Exception as e:
@@ -364,9 +358,7 @@ class DeveloperService:
                 raise ValueError(f"Database error: {str(e)}")
 
         except UnicodeDecodeError:
-            raise ValueError(
-                "Invalid file encoding. Please use UTF-8 encoded CSV files."
-            )
+            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.")
         except csv.Error as e:
             raise ValueError(f"CSV file error: {str(e)}")
 

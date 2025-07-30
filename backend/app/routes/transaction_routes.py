@@ -12,9 +12,9 @@ from flask import Blueprint, jsonify, request
 from ..models import (
     LogCategory,
     LogLevel,
+    RealizedGainLoss,
     Transaction,
     db,
-    RealizedGainLoss,
 )
 from ..services.logging_service import logger, track_request
 from ..services.transaction_service import TransactionService

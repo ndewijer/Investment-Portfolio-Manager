@@ -192,9 +192,7 @@ def get_fund(fund_id):
         # Get last known price from database
         latest_price = None
         price_record = (
-            FundPrice.query.filter_by(fund_id=fund_id)
-            .order_by(FundPrice.date.desc())
-            .first()
+            FundPrice.query.filter_by(fund_id=fund_id).order_by(FundPrice.date.desc()).first()
         )
         if price_record:
             latest_price = price_record.price
@@ -344,9 +342,7 @@ def check_fund_usage(fund_id):
             # Get portfolios and their transaction counts
             portfolio_data = []
             for pf in portfolio_funds:
-                transaction_count = Transaction.query.filter_by(
-                    portfolio_fund_id=pf.id
-                ).count()
+                transaction_count = Transaction.query.filter_by(portfolio_fund_id=pf.id).count()
                 if transaction_count > 0:
                     portfolio_data.append(
                         {
@@ -397,8 +393,7 @@ def delete_fund(fund_id):
         if portfolio_funds:
             # Get list of portfolios this fund is attached to
             portfolio_info = [
-                {"name": pf.portfolio.name, "id": pf.portfolio.id}
-                for pf in portfolio_funds
+                {"name": pf.portfolio.name, "id": pf.portfolio.id} for pf in portfolio_funds
             ]
 
             response, status = logger.log(
@@ -466,9 +461,7 @@ def lookup_symbol_info(symbol):
     try:
         # Use SymbolLookupService to get info (checks cache first)
         force_refresh = request.args.get("force_refresh", "false").lower() == "true"
-        symbol_info = SymbolLookupService.get_symbol_info(
-            symbol, force_refresh=force_refresh
-        )
+        symbol_info = SymbolLookupService.get_symbol_info(symbol, force_refresh=force_refresh)
 
         if symbol_info:
             logger.log(
@@ -521,11 +514,7 @@ def get_fund_prices(fund_id):
         fund = Fund.query.get_or_404(fund_id)
 
         # Get all prices for this fund, ordered by date
-        prices = (
-            FundPrice.query.filter_by(fund_id=fund_id)
-            .order_by(FundPrice.date.desc())
-            .all()
-        )
+        prices = FundPrice.query.filter_by(fund_id=fund_id).order_by(FundPrice.date.desc()).all()
 
         logger.log(
             level=LogLevel.INFO,
@@ -602,18 +591,14 @@ def update_all_fund_prices():
     """
     try:
         # Get all funds with symbols
-        funds_with_symbols = Fund.query.filter(
-            Fund.symbol.isnot(None), Fund.symbol != ""
-        ).all()
+        funds_with_symbols = Fund.query.filter(Fund.symbol.isnot(None), Fund.symbol != "").all()
 
         updated_funds = []
         errors = []
 
         for fund in funds_with_symbols:
             try:
-                result, status = HistoricalPriceService.update_historical_prices(
-                    fund.id
-                )
+                result, status = HistoricalPriceService.update_historical_prices(fund.id)
 
                 if status == 200:
                     updated_funds.append(
