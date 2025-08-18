@@ -441,9 +441,6 @@ class PortfolioService:
             total_cost = 0
             total_realized_gain = 0
 
-            # Calculate realized gains up to this date
-            from ..models import RealizedGainLoss
-
             realized_gains = RealizedGainLoss.query.filter(
                 RealizedGainLoss.portfolio_id == portfolio.id,
                 RealizedGainLoss.transaction_date <= current_date,
