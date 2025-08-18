@@ -87,12 +87,12 @@ const Overview = () => {
         date: new Date(day.date).toLocaleDateString(),
       };
 
-      // Calculate totals for this day
+      // Calculate totals for this day using the new backend data structure
       const totalValue = day.portfolios.reduce((sum, p) => sum + p.value, 0);
       const totalCost = day.portfolios.reduce((sum, p) => sum + p.cost, 0);
       const totalRealizedGain = day.portfolios.reduce((sum, p) => sum + (p.realized_gain || 0), 0);
       const totalUnrealizedGain = day.portfolios.reduce(
-        (sum, p) => sum + (p.value - p.cost || 0),
+        (sum, p) => sum + (p.unrealized_gain || 0),
         0
       );
 
@@ -112,7 +112,7 @@ const Overview = () => {
           dayData[`${portfolio.name} Value`] = portfolioData.value;
           dayData[`${portfolio.name} Cost`] = portfolioData.cost;
           dayData[`${portfolio.name} Realized`] = portfolioData.realized_gain || 0;
-          dayData[`${portfolio.name} Unrealized`] = portfolioData.value - portfolioData.cost || 0;
+          dayData[`${portfolio.name} Unrealized`] = portfolioData.unrealized_gain || 0;
         }
       });
 
@@ -172,7 +172,7 @@ const Overview = () => {
       lines.push({
         dataKey: 'realizedGain',
         name: 'Realized Gain/Loss',
-        color: '#00C49F',
+        color: '#FF6B6B',
         strokeWidth: 2,
       });
     }
@@ -181,7 +181,7 @@ const Overview = () => {
       lines.push({
         dataKey: 'unrealizedGain',
         name: 'Unrealized Gain/Loss',
-        color: '#00C49F',
+        color: '#4ECDC4',
         strokeWidth: 2,
         strokeDasharray: '5 5',
       });
@@ -191,7 +191,7 @@ const Overview = () => {
       lines.push({
         dataKey: 'totalGain',
         name: 'Total Gain/Loss',
-        color: '#00C49F',
+        color: '#45B7D1',
         strokeWidth: 3,
       });
     }
