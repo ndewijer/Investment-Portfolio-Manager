@@ -439,6 +439,16 @@ class PortfolioService:
 
             total_value = 0
             total_cost = 0
+            total_realized_gain = 0
+
+            # Calculate realized gains up to this date
+            from ..models import RealizedGainLoss
+
+            realized_gains = RealizedGainLoss.query.filter(
+                RealizedGainLoss.portfolio_id == portfolio.id,
+                RealizedGainLoss.transaction_date <= current_date,
+            ).all()
+            total_realized_gain = sum(rg.realized_gain_loss for rg in realized_gains)
 
             for pf in portfolio.funds:
                 fund_metrics = PortfolioService._calculate_fund_metrics(
@@ -450,13 +460,18 @@ class PortfolioService:
                 except Exception as e:
                     print(f"Error processing fund metrics: {e}")
 
-            if total_value > 0 or total_cost > 0:
+            # Calculate unrealized gains for this date
+            total_unrealized_gain = total_value - total_cost
+
+            if total_value > 0 or total_cost > 0 or total_realized_gain != 0:
                 daily_values["portfolios"].append(
                     {
                         "id": portfolio.id,
                         "name": portfolio.name,
                         "value": total_value,
                         "cost": total_cost,
+                        "realized_gain": total_realized_gain,
+                        "unrealized_gain": total_unrealized_gain,
                     }
                 )
 
@@ -521,6 +536,16 @@ class PortfolioService:
                 )
 
                 if fund_metrics["shares"] > 0:
+                    # Calculate realized gains for this fund up to this date
+                    from ..models import RealizedGainLoss
+
+                    realized_gains = RealizedGainLoss.query.filter(
+                        RealizedGainLoss.portfolio_id == portfolio_id,
+                        RealizedGainLoss.fund_id == pf.fund_id,
+                        RealizedGainLoss.transaction_date <= current_date,
+                    ).all()
+                    fund_realized_gain = sum(rg.realized_gain_loss for rg in realized_gains)
+
                     daily_values["funds"].append(
                         {
                             "fund_id": fund_metrics["fund_id"],
@@ -529,6 +554,8 @@ class PortfolioService:
                             "cost": fund_metrics["cost"],
                             "shares": fund_metrics["shares"],
                             "price": fund_metrics["price"],
+                            "realized_gain": fund_realized_gain,
+                            "unrealized_gain": fund_metrics["value"] - fund_metrics["cost"],
                         }
                     )
 
