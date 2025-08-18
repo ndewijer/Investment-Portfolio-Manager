@@ -1,11 +1,13 @@
 # CSS Architecture
 
 ## Overview
+
 The application implements a centralized CSS architecture focusing on maintainability, reusability, and consistency. The system uses CSS variables for theming and follows a component-based approach while maintaining global styles for common elements.
 
 ## Color System
 
 ### Core Colors
+
 ```css
 :root {
   --primary-color: #1976d2;    /* Standard buttons, primary actions */
@@ -21,10 +23,12 @@ The application implements a centralized CSS architecture focusing on maintainab
 ## Component Structure
 
 ### Common Components
+
 1. **Summary Cards**
    - Responsive grid layout
    - Consistent spacing and shadows
    - Standardized typography
+
    ```css
    .summary-cards {
      display: grid;
@@ -37,6 +41,7 @@ The application implements a centralized CSS architecture focusing on maintainab
    - Color-coded by action type
    - Consistent hover states
    - Standardized padding and borders
+
    ```css
    .action-buttons button {
      margin: 4px;
@@ -52,7 +57,7 @@ The application implements a centralized CSS architecture focusing on maintainab
 
 ## File Organization
 
-```
+```tree
 frontend/src/
 ├── styles/
 │   └── common.css          # Global styles and variables
@@ -67,21 +72,25 @@ frontend/src/
 ## Style Guidelines
 
 ### 1. Component Styling
+
 - Use BEM-like naming for component classes
 - Keep component-specific styles in their CSS files
 - Import common styles where needed
 
 ### 2. Common Elements
+
 - Use predefined variables for colors
 - Maintain consistent spacing using common classes
 - Follow standard button styling patterns
 
 ### 3. Responsive Design
+
 - Use CSS Grid for layouts
 - Implement flexible components
 - Use relative units where appropriate
 
 ### 4. Interactive States
+
 ```css
 /* Standard hover effect */
 button:hover {
@@ -120,6 +129,7 @@ button:hover {
 ## Common Patterns
 
 ### 1. Card Layout
+
 ```css
 .card {
   background-color: white;
@@ -130,6 +140,7 @@ button:hover {
 ```
 
 ### 2. Button Styles
+
 ```css
 .button {
   padding: 8px 16px;
@@ -141,6 +152,7 @@ button:hover {
 ```
 
 ### 3. Form Elements
+
 ```css
 .form-group {
   margin-bottom: 15px;
