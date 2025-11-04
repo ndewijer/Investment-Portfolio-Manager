@@ -73,7 +73,7 @@ def get_exchange_rate():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error retrieving exchange rate: {str(e)}",
+            message=f"Error retrieving exchange rate: {e!s}",
             details={
                 "from_currency": from_currency,
                 "to_currency": to_currency,
@@ -157,7 +157,7 @@ def set_exchange_rate():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error setting exchange rate: {str(e)}",
+            message=f"Error setting exchange rate: {e!s}",
             details={"request_data": data, "error": str(e)},
             http_status=400,
         )
@@ -284,7 +284,7 @@ def import_transactions():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
-            message=f"Unexpected error during transaction import: {str(e)}",
+            message=f"Unexpected error during transaction import: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -358,7 +358,7 @@ def set_fund_price():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error setting fund price: {str(e)}",
+            message=f"Error setting fund price: {e!s}",
             details={"request_data": data, "error": str(e)},
             http_status=400,
         )
@@ -389,7 +389,7 @@ def get_csv_template():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error retrieving CSV template: {str(e)}",
+            message=f"Error retrieving CSV template: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -420,7 +420,7 @@ def get_fund_price_template():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error retrieving fund price CSV template: {str(e)}",
+            message=f"Error retrieving fund price CSV template: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -529,7 +529,7 @@ def import_fund_prices():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Unexpected error during fund price import: {str(e)}",
+            message=f"Unexpected error during fund price import: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -556,7 +556,7 @@ def get_logging_settings():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error retrieving logging settings: {str(e)}",
+            message=f"Error retrieving logging settings: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -604,7 +604,7 @@ def update_logging_settings():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error updating logging settings: {str(e)}",
+            message=f"Error updating logging settings: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -702,7 +702,7 @@ def get_logs():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error retrieving logs: {str(e)}",
+            message=f"Error retrieving logs: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -747,7 +747,7 @@ def get_fund_price(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error retrieving fund price: {str(e)}",
+            message=f"Error retrieving fund price: {e!s}",
             details={
                 "fund_id": fund_id,
                 "date": date.isoformat() if date else None,
@@ -786,7 +786,7 @@ def clear_logs():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
-            message=f"Error clearing logs: {str(e)}",
+            message=f"Error clearing logs: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )

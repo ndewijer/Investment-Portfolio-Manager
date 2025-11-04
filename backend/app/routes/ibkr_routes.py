@@ -8,7 +8,7 @@ This module provides routes for:
 - Transaction allocation and processing
 """
 
-from datetime import UTC, datetime
+from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 from flask.views import MethodView
@@ -46,7 +46,8 @@ class IBKRConfigAPI(MethodView):
         # Check if token is expiring soon (within 30 days)
         token_warning = None
         if config.token_expires_at:
-            days_until_expiry = (config.token_expires_at - datetime.now(UTC)).days
+            # SQLite stores naive datetimes, so compare with naive datetime
+            days_until_expiry = (config.token_expires_at - datetime.now()).days
             if days_until_expiry < 30:
                 token_warning = f"Token expires in {days_until_expiry} days"
 
@@ -95,7 +96,7 @@ class IBKRConfigAPI(MethodView):
 
             # Parse token expiration date if provided
             token_expires_at = None
-            if "token_expires_at" in data and data["token_expires_at"]:
+            if data.get("token_expires_at"):
                 try:
                     token_expires_at = datetime.fromisoformat(data["token_expires_at"])
                 except (ValueError, TypeError):
@@ -112,7 +113,7 @@ class IBKRConfigAPI(MethodView):
                     config.token_expires_at = token_expires_at
                 if "auto_import_enabled" in data:
                     config.auto_import_enabled = data["auto_import_enabled"]
-                config.updated_at = datetime.now(UTC)
+                config.updated_at = datetime.now()
             else:
                 # Create new
                 config = IBKRConfig(
@@ -250,7 +251,7 @@ def trigger_import():
         results = service.import_transactions(transactions)
 
         # Update last import date
-        config.last_import_date = datetime.now(UTC)
+        config.last_import_date = datetime.now()
         db.session.commit()
 
         logger.log(
@@ -392,7 +393,7 @@ def ignore_transaction(transaction_id):
 
     try:
         txn.status = "ignored"
-        txn.processed_at = datetime.now(UTC)
+        txn.processed_at = datetime.now()
         db.session.commit()
 
         logger.log(

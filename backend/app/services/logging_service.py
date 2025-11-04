@@ -140,7 +140,7 @@ class LoggingService:
             db.session.commit()
         except Exception as e:
             # Fallback to file logging if database is unavailable
-            self.logger.error(f"Failed to write to database, falling back to file: {str(e)}")
+            self.logger.error(f"Failed to write to database, falling back to file: {e!s}")
             self.logger.log(
                 self._get_logging_level(level),
                 f"{category.value.upper()} - {message} - {json.dumps(details) if details else ''}",

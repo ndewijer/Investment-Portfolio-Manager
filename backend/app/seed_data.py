@@ -52,7 +52,7 @@ def load_fund_prices(fund_id, isin):
         f"{isin}.csv",
     )
 
-    with open(csv_path, "r") as file:
+    with open(csv_path) as file:
         reader = csv.DictReader(file)
         for row in reader:
             prices.append(
@@ -412,9 +412,13 @@ def seed_database():
         level=LogLevel.INFO,
         category=LogCategory.SYSTEM,
         message="Database seeding completed",
-        details='{{"portfolios": {}, "funds": {}, "portfolio_funds": {}}}'.format(
-            len(portfolios), len(funds), len(portfolio_funds)
-        ),
+        details=f"{
+            {
+                'portfolios': {len(portfolios)},
+                'funds': {len(funds)},
+                'portfolio_funds': {len(portfolio_funds)},
+            }
+        }",
         source="seed_database",
         http_status=None,
     )

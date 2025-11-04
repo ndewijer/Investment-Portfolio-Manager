@@ -1,0 +1,5 @@
+# Ignore all XML debug files
+*.xml
+
+# But keep the .gitignore
+!.gitignore

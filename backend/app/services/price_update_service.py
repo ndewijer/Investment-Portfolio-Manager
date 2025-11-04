@@ -138,7 +138,7 @@ class TodayPriceService:
             response, status = logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error updating latest price: {str(e)}",
+                message=f"Error updating latest price: {e!s}",
                 details={"fund_id": fund_id, "error": str(e)},
                 http_status=500,
             )
@@ -287,7 +287,7 @@ class HistoricalPriceService:
             response, status = logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error updating historical prices: {str(e)}",
+                message=f"Error updating historical prices: {e!s}",
                 details={"fund_id": fund_id, "error": str(e)},
                 http_status=500,
             )

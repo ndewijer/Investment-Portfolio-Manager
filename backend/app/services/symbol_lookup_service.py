@@ -105,7 +105,7 @@ class SymbolLookupService:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.SYSTEM,
-                message=f"Error fetching symbol info: {str(e)}",
+                message=f"Error fetching symbol info: {e!s}",
                 details={"symbol": symbol, "error": str(e)},
             )
             return None
@@ -142,7 +142,7 @@ class SymbolLookupService:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.SYSTEM,
-                message=f"Error looking up ISIN: {str(e)}",
+                message=f"Error looking up ISIN: {e!s}",
                 details={"isin": isin, "error": str(e)},
             )
             return None
@@ -200,7 +200,7 @@ class SymbolLookupService:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.SYSTEM,
-                message=f"Error updating symbol info: {str(e)}",
+                message=f"Error updating symbol info: {e!s}",
                 details={"symbol": symbol, "error": str(e)},
             )
             return None

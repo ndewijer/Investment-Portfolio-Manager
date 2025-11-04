@@ -67,7 +67,7 @@ def get_transactions():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
-            message=f"Error retrieving transactions: {str(e)}",
+            message=f"Error retrieving transactions: {e!s}",
             details={"portfolio_id": portfolio_id, "error": str(e)},
             http_status=500,
         )
@@ -122,7 +122,7 @@ def create_transaction():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
-            message=f"Error creating transaction: {str(e)}",
+            message=f"Error creating transaction: {e!s}",
             details={
                 "user_message": "Error creating transaction",
                 "error": str(e),
@@ -161,7 +161,7 @@ def get_transaction(transaction_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
-            message=f"Error retrieving transaction: {str(e)}",
+            message=f"Error retrieving transaction: {e!s}",
             details={"transaction_id": transaction_id, "error": str(e)},
             http_status=404,
         )
@@ -225,7 +225,7 @@ def update_transaction(transaction_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
-            message=f"Error updating transaction: {str(e)}",
+            message=f"Error updating transaction: {e!s}",
             details={
                 "user_message": str(e),
                 "transaction_id": transaction_id,
@@ -294,7 +294,7 @@ def delete_transaction(transaction_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
-            message=f"Error deleting transaction: {str(e)}",
+            message=f"Error deleting transaction: {e!s}",
             details={"transaction_id": transaction_id, "error": str(e)},
             http_status=400,
         )
