@@ -185,7 +185,7 @@ class Transaction(db.Model):
         nullable=False,
     )
     date = db.Column(db.Date, nullable=False)
-    type = db.Column(db.String(10), nullable=False)  # 'buy', 'sell', or 'dividend'
+    type = db.Column(db.String(10), nullable=False)  # 'buy', 'sell', 'dividend', or 'fee'
     shares = db.Column(db.Float, nullable=False)
     cost_per_share = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -321,6 +321,7 @@ class LogCategory(Enum):
         SYSTEM: System-level logs
         DATABASE: Database-related logs
         SECURITY: Security-related logs
+        IBKR: IBKR integration-related logs
     """
 
     PORTFOLIO = "portfolio"
@@ -330,6 +331,7 @@ class LogCategory(Enum):
     SYSTEM = "system"
     DATABASE = "database"
     SECURITY = "security"
+    IBKR = "ibkr"
 
 
 class Log(db.Model):
@@ -497,3 +499,163 @@ class RealizedGainLoss(db.Model):
         db.Index("ix_realized_gain_loss_transaction_date", "transaction_date"),
         db.Index("ix_realized_gain_loss_transaction_id", "transaction_id"),
     )
+
+
+class IBKRConfig(db.Model):
+    """
+    Stores IBKR Flex Web Service configuration.
+
+    Attributes:
+        id (str): Unique identifier (UUID)
+        flex_token (str): Encrypted IBKR Flex token
+        flex_query_id (str): IBKR Flex query ID
+        token_expires_at (datetime): Token expiration date (max 1 year from creation)
+        last_import_date (datetime): Last successful import timestamp
+        auto_import_enabled (bool): Whether automated weekly imports are enabled
+        created_at (datetime): Configuration creation timestamp
+        updated_at (datetime): Configuration update timestamp
+    """
+
+    __tablename__ = "ibkr_config"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    flex_token = db.Column(db.String(500), nullable=False)  # Encrypted token
+    flex_query_id = db.Column(db.String(100), nullable=False)
+    token_expires_at = db.Column(db.DateTime, nullable=True)  # Token expiration date
+    last_import_date = db.Column(db.DateTime, nullable=True)
+    auto_import_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp(),
+    )
+
+
+class IBKRTransaction(db.Model):
+    """
+    Stores raw IBKR transactions before allocation.
+
+    These are parent records kept for audit trail and deduplication.
+
+    Attributes:
+        id (str): Unique identifier (UUID)
+        ibkr_transaction_id (str): IBKR's unique transaction ID
+        transaction_date (date): Transaction date
+        symbol (str): Trading symbol
+        isin (str): ISIN code
+        description (str): Transaction description
+        transaction_type (str): Type: 'buy', 'sell', 'dividend', 'fee'
+        quantity (float): Number of shares
+        price (float): Price per share
+        total_amount (float): Total transaction amount
+        currency (str): Currency code
+        fees (float): Transaction fees
+        status (str): Status: 'pending', 'processed', 'ignored'
+        imported_at (datetime): Import timestamp
+        processed_at (datetime): Processing timestamp
+        raw_data (str): JSON of original IBKR data
+    """
+
+    __tablename__ = "ibkr_transaction"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    ibkr_transaction_id = db.Column(db.String(100), unique=True, nullable=False)
+    transaction_date = db.Column(db.Date, nullable=False)
+    symbol = db.Column(db.String(10), nullable=True)
+    isin = db.Column(db.String(12), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    transaction_type = db.Column(db.String(20), nullable=False)
+    quantity = db.Column(db.Float, nullable=True)
+    price = db.Column(db.Float, nullable=True)
+    total_amount = db.Column(db.Float, nullable=False)
+    currency = db.Column(db.String(3), nullable=False)
+    fees = db.Column(db.Float, default=0.0, nullable=False)
+    status = db.Column(db.String(20), default="pending", nullable=False)
+    imported_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    processed_at = db.Column(db.DateTime, nullable=True)
+    raw_data = db.Column(db.Text, nullable=True)
+
+    allocations = db.relationship(
+        "IBKRTransactionAllocation",
+        backref="ibkr_transaction",
+        lazy=True,
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        db.Index("ix_ibkr_transaction_status", "status"),
+        db.Index("ix_ibkr_transaction_date", "transaction_date"),
+        db.Index("ix_ibkr_transaction_ibkr_id", "ibkr_transaction_id"),
+    )
+
+
+class IBKRTransactionAllocation(db.Model):
+    """
+    Tracks how IBKR transactions are allocated across portfolios.
+
+    Attributes:
+        id (str): Unique identifier (UUID)
+        ibkr_transaction_id (str): Foreign key to IBKRTransaction
+        portfolio_id (str): Foreign key to Portfolio
+        allocation_percentage (float): Allocation percentage (must sum to 100)
+        allocated_amount (float): Allocated amount in currency
+        allocated_shares (float): Allocated shares
+        transaction_id (str): Foreign key to created Transaction record
+        created_at (datetime): Allocation creation timestamp
+    """
+
+    __tablename__ = "ibkr_transaction_allocation"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    ibkr_transaction_id = db.Column(
+        db.String(36),
+        db.ForeignKey("ibkr_transaction.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    portfolio_id = db.Column(
+        db.String(36),
+        db.ForeignKey("portfolio.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    allocation_percentage = db.Column(db.Float, nullable=False)
+    allocated_amount = db.Column(db.Float, nullable=False)
+    allocated_shares = db.Column(db.Float, nullable=False)
+    transaction_id = db.Column(
+        db.String(36),
+        db.ForeignKey("transaction.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    portfolio = db.relationship("Portfolio")
+    transaction = db.relationship("Transaction")
+
+    __table_args__ = (
+        db.Index("ix_ibkr_allocation_ibkr_transaction_id", "ibkr_transaction_id"),
+        db.Index("ix_ibkr_allocation_portfolio_id", "portfolio_id"),
+        db.Index("ix_ibkr_allocation_transaction_id", "transaction_id"),
+    )
+
+
+class IBKRImportCache(db.Model):
+    """
+    Caches IBKR API responses to avoid duplicate requests.
+
+    Attributes:
+        id (str): Unique identifier (UUID)
+        cache_key (str): Cache key (typically query_id + date range)
+        data (str): Cached API response data
+        created_at (datetime): Cache creation timestamp
+        expires_at (datetime): Cache expiration timestamp
+    """
+
+    __tablename__ = "ibkr_import_cache"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    cache_key = db.Column(db.String(255), unique=True, nullable=False)
+    data = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    expires_at = db.Column(db.DateTime, nullable=False)
+
+    __table_args__ = (db.Index("ix_ibkr_cache_expires_at", "expires_at"),)

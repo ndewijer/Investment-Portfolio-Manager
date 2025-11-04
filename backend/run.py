@@ -7,9 +7,12 @@ from app.models import LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
 from app.routes.developer_routes import developer
 from app.routes.dividend_routes import dividends
 from app.routes.fund_routes import funds
+from app.routes.ibkr_routes import ibkr
 from app.routes.portfolio_routes import portfolios
+from app.routes.system_routes import system
 from app.routes.transaction_routes import transactions
 from app.seed_data import seed_database
+from app.tasks.ibkr_import import run_automated_ibkr_import
 from app.tasks.price_updates import update_all_fund_prices
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -95,6 +98,8 @@ def create_app():
     app.register_blueprint(transactions, url_prefix="/api")
     app.register_blueprint(developer, url_prefix="/api")
     app.register_blueprint(dividends, url_prefix="/api")
+    app.register_blueprint(ibkr, url_prefix="/api")
+    app.register_blueprint(system, url_prefix="/api")
 
     # Create database tables and set default settings
     with app.app_context():
@@ -121,17 +126,30 @@ def create_app():
     # Set up scheduler
     scheduler = BackgroundScheduler()
 
-    # Create a wrapper function that provides app context
+    # Create wrapper functions that provide app context
     def run_price_updates():
         with app.app_context():
             update_all_fund_prices()
 
+    def run_ibkr_import():
+        with app.app_context():
+            run_automated_ibkr_import()
+
     # Schedule the price update task to run at 23:55 local time every weekday
     scheduler.add_job(
-        func=run_price_updates,  # Use the wrapper function instead
+        func=run_price_updates,
         trigger=CronTrigger(hour=23, minute=55, day_of_week="mon-fri"),
         id="daily_price_update",
         name="Update all fund prices daily",
+        replace_existing=True,
+    )
+
+    # Schedule the IBKR import task to run at 2:00 AM local time every Sunday
+    scheduler.add_job(
+        func=run_ibkr_import,
+        trigger=CronTrigger(hour=2, minute=0, day_of_week="sun"),
+        id="weekly_ibkr_import",
+        name="Import IBKR transactions weekly",
         replace_existing=True,
     )
 

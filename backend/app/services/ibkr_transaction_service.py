@@ -1,0 +1,390 @@
+"""
+Service for processing IBKR transactions and allocations.
+
+This module handles:
+- Validating allocations
+- Creating Fund and PortfolioFund records
+- Creating Transaction records
+- Processing transaction allocations
+- Dividend matching
+"""
+
+from datetime import UTC, datetime
+from typing import Dict, List
+
+from ..models import (
+    Dividend,
+    Fund,
+    IBKRTransaction,
+    IBKRTransactionAllocation,
+    InvestmentType,
+    LogCategory,
+    LogLevel,
+    Portfolio,
+    PortfolioFund,
+    Transaction,
+    db,
+)
+from ..services.logging_service import logger
+
+
+class IBKRTransactionService:
+    """
+    Service class for processing IBKR transactions and allocations.
+
+    Provides methods for:
+    - Validating allocations
+    - Processing transactions with user allocations
+    - Creating Transaction records across portfolios
+    - Matching dividends to existing records
+    """
+
+    @staticmethod
+    def validate_allocations(allocations: List[Dict]) -> tuple[bool, str]:
+        """
+        Validate that allocations sum to 100%.
+
+        Args:
+            allocations: List of allocation dictionaries
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        if not allocations:
+            return False, "At least one allocation is required"
+
+        total_percentage = sum(alloc["percentage"] for alloc in allocations)
+
+        # Allow small floating point error
+        if abs(total_percentage - 100.0) > 0.01:
+            return False, f"Allocations must sum to 100% (currently {total_percentage}%)"
+
+        # Validate individual allocations
+        for alloc in allocations:
+            if alloc["percentage"] <= 0:
+                return False, "Allocation percentages must be positive"
+
+            if "portfolio_id" not in alloc:
+                return False, "Each allocation must specify a portfolio_id"
+
+        return True, ""
+
+    @staticmethod
+    def _get_or_create_fund(symbol: str, isin: str, currency: str) -> Fund:
+        """
+        Get or create Fund record.
+
+        Args:
+            symbol: Trading symbol
+            isin: ISIN code
+            currency: Currency code
+
+        Returns:
+            Fund object
+        """
+        # Try to find by ISIN first
+        if isin:
+            fund = Fund.query.filter_by(isin=isin).first()
+            if fund:
+                return fund
+
+        # Try to find by symbol
+        if symbol:
+            fund = Fund.query.filter_by(symbol=symbol).first()
+            if fund:
+                return fund
+
+        # Create new fund
+        fund = Fund(
+            name=symbol or isin,  # Use symbol as name, fallback to ISIN
+            isin=isin or f"UNKNOWN_{symbol}",  # ISIN is required, use placeholder
+            symbol=symbol,
+            currency=currency,
+            exchange="UNKNOWN",  # Will be updated when user provides info
+            investment_type=InvestmentType.STOCK,  # Default to stock for IBKR imports
+        )
+        db.session.add(fund)
+        db.session.flush()  # Get ID without committing
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.IBKR,
+            message=f"Created new fund: {fund.name}",
+            details={"fund_id": fund.id, "symbol": symbol, "isin": isin},
+        )
+
+        return fund
+
+    @staticmethod
+    def _get_or_create_portfolio_fund(portfolio_id: str, fund_id: str) -> PortfolioFund:
+        """
+        Get or create PortfolioFund relationship.
+
+        Args:
+            portfolio_id: Portfolio ID
+            fund_id: Fund ID
+
+        Returns:
+            PortfolioFund object
+        """
+        portfolio_fund = PortfolioFund.query.filter_by(
+            portfolio_id=portfolio_id, fund_id=fund_id
+        ).first()
+
+        if not portfolio_fund:
+            portfolio_fund = PortfolioFund(portfolio_id=portfolio_id, fund_id=fund_id)
+            db.session.add(portfolio_fund)
+            db.session.flush()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message="Created new portfolio-fund relationship",
+                details={"portfolio_id": portfolio_id, "fund_id": fund_id},
+            )
+
+        return portfolio_fund
+
+    @staticmethod
+    def process_transaction_allocation(ibkr_transaction_id: str, allocations: List[Dict]) -> Dict:
+        """
+        Process IBKR transaction with user-provided allocations.
+
+        Args:
+            ibkr_transaction_id: IBKR transaction ID
+            allocations: List of allocation dictionaries with:
+                - portfolio_id: Portfolio ID
+                - percentage: Allocation percentage
+
+        Returns:
+            Dictionary with processing results
+        """
+        # Get IBKR transaction
+        ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
+        if not ibkr_txn:
+            return {"success": False, "error": "Transaction not found"}
+
+        # Check if already processed
+        if ibkr_txn.status == "processed":
+            return {"success": False, "error": "Transaction already processed"}
+
+        # Validate allocations
+        is_valid, error_message = IBKRTransactionService.validate_allocations(allocations)
+        if not is_valid:
+            return {"success": False, "error": error_message}
+
+        try:
+            # Get or create fund
+            fund = IBKRTransactionService._get_or_create_fund(
+                ibkr_txn.symbol, ibkr_txn.isin, ibkr_txn.currency
+            )
+
+            created_transactions = []
+
+            # Process each allocation
+            for alloc in allocations:
+                portfolio_id = alloc["portfolio_id"]
+                percentage = alloc["percentage"]
+
+                # Verify portfolio exists
+                portfolio = Portfolio.query.get(portfolio_id)
+                if not portfolio:
+                    raise ValueError(f"Portfolio not found: {portfolio_id}")
+
+                # Calculate allocated amounts
+                allocated_amount = (ibkr_txn.total_amount * percentage) / 100.0
+                allocated_shares = (
+                    (ibkr_txn.quantity * percentage / 100.0) if ibkr_txn.quantity else 0
+                )
+
+                # Get or create portfolio-fund relationship
+                portfolio_fund = IBKRTransactionService._get_or_create_portfolio_fund(
+                    portfolio_id, fund.id
+                )
+
+                # Create Transaction record (skip for fee transactions without shares)
+                transaction = None
+                if ibkr_txn.transaction_type != "fee":
+                    # Calculate cost per share
+                    cost_per_share = (
+                        ibkr_txn.price
+                        if ibkr_txn.price
+                        else (allocated_amount / allocated_shares if allocated_shares > 0 else 0)
+                    )
+
+                    transaction = Transaction(
+                        portfolio_fund_id=portfolio_fund.id,
+                        date=ibkr_txn.transaction_date,
+                        type=ibkr_txn.transaction_type,
+                        shares=allocated_shares,
+                        cost_per_share=cost_per_share,
+                    )
+                    db.session.add(transaction)
+                    db.session.flush()  # Get transaction ID
+
+                    created_transactions.append(
+                        {
+                            "transaction_id": transaction.id,
+                            "portfolio_name": portfolio.name,
+                            "shares": allocated_shares,
+                            "amount": allocated_amount,
+                        }
+                    )
+
+                # Create allocation record
+                allocation_record = IBKRTransactionAllocation(
+                    ibkr_transaction_id=ibkr_txn.id,
+                    portfolio_id=portfolio_id,
+                    allocation_percentage=percentage,
+                    allocated_amount=allocated_amount,
+                    allocated_shares=allocated_shares,
+                    transaction_id=transaction.id if transaction else None,
+                )
+                db.session.add(allocation_record)
+
+            # Update IBKR transaction status
+            ibkr_txn.status = "processed"
+            ibkr_txn.processed_at = datetime.now(UTC)
+
+            # Commit all changes
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Successfully processed IBKR transaction: {ibkr_txn.ibkr_transaction_id}",
+                details={
+                    "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
+                    "transaction_count": len(created_transactions),
+                    "allocations": allocations,
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Transaction processed successfully",
+                "created_transactions": created_transactions,
+                "fund_id": fund.id,
+                "fund_name": fund.name,
+            }
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to process IBKR transaction",
+                details={"ibkr_transaction_id": ibkr_transaction_id, "error": str(e)},
+            )
+            return {"success": False, "error": f"Processing failed: {str(e)}"}
+
+    @staticmethod
+    def get_pending_dividends(symbol: str = None, isin: str = None) -> List[Dict]:
+        """
+        Get pending dividend records for matching.
+
+        Args:
+            symbol: Filter by symbol (optional)
+            isin: Filter by ISIN (optional)
+
+        Returns:
+            List of pending dividend records
+        """
+        query = Dividend.query.filter_by(reinvestment_status="pending")
+
+        # Filter by fund if symbol/ISIN provided
+        if symbol or isin:
+            fund_query = Fund.query
+            if isin:
+                fund_query = fund_query.filter_by(isin=isin)
+            elif symbol:
+                fund_query = fund_query.filter_by(symbol=symbol)
+
+            funds = fund_query.all()
+            fund_ids = [f.id for f in funds]
+            query = query.filter(Dividend.fund_id.in_(fund_ids))
+
+        dividends = query.all()
+
+        return [
+            {
+                "id": div.id,
+                "fund_id": div.fund_id,
+                "portfolio_fund_id": div.portfolio_fund_id,
+                "record_date": div.record_date.isoformat(),
+                "ex_dividend_date": div.ex_dividend_date.isoformat(),
+                "shares_owned": div.shares_owned,
+                "dividend_per_share": div.dividend_per_share,
+                "total_amount": div.total_amount,
+            }
+            for div in dividends
+        ]
+
+    @staticmethod
+    def match_dividend(ibkr_transaction_id: str, dividend_ids: List[str]) -> Dict:
+        """
+        Match IBKR dividend transaction to existing Dividend records.
+
+        Args:
+            ibkr_transaction_id: IBKR transaction ID
+            dividend_ids: List of Dividend IDs to match
+
+        Returns:
+            Dictionary with matching results
+        """
+        # Get IBKR transaction
+        ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
+        if not ibkr_txn:
+            return {"success": False, "error": "Transaction not found"}
+
+        if ibkr_txn.transaction_type != "dividend":
+            return {"success": False, "error": "Transaction is not a dividend"}
+
+        if ibkr_txn.status == "processed":
+            return {"success": False, "error": "Transaction already processed"}
+
+        try:
+            # Get dividend records
+            dividends = Dividend.query.filter(Dividend.id.in_(dividend_ids)).all()
+
+            if not dividends:
+                return {"success": False, "error": "No dividends found"}
+
+            # Update dividend records with total amount from IBKR
+            total_shares = sum(div.shares_owned for div in dividends)
+            for dividend in dividends:
+                # Allocate IBKR amount proportionally based on shares
+                dividend.total_amount = ibkr_txn.total_amount * dividend.shares_owned / total_shares
+
+            # Mark IBKR transaction as processed (dividends handled separately)
+            ibkr_txn.status = "processed"
+            ibkr_txn.processed_at = datetime.now(UTC)
+
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Matched dividend transaction: {ibkr_txn.ibkr_transaction_id}",
+                details={
+                    "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
+                    "dividend_count": len(dividends),
+                    "total_amount": ibkr_txn.total_amount,
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Dividend matched successfully",
+                "updated_dividends": len(dividends),
+            }
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to match dividend",
+                details={"ibkr_transaction_id": ibkr_transaction_id, "error": str(e)},
+            )
+            return {"success": False, "error": f"Matching failed: {str(e)}"}
