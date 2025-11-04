@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import './Navigation.css';
 
 const Navigation = () => {
-  const { features } = useApp();
+  const { features, ibkrTransactionCount } = useApp();
 
   return (
     <nav className="navigation">
@@ -22,7 +22,9 @@ const Navigation = () => {
       <ul className="nav-right">
         {features.ibkr_integration && (
           <li>
-            <Link to="/ibkr/inbox">IBKR Inbox</Link>
+            <Link to="/ibkr/inbox">
+              IBKR Inbox{ibkrTransactionCount > 0 && ` (${ibkrTransactionCount})`}
+            </Link>
           </li>
         )}
         <li>

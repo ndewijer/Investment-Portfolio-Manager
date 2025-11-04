@@ -4,11 +4,12 @@ import Toast from '../components/Toast';
 import Modal from '../components/Modal';
 import DataTable from '../components/shared/DataTable';
 import { useApp } from '../context/AppContext';
-import { formatCurrency } from '../utils/currency';
+import { useFormat } from '../context/FormatContext';
 import './IBKRInbox.css';
 
 const IBKRInbox = () => {
-  const { features } = useApp();
+  const { features, refreshIBKRTransactionCount } = useApp();
+  const { formatCurrencyWithCode, formatNumber } = useFormat();
   const [transactions, setTransactions] = useState([]);
   const [portfolios, setPortfolios] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +64,7 @@ const IBKRInbox = () => {
           `Import completed: ${response.data.imported} imported, ${response.data.skipped} skipped`
         );
         fetchTransactions();
+        refreshIBKRTransactionCount();
       } else {
         setError('Import failed');
       }
@@ -142,6 +144,7 @@ const IBKRInbox = () => {
         setSelectedTransaction(null);
         setAllocations([]);
         fetchTransactions();
+        refreshIBKRTransactionCount();
       } else {
         setError(response.data.error || 'Failed to process transaction');
       }
@@ -159,6 +162,7 @@ const IBKRInbox = () => {
       await api.post(`ibkr/inbox/${transactionId}/ignore`);
       setMessage('Transaction ignored');
       fetchTransactions();
+      refreshIBKRTransactionCount();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to ignore transaction');
     }
@@ -173,6 +177,7 @@ const IBKRInbox = () => {
       await api.delete(`ibkr/inbox/${transactionId}`);
       setMessage('Transaction deleted');
       fetchTransactions();
+      refreshIBKRTransactionCount();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to delete transaction');
     }
@@ -246,14 +251,14 @@ const IBKRInbox = () => {
             key: 'quantity',
             header: 'Quantity',
             cellClassName: 'number-cell',
-            render: (value) => value || '-',
+            render: (value) => (value ? formatNumber(value, 4) : '-'),
             sortable: true,
           },
           {
             key: 'price',
             header: 'Price',
             cellClassName: 'number-cell',
-            render: (value, item) => (value ? formatCurrency(value, item.currency) : '-'),
+            render: (value, item) => (value ? formatCurrencyWithCode(value, item.currency) : '-'),
             sortable: true,
           },
           {
@@ -262,7 +267,7 @@ const IBKRInbox = () => {
             cellClassName: 'number-cell',
             render: (_, item) => {
               const shareCost = item.quantity && item.price ? item.quantity * item.price : null;
-              return shareCost ? formatCurrency(shareCost, item.currency) : '-';
+              return shareCost ? formatCurrencyWithCode(shareCost, item.currency) : '-';
             },
             sortable: false,
           },
@@ -272,7 +277,7 @@ const IBKRInbox = () => {
             cellClassName: 'number-cell',
             render: (value, item) => {
               const commission = value || 0;
-              return commission > 0 ? formatCurrency(commission, item.currency) : '-';
+              return commission > 0 ? formatCurrencyWithCode(commission, item.currency) : '-';
             },
             sortable: true,
           },
@@ -280,7 +285,7 @@ const IBKRInbox = () => {
             key: 'total_amount',
             header: 'Total',
             cellClassName: 'number-cell cost-total',
-            render: (value, item) => formatCurrency(value, item.currency),
+            render: (value, item) => formatCurrencyWithCode(value, item.currency),
             sortable: true,
           },
           {
