@@ -25,6 +25,7 @@ export const AppProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [ibkrTransactionCount, setIbkrTransactionCount] = useState(0);
 
   const fetchVersionInfo = useCallback(async () => {
     try {
@@ -52,9 +53,29 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchIBKRTransactionCount = useCallback(async () => {
+    try {
+      const response = await api.get('ibkr/inbox/count', {
+        params: { status: 'pending' },
+      });
+      setIbkrTransactionCount(response.data.count);
+    } catch (err) {
+      console.error('Failed to fetch IBKR transaction count:', err);
+      // Don't set error state for count fetch failures - just log them
+      setIbkrTransactionCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     fetchVersionInfo();
   }, [fetchVersionInfo]);
+
+  // Fetch IBKR transaction count when IBKR integration is enabled
+  useEffect(() => {
+    if (versionInfo.features.ibkr_integration) {
+      fetchIBKRTransactionCount();
+    }
+  }, [versionInfo.features.ibkr_integration, fetchIBKRTransactionCount]);
 
   const value = {
     versionInfo,
@@ -62,6 +83,8 @@ export const AppProvider = ({ children }) => {
     loading,
     error,
     refreshVersionInfo: fetchVersionInfo,
+    ibkrTransactionCount,
+    refreshIBKRTransactionCount: fetchIBKRTransactionCount,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -330,6 +330,40 @@ def get_inbox():
     )
 
 
+@ibkr.route("/ibkr/inbox/count", methods=["GET"])
+def get_inbox_count():
+    """
+    Get count of IBKR transactions.
+
+    Query parameters:
+        status: Filter by status (optional, defaults to 'pending')
+
+    Returns:
+        JSON response with count: {"count": 5}
+    """
+    try:
+        status = request.args.get("status", "pending")
+        count = IBKRTransaction.query.filter_by(status=status).count()
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.IBKR,
+            message=f"Retrieved IBKR inbox count for status '{status}'",
+            details={"status": status, "count": count},
+        )
+
+        return jsonify({"count": count}), 200
+
+    except Exception as e:
+        logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.IBKR,
+            message="Error retrieving IBKR inbox count",
+            details={"error": str(e)},
+        )
+        return jsonify({"error": "Failed to retrieve count", "details": str(e)}), 500
+
+
 @ibkr.route("/ibkr/inbox/<transaction_id>", methods=["GET"])
 def get_inbox_transaction(transaction_id):
     """
