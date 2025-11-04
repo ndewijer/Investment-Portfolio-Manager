@@ -713,7 +713,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
               onChange={(e) => setFundPrice({ ...fundPrice, fund_id: e.target.value })}
               required
             >
-              <option value="">Select a fund...</option>
+              <option value="">Select a fund/stock...</option>
               {funds.map((fund) => (
                 <option key={fund.id} value={fund.id}>
                   {fund.name} ({fund.isin})
@@ -785,7 +785,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
               required
               disabled={!selectedPortfolioId}
             >
-              <option value="">Select a fund...</option>
+              <option value="">Select a fund/stock...</option>
               {portfolioFunds.map((pf) => (
                 <option key={pf.id} value={pf.id}>
                   {pf.fund_name}
@@ -833,7 +833,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
               onChange={(e) => setSelectedPriceFundId(e.target.value)}
               required
             >
-              <option value="">Select a fund...</option>
+              <option value="">Select a fund/stock...</option>
               {funds.map((fund) => (
                 <option key={fund.id} value={fund.id}>
                   {fund.name} ({fund.isin})

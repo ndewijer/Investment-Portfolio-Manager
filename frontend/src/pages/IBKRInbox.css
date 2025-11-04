@@ -8,6 +8,31 @@
   margin-bottom: 2rem;
 }
 
+/* Allocation modal match info */
+.match-info {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  font-size: 0.95rem;
+}
+
+.match-info strong {
+  font-weight: 600;
+}
+
+.allocation-warning {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 4px;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  color: #856404;
+  font-size: 0.95rem;
+}
+
 .feature-unavailable {
   background-color: #fff3cd;
   border: 1px solid #ffc107;

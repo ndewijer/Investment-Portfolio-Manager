@@ -40,7 +40,7 @@ const FundsTable = ({
     navigate(`/funds/${fundId}`);
   };
 
-  // Handle add fund modal
+  // Handle add fundstock modal
   const handleOpenAddFundModal = () => {
     setIsAddFundModalOpen(true);
     onLoadAvailableFunds();
@@ -120,7 +120,7 @@ const FundsTable = ({
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove Fund
+            Remove Fund/Stock
           </ActionButton>
         </div>
       ),
@@ -173,7 +173,7 @@ const FundsTable = ({
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove Fund
+            Remove Fund/Stock
           </ActionButton>
         </div>
       </div>
@@ -185,7 +185,7 @@ const FundsTable = ({
       <div className="section-header">
         <h2>Funds</h2>
         <ActionButton variant="primary" onClick={handleOpenAddFundModal} icon={faPlus}>
-          Add Fund
+          Add Fund/Stock
         </ActionButton>
       </div>
 
@@ -208,13 +208,13 @@ const FundsTable = ({
         onSubmit={handleAddFundSubmit}
       >
         <div className="form-group">
-          <label>Select Fund:</label>
+          <label>Select Fund/Stock:</label>
           <select
             value={selectedFundId}
             onChange={(e) => setSelectedFundId(e.target.value)}
             required
           >
-            <option value="">Select a fund...</option>
+            <option value="">Select a fund/stock...</option>
             {availableFunds.map((fund) => (
               <option key={fund.id} value={fund.id}>
                 {fund.name} ({fund.isin})
