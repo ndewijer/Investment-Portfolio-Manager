@@ -30,6 +30,8 @@ Access at http://localhost (or your configured domain)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Data Models](docs/MODELS.md)
 
+### Features
+- [IBKR Flex Integration Setup](docs/IBKR_SETUP.md)
 
 ### Contributing
 - [Contributing](docs/CONTRIBUTING.md)
@@ -51,6 +53,7 @@ Access at http://localhost (or your configured domain)
 - Portfolio management with transaction tracking
 - Cash and stock dividend processing
 - Automated daily fund price updates
+- **IBKR Flex integration for automatic transaction imports (v1.3.0+)**
 - Fund price history and currency conversion
 - CSV import/export functionality
 - System logging and monitoring
