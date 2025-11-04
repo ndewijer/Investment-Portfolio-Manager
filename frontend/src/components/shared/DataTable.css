@@ -6,7 +6,6 @@
 .table-container {
   overflow-x: auto;
   border-radius: 8px;
-  border: 1px solid #e9ecef;
   background-color: white;
 }
 
@@ -119,7 +118,6 @@
   color: #6c757d;
   font-size: 0.85rem;
   flex-shrink: 0;
-  margin-right: 1rem;
 }
 
 .field-value {

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { faFilter, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { useFormat } from '../context/FormatContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import api from '../utils/api';
+import DataTable from '../components/shared/DataTable';
 import './FundDetail.css';
 import { subMonths } from 'date-fns';
 import Toast from '../components/Toast';
@@ -20,7 +21,6 @@ const FundDetail = () => {
   const [loadingPrices, setLoadingPrices] = useState(true);
   const [priceError, setPriceError] = useState(null);
   const { formatCurrency } = useFormat();
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
   const [filters, setFilters] = useState({
     dateFrom: null,
     dateTo: null,
@@ -83,21 +83,13 @@ const FundDetail = () => {
     }
   }, [priceHistory]);
 
-  const handleSort = (key) => {
-    setSortConfig((prevConfig) => ({
-      key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
-    }));
-  };
-
-  const handleFilterClick = (e, filterType) => {
+  const handleFilterClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const headerCell = e.currentTarget.closest('th');
-    const rect = headerCell.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
 
-    if (activeFilter === filterType) {
+    if (activeFilter === 'date') {
       setActiveFilter(null);
       return;
     }
@@ -107,26 +99,11 @@ const FundDetail = () => {
       left: rect.left,
     });
 
-    setActiveFilter(filterType);
-  };
-
-  const getSortedPrices = () => {
-    const sortedPrices = [...priceHistory];
-    return sortedPrices.sort((a, b) => {
-      if (sortConfig.key === 'date') {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
-      }
-
-      return sortConfig.direction === 'asc'
-        ? a[sortConfig.key] - b[sortConfig.key]
-        : b[sortConfig.key] - a[sortConfig.key];
-    });
+    setActiveFilter('date');
   };
 
   const getFilteredPrices = () => {
-    let prices = getSortedPrices();
+    let prices = [...priceHistory];
 
     // Apply date range filter
     prices = prices.filter((price) => {
@@ -270,130 +247,61 @@ const FundDetail = () => {
             </button>
           </div>
         </div>
-        {loadingPrices ? (
-          <div className="loading">Loading price history...</div>
-        ) : (
-          <div className="table-container">
-            <table className="desktop-table">
-              <thead>
-                <tr>
-                  <th>
-                    <div className="header-content">
-                      <FontAwesomeIcon
-                        icon={faFilter}
-                        className={`filter-icon ${
-                          filters.dateFrom || filters.dateTo ? 'active' : ''
-                        }`}
-                        onClick={(e) => handleFilterClick(e, 'date')}
-                      />
-                      <span>Date</span>
-                      <FontAwesomeIcon
-                        icon={faSort}
-                        className="sort-icon"
-                        onClick={() => handleSort('date')}
-                      />
-                    </div>
-                    {activeFilter === 'date' && (
-                      <div
-                        className="filter-popup"
-                        style={{
-                          top: filterPosition.top,
-                          left: filterPosition.left,
-                          position: 'fixed',
-                        }}
-                      >
-                        <div className="date-picker-container">
-                          <label>From:</label>
-                          <DatePicker
-                            selected={filters.dateFrom}
-                            onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
-                            dateFormat="yyyy-MM-dd"
-                            isClearable
-                            placeholderText="Start Date"
-                          />
-                          <label>To:</label>
-                          <DatePicker
-                            selected={filters.dateTo}
-                            onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
-                            dateFormat="yyyy-MM-dd"
-                            isClearable
-                            placeholderText="End Date"
-                            minDate={filters.dateFrom}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </th>
-                  <th>
-                    <div className="header-content">
-                      <span>Price</span>
-                      <FontAwesomeIcon
-                        icon={faSort}
-                        className="sort-icon"
-                        onClick={() => handleSort('price')}
-                      />
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {getFilteredPrices().map((price) => (
-                  <tr key={price.id}>
-                    <td>{new Date(price.date).toLocaleDateString()}</td>
-                    <td>{formatCurrency(price.price)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="mobile-cards">
-              <div className="mobile-controls">
-                <div className="mobile-filter-controls">
-                  <button
-                    className={`mobile-filter-btn ${
-                      filters.dateFrom || filters.dateTo ? 'active' : ''
-                    }`}
-                    onClick={(e) => handleFilterClick(e, 'date')}
-                  >
-                    <FontAwesomeIcon icon={faFilter} /> Filter by Date
-                  </button>
-                  <button className="mobile-sort-btn" onClick={() => handleSort('date')}>
-                    <FontAwesomeIcon icon={faSort} /> Sort by Date
-                  </button>
-                </div>
-                {activeFilter === 'date' && (
-                  <div className="mobile-filter-popup">
-                    <div className="date-picker-container">
-                      <label>From:</label>
-                      <DatePicker
-                        selected={filters.dateFrom}
-                        onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
-                        dateFormat="yyyy-MM-dd"
-                        isClearable
-                        placeholderText="Start Date"
-                      />
-                      <label>To:</label>
-                      <DatePicker
-                        selected={filters.dateTo}
-                        onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
-                        dateFormat="yyyy-MM-dd"
-                        isClearable
-                        placeholderText="End Date"
-                        minDate={filters.dateFrom}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {getFilteredPrices().map((price) => (
-                <div key={price.id} className="price-card">
-                  <div className="card-header">
-                    <span className="date">{new Date(price.date).toLocaleDateString()}</span>
-                    <span className="price">{formatCurrency(price.price)}</span>
-                  </div>
-                </div>
-              ))}
+        <DataTable
+          data={getFilteredPrices()}
+          columns={[
+            {
+              key: 'date',
+              header: 'Date',
+              render: (value) => new Date(value).toLocaleDateString(),
+              sortable: true,
+              filterable: true,
+              onFilterClick: handleFilterClick,
+              sortFn: (a, b, direction) => {
+                const dateA = new Date(a.date);
+                const dateB = new Date(b.date);
+                return direction === 'asc' ? dateA - dateB : dateB - dateA;
+              },
+            },
+            {
+              key: 'price',
+              header: 'Price',
+              render: (value) => formatCurrency(value),
+              sortable: true,
+            },
+          ]}
+          loading={loadingPrices}
+          emptyMessage="No price history available"
+          sortable={true}
+          filterable={true}
+        />
+        {activeFilter === 'date' && (
+          <div
+            className="filter-popup"
+            style={{
+              top: filterPosition.top,
+              left: filterPosition.left,
+              position: 'fixed',
+            }}
+          >
+            <div className="date-picker-container">
+              <label>From:</label>
+              <DatePicker
+                selected={filters.dateFrom}
+                onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
+                dateFormat="yyyy-MM-dd"
+                isClearable
+                placeholderText="Start Date"
+              />
+              <label>To:</label>
+              <DatePicker
+                selected={filters.dateTo}
+                onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
+                dateFormat="yyyy-MM-dd"
+                isClearable
+                placeholderText="End Date"
+                minDate={filters.dateFrom}
+              />
             </div>
           </div>
         )}
