@@ -20,16 +20,31 @@ line-ending = "auto"
 
 [tool.ruff.lint]
 # Enable flake8-docstrings (pydocstyle)
-select = ["E", "F", "D", "I"]
+select = [
+      "E",      # pycodestyle errors
+      "F",      # pyflakes
+      "D",      # pydocstyle (docstrings)
+      "I",      # isort (import sorting)
+      "B",      # flake8-bugbear (likely bugs and design problems)
+      "C4",     # flake8-comprehensions (better comprehensions)
+      "UP",     # pyupgrade (modern Python syntax)
+      "SIM",    # flake8-simplify (simplification suggestions)
+      "RUF",    # Ruff-specific rules
+      "N",      # pep8-naming (naming conventions)
+  ]
+
 ignore = [
-    # D202: No blank lines allowed after function docstring
-    "D202",
-    # D212: No blank lines allowed after class docstring
-    "D212",
-    # D400: First line should end with a period
-    "D400",
-    # D403: First word of the first line should be properly capitalized
-    "D403",
-    # F541: f-string without any placeholders
-    "F541",
+    # Existing ignores
+    "D202",   # No blank lines allowed after function docstring
+    "D212",   # Multi-line docstring summary should start at the first line
+    "D400",   # First line should end with a period
+    "D403",   # First word of the first line should be properly capitalized
+    "F541",   # f-string without any placeholders
+
+    # Additional practical ignores
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package
+    "D107",   # Missing docstring in __init__
+    "SIM108", # Use ternary operator instead of if-else (sometimes less readable)
+    "B008",   # Do not perform function calls in argument defaults (common in Flask)
 ]

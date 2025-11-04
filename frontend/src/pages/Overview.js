@@ -399,7 +399,6 @@ const Overview = () => {
           onRowClick={handlePortfolioClick}
           mobileCardRenderer={renderMobileCard}
           emptyMessage="No portfolios found"
-          className="portfolios-table"
         />
       </div>
     </div>

@@ -1,0 +1,48 @@
+.version-banner {
+  background-color: #fff3cd;
+  border-bottom: 2px solid #ffc107;
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.version-banner-content {
+  display: flex;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 1rem;
+}
+
+.version-banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.version-banner-message {
+  flex: 1;
+}
+
+.version-banner-message strong {
+  display: block;
+  color: #856404;
+  margin-bottom: 0.25rem;
+}
+
+.version-banner-message p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.9rem;
+}
+
+/* Dark mode support */
+[data-theme='dark'] .version-banner {
+  background-color: #664d03;
+  border-bottom-color: #856404;
+}
+
+[data-theme='dark'] .version-banner-message strong,
+[data-theme='dark'] .version-banner-message p {
+  color: #ffe69c;
+}

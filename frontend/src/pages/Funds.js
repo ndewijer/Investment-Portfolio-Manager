@@ -76,28 +76,26 @@ const Funds = () => {
 
     try {
       if (editingFund) {
-        await fetchFunds(() => api.put(`/funds/${editingFund.id}`, editingFund), {
-          onSuccess: () => {
-            setMessage('Fund updated successfully');
-            setIsModalOpen(false);
-            setEditingFund(null);
-          },
-        });
+        await api.put(`/funds/${editingFund.id}`, editingFund);
+        setMessage('Fund updated successfully');
+        setIsModalOpen(false);
+        setEditingFund(null);
+        // Refetch the full list of funds
+        await fetchFunds(() => api.get('/funds'));
       } else {
-        await fetchFunds(() => api.post('/funds', newFund), {
-          onSuccess: () => {
-            setMessage('Fund created successfully');
-            setIsModalOpen(false);
-            setNewFund({
-              name: '',
-              isin: '',
-              symbol: '',
-              currency: '',
-              exchange: '',
-              investment_type: 'fund',
-            });
-          },
+        await api.post('/funds', newFund);
+        setMessage('Fund created successfully');
+        setIsModalOpen(false);
+        setNewFund({
+          name: '',
+          isin: '',
+          symbol: '',
+          currency: '',
+          exchange: '',
+          investment_type: 'fund',
         });
+        // Refetch the full list of funds
+        await fetchFunds(() => api.get('/funds'));
       }
     } catch (error) {
       console.error('Error saving fund:', error);
@@ -252,13 +250,12 @@ const Funds = () => {
 
   return (
     <div className="funds-page">
-      <h1>Funds</h1>
+      <h1>Funds & Stocks</h1>
 
       <Toast message={message} type="success" onClose={clearMessages} />
       <Toast message={errorMessage} type="error" onClose={clearMessages} />
 
       <div className="funds-header">
-        <h1>Funds & Stocks</h1>
         <div className="add-buttons">
           <button onClick={handleAddFund} className="add-fund-button">
             Add Fund
@@ -297,15 +294,22 @@ const Funds = () => {
                     )}
                   </>
                 ) : (
-                  <p>
-                    <strong>Symbol:</strong>
-                    <span
-                      className="symbol-info"
-                      title={symbolInfo[fund.symbol] || 'Loading symbol information...'}
-                    >
-                      {fund.symbol}
-                    </span>
-                  </p>
+                  <>
+                    {fund.isin && (
+                      <p>
+                        <strong>ISIN:</strong> {fund.isin}
+                      </p>
+                    )}
+                    <p>
+                      <strong>Symbol:</strong>
+                      <span
+                        className="symbol-info"
+                        title={symbolInfo[fund.symbol] || 'Loading symbol information...'}
+                      >
+                        {fund.symbol}
+                      </span>
+                    </p>
+                  </>
                 )}
                 <p>
                   <strong>Currency:</strong> {fund.currency}
@@ -371,20 +375,38 @@ const Funds = () => {
           }
           required
         />
-        {/* For now, keep the complex form fields as-is since they have custom logic */}
-        {newFund.investment_type === 'fund' ? (
+
+        {/* Display investment type as non-editable field */}
+        <div className="form-field">
+          <label class="field-label">Investment Type</label>
+          <div className="static-field">
+            {editingFund?.investment_type === 'stock' || newFund.investment_type === 'stock'
+              ? 'Stock'
+              : 'Fund'}
+          </div>
+        </div>
+
+        {/* ISIN field - show for both funds and stocks */}
+        <div className="form-field">
+          <label class="field-label">
+            ISIN{' '}
+            {(editingFund?.investment_type || newFund.investment_type) === 'stock'
+              ? '(optional)'
+              : ''}
+          </label>
+          <input
+            type="text"
+            value={editingFund?.isin || newFund.isin}
+            onChange={handleIsinChange}
+            required={(editingFund?.investment_type || newFund.investment_type) === 'fund'}
+          />
+        </div>
+
+        {/* Show symbol group for funds, or stock-specific symbol for stocks */}
+        {(editingFund?.investment_type || newFund.investment_type) === 'fund' ? (
           <>
-            <div className="form-group">
-              <label>ISIN:</label>
-              <input
-                type="text"
-                value={editingFund?.isin || newFund.isin}
-                onChange={handleIsinChange}
-                required
-              />
-            </div>
-            <div className="form-group symbol-group">
-              <label>Symbol (Optional):</label>
+            <div className="form-field">
+              <label class="field-label">Symbol (optional)</label>
               <div className="symbol-input-container">
                 <input
                   type="text"
@@ -406,13 +428,21 @@ const Funds = () => {
             </div>
           </>
         ) : (
-          <div className="form-group symbol-group">
-            <label>Symbol:</label>
+          <div className="form-field">
+            <label class="field-label">Symbol</label>
             <div className="symbol-input-container">
               <input
                 type="text"
                 value={editingFund?.symbol || newFund.symbol}
-                onChange={handleSymbolChange}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (editingFund) {
+                    setEditingFund({ ...editingFund, symbol: value });
+                  } else {
+                    setNewFund({ ...newFund, symbol: value });
+                  }
+                  handleSymbolChange(e);
+                }}
                 required
               />
               {symbolValidation.isValid && (
