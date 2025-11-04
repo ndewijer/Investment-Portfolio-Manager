@@ -10,7 +10,6 @@ This module handles:
 """
 
 from datetime import UTC, datetime
-from typing import Dict, List
 
 from ..models import (
     Dividend,
@@ -40,7 +39,7 @@ class IBKRTransactionService:
     """
 
     @staticmethod
-    def validate_allocations(allocations: List[Dict]) -> tuple[bool, str]:
+    def validate_allocations(allocations: list[dict]) -> tuple[bool, str]:
         """
         Validate that allocations sum to 100%.
 
@@ -146,7 +145,7 @@ class IBKRTransactionService:
         return portfolio_fund
 
     @staticmethod
-    def process_transaction_allocation(ibkr_transaction_id: str, allocations: List[Dict]) -> Dict:
+    def process_transaction_allocation(ibkr_transaction_id: str, allocations: list[dict]) -> dict:
         """
         Process IBKR transaction with user-provided allocations.
 
@@ -276,10 +275,10 @@ class IBKRTransactionService:
                 message="Failed to process IBKR transaction",
                 details={"ibkr_transaction_id": ibkr_transaction_id, "error": str(e)},
             )
-            return {"success": False, "error": f"Processing failed: {str(e)}"}
+            return {"success": False, "error": f"Processing failed: {e!s}"}
 
     @staticmethod
-    def get_pending_dividends(symbol: str = None, isin: str = None) -> List[Dict]:
+    def get_pending_dividends(symbol: str = None, isin: str = None) -> list[dict]:
         """
         Get pending dividend records for matching.
 
@@ -321,7 +320,7 @@ class IBKRTransactionService:
         ]
 
     @staticmethod
-    def match_dividend(ibkr_transaction_id: str, dividend_ids: List[str]) -> Dict:
+    def match_dividend(ibkr_transaction_id: str, dividend_ids: list[str]) -> dict:
         """
         Match IBKR dividend transaction to existing Dividend records.
 
@@ -387,4 +386,4 @@ class IBKRTransactionService:
                 message="Failed to match dividend",
                 details={"ibkr_transaction_id": ibkr_transaction_id, "error": str(e)},
             )
-            return {"success": False, "error": f"Matching failed: {str(e)}"}
+            return {"success": False, "error": f"Matching failed: {e!s}"}

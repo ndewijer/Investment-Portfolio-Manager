@@ -65,7 +65,7 @@ def create_dividend():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.DIVIDEND,
-            message=f"Error creating dividend: {str(e)}",
+            message=f"Error creating dividend: {e!s}",
             details={
                 "user_message": "Error creating dividend",
                 "error": str(e),
@@ -111,7 +111,7 @@ def get_fund_dividends(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.DIVIDEND,
-            message=f"Error retrieving fund dividends: {str(e)}",
+            message=f"Error retrieving fund dividends: {e!s}",
             details={"fund_id": fund_id, "error": str(e)},
             http_status=500,
         )
@@ -145,7 +145,7 @@ def get_portfolio_dividends(portfolio_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.DIVIDEND,
-            message=f"Error retrieving portfolio dividends: {str(e)}",
+            message=f"Error retrieving portfolio dividends: {e!s}",
             details={"portfolio_id": portfolio_id, "error": str(e)},
             http_status=500,
         )
@@ -190,7 +190,7 @@ def update_dividend(dividend_id):
         dividend.dividend_per_share = float(data["dividend_per_share"])
 
         # Update buy_order_date if provided
-        if "buy_order_date" in data and data["buy_order_date"]:
+        if data.get("buy_order_date"):
             dividend.buy_order_date = datetime.strptime(data["buy_order_date"], "%Y-%m-%d").date()
 
         # Recalculate total amount
@@ -256,7 +256,7 @@ def update_dividend(dividend_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.DIVIDEND,
-            message=f"Error updating dividend: {str(e)}",
+            message=f"Error updating dividend: {e!s}",
             details={"dividend_id": dividend_id, "error": str(e), "request_data": data},
             http_status=400,
         )
@@ -299,7 +299,7 @@ def delete_dividend(dividend_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.DIVIDEND,
-            message=f"Error deleting dividend: {str(e)}",
+            message=f"Error deleting dividend: {e!s}",
             details={"dividend_id": dividend_id, "error": str(e)},
             http_status=400,
         )
@@ -308,7 +308,7 @@ def delete_dividend(dividend_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.DIVIDEND,
-            message=f"Unexpected error deleting dividend: {str(e)}",
+            message=f"Unexpected error deleting dividend: {e!s}",
             details={"dividend_id": dividend_id, "error": str(e)},
             http_status=500,
         )

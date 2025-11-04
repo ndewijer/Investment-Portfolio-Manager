@@ -375,7 +375,7 @@ def delete_portfolio_fund(portfolio_fund_id):
             response, status = logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.PORTFOLIO,
-                message=f"Error deleting portfolio fund: {str(e)}",
+                message=f"Error deleting portfolio fund: {e!s}",
                 details={
                     "user_message": "Error deleting fund from portfolio",
                     "error": str(e),
@@ -389,7 +389,7 @@ def delete_portfolio_fund(portfolio_fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.PORTFOLIO,
-            message=f"Error accessing portfolio fund: {str(e)}",
+            message=f"Error accessing portfolio fund: {e!s}",
             details={
                 "user_message": "Error accessing fund relationship",
                 "error": str(e),

@@ -11,8 +11,7 @@ This module handles:
 import json
 import os
 import xml.etree.ElementTree as ET
-from datetime import UTC, datetime, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime, timedelta
 
 import requests
 from cryptography.fernet import Fernet
@@ -33,20 +32,56 @@ class IBKRFlexService:
     5. Transforming to internal format
     """
 
-    # IBKR Flex API endpoints
+    # IBKR Flex API endpoints (per official documentation)
+    # https://www.interactivebrokers.com/campus/ibkr-api-page/flex-web-service/
     SEND_REQUEST_URL = (
-        "https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.SendRequest"
+        "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/SendRequest"
     )
     GET_STATEMENT_URL = (
-        "https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.GetStatement"
+        "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/GetStatement"
     )
 
     # Cache settings
     CACHE_DURATION_HOURS = 24
 
+    # IBKR Flex API Error Codes
+    # Source: https://www.interactivebrokers.com/campus/ibkr-api-page/flex-web-service/#error-codes
+    ERROR_CODES = {
+        "1001": "Statement could not be generated at this time. Please try again shortly.",
+        "1003": "Statement is not available.",
+        "1004": "Statement is incomplete at this time. Please try again shortly.",
+        "1005": "Settlement data is not ready at this time. Please try again shortly.",
+        "1006": "FIFO P/L data is not ready at this time. Please try again shortly.",
+        "1007": "MTM P/L data is not ready at this time. Please try again shortly.",
+        "1008": "MTM and FIFO P/L data is not ready at this time. Please try again shortly.",
+        "1009": (
+            "The server is under heavy load. Statement could not be generated "
+            "at this time. Please try again shortly."
+        ),
+        "1010": (
+            "Legacy Flex Queries are no longer supported. Please convert over to Activity Flex."
+        ),
+        "1011": "Service account is inactive.",
+        "1012": "Token has expired.",
+        "1013": "IP restriction.",
+        "1014": "Query is invalid.",
+        "1015": "Token is invalid.",
+        "1016": "Account is invalid.",
+        "1017": "Reference code is invalid.",
+        "1018": (
+            "Too many requests have been made from this token. Please try again shortly. "
+            "(Limited to one request per second, 10 requests per minute per token)"
+        ),
+        "1019": "Statement generation in progress. Please try again shortly.",
+        "1020": "Invalid request or unable to validate request.",
+        "1021": "Statement could not be retrieved at this time. Please try again shortly.",
+    }
+
     def __init__(self):
         """Initialize IBKR Flex Service."""
         self.encryption_key = os.environ.get("IBKR_ENCRYPTION_KEY")
+        # Debug XML saving (disabled by default for security)
+        self.save_debug_xml = os.environ.get("IBKR_DEBUG_SAVE_XML", "false").lower() == "true"
         if not self.encryption_key:
             logger.log(
                 level=LogLevel.ERROR,
@@ -54,6 +89,20 @@ class IBKRFlexService:
                 message="IBKR_ENCRYPTION_KEY not set in environment",
                 details={"error": "Missing required environment variable"},
             )
+
+    def _get_error_message(self, error_code: str) -> str:
+        """
+        Get verbose error message for IBKR error code.
+
+        Args:
+            error_code: IBKR error code (e.g., "1019")
+
+        Returns:
+            Verbose error message, or generic message if code unknown
+        """
+        return self.ERROR_CODES.get(
+            error_code, f"Unknown error (code: {error_code}). Please check IBKR documentation."
+        )
 
     def _encrypt_token(self, token: str) -> str:
         """
@@ -98,10 +147,10 @@ class IBKRFlexService:
             Cache key string
         """
         # Include current date to ensure we get latest data daily
-        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
         return f"ibkr_flex_{query_id}_{today}"
 
-    def _get_cached_data(self, cache_key: str) -> Optional[str]:
+    def _get_cached_data(self, cache_key: str) -> str | None:
         """
         Retrieve cached data if available and not expired.
 
@@ -113,13 +162,15 @@ class IBKRFlexService:
         """
         cache_entry = IBKRImportCache.query.filter_by(cache_key=cache_key).first()
 
-        if cache_entry and cache_entry.expires_at > datetime.now(UTC):
+        if cache_entry and cache_entry.expires_at > datetime.now():
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
                 message=f"Using cached IBKR data for key: {cache_key}",
                 details={"cache_key": cache_key, "expires_at": cache_entry.expires_at.isoformat()},
             )
+            # Save cached data to debug folder too for inspection
+            self._save_debug_xml(cache_entry.data, f"cached_{cache_key}")
             return cache_entry.data
 
         # Clean up expired cache entry if exists
@@ -137,7 +188,7 @@ class IBKRFlexService:
             cache_key: Cache key
             data: Data to cache
         """
-        expires_at = datetime.now(UTC) + timedelta(hours=self.CACHE_DURATION_HOURS)
+        expires_at = datetime.now() + timedelta(hours=self.CACHE_DURATION_HOURS)
 
         cache_entry = IBKRImportCache(cache_key=cache_key, data=data, expires_at=expires_at)
         db.session.add(cache_entry)
@@ -153,7 +204,7 @@ class IBKRFlexService:
     def _clean_expired_cache(self) -> None:
         """Delete expired cache entries."""
         expired_entries = IBKRImportCache.query.filter(
-            IBKRImportCache.expires_at < datetime.now(UTC)
+            IBKRImportCache.expires_at < datetime.now()
         ).all()
 
         if expired_entries:
@@ -168,7 +219,51 @@ class IBKRFlexService:
                 details={"count": len(expired_entries)},
             )
 
-    def fetch_statement(self, token: str, query_id: str, use_cache: bool = True) -> Optional[str]:
+    def _save_debug_xml(self, xml_content: str, reference_code: str) -> None:
+        """
+        Save XML to disk for debugging purposes.
+
+        Controlled by IBKR_DEBUG_SAVE_XML environment variable (disabled by default).
+
+        Args:
+            xml_content: XML content to save
+            reference_code: IBKR reference code for the statement
+        """
+        # Only save if debug mode is explicitly enabled
+        if not self.save_debug_xml:
+            return
+
+        import os
+
+        try:
+            # Create debug directory if it doesn't exist
+            debug_dir = os.path.join(os.path.dirname(__file__), "../../data/ibkr_debug")
+            os.makedirs(debug_dir, exist_ok=True)
+
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"ibkr_statement_{timestamp}_{reference_code}.xml"
+            filepath = os.path.join(debug_dir, filename)
+
+            # Save XML to file
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(xml_content)
+
+            logger.log(
+                level=LogLevel.DEBUG,
+                category=LogCategory.IBKR,
+                message=f"Saved debug XML to {filepath}",
+                details={"filepath": filepath, "reference_code": reference_code},
+            )
+        except Exception as e:
+            logger.log(
+                level=LogLevel.WARNING,
+                category=LogCategory.IBKR,
+                message="Failed to save debug XML",
+                details={"error": str(e)},
+            )
+
+    def fetch_statement(self, token: str, query_id: str, use_cache: bool = True) -> str | None:
         """
         Fetch Flex statement from IBKR.
 
@@ -219,10 +314,11 @@ class IBKRFlexService:
             error_code = root.find("ErrorCode").text if root.find("ErrorCode") is not None else None
 
             if status != "Success" or not reference_code:
+                error_msg = self._get_error_message(error_code) if error_code else "Unknown error"
                 logger.log(
                     level=LogLevel.ERROR,
                     category=LogCategory.IBKR,
-                    message="IBKR request failed",
+                    message=f"IBKR request failed: {error_msg}",
                     details={
                         "status": status,
                         "error_code": error_code,
@@ -238,49 +334,142 @@ class IBKRFlexService:
                 details={"reference_code": reference_code},
             )
 
-            # Step 2: Poll for statement (typically ready immediately)
-            statement_response = requests.get(
-                self.GET_STATEMENT_URL,
-                params={"q": reference_code, "t": token, "v": "3"},
-                timeout=30,
+            # Step 2: Poll for statement with retry logic
+            max_retries = 10
+            retry_delay = 2  # seconds
+            import time
+
+            for attempt in range(max_retries):
+                statement_response = requests.get(
+                    self.GET_STATEMENT_URL,
+                    params={"q": reference_code, "t": token, "v": "3"},
+                    timeout=30,
+                )
+
+                if statement_response.status_code != 200:
+                    logger.log(
+                        level=LogLevel.ERROR,
+                        category=LogCategory.IBKR,
+                        message="Failed to retrieve IBKR statement",
+                        details={
+                            "status_code": statement_response.status_code,
+                            "response": statement_response.text,
+                        },
+                    )
+                    return None
+
+                # Check response format - could be XML or JSON
+                response_text = statement_response.text.strip()
+
+                # If response starts with '<', it's XML
+                if response_text.startswith("<"):
+                    statement_root = ET.fromstring(response_text)
+                    # Handle both response types: FlexStatementResponse (correct endpoint)
+                    # or FlexQueryResponse (legacy endpoint)
+                    if statement_root.tag in ["FlexStatementResponse", "FlexQueryResponse"]:
+                        # Check status
+                        status_elem = statement_root.find("Status")
+                        error_code_elem = statement_root.find("ErrorCode")
+
+                        # Check if statement is still generating (error code 1019)
+                        if (
+                            status_elem is not None
+                            and status_elem.text == "Warn"
+                            and error_code_elem is not None
+                            and error_code_elem.text == "1019"
+                        ):
+                            # Statement generation in progress - retry
+                            if attempt < max_retries - 1:
+                                logger.log(
+                                    level=LogLevel.INFO,
+                                    category=LogCategory.IBKR,
+                                    message=(
+                                        f"Statement generation in progress, "
+                                        f"retrying in {retry_delay}s "
+                                        f"(attempt {attempt + 1}/{max_retries})"
+                                    ),
+                                    details={
+                                        "reference_code": reference_code,
+                                        "attempt": attempt + 1,
+                                    },
+                                )
+                                time.sleep(retry_delay)
+                                continue
+                            else:
+                                logger.log(
+                                    level=LogLevel.ERROR,
+                                    category=LogCategory.IBKR,
+                                    message="Statement generation timeout after max retries",
+                                    details={
+                                        "reference_code": reference_code,
+                                        "max_retries": max_retries,
+                                    },
+                                )
+                                return None
+
+                        # Check for other errors
+                        if status_elem is not None and status_elem.text in ["Warn", "Fail"]:
+                            error_code = (
+                                error_code_elem.text if error_code_elem is not None else None
+                            )
+                            # Get verbose error message from our mapping
+                            error_msg = self._get_error_message(error_code) if error_code else None
+                            # Fallback to IBKR's error message if provided
+                            if not error_msg:
+                                error_message = statement_root.find("ErrorMessage")
+                                error_msg = (
+                                    error_message.text
+                                    if error_message is not None
+                                    else "Unknown error"
+                                )
+                            logger.log(
+                                level=LogLevel.ERROR,
+                                category=LogCategory.IBKR,
+                                message=f"IBKR returned error status: {error_msg}",
+                                details={
+                                    "status": status_elem.text,
+                                    "error_code": error_code,
+                                },
+                            )
+                            return None
+
+                        # Statement is ready and successful
+                        logger.log(
+                            level=LogLevel.INFO,
+                            category=LogCategory.IBKR,
+                            message="Successfully retrieved Flex statement",
+                            details={"reference_code": reference_code, "attempts": attempt + 1},
+                        )
+
+                        # Save XML to disk for debugging
+                        self._save_debug_xml(response_text, reference_code)
+
+                        # Cache the response (only cache successful responses)
+                        if use_cache:
+                            self._cache_data(cache_key, response_text)
+
+                        return response_text
+
+                # If we get here without returning, statement wasn't in expected format
+                # Continue to next retry
+                if attempt < max_retries - 1:
+                    logger.log(
+                        level=LogLevel.WARNING,
+                        category=LogCategory.IBKR,
+                        message="Unexpected response format, retrying",
+                        details={"attempt": attempt + 1, "response_preview": response_text[:200]},
+                    )
+                    time.sleep(retry_delay)
+                    continue
+
+            # If we exhausted all retries without success
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to retrieve statement after all retries",
+                details={"reference_code": reference_code, "max_retries": max_retries},
             )
-
-            if statement_response.status_code != 200:
-                logger.log(
-                    level=LogLevel.ERROR,
-                    category=LogCategory.IBKR,
-                    message="Failed to retrieve IBKR statement",
-                    details={
-                        "status_code": statement_response.status_code,
-                        "response": statement_response.text,
-                    },
-                )
-                return None
-
-            # Check if statement is ready
-            statement_root = ET.fromstring(statement_response.text)
-            if statement_root.tag == "FlexStatementResponse":
-                # Statement is ready
-                logger.log(
-                    level=LogLevel.INFO,
-                    category=LogCategory.IBKR,
-                    message="Successfully retrieved Flex statement",
-                    details={"reference_code": reference_code},
-                )
-
-                # Cache the response
-                if use_cache:
-                    self._cache_data(cache_key, statement_response.text)
-
-                return statement_response.text
-            else:
-                logger.log(
-                    level=LogLevel.WARNING,
-                    category=LogCategory.IBKR,
-                    message="Statement not ready yet",
-                    details={"reference_code": reference_code, "response": statement_response.text},
-                )
-                return None
+            return None
 
         except requests.RequestException as e:
             logger.log(
@@ -307,7 +496,7 @@ class IBKRFlexService:
             )
             return None
 
-    def parse_flex_statement(self, xml_data: str) -> List[Dict]:
+    def parse_flex_statement(self, xml_data: str) -> list[dict]:
         """
         Parse IBKR Flex statement XML into transaction records.
 
@@ -324,17 +513,42 @@ class IBKRFlexService:
 
             # Parse trades
             trades = root.findall(".//Trade")
+            logger.log(
+                level=LogLevel.DEBUG,
+                category=LogCategory.IBKR,
+                message=f"Found {len(trades)} trades in XML",
+                details={"trade_count": len(trades)},
+            )
+
             for trade in trades:
                 transaction = self._parse_trade(trade)
                 if transaction:
                     transactions.append(transaction)
+                    logger.log(
+                        level=LogLevel.DEBUG,
+                        category=LogCategory.IBKR,
+                        message="Parsed trade successfully",
+                        details={
+                            "symbol": transaction.get("symbol"),
+                            "ibkr_transaction_id": transaction.get("ibkr_transaction_id"),
+                        },
+                    )
 
             # Parse cash transactions (dividends, fees)
             cash_transactions = root.findall(".//CashTransaction")
+            logger.log(
+                level=LogLevel.DEBUG,
+                category=LogCategory.IBKR,
+                message=f"Found {len(cash_transactions)} cash transactions in XML",
+                details={"cash_transaction_count": len(cash_transactions)},
+            )
             for cash_txn in cash_transactions:
                 transaction = self._parse_cash_transaction(cash_txn)
                 if transaction:
                     transactions.append(transaction)
+
+            # Parse and import exchange rates
+            self._import_exchange_rates(root)
 
             logger.log(
                 level=LogLevel.INFO,
@@ -362,7 +576,75 @@ class IBKRFlexService:
             )
             return []
 
-    def _parse_trade(self, trade_element: ET.Element) -> Optional[Dict]:
+    def _import_exchange_rates(self, root: ET.Element) -> None:
+        """
+        Parse and import exchange rates from IBKR XML.
+
+        Args:
+            root: Root XML element
+        """
+        from datetime import datetime
+
+        from ..models import ExchangeRate, db
+
+        try:
+            conversion_rates = root.findall(".//ConversionRate")
+            imported_count = 0
+            skipped_count = 0
+
+            for rate_element in conversion_rates:
+                from_currency = rate_element.get("fromCurrency")
+                to_currency = rate_element.get("toCurrency")
+                rate = float(rate_element.get("rate", 0))
+                date_str = rate_element.get("reportDate")
+
+                if not all([from_currency, to_currency, rate, date_str]):
+                    continue
+
+                # Parse date (format: YYYYMMDD)
+                try:
+                    date = datetime.strptime(date_str, "%Y%m%d").date()
+                except ValueError:
+                    continue
+
+                # Check if rate already exists
+                existing_rate = ExchangeRate.query.filter_by(
+                    from_currency=from_currency, to_currency=to_currency, date=date
+                ).first()
+
+                if existing_rate:
+                    skipped_count += 1
+                    continue
+
+                # Create new exchange rate
+                new_rate = ExchangeRate(
+                    from_currency=from_currency, to_currency=to_currency, rate=rate, date=date
+                )
+                db.session.add(new_rate)
+                imported_count += 1
+
+            if imported_count > 0:
+                db.session.commit()
+                logger.log(
+                    level=LogLevel.INFO,
+                    category=LogCategory.IBKR,
+                    message=(
+                        f"Imported {imported_count} exchange rates, "
+                        f"skipped {skipped_count} duplicates"
+                    ),
+                    details={"imported": imported_count, "skipped": skipped_count},
+                )
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to import exchange rates",
+                details={"error": str(e)},
+            )
+
+    def _parse_trade(self, trade_element: ET.Element) -> dict | None:
         """
         Parse a trade element from IBKR XML.
 
@@ -426,7 +708,7 @@ class IBKRFlexService:
             )
             return None
 
-    def _parse_cash_transaction(self, cash_element: ET.Element) -> Optional[Dict]:
+    def _parse_cash_transaction(self, cash_element: ET.Element) -> dict | None:
         """
         Parse a cash transaction element from IBKR XML.
 
@@ -506,7 +788,7 @@ class IBKRFlexService:
             )
             return None
 
-    def import_transactions(self, transactions: List[Dict]) -> Dict:
+    def import_transactions(self, transactions: list[dict]) -> dict:
         """
         Import transactions into database, skipping duplicates.
 
@@ -583,7 +865,7 @@ class IBKRFlexService:
 
         return results
 
-    def test_connection(self, token: str, query_id: str) -> Dict:
+    def test_connection(self, token: str, query_id: str) -> dict:
         """
         Test IBKR Flex connection.
 
@@ -619,4 +901,4 @@ class IBKRFlexService:
                 message="Error testing IBKR connection",
                 details={"error": str(e)},
             )
-            return {"success": False, "message": f"Connection test failed: {str(e)}"}
+            return {"success": False, "message": f"Connection test failed: {e!s}"}

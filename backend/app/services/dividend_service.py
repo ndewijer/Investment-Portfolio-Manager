@@ -152,14 +152,14 @@ class DividendService:
                 dividend.buy_order_date = transaction.date
             except (ValueError, TypeError) as e:
                 db.session.rollback()
-                raise ValueError(f"Invalid reinvestment data: {str(e)}")
+                raise ValueError(f"Invalid reinvestment data: {e!s}")
 
         try:
             db.session.commit()
             return dividend
         except Exception as e:
             db.session.rollback()
-            raise ValueError(f"Error saving dividend: {str(e)}")
+            raise ValueError(f"Error saving dividend: {e!s}")
 
     @staticmethod
     def get_fund_dividends(fund_id):
@@ -263,5 +263,5 @@ class DividendService:
             return True
         except Exception as e:
             db.session.rollback()
-            print(f"Error deleting dividend: {str(e)}")
-            raise ValueError(f"Error deleting dividend: {str(e)}")
+            print(f"Error deleting dividend: {e!s}")
+            raise ValueError(f"Error deleting dividend: {e!s}")

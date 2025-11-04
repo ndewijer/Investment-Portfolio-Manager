@@ -97,7 +97,7 @@ def check_feature_availability(db_version):
             # Version 1.1.1+: realized_gain_loss
             if major >= 1 and minor >= 1:
                 patch = int(version_parts[2]) if len(version_parts) >= 3 else 0
-                if patch >= 1:
+                if minor > 1 or (minor == 1 and patch >= 1):
                     features["realized_gain_loss"] = True
 
             # Version 1.3.0+: IBKR integration

@@ -208,7 +208,7 @@ class DeveloperService:
             return True
         except UnicodeDecodeError as e:
             raise ValueError(
-                f"File is not UTF-8 encoded. Please save the file in UTF-8 format. Error: {str(e)}"
+                f"File is not UTF-8 encoded. Please save the file in UTF-8 format. Error: {e!s}"
             )
 
     @staticmethod
@@ -266,7 +266,7 @@ class DeveloperService:
                     transactions.append(transaction)
 
                 except ValueError as e:
-                    raise ValueError(f"Error in row {row_num}: {str(e)}")
+                    raise ValueError(f"Error in row {row_num}: {e!s}")
 
             if not transactions:
                 raise ValueError("No valid transactions found in CSV file")
@@ -277,16 +277,16 @@ class DeveloperService:
                 return len(transactions)
             except Exception as e:
                 db.session.rollback()
-                raise ValueError(f"Database error while saving transactions: {str(e)}")
+                raise ValueError(f"Database error while saving transactions: {e!s}")
 
         except UnicodeDecodeError:
             raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.")
         except csv.Error as e:
-            raise ValueError(f"CSV file error: {str(e)}")
+            raise ValueError(f"CSV file error: {e!s}")
         except Exception as e:
             if "transactions" in locals():
                 db.session.rollback()
-            raise ValueError(f"Error processing CSV file: {str(e)}")
+            raise ValueError(f"Error processing CSV file: {e!s}")
 
     @staticmethod
     def get_exchange_rate(from_currency, to_currency, date):
@@ -347,7 +347,7 @@ class DeveloperService:
                     prices.append(fund_price)
 
                 except ValueError as e:
-                    raise ValueError(f"Error in row {row_num}: {str(e)}")
+                    raise ValueError(f"Error in row {row_num}: {e!s}")
 
             try:
                 db.session.add_all(prices)
@@ -355,12 +355,12 @@ class DeveloperService:
                 return len(prices)
             except Exception as e:
                 db.session.rollback()
-                raise ValueError(f"Database error: {str(e)}")
+                raise ValueError(f"Database error: {e!s}")
 
         except UnicodeDecodeError:
             raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.")
         except csv.Error as e:
-            raise ValueError(f"CSV file error: {str(e)}")
+            raise ValueError(f"CSV file error: {e!s}")
 
     @staticmethod
     def get_fund_price_csv_template():

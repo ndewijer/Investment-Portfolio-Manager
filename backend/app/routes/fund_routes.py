@@ -15,6 +15,7 @@ from ..models import (
     DividendType,
     Fund,
     FundPrice,
+    InvestmentType,
     LogCategory,
     LogLevel,
     PortfolioFund,
@@ -65,7 +66,7 @@ def get_funds():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error retrieving funds: {str(e)}",
+            message=f"Error retrieving funds: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -92,7 +93,7 @@ def create_fund():
         data = request.json
 
         # If symbol is provided, try to get symbol info before creating fund
-        if "symbol" in data and data["symbol"]:
+        if data.get("symbol"):
             try:
                 symbol_info = SymbolLookupService.get_symbol_info(
                     data["symbol"], force_refresh=True
@@ -108,9 +109,15 @@ def create_fund():
                 logger.log(
                     level=LogLevel.WARNING,
                     category=LogCategory.FUND,
-                    message=f"Failed to retrieve symbol info: {str(e)}",
+                    message=f"Failed to retrieve symbol info: {e!s}",
                     details={"symbol": data["symbol"]},
                 )
+
+        # Get investment_type from request, default to 'fund' if not provided
+        investment_type_str = data.get("investment_type", "fund")
+        investment_type = (
+            InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
+        )
 
         fund = Fund(
             name=data["name"],
@@ -118,6 +125,7 @@ def create_fund():
             symbol=data.get("symbol"),
             currency=data["currency"],
             exchange=data["exchange"],
+            investment_type=investment_type,
             dividend_type=DividendType.NONE,
         )
         db.session.add(fund)
@@ -159,7 +167,7 @@ def create_fund():
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error creating fund: {str(e)}",
+            message=f"Error creating fund: {e!s}",
             details={"user_message": "Error creating fund", "error": str(e)},
             http_status=500,
         )
@@ -222,7 +230,7 @@ def get_fund(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error retrieving fund: {str(e)}",
+            message=f"Error retrieving fund: {e!s}",
             details={
                 "fund_id": fund_id,
                 "error": str(e),
@@ -260,7 +268,7 @@ def update_fund(fund_id):
         fund.isin = data["isin"]
 
         # Handle symbol update
-        if "symbol" in data and data["symbol"]:
+        if data.get("symbol"):
             old_symbol = fund.symbol
             new_symbol = data["symbol"]
 
@@ -283,7 +291,7 @@ def update_fund(fund_id):
                     logger.log(
                         level=LogLevel.WARNING,
                         category=LogCategory.FUND,
-                        message=f"Failed to retrieve symbol info: {str(e)}",
+                        message=f"Failed to retrieve symbol info: {e!s}",
                         details={"symbol": new_symbol},
                     )
         else:
@@ -293,6 +301,11 @@ def update_fund(fund_id):
         fund.exchange = data["exchange"]
         if "dividend_type" in data:
             fund.dividend_type = DividendType(data["dividend_type"])
+        if "investment_type" in data:
+            investment_type_str = data["investment_type"]
+            fund.investment_type = (
+                InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
+            )
 
         db.session.add(fund)
         db.session.commit()
@@ -306,6 +319,7 @@ def update_fund(fund_id):
                 "currency": fund.currency,
                 "exchange": fund.exchange,
                 "dividend_type": fund.dividend_type.value,
+                "investment_type": fund.investment_type.value,
             }
         )
     except Exception as e:
@@ -313,7 +327,7 @@ def update_fund(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error updating fund: {str(e)}",
+            message=f"Error updating fund: {e!s}",
             details={"fund_id": fund_id, "error": str(e), "request_data": data},
             http_status=400,
         )
@@ -365,7 +379,7 @@ def check_fund_usage(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error checking fund usage: {str(e)}",
+            message=f"Error checking fund usage: {e!s}",
             details={"error": str(e)},
             http_status=500,
         )
@@ -436,7 +450,7 @@ def delete_fund(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error deleting fund: {str(e)}",
+            message=f"Error deleting fund: {e!s}",
             details={"fund_id": fund_id, "error": str(e)},
             http_status=500,
         )
@@ -489,7 +503,7 @@ def lookup_symbol_info(symbol):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error looking up symbol: {str(e)}",
+            message=f"Error looking up symbol: {e!s}",
             details={"symbol": symbol, "error": str(e)},
             http_status=500,
         )
@@ -534,7 +548,7 @@ def get_fund_prices(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error retrieving fund prices: {str(e)}",
+            message=f"Error retrieving fund prices: {e!s}",
             details={"fund_id": fund_id, "error": str(e)},
             http_status=500,
         )
@@ -570,7 +584,7 @@ def update_fund_prices(fund_id):
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.FUND,
-            message=f"Error updating fund prices: {str(e)}",
+            message=f"Error updating fund prices: {e!s}",
             details={"fund_id": fund_id, "update_type": update_type, "error": str(e)},
             http_status=500,
         )
