@@ -95,20 +95,27 @@ Include cash movements for dividends and fees. Select these fields:
 - **Set a reminder** to regenerate your token before it expires
 - When regenerating, simply update the token in the application settings (no need to reconfigure the query)
 
-## Step 4: Add Encryption Key to Environment
+## Step 4: Add Environment Variables
 
 Add to your `.env` file:
 
 ```bash
 # IBKR Flex Web Service Configuration
 IBKR_ENCRYPTION_KEY=cDZoaLKWN5vjqOY1p2fwE8X9mR7tU3kA4nB6sH0gC2Q=
+
+# Optional: Enable debug XML saving (disabled by default for security)
+# IBKR_DEBUG_SAVE_XML=true
 ```
 
-**Note**: The encryption key above is pre-generated for you. If you need a new one, run:
-```python
-from cryptography.fernet import Fernet
-print(Fernet.generate_key().decode())
-```
+**Notes**:
+- The encryption key above is pre-generated for you. If you need a new one, run:
+  ```python
+  from cryptography.fernet import Fernet
+  print(Fernet.generate_key().decode())
+  ```
+- Debug XML saving is **disabled by default** for security (stores raw transaction data)
+- Only enable `IBKR_DEBUG_SAVE_XML=true` during development/troubleshooting
+- XML files are saved to `backend/data/ibkr_debug/` with timestamps
 
 ## Step 5: Configure in Application UI
 
