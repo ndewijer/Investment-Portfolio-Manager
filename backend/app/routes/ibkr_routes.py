@@ -15,7 +15,7 @@ from flask.views import MethodView
 
 from ..models import IBKRConfig, IBKRTransaction, LogCategory, LogLevel, Portfolio, db
 from ..services.ibkr_flex_service import IBKRFlexService
-from ..services.logging_service import logger
+from ..services.logging_service import logger, track_request
 
 ibkr = Blueprint("ibkr", __name__)
 
@@ -501,6 +501,57 @@ def get_portfolios_for_allocation():
     portfolios = Portfolio.query.filter_by(is_archived=False).all()
 
     return jsonify([{"id": p.id, "name": p.name, "description": p.description} for p in portfolios])
+
+
+@ibkr.route("/ibkr/inbox/<transaction_id>/eligible-portfolios", methods=["GET"])
+@track_request
+def get_eligible_portfolios(transaction_id):
+    """
+    Get portfolios eligible for allocating a specific IBKR transaction.
+
+    Filters portfolios based on whether they have the fund/stock that matches
+    the transaction (by ISIN or symbol).
+
+    Args:
+        transaction_id: Transaction ID
+
+    Returns:
+        JSON response containing:
+        - match_info: Details about fund matching (found, matched_by, fund details)
+        - portfolios: List of eligible portfolios with this fund
+        - warning: Optional warning message if no match or no portfolios
+    """
+    from ..services.fund_matching_service import FundMatchingService
+
+    try:
+        # Get the transaction
+        transaction = IBKRTransaction.query.get_or_404(transaction_id)
+
+        # Find eligible portfolios using the matching service
+        result = FundMatchingService.get_eligible_portfolios_for_transaction(transaction)
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.IBKR,
+            message=f"Retrieved eligible portfolios for transaction {transaction_id}",
+            details={
+                "fund_found": result["match_info"]["found"],
+                "portfolio_count": len(result["portfolios"]),
+                "matched_by": result["match_info"]["matched_by"],
+            },
+        )
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.IBKR,
+            message=f"Error getting eligible portfolios: {e!s}",
+            details={"transaction_id": transaction_id, "error": str(e)},
+            http_status=500,
+        )
+        return jsonify(response), status
 
 
 @ibkr.route("/ibkr/inbox/<transaction_id>/allocate", methods=["POST"])

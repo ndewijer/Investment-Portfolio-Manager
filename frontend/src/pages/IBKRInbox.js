@@ -18,6 +18,8 @@ const IBKRInbox = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [allocations, setAllocations] = useState([]);
+  const [matchInfo, setMatchInfo] = useState(null);
+  const [allocationWarning, setAllocationWarning] = useState('');
 
   useEffect(() => {
     if (!features.ibkr_integration) {
@@ -75,15 +77,49 @@ const IBKRInbox = () => {
     }
   };
 
-  const handleAllocateTransaction = (transaction) => {
+  const handleAllocateTransaction = async (transaction) => {
     setSelectedTransaction(transaction);
-    // Initialize with single portfolio at 100%
-    setAllocations([
-      {
-        portfolio_id: portfolios.length > 0 ? portfolios[0].id : '',
-        percentage: 100,
-      },
-    ]);
+    setMatchInfo(null);
+    setAllocationWarning('');
+
+    // Fetch eligible portfolios for this specific transaction
+    try {
+      const response = await api.get(`ibkr/inbox/${transaction.id}/eligible-portfolios`);
+      const { match_info, portfolios: eligiblePortfolios, warning } = response.data;
+
+      setMatchInfo(match_info);
+      setPortfolios(eligiblePortfolios);
+      setAllocationWarning(warning || '');
+
+      // Initialize allocations with first eligible portfolio
+      if (eligiblePortfolios.length > 0) {
+        setAllocations([
+          {
+            portfolio_id: eligiblePortfolios[0].id,
+            percentage: 100,
+          },
+        ]);
+      } else {
+        // No eligible portfolios - set empty allocation
+        setAllocations([
+          {
+            portfolio_id: '',
+            percentage: 100,
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch eligible portfolios:', err);
+      setError('Failed to load eligible portfolios');
+      // Fallback to all portfolios
+      fetchPortfolios();
+      setAllocations([
+        {
+          portfolio_id: portfolios.length > 0 ? portfolios[0].id : '',
+          percentage: 100,
+        },
+      ]);
+    }
   };
 
   const handleAddAllocation = () => {
@@ -364,61 +400,76 @@ const IBKRInbox = () => {
               )}
             </div>
 
-            <div className="allocations-section">
-              <h3>Portfolio Allocations</h3>
-              {allocations.map((allocation, index) => (
-                <div key={index} className="allocation-row">
-                  <select
-                    value={allocation.portfolio_id}
-                    onChange={(e) => handleAllocationChange(index, 'portfolio_id', e.target.value)}
-                    required
-                  >
-                    <option value="">Select Portfolio...</option>
-                    {portfolios.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    value={allocation.percentage}
-                    onChange={(e) => handleAllocationChange(index, 'percentage', e.target.value)}
-                    placeholder="Percentage"
-                    required
-                  />
-                  <span className="percentage-label">%</span>
-                  {allocations.length > 1 && (
-                    <button
-                      type="button"
-                      className="small-button danger"
-                      onClick={() => handleRemoveAllocation(index)}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              <div className="allocation-total">
-                <strong>Total:</strong>
-                <span className={getTotalPercentage() === 100 ? 'valid' : 'invalid'}>
-                  {getTotalPercentage().toFixed(2)}%
-                </span>
+            {matchInfo && matchInfo.found && (
+              <div className="match-info success">
+                ✓ Fund matched by {matchInfo.matched_by === 'isin' ? 'ISIN' : 'Symbol'}:{' '}
+                <strong>{matchInfo.fund_name}</strong> ({matchInfo.fund_symbol})
               </div>
+            )}
 
-              <button type="button" className="secondary-button" onClick={handleAddAllocation}>
-                + Add Portfolio
-              </button>
-            </div>
+            {allocationWarning && <div className="allocation-warning">⚠️ {allocationWarning}</div>}
+
+            {portfolios.length > 0 && (
+              <div className="allocations-section">
+                <h3>Portfolio Allocations</h3>
+                {allocations.map((allocation, index) => (
+                  <div key={index} className="allocation-row">
+                    <select
+                      value={allocation.portfolio_id}
+                      onChange={(e) =>
+                        handleAllocationChange(index, 'portfolio_id', e.target.value)
+                      }
+                      required
+                    >
+                      <option value="">Select Portfolio...</option>
+                      {portfolios.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={allocation.percentage}
+                      onChange={(e) => handleAllocationChange(index, 'percentage', e.target.value)}
+                      placeholder="Percentage"
+                      required
+                    />
+                    <span className="percentage-label">%</span>
+                    {allocations.length > 1 && (
+                      <button
+                        type="button"
+                        className="small-button danger"
+                        onClick={() => handleRemoveAllocation(index)}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                <div className="allocation-total">
+                  <strong>Total:</strong>
+                  <span className={getTotalPercentage() === 100 ? 'valid' : 'invalid'}>
+                    {getTotalPercentage().toFixed(2)}%
+                  </span>
+                </div>
+
+                <button type="button" className="secondary-button" onClick={handleAddAllocation}>
+                  + Add Portfolio
+                </button>
+              </div>
+            )}
 
             <div className="modal-actions">
-              <button className="default-button" onClick={handleSubmitAllocation}>
-                Process Transaction
-              </button>
+              {portfolios.length > 0 && (
+                <button className="default-button" onClick={handleSubmitAllocation}>
+                  Process Transaction
+                </button>
+              )}
               <button
                 className="secondary-button"
                 onClick={() => {
