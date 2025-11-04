@@ -186,6 +186,7 @@ class PortfolioService:
                 "total_gain_loss": realized_gain_loss + (current_value - cost),
                 "total_dividends": total_dividends,
                 "dividend_type": portfolio_fund.fund.dividend_type.value,
+                "investment_type": portfolio_fund.fund.investment_type.value,
             }
         else:
             # Historical calculation - simpler return

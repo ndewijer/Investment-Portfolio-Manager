@@ -120,7 +120,7 @@ const FundsTable = ({
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove Fund/Stock
+            Remove {fund.investment_type === 'stock' ? 'Stock' : 'Fund'}
           </ActionButton>
         </div>
       ),
@@ -173,7 +173,7 @@ const FundsTable = ({
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove Fund/Stock
+            Remove {fund.investment_type === 'stock' ? 'Stock' : 'Fund'}
           </ActionButton>
         </div>
       </div>
@@ -183,7 +183,7 @@ const FundsTable = ({
   return (
     <section className="portfolio-funds">
       <div className="section-header">
-        <h2>Funds</h2>
+        <h2>Funds & Stocks</h2>
         <ActionButton variant="primary" onClick={handleOpenAddFundModal} icon={faPlus}>
           Add Fund/Stock
         </ActionButton>

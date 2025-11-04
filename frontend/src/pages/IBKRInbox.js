@@ -466,9 +466,14 @@ const IBKRInbox = () => {
 
             <div className="modal-actions">
               {portfolios.length > 0 && (
-                <button className="default-button" onClick={handleSubmitAllocation}>
-                  Process Transaction
-                </button>
+                <>
+                  {Math.abs(getTotalPercentage() - 100) > 0.01 && (
+                    <div className="allocation-error">Allocations must sum to exactly 100%</div>
+                  )}
+                  <button className="default-button" onClick={handleSubmitAllocation}>
+                    Process Transaction
+                  </button>
+                </>
               )}
               <button
                 className="secondary-button"
