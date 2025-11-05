@@ -20,20 +20,23 @@ const IBKRInbox = () => {
   const [allocations, setAllocations] = useState([]);
   const [matchInfo, setMatchInfo] = useState(null);
   const [allocationWarning, setAllocationWarning] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('pending');
+  const [modalMode, setModalMode] = useState('create'); // 'create' | 'view' | 'edit'
+  const [existingAllocations, setExistingAllocations] = useState([]);
 
   useEffect(() => {
     if (!features.ibkr_integration) {
       return;
     }
-    fetchTransactions();
+    fetchTransactions(selectedStatus);
     fetchPortfolios();
-  }, [features.ibkr_integration]);
+  }, [features.ibkr_integration, selectedStatus]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (status = selectedStatus) => {
     try {
       setIsLoading(true);
       const response = await api.get('ibkr/inbox', {
-        params: { status: 'pending' },
+        params: { status },
       });
       setTransactions(response.data);
     } catch (err) {
@@ -78,9 +81,11 @@ const IBKRInbox = () => {
   };
 
   const handleAllocateTransaction = async (transaction) => {
+    setModalMode('create');
     setSelectedTransaction(transaction);
     setMatchInfo(null);
     setAllocationWarning('');
+    setExistingAllocations([]); // Clear any previous allocation data
 
     // Fetch eligible portfolios for this specific transaction
     try {
@@ -119,6 +124,71 @@ const IBKRInbox = () => {
           percentage: 100,
         },
       ]);
+    }
+  };
+
+  const handleViewDetails = async (transaction) => {
+    setModalMode('view');
+    setSelectedTransaction(transaction);
+    setMatchInfo(null);
+    setAllocationWarning('');
+    setAllocations([]); // Clear editable allocations state
+
+    try {
+      const response = await api.get(`ibkr/inbox/${transaction.id}/allocations`);
+      setExistingAllocations(response.data.allocations);
+      // Fetch portfolios for display
+      await fetchPortfolios();
+    } catch (err) {
+      console.error('Failed to fetch allocation details:', err);
+      setError('Failed to load allocation details');
+    }
+  };
+
+  const handleModifyAllocation = async (transaction) => {
+    setModalMode('edit');
+    setSelectedTransaction(transaction);
+    setMatchInfo(null);
+    setAllocationWarning('');
+
+    try {
+      const response = await api.get(`ibkr/inbox/${transaction.id}/allocations`);
+      setExistingAllocations(response.data.allocations);
+
+      // Fetch eligible portfolios
+      const portfoliosResponse = await api.get(`ibkr/inbox/${transaction.id}/eligible-portfolios`);
+      const { portfolios: eligiblePortfolios } = portfoliosResponse.data;
+      setPortfolios(eligiblePortfolios);
+
+      // Pre-populate allocations state from existing data
+      setAllocations(
+        response.data.allocations.map((a) => ({
+          portfolio_id: a.portfolio_id,
+          percentage: a.allocation_percentage,
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to fetch allocation data:', err);
+      setError('Failed to load allocation data');
+    }
+  };
+
+  const handleUnallocate = async (transactionId) => {
+    if (
+      !window.confirm(
+        'Are you sure you want to unallocate this transaction? This will delete all portfolio transactions and revert the IBKR transaction to pending status.'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await api.post(`ibkr/inbox/${transactionId}/unallocate`);
+      setMessage(response.data.message || 'Transaction unallocated successfully');
+      fetchTransactions();
+      refreshIBKRTransactionCount();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to unallocate transaction');
     }
   };
 
@@ -168,17 +238,34 @@ const IBKRInbox = () => {
     }
 
     try {
-      const response = await api.post(`ibkr/inbox/${selectedTransaction.id}/allocate`, {
-        allocations: allocations.map((a) => ({
-          portfolio_id: a.portfolio_id,
-          percentage: a.percentage,
-        })),
-      });
+      let response;
+      if (modalMode === 'edit') {
+        // Modify existing allocations
+        response = await api.put(`ibkr/inbox/${selectedTransaction.id}/allocations`, {
+          allocations: allocations.map((a) => ({
+            portfolio_id: a.portfolio_id,
+            percentage: a.percentage,
+          })),
+        });
+      } else {
+        // Create new allocations
+        response = await api.post(`ibkr/inbox/${selectedTransaction.id}/allocate`, {
+          allocations: allocations.map((a) => ({
+            portfolio_id: a.portfolio_id,
+            percentage: a.percentage,
+          })),
+        });
+      }
 
       if (response.data.success) {
-        setMessage('Transaction processed successfully');
+        setMessage(
+          modalMode === 'edit'
+            ? 'Allocations modified successfully'
+            : 'Transaction processed successfully'
+        );
         setSelectedTransaction(null);
         setAllocations([]);
+        setExistingAllocations([]);
         fetchTransactions();
         refreshIBKRTransactionCount();
       } else {
@@ -224,6 +311,65 @@ const IBKRInbox = () => {
     setError('');
   };
 
+  const getActionsForTransaction = (item) => {
+    if (item.status === 'pending') {
+      return (
+        <>
+          <button className="small-button primary" onClick={() => handleAllocateTransaction(item)}>
+            Allocate
+          </button>
+          <button
+            className="small-button secondary"
+            onClick={() => handleIgnoreTransaction(item.id)}
+          >
+            Ignore
+          </button>
+          <button className="small-button danger" onClick={() => handleDeleteTransaction(item.id)}>
+            Delete
+          </button>
+        </>
+      );
+    } else if (item.status === 'processed') {
+      return (
+        <>
+          <button className="small-button primary" onClick={() => handleViewDetails(item)}>
+            View Details
+          </button>
+          <button className="small-button primary" onClick={() => handleModifyAllocation(item)}>
+            Modify
+          </button>
+          <button className="small-button secondary" onClick={() => handleUnallocate(item.id)}>
+            Unallocate
+          </button>
+        </>
+      );
+    }
+    return null;
+  };
+
+  const getEmptyMessage = () => {
+    if (selectedStatus === 'pending') {
+      return (
+        <div className="empty-state-content">
+          <p>No pending transactions</p>
+          <p className="empty-state-hint">
+            Click "Import Now" to fetch transactions from IBKR, or they will be imported
+            automatically on Sunday at 2:00 AM if auto-import is enabled.
+          </p>
+        </div>
+      );
+    } else {
+      return (
+        <div className="empty-state-content">
+          <p>No processed transactions</p>
+          <p className="empty-state-hint">
+            Allocated transactions will appear here once you process them from the Pending tab.
+          </p>
+        </div>
+      );
+    }
+  };
+
   if (!features.ibkr_integration) {
     return (
       <div className="ibkr-inbox">
@@ -251,8 +397,28 @@ const IBKRInbox = () => {
         >
           {isImporting ? 'Importing...' : 'Import Now'}
         </button>
-        <button className="secondary-button" onClick={fetchTransactions} disabled={isLoading}>
+        <button
+          className="secondary-button"
+          onClick={() => fetchTransactions()}
+          disabled={isLoading}
+        >
           Refresh
+        </button>
+      </div>
+
+      {/* Status Tabs */}
+      <div className="inbox-tabs">
+        <button
+          className={`inbox-tab ${selectedStatus === 'pending' ? 'active' : ''}`}
+          onClick={() => setSelectedStatus('pending')}
+        >
+          Pending
+        </button>
+        <button
+          className={`inbox-tab ${selectedStatus === 'processed' ? 'active' : ''}`}
+          onClick={() => setSelectedStatus('processed')}
+        >
+          Processed
         </button>
       </div>
 
@@ -328,42 +494,13 @@ const IBKRInbox = () => {
             key: 'actions',
             header: 'Actions',
             cellClassName: 'actions-cell',
-            render: (_, item) => (
-              <>
-                <button
-                  className="small-button primary"
-                  onClick={() => handleAllocateTransaction(item)}
-                >
-                  Allocate
-                </button>
-                <button
-                  className="small-button secondary"
-                  onClick={() => handleIgnoreTransaction(item.id)}
-                >
-                  Ignore
-                </button>
-                <button
-                  className="small-button danger"
-                  onClick={() => handleDeleteTransaction(item.id)}
-                >
-                  Delete
-                </button>
-              </>
-            ),
+            render: (_, item) => getActionsForTransaction(item),
             sortable: false,
             filterable: false,
           },
         ]}
         loading={isLoading}
-        emptyMessage={
-          <div className="empty-state-content">
-            <p>No pending transactions</p>
-            <p className="empty-state-hint">
-              Click "Import Now" to fetch transactions from IBKR, or they will be imported
-              automatically on Sunday at 2:00 AM if auto-import is enabled.
-            </p>
-          </div>
-        }
+        emptyMessage={getEmptyMessage()}
         sortable={true}
         filterable={false}
       />
@@ -374,8 +511,15 @@ const IBKRInbox = () => {
           onClose={() => {
             setSelectedTransaction(null);
             setAllocations([]);
+            setExistingAllocations([]);
           }}
-          title="Allocate Transaction to Portfolios"
+          title={
+            modalMode === 'view'
+              ? 'View Transaction Allocations'
+              : modalMode === 'edit'
+                ? 'Modify Transaction Allocations'
+                : 'Allocate Transaction to Portfolios'
+          }
         >
           <div className="allocation-modal">
             <div className="transaction-summary">
@@ -400,16 +544,46 @@ const IBKRInbox = () => {
               )}
             </div>
 
-            {matchInfo && matchInfo.found && (
+            {modalMode === 'create' && matchInfo && matchInfo.found && (
               <div className="match-info success">
                 ✓ Fund matched by {matchInfo.matched_by === 'isin' ? 'ISIN' : 'Symbol'}:{' '}
                 <strong>{matchInfo.fund_name}</strong> ({matchInfo.fund_symbol})
               </div>
             )}
 
-            {allocationWarning && <div className="allocation-warning">⚠️ {allocationWarning}</div>}
+            {modalMode === 'create' && allocationWarning && (
+              <div className="allocation-warning">⚠️ {allocationWarning}</div>
+            )}
 
-            {portfolios.length > 0 && (
+            {modalMode === 'view' && (
+              <div className="allocation-details">
+                <h3>Current Allocations</h3>
+                {existingAllocations.map((allocation, index) => (
+                  <div key={index} className="allocation-detail-row">
+                    <div className="allocation-detail-item">
+                      <span className="label">Portfolio:</span>
+                      <span className="value">{allocation.portfolio_name}</span>
+                    </div>
+                    <div className="allocation-detail-item">
+                      <span className="label">Percentage:</span>
+                      <span className="value">{allocation.allocation_percentage.toFixed(2)}%</span>
+                    </div>
+                    <div className="allocation-detail-item">
+                      <span className="label">Amount:</span>
+                      <span className="value">
+                        {allocation.allocated_amount.toFixed(2)} {selectedTransaction.currency}
+                      </span>
+                    </div>
+                    <div className="allocation-detail-item">
+                      <span className="label">Shares:</span>
+                      <span className="value">{allocation.allocated_shares.toFixed(6)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {(modalMode === 'create' || modalMode === 'edit') && portfolios.length > 0 && (
               <div className="allocations-section">
                 <h3>Portfolio Allocations</h3>
                 {allocations.map((allocation, index) => (
@@ -465,13 +639,13 @@ const IBKRInbox = () => {
             )}
 
             <div className="modal-actions">
-              {portfolios.length > 0 && (
+              {(modalMode === 'create' || modalMode === 'edit') && portfolios.length > 0 && (
                 <>
                   {Math.abs(getTotalPercentage() - 100) > 0.01 && (
                     <div className="allocation-error">Allocations must sum to exactly 100%</div>
                   )}
                   <button className="default-button" onClick={handleSubmitAllocation}>
-                    Process Transaction
+                    {modalMode === 'edit' ? 'Update Allocations' : 'Process Transaction'}
                   </button>
                 </>
               )}
@@ -480,9 +654,10 @@ const IBKRInbox = () => {
                 onClick={() => {
                   setSelectedTransaction(null);
                   setAllocations([]);
+                  setExistingAllocations([]);
                 }}
               >
-                Cancel
+                Close
               </button>
             </div>
           </div>

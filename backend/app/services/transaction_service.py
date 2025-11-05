@@ -68,7 +68,16 @@ class TransactionService:
                 - type: Transaction type
                 - shares: Number of shares
                 - cost_per_share: Cost per share
+                - ibkr_linked: Boolean indicating if transaction came from IBKR
+                - ibkr_transaction_id: ID of parent IBKR transaction (if applicable)
         """
+        from ..models import IBKRTransactionAllocation
+
+        # Check if transaction is linked to IBKR
+        ibkr_allocation = IBKRTransactionAllocation.query.filter_by(
+            transaction_id=transaction.id
+        ).first()
+
         return {
             "id": transaction.id,
             "portfolio_fund_id": transaction.portfolio_fund_id,
@@ -77,6 +86,8 @@ class TransactionService:
             "type": transaction.type,
             "shares": transaction.shares,
             "cost_per_share": transaction.cost_per_share,
+            "ibkr_linked": bool(ibkr_allocation),
+            "ibkr_transaction_id": ibkr_allocation.ibkr_transaction_id if ibkr_allocation else None,
         }
 
     @staticmethod

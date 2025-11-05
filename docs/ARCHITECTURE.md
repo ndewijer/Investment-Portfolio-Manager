@@ -151,6 +151,58 @@ The system includes integration with Interactive Brokers (IBKR) Flex Web Service
 3. **Inbox**: Imported transactions appear as "pending"
 4. **Allocation**: User specifies how to split each transaction across portfolios
 5. **Processing**: System creates Transaction records and updates portfolio holdings
+6. **Management**: Users can view, modify, or unallocate processed transactions
+
+### Transaction Status Flow
+
+```
+┌─────────────┐
+│   Import    │ → IBKRTransaction created
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│   pending   │ ← Appears in IBKR Inbox "Pending" tab
+└──────┬──────┘
+       │
+       ├─────► Allocate to portfolio(s)
+       │
+       ▼
+┌─────────────┐    ┌──────────┐
+│  processed  │ or │ ignored  │
+└──────┬──────┘    └──────────┘
+       │
+       │ View/Modify/Unallocate
+       │ (or delete all portfolio transactions)
+       │
+       ▼
+┌─────────────┐
+│   pending   │ ← Auto-revert: ready for reallocation
+└─────────────┘
+```
+
+### IBKR Transaction Lifecycle Management
+
+**Auto-Revert Mechanism:**
+When portfolio transactions created from IBKR allocations are deleted:
+- **Partial deletion**: If IBKR transaction was allocated to multiple portfolios and only some are deleted, status remains "processed"
+- **Complete deletion**: If all portfolio transactions are deleted, IBKR transaction automatically reverts to "pending" status and reappears in inbox
+
+**Management Operations:**
+- **View Details** (`GET /ibkr/inbox/:id/allocations`): See how transaction was allocated across portfolios
+- **Modify** (`PUT /ibkr/inbox/:id/allocations`): Adjust allocation percentages without recreating transactions
+- **Unallocate** (`POST /ibkr/inbox/:id/unallocate`): Remove all allocations and revert to pending status
+
+**Cascade Delete Behavior:**
+```
+Transaction (deleted by user)
+  ↓ CASCADE (database)
+IBKRTransactionAllocation (auto-deleted)
+  ↓ APPLICATION LOGIC
+IBKRTransaction.status (reverted to pending if last allocation)
+```
+
+For detailed implementation, see [IBKR Transaction Lifecycle Documentation](IBKR_TRANSACTION_LIFECYCLE.md)
 
 ### Security
 - IBKR Flex tokens are encrypted at rest using Fernet encryption

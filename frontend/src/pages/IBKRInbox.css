@@ -63,6 +63,37 @@
   margin-bottom: 2rem;
 }
 
+/* Status Tabs */
+.inbox-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.inbox-tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6c757d;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.inbox-tab:hover {
+  color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.inbox-tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem;
@@ -80,7 +111,6 @@
 
 .empty-state-hint {
   font-size: 0.9rem;
-  max-width: 600px;
   margin: 1rem auto 0;
   text-align: center;
 }
@@ -273,6 +303,49 @@
   margin-bottom: 1rem;
 }
 
+/* Allocation Details View (View Mode) */
+.allocation-details {
+  margin-bottom: 1.5rem;
+}
+
+.allocation-details h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.allocation-detail-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.allocation-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.allocation-detail-item .label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.allocation-detail-item .value {
+  font-size: 1rem;
+  color: #212529;
+  font-weight: 500;
+}
+
 .allocation-row {
   display: flex;
   gap: 0.5rem;
@@ -396,4 +469,21 @@
 
 [data-theme='dark'] .modal-actions {
   border-top-color: #444;
+}
+
+[data-theme='dark'] .allocation-details h3 {
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .allocation-detail-row {
+  background-color: #2d2d2d;
+  border-color: #444;
+}
+
+[data-theme='dark'] .allocation-detail-item .label {
+  color: #aaa;
+}
+
+[data-theme='dark'] .allocation-detail-item .value {
+  color: #e0e0e0;
 }

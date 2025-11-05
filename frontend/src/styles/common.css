@@ -285,3 +285,34 @@ button {
   border: none;
   border-radius: 4px;
 }
+
+/* IBKR and Manual Badge Styles */
+.ibkr-badge,
+.manual-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.ibkr-badge {
+  background-color: #0288d1;
+  color: white;
+}
+
+.manual-badge {
+  background-color: #757575;
+  color: white;
+}
+
+/* For mobile transaction cards */
+.transaction-card .transaction-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
