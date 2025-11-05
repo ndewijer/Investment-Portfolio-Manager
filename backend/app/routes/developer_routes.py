@@ -222,7 +222,7 @@ def import_transactions():
             # Check if the file has the correct headers
             first_line = decoded_content.split("\n")[0].strip()
             expected_headers = {"date", "type", "shares", "cost_per_share"}
-            found_headers = set(h.strip() for h in first_line.split(","))
+            found_headers = {h.strip() for h in first_line.split(",")}
 
             if not expected_headers.issubset(found_headers):
                 response, status = logger.log(
@@ -479,7 +479,7 @@ def import_fund_prices():
             # Check if the file has the correct headers
             first_line = decoded_content.split("\n")[0].strip()
             expected_headers = {"date", "price"}
-            found_headers = set(h.strip() for h in first_line.split(","))
+            found_headers = {h.strip() for h in first_line.split(",")}
 
             if not expected_headers.issubset(found_headers):
                 response, status = logger.log(

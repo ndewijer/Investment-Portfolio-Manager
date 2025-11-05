@@ -278,7 +278,7 @@ class IBKRTransactionService:
             return {"success": False, "error": f"Processing failed: {e!s}"}
 
     @staticmethod
-    def get_pending_dividends(symbol: str = None, isin: str = None) -> list[dict]:
+    def get_pending_dividends(symbol: str | None = None, isin: str | None = None) -> list[dict]:
         """
         Get pending dividend records for matching.
 

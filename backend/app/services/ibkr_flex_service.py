@@ -12,6 +12,7 @@ import json
 import os
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
+from typing import ClassVar
 
 import requests
 from cryptography.fernet import Fernet
@@ -46,7 +47,7 @@ class IBKRFlexService:
 
     # IBKR Flex API Error Codes
     # Source: https://www.interactivebrokers.com/campus/ibkr-api-page/flex-web-service/#error-codes
-    ERROR_CODES = {
+    ERROR_CODES: ClassVar[dict[str, str]] = {
         "1001": "Statement could not be generated at this time. Please try again shortly.",
         "1003": "Statement is not available.",
         "1004": "Statement is incomplete at this time. Please try again shortly.",

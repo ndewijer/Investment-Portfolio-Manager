@@ -190,9 +190,7 @@ class HistoricalPriceService:
         if not start_date:
             return []
 
-        existing_dates = set(
-            price.date for price in FundPrice.query.filter_by(fund_id=fund_id).all()
-        )
+        existing_dates = {price.date for price in FundPrice.query.filter_by(fund_id=fund_id).all()}
 
         all_dates = []
         current_date = start_date
