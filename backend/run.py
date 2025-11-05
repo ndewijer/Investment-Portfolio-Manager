@@ -24,12 +24,162 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
+# Buffer for startup logs (before app context is available)
+_startup_logs = []
+
+
+def log_startup_message(level, category, message, details=None):
+    """
+    Log a message during startup (before app context is available).
+
+    Prints immediately for console visibility and buffers for database logging.
+
+    Args:
+        level: LogLevel enum value
+        category: LogCategory enum value
+        message: Log message string
+        details: Optional dict of additional details
+    """
+    # Print immediately for console visibility
+    print(f"[{level.value.upper()}] [{category.value.upper()}] {message}")
+    if details:
+        for key, value in details.items():
+            print(f"  {key}: {value}")
+
+    # Store for later database logging
+    _startup_logs.append(
+        {"level": level, "category": category, "message": message, "details": details or {}}
+    )
+
+
+def flush_startup_logs():
+    """
+    Flush buffered startup logs to database once app context is available.
+
+    Must be called within Flask application context.
+    """
+    if not _startup_logs:
+        return
+
+    from app.services.logging_service import logger
+
+    count = len(_startup_logs)
+    for log_entry in _startup_logs:
+        try:
+            logger.log(
+                level=log_entry["level"],
+                category=log_entry["category"],
+                message=log_entry["message"],
+                details=log_entry["details"],
+            )
+        except Exception as e:
+            print(f"[ERROR] Failed to flush startup log to database: {e}")
+
+    _startup_logs.clear()
+    print(f"[INFO] Flushed {count} startup log(s) to database")
+
 
 def get_version():
     """Get application version from VERSION file."""
     version_file = os.path.join(os.path.dirname(__file__), "VERSION")
     with open(version_file) as f:
         return f.read().strip()
+
+
+def get_or_create_ibkr_encryption_key():
+    """
+    Get or create IBKR encryption key.
+
+    This has the following priority:
+    1. IBKR_ENCRYPTION_KEY environment variable (best practice for migrations)
+    2. /data/.ibkr_encryption_key file (auto-generated, persisted)
+    3. Generate new key and save to file.
+
+    Returns:
+        str: Base64-encoded Fernet encryption key
+
+    Note: This function uses log_startup_message() which prints immediately
+    and buffers logs for database insertion once app context is available.
+    """
+    from app.models import LogCategory
+    from cryptography.fernet import Fernet
+
+    # Priority 1: Environment variable (best practice for migrations)
+    env_key = os.environ.get("IBKR_ENCRYPTION_KEY")
+    if env_key:
+        log_startup_message(
+            level=LogLevel.INFO,
+            category=LogCategory.SECURITY,
+            message="Using IBKR encryption key from environment variable",
+            details={"source": "IBKR_ENCRYPTION_KEY", "method": "environment_variable"},
+        )
+        return env_key
+
+    # Priority 2: Persistent key file
+    data_dir = os.environ.get("DB_DIR", os.path.join(os.getcwd(), "data/db"))
+    key_file = os.path.join(os.path.dirname(data_dir), ".ibkr_encryption_key")
+
+    if os.path.exists(key_file):
+        try:
+            with open(key_file) as f:
+                key = f.read().strip()
+            log_startup_message(
+                level=LogLevel.INFO,
+                category=LogCategory.SECURITY,
+                message="Using IBKR encryption key from persistent storage",
+                details={"source": key_file, "method": "persistent_file"},
+            )
+            return key
+        except Exception as e:
+            log_startup_message(
+                level=LogLevel.ERROR,
+                category=LogCategory.SECURITY,
+                message="Failed to read encryption key file",
+                details={"error": str(e), "file": key_file},
+            )
+
+    # Priority 3: Generate new key
+    new_key = Fernet.generate_key().decode()
+
+    log_startup_message(
+        level=LogLevel.WARNING,
+        category=LogCategory.SECURITY,
+        message="IBKR encryption key auto-generated",
+        details={
+            "key": new_key,
+            "saved_to": key_file,
+            "action_required": "Save this key for database migrations",
+            "best_practice": "Set IBKR_ENCRYPTION_KEY in .env file",
+        },
+    )
+
+    # Save to persistent file
+    try:
+        os.makedirs(os.path.dirname(key_file), exist_ok=True)
+        with open(key_file, "w") as f:
+            f.write(new_key)
+        os.chmod(key_file, 0o600)  # Owner read/write only
+
+        log_startup_message(
+            level=LogLevel.INFO,
+            category=LogCategory.SECURITY,
+            message="Encryption key saved to persistent storage",
+            details={"file": key_file, "permissions": "0600"},
+        )
+    except Exception as e:
+        log_startup_message(
+            level=LogLevel.ERROR,
+            category=LogCategory.SECURITY,
+            message="Failed to save encryption key to file",
+            details={
+                "error": str(e),
+                "file": key_file,
+                "consequence": "Key will NOT persist across container restarts",
+                "solution": "Set IBKR_ENCRYPTION_KEY environment variable",
+            },
+        )
+
+    return new_key
 
 
 def create_app():
@@ -53,6 +203,9 @@ def create_app():
     log_dir = os.environ.get("LOG_DIR", os.path.join(os.getcwd(), "data/logs"))
     os.makedirs(log_dir, exist_ok=True)
     app.config["LOG_DIR"] = log_dir
+
+    # Initialize IBKR encryption key
+    app.config["IBKR_ENCRYPTION_KEY"] = get_or_create_ibkr_encryption_key()
 
     # Get hostname from environment variable
     frontend_host = os.environ.get("DOMAIN", "*")
@@ -133,6 +286,9 @@ def create_app():
                 db.session.add(logging_level)
 
             db.session.commit()
+
+        # Flush buffered startup logs to database
+        flush_startup_logs()
 
     # Set up scheduler
     scheduler = BackgroundScheduler()

@@ -80,15 +80,23 @@ class IBKRFlexService:
 
     def __init__(self):
         """Initialize IBKR Flex Service."""
-        self.encryption_key = os.environ.get("IBKR_ENCRYPTION_KEY")
+        from flask import current_app
+
+        # Get encryption key from app config (auto-generated if not in env)
+        self.encryption_key = current_app.config.get("IBKR_ENCRYPTION_KEY")
+
         # Debug XML saving (disabled by default for security)
         self.save_debug_xml = os.environ.get("IBKR_DEBUG_SAVE_XML", "false").lower() == "true"
+
         if not self.encryption_key:
             logger.log(
                 level=LogLevel.ERROR,
-                category=LogCategory.IBKR,
-                message="IBKR_ENCRYPTION_KEY not set in environment",
-                details={"error": "Missing required environment variable"},
+                category=LogCategory.SECURITY,
+                message="IBKR encryption key not available",
+                details={
+                    "error": "Encryption key not found in app config",
+                    "solution": "Check application startup logs for key generation",
+                },
             )
 
     def _get_error_message(self, error_code: str) -> str:
