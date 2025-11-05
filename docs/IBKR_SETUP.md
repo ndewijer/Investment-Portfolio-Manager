@@ -95,27 +95,33 @@ Include cash movements for dividends and fees. Select these fields:
 - **Set a reminder** to regenerate your token before it expires
 - When regenerating, simply update the token in the application settings (no need to reconfigure the query)
 
-## Step 4: Add Environment Variables
+## Step 4: Configure Encryption (Optional)
 
-Add to your `.env` file:
+IBKR Flex Tokens are encrypted at rest for security. The application will **auto-generate** an encryption key on first startup if you don't provide one.
 
+**Option A: Let It Auto-Generate (Easiest)**
+- No action required
+- Key is generated and saved to `/data/.ibkr_encryption_key`
+- Check logs for the generated key (save it for backup purposes)
+
+**Option B: Set Your Own Key (Recommended for Production)**
+
+Add to `backend/.env`:
 ```bash
-# IBKR Flex Web Service Configuration
-IBKR_ENCRYPTION_KEY=cDZoaLKWN5vjqOY1p2fwE8X9mR7tU3kA4nB6sH0gC2Q=
-
-# Optional: Enable debug XML saving (disabled by default for security)
-# IBKR_DEBUG_SAVE_XML=true
+IBKR_ENCRYPTION_KEY=<your-generated-key>
 ```
 
-**Notes**:
-- The encryption key above is pre-generated for you. If you need a new one, run:
-  ```python
-  from cryptography.fernet import Fernet
-  print(Fernet.generate_key().decode())
-  ```
-- Debug XML saving is **disabled by default** for security (stores raw transaction data)
-- Only enable `IBKR_DEBUG_SAVE_XML=true` during development/troubleshooting
-- XML files are saved to `backend/data/ibkr_debug/` with timestamps
+Generate a key with:
+```bash
+docker-compose exec backend python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+**📖 For Complete Security Documentation:**
+See [docs/SECURITY.md](SECURITY.md) for:
+- Encryption key management
+- Migration and backup procedures
+- Key rotation
+- Security best practices
 
 ## Step 5: Configure in Application UI
 
@@ -141,92 +147,27 @@ IBKR_ENCRYPTION_KEY=cDZoaLKWN5vjqOY1p2fwE8X9mR7tU3kA4nB6sH0gC2Q=
 
 ## Managing IBKR Transactions
 
-### IBKR Inbox Tabs
+The IBKR Inbox provides a complete interface for managing imported transactions:
 
-The IBKR Inbox has two tabs for managing transactions:
+**Pending Tab:**
+- Review newly imported transactions
+- Allocate to one or more portfolios
+- Ignore or delete unwanted transactions
 
-#### Pending Tab
-- Shows newly imported transactions that haven't been allocated yet
-- Also shows transactions that were previously processed but have been unallocated
-- Available actions:
-  - **Allocate**: Assign the transaction to one or more portfolios
-  - **Ignore**: Mark the transaction as ignored (won't appear in pending)
-  - **Delete**: Permanently remove the transaction from the inbox
+**Processed Tab:**
+- View allocation details
+- Modify existing allocations
+- Unallocate to start over
 
-#### Processed Tab
-- Shows transactions that have been allocated to portfolios
-- Available actions:
-  - **View Details**: See allocation breakdown (portfolio, percentage, amount, shares)
-  - **Modify**: Change allocation percentages or add/remove portfolios
-  - **Unallocate**: Remove all allocations and return transaction to pending
+**Transaction Badges:**
+- IBKR transactions show an **IBKR** badge in portfolio views
+- Helps distinguish imported vs manually-entered transactions
 
-### Transaction Lifecycle
-
-```
-Import → Pending → Allocate → Processed
-                 ↑              ↓
-                 └── Unallocate ─┘
-```
-
-**Auto-Revert Behavior**:
-- If you delete all portfolio transactions created from an IBKR allocation, the IBKR transaction automatically reverts to "pending" status
-- This ensures IBKR transactions never "disappear" from the system
-- You can then re-allocate the transaction as needed
-
-### Allocating Transactions
-
-When allocating a transaction, you can:
-
-1. **Single Portfolio Allocation**:
-   - Allocate 100% to one portfolio
-   - Most common use case
-
-2. **Split Allocation**:
-   - Split across multiple portfolios with different percentages
-   - Example: 60% Portfolio A, 40% Portfolio B
-   - Total must equal exactly 100%
-
-3. **View Matching Information**:
-   - The system shows if the fund was matched by ISIN or Symbol
-   - Displays the fund name from your portfolio for confirmation
-
-### Modifying Allocations
-
-To modify an existing allocation:
-
-1. Navigate to the **Processed** tab
-2. Click **Modify** on the transaction
-3. Adjust percentages or add/remove portfolios
-4. Click **Update Allocations**
-
-**Important Notes**:
-- Modifying allocations updates the existing portfolio transactions
-- The original IBKR transaction remains linked
-- You can add or remove portfolios from the allocation
-- Percentages must still total 100%
-
-### Unallocating Transactions
-
-To unallocate a transaction:
-
-1. Navigate to the **Processed** tab
-2. Click **Unallocate** on the transaction
-3. Confirm the action
-
-**What happens**:
-- All portfolio transactions created from this allocation are deleted
-- The IBKR transaction reverts to "pending" status
-- The transaction reappears in the **Pending** tab
-- You can then re-allocate it differently
-
-### IBKR Badge on Portfolio Transactions
-
-Transactions imported from IBKR are marked with an **IBKR** badge in your portfolio transaction list. This helps you:
-- Identify which transactions came from IBKR vs manually entered
-- Understand the source of your data
-- Track IBKR imports across your portfolios
-
-Manual transactions show a **Manual** badge for comparison.
+**📖 For Complete Transaction Lifecycle Documentation:**
+See [docs/IBKR_TRANSACTION_LIFECYCLE.md](IBKR_TRANSACTION_LIFECYCLE.md) for technical details on:
+- Transaction status flow and auto-revert mechanism
+- API endpoints and backend implementation
+- Troubleshooting and testing scenarios
 
 ## IBKR Flex API Details
 
