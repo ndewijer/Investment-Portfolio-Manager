@@ -207,7 +207,7 @@ class DeveloperService:
         results = []
 
         try:
-            decoded_content = file_content.decode("utf-8")
+            decoded_content = file_content.decode("utf-8-sig")
             csv_reader = csv.DictReader(decoded_content.splitlines())
             header_mapping = {}
 
