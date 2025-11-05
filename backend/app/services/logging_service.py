@@ -85,10 +85,10 @@ class LoggingService:
         level: LogLevel,
         category: LogCategory,
         message: str,
-        details: dict = None,
-        source: str = None,
-        http_status: int = None,
-        stack_trace: str = None,
+        details: dict | None = None,
+        source: str | None = None,
+        http_status: int | None = None,
+        stack_trace: str | None = None,
     ):
         """Unified logging function that logs to both database and file.
 

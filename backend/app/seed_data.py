@@ -133,7 +133,7 @@ def generate_dividends(portfolio_fund_id, fund_id, fund_prices, dividend_type):
     """
     dividends = []
     sorted_prices = sorted(fund_prices, key=lambda x: x.date)
-    years = set(price.date.year for price in sorted_prices)
+    years = {price.date.year for price in sorted_prices}
 
     # Get all transactions for this portfolio_fund
     all_transactions = Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).all()

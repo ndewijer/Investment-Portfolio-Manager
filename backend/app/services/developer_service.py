@@ -65,8 +65,8 @@ class DeveloperService:
             return None
         try:
             return float(str(value).strip())
-        except ValueError:
-            raise ValueError(f"Invalid number format: {value}")
+        except ValueError as e:
+            raise ValueError(f"Invalid number format: {value}") from e
 
     @staticmethod
     def sanitize_date(value):
@@ -87,8 +87,8 @@ class DeveloperService:
         try:
             date_str = str(value).strip()
             return datetime.strptime(date_str, "%Y-%m-%d").date()
-        except ValueError:
-            raise ValueError(f"Invalid date format: {value}. Expected format: YYYY-MM-DD")
+        except ValueError as e:
+            raise ValueError(f"Invalid date format: {value}. Expected format: YYYY-MM-DD") from e
 
     @staticmethod
     def set_exchange_rate(from_currency, to_currency, rate, date=None):
@@ -209,7 +209,7 @@ class DeveloperService:
         except UnicodeDecodeError as e:
             raise ValueError(
                 f"File is not UTF-8 encoded. Please save the file in UTF-8 format. Error: {e!s}"
-            )
+            ) from e
 
     @staticmethod
     def import_transactions_csv(file_content, portfolio_fund_id):
@@ -266,7 +266,7 @@ class DeveloperService:
                     transactions.append(transaction)
 
                 except ValueError as e:
-                    raise ValueError(f"Error in row {row_num}: {e!s}")
+                    raise ValueError(f"Error in row {row_num}: {e!s}") from e
 
             if not transactions:
                 raise ValueError("No valid transactions found in CSV file")
@@ -277,16 +277,16 @@ class DeveloperService:
                 return len(transactions)
             except Exception as e:
                 db.session.rollback()
-                raise ValueError(f"Database error while saving transactions: {e!s}")
+                raise ValueError(f"Database error while saving transactions: {e!s}") from e
 
-        except UnicodeDecodeError:
-            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.")
+        except UnicodeDecodeError as e:
+            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.") from e
         except csv.Error as e:
-            raise ValueError(f"CSV file error: {e!s}")
+            raise ValueError(f"CSV file error: {e!s}") from e
         except Exception as e:
             if "transactions" in locals():
                 db.session.rollback()
-            raise ValueError(f"Error processing CSV file: {e!s}")
+            raise ValueError(f"Error processing CSV file: {e!s}") from e
 
     @staticmethod
     def get_exchange_rate(from_currency, to_currency, date):
@@ -347,7 +347,7 @@ class DeveloperService:
                     prices.append(fund_price)
 
                 except ValueError as e:
-                    raise ValueError(f"Error in row {row_num}: {e!s}")
+                    raise ValueError(f"Error in row {row_num}: {e!s}") from e
 
             try:
                 db.session.add_all(prices)
@@ -355,12 +355,12 @@ class DeveloperService:
                 return len(prices)
             except Exception as e:
                 db.session.rollback()
-                raise ValueError(f"Database error: {e!s}")
+                raise ValueError(f"Database error: {e!s}") from e
 
-        except UnicodeDecodeError:
-            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.")
+        except UnicodeDecodeError as e:
+            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.") from e
         except csv.Error as e:
-            raise ValueError(f"CSV file error: {e!s}")
+            raise ValueError(f"CSV file error: {e!s}") from e
 
     @staticmethod
     def get_fund_price_csv_template():
@@ -409,7 +409,7 @@ class DeveloperService:
         return None
 
     @staticmethod
-    def set_fund_price(fund_id: str, price: float, date_: date = None) -> dict:
+    def set_fund_price(fund_id: str, price: float, date_: date | None = None) -> dict:
         """
         Set or update fund price for a specific date.
 
