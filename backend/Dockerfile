@@ -33,7 +33,7 @@ if [ -z "$INTERNAL_API_KEY" ]; then\n\
     echo "export INTERNAL_API_KEY=$KEY" >> ~/.bashrc\n\
     export INTERNAL_API_KEY=$KEY\n\
 fi\n\
-exec env INTERNAL_API_KEY=$INTERNAL_API_KEY "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
+exec env INTERNAL_API_KEY=$INTERNAL_API_KEY IBKR_ENCRYPTION_KEY=$IBKR_ENCRYPTION_KEY "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 5000
