@@ -378,7 +378,7 @@ const Funds = () => {
 
         {/* Display investment type as non-editable field */}
         <div className="form-field">
-          <label class="field-label">Investment Type</label>
+          <label className="field-label">Investment Type</label>
           <div className="static-field">
             {editingFund?.investment_type === 'stock' || newFund.investment_type === 'stock'
               ? 'Stock'
@@ -388,7 +388,7 @@ const Funds = () => {
 
         {/* ISIN field - show for both funds and stocks */}
         <div className="form-field">
-          <label class="field-label">
+          <label className="field-label">
             ISIN{' '}
             {(editingFund?.investment_type || newFund.investment_type) === 'stock'
               ? '(optional)'
@@ -406,7 +406,7 @@ const Funds = () => {
         {(editingFund?.investment_type || newFund.investment_type) === 'fund' ? (
           <>
             <div className="form-field">
-              <label class="field-label">Symbol (optional)</label>
+              <label className="field-label">Symbol (optional)</label>
               <div className="symbol-input-container">
                 <input
                   type="text"
@@ -429,7 +429,7 @@ const Funds = () => {
           </>
         ) : (
           <div className="form-field">
-            <label class="field-label">Symbol</label>
+            <label className="field-label">Symbol</label>
             <div className="symbol-input-container">
               <input
                 type="text"

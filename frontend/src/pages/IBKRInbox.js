@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
@@ -24,37 +24,40 @@ const IBKRInbox = () => {
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'view' | 'edit'
   const [existingAllocations, setExistingAllocations] = useState([]);
 
-  useEffect(() => {
-    if (!features.ibkr_integration) {
-      return;
-    }
-    fetchTransactions(selectedStatus);
-    fetchPortfolios();
-  }, [features.ibkr_integration, selectedStatus]);
+  const fetchTransactions = useCallback(
+    async (status = selectedStatus) => {
+      try {
+        setIsLoading(true);
+        const response = await api.get('ibkr/inbox', {
+          params: { status },
+        });
+        setTransactions(response.data);
+      } catch (err) {
+        console.error('Failed to fetch transactions:', err);
+        setError('Failed to load transactions');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [selectedStatus]
+  );
 
-  const fetchTransactions = async (status = selectedStatus) => {
-    try {
-      setIsLoading(true);
-      const response = await api.get('ibkr/inbox', {
-        params: { status },
-      });
-      setTransactions(response.data);
-    } catch (err) {
-      console.error('Failed to fetch transactions:', err);
-      setError('Failed to load transactions');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchPortfolios = async () => {
+  const fetchPortfolios = useCallback(async () => {
     try {
       const response = await api.get('ibkr/portfolios');
       setPortfolios(response.data);
     } catch (err) {
       console.error('Failed to fetch portfolios:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!features.ibkr_integration) {
+      return;
+    }
+    fetchTransactions(selectedStatus);
+    fetchPortfolios();
+  }, [features.ibkr_integration, selectedStatus, fetchTransactions, fetchPortfolios]);
 
   const handleImportNow = async () => {
     try {
@@ -353,7 +356,7 @@ const IBKRInbox = () => {
         <div className="empty-state-content">
           <p>No pending transactions</p>
           <p className="empty-state-hint">
-            Click "Import Now" to fetch transactions from IBKR, or they will be imported
+            Click &quot;Import Now&quot; to fetch transactions from IBKR, or they will be imported
             automatically on Sunday at 2:00 AM if auto-import is enabled.
           </p>
         </div>
