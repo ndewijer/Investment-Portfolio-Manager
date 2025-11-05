@@ -216,6 +216,8 @@
 - `ibkr_transaction_id` is unique to prevent duplicates
 - Kept as audit trail even after processing
 - Status tracks workflow: pending → processed/ignored
+- Status can auto-revert: processed → pending (when all allocations deleted)
+- `processed_at` is cleared when status reverts to pending
 
 ### IBKRTransactionAllocation
 | Field | Type | Description |
@@ -243,6 +245,8 @@
 - Multiple allocations per IBKR transaction for splitting across portfolios
 - Percentages across allocations must sum to 100%
 - Links IBKR transactions to created Transaction records
+- **CASCADE DELETE**: When Transaction is deleted, this allocation record is automatically deleted
+- When last allocation for an IBKR transaction is deleted, IBKR transaction status auto-reverts to pending
 
 ### IBKRImportCache
 | Field | Type | Description |
@@ -260,3 +264,125 @@
 - Cache duration: 24 hours
 - Automatically cleaned up on import
 - Cache key format: `ibkr_flex_{query_id}_{YYYY-MM-DD}`
+
+## IBKR Transaction Lifecycle & Status Management
+
+### Status Flow Diagram
+```
+Import → pending → [Allocate] → processed → [Delete All Allocations] → pending
+                                          ↘ [Ignore] → ignored
+```
+
+### Key Behaviors
+
+#### 1. Status Transitions
+- **pending**: Initial state after import, waiting for allocation
+- **processed**: Allocated to one or more portfolios
+- **ignored**: User marked as not relevant
+- **pending (reverted)**: Automatically reverted when all allocations deleted
+
+#### 2. Auto-Revert Mechanism
+When portfolio transactions are deleted:
+
+**Scenario A: Partial Deletion**
+- IBKR transaction allocated 50/50 to Portfolio A & B
+- Portfolio A's transaction is deleted
+- Result: Status remains "processed", Portfolio B allocation intact
+
+**Scenario B: Complete Deletion**
+- IBKR transaction allocated 100% to Portfolio A
+- Portfolio A's transaction is deleted
+- Result: Status reverts to "pending", appears in inbox again
+
+**Scenario C: Sequential Deletion**
+- IBKR transaction allocated 50/50 to Portfolio A & B
+- Portfolio A's transaction deleted → Status: processed
+- Portfolio B's transaction deleted → Status: pending (auto-reverted)
+
+#### 3. Cascade Delete Chain
+```
+Transaction (deleted)
+  ↓ CASCADE (database level)
+IBKRTransactionAllocation (auto-deleted)
+  ↓ APPLICATION LOGIC
+IBKRTransaction.status (reverted to pending if last allocation)
+```
+
+#### 4. Transaction-Allocation Relationship
+
+**One-to-Many**:
+- One IBKRTransaction can have multiple IBKRTransactionAllocation records
+- Each allocation creates one Transaction record in a portfolio
+
+**Lifecycle Example**:
+```
+1. Import: IBKRTransaction created (status=pending)
+2. Allocate 60/40:
+   - IBKRTransactionAllocation #1 (60%, Portfolio A) → Transaction #1
+   - IBKRTransactionAllocation #2 (40%, Portfolio B) → Transaction #2
+   - IBKRTransaction status → processed
+3. Delete Transaction #1:
+   - IBKRTransactionAllocation #1 cascade-deleted
+   - IBKRTransaction status remains processed (allocation #2 exists)
+4. Delete Transaction #2:
+   - IBKRTransactionAllocation #2 cascade-deleted
+   - IBKRTransaction status → pending (no allocations remain)
+```
+
+### Foreign Key Constraints
+
+#### IBKRTransactionAllocation
+- `ibkr_transaction_id` → `IBKRTransaction.id` (CASCADE)
+- `portfolio_id` → `Portfolio.id` (CASCADE)
+- `transaction_id` → `Transaction.id` (**CASCADE** - triggers auto-revert)
+
+**Critical**: The `ondelete="CASCADE"` on `transaction_id` is what enables the auto-revert mechanism. When a Transaction is deleted, the database automatically deletes the IBKRTransactionAllocation, and application logic detects this to revert the parent IBKRTransaction status.
+
+### Transaction Model IBKR Link
+
+The Transaction model gains virtual fields when queried via API endpoints:
+- `ibkr_linked` (boolean): True if transaction originated from IBKR allocation
+- `ibkr_transaction_id` (string): Link to parent IBKRTransaction
+
+These fields are not stored in the database but computed at runtime by checking for IBKRTransactionAllocation records.
+
+### API Operations
+
+#### Unallocate
+- **Endpoint**: `POST /ibkr/inbox/<id>/unallocate`
+- **Effect**: Deletes all Transaction records, status → pending
+- **Use Case**: User wants to completely remove allocation and restart
+
+#### View Allocations
+- **Endpoint**: `GET /ibkr/inbox/<id>/allocations`
+- **Returns**: All allocation details with portfolio names
+- **Use Case**: View where/how transaction was allocated
+
+#### Modify Allocations
+- **Endpoint**: `PUT /ibkr/inbox/<id>/allocations`
+- **Effect**: Updates Transaction amounts, keeps status as processed
+- **Use Case**: Adjust allocation percentages without recreating
+
+### Audit Trail
+
+All status changes are logged:
+```python
+logger.log(
+    level=LogLevel.INFO,
+    category=LogCategory.IBKR,
+    message="IBKR transaction status reverted to pending",
+    details={
+        "ibkr_transaction_id": "...",
+        "reason": "All allocations deleted",
+        "allocation_count": 0
+    }
+)
+```
+
+### Migration Notes
+- No database schema changes required
+- Existing `ondelete="CASCADE"` constraints are correct
+- Migration 1.3.0 already includes all necessary foreign keys
+- All changes are application logic only
+
+For detailed implementation information, see [IBKR_TRANSACTION_LIFECYCLE.md](./IBKR_TRANSACTION_LIFECYCLE.md)

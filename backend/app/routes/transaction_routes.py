@@ -243,6 +243,10 @@ def delete_transaction(transaction_id):
     """
     Delete a transaction.
 
+    If the transaction is linked to an IBKR allocation and this is the last
+    allocation for that IBKR transaction, the IBKR transaction status will
+    automatically revert to 'pending'.
+
     Args:
         transaction_id (str): Transaction identifier
 
@@ -250,6 +254,8 @@ def delete_transaction(transaction_id):
         Empty response with 204 status on success
     """
     try:
+        from ..models import IBKRTransaction, IBKRTransactionAllocation
+
         transaction = Transaction.query.get_or_404(transaction_id)
 
         # Store transaction details for logging before deletion
@@ -260,7 +266,44 @@ def delete_transaction(transaction_id):
             "date": transaction.date.isoformat(),
         }
 
+        # Check if this transaction is linked to an IBKR allocation
+        ibkr_allocation = IBKRTransactionAllocation.query.filter_by(
+            transaction_id=transaction_id
+        ).first()
+
+        # Handle IBKR allocation cleanup BEFORE deletion
+        ibkr_transaction_id = None
+        ibkr_reverted = False
+        if ibkr_allocation:
+            ibkr_transaction_id = ibkr_allocation.ibkr_transaction_id
+
+            # Check how many allocations exist for this IBKR transaction
+            allocation_count = IBKRTransactionAllocation.query.filter_by(
+                ibkr_transaction_id=ibkr_transaction_id
+            ).count()
+
+            # If this is the last allocation, revert IBKR transaction to pending
+            if allocation_count == 1:
+                ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
+                if ibkr_txn and ibkr_txn.status == "processed":
+                    ibkr_txn.status = "pending"
+                    ibkr_txn.processed_at = None
+                    ibkr_reverted = True
+                    transaction_details["ibkr_status_reverted"] = True
+
+                    logger.log(
+                        level=LogLevel.INFO,
+                        category=LogCategory.IBKR,
+                        message="IBKR transaction status reverted to pending",
+                        details={
+                            "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
+                            "reason": "All allocations deleted",
+                            "allocation_count": 0,
+                        },
+                    )
+
         # If this is a sell transaction, delete associated realized gain/loss record
+        realized_gain = None
         if transaction.type == "sell":
             portfolio_fund = transaction.portfolio_fund
             realized_gain = RealizedGainLoss.query.filter_by(
@@ -273,6 +316,7 @@ def delete_transaction(transaction_id):
             if realized_gain:
                 db.session.delete(realized_gain)
 
+        # Delete the transaction (will cascade delete the IBKR allocation)
         db.session.delete(transaction)
         db.session.commit()
 
@@ -282,6 +326,8 @@ def delete_transaction(transaction_id):
             message=f"Successfully deleted transaction {transaction_id}",
             details={
                 **transaction_details,
+                "ibkr_transaction_id": ibkr_transaction_id,
+                "ibkr_reverted": ibkr_reverted,
                 "realized_gain_deleted": (
                     bool(realized_gain) if transaction.type == "sell" else None
                 ),

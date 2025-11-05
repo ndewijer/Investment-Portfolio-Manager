@@ -114,6 +114,21 @@ const TransactionsTable = ({
       render: (value) => value,
     },
     {
+      key: 'ibkr_linked',
+      header: 'Source',
+      sortable: false,
+      render: (value, transaction) =>
+        transaction.ibkr_linked ? (
+          <span className="ibkr-badge" title="Imported from IBKR">
+            IBKR
+          </span>
+        ) : (
+          <span className="manual-badge" title="Manually entered">
+            Manual
+          </span>
+        ),
+    },
+    {
       key: 'shares',
       header: 'Shares',
       sortable: true,
@@ -163,6 +178,15 @@ const TransactionsTable = ({
         <div className="transaction-main">
           <span className="date">{formatDisplayDate(transaction.date)}</span>
           <span className={`type type-${transaction.type}`}>{transaction.type.toUpperCase()}</span>
+          {transaction.ibkr_linked ? (
+            <span className="ibkr-badge" title="Imported from IBKR">
+              IBKR
+            </span>
+          ) : (
+            <span className="manual-badge" title="Manually entered">
+              Manual
+            </span>
+          )}
         </div>
         <div className="total-amount">
           {formatCurrency(

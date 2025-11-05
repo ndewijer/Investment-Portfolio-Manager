@@ -139,6 +139,95 @@ IBKR_ENCRYPTION_KEY=cDZoaLKWN5vjqOY1p2fwE8X9mR7tU3kA4nB6sH0gC2Q=
 4. Allocate each transaction to your portfolios
 5. Click **Process Transaction** to finalize
 
+## Managing IBKR Transactions
+
+### IBKR Inbox Tabs
+
+The IBKR Inbox has two tabs for managing transactions:
+
+#### Pending Tab
+- Shows newly imported transactions that haven't been allocated yet
+- Also shows transactions that were previously processed but have been unallocated
+- Available actions:
+  - **Allocate**: Assign the transaction to one or more portfolios
+  - **Ignore**: Mark the transaction as ignored (won't appear in pending)
+  - **Delete**: Permanently remove the transaction from the inbox
+
+#### Processed Tab
+- Shows transactions that have been allocated to portfolios
+- Available actions:
+  - **View Details**: See allocation breakdown (portfolio, percentage, amount, shares)
+  - **Modify**: Change allocation percentages or add/remove portfolios
+  - **Unallocate**: Remove all allocations and return transaction to pending
+
+### Transaction Lifecycle
+
+```
+Import → Pending → Allocate → Processed
+                 ↑              ↓
+                 └── Unallocate ─┘
+```
+
+**Auto-Revert Behavior**:
+- If you delete all portfolio transactions created from an IBKR allocation, the IBKR transaction automatically reverts to "pending" status
+- This ensures IBKR transactions never "disappear" from the system
+- You can then re-allocate the transaction as needed
+
+### Allocating Transactions
+
+When allocating a transaction, you can:
+
+1. **Single Portfolio Allocation**:
+   - Allocate 100% to one portfolio
+   - Most common use case
+
+2. **Split Allocation**:
+   - Split across multiple portfolios with different percentages
+   - Example: 60% Portfolio A, 40% Portfolio B
+   - Total must equal exactly 100%
+
+3. **View Matching Information**:
+   - The system shows if the fund was matched by ISIN or Symbol
+   - Displays the fund name from your portfolio for confirmation
+
+### Modifying Allocations
+
+To modify an existing allocation:
+
+1. Navigate to the **Processed** tab
+2. Click **Modify** on the transaction
+3. Adjust percentages or add/remove portfolios
+4. Click **Update Allocations**
+
+**Important Notes**:
+- Modifying allocations updates the existing portfolio transactions
+- The original IBKR transaction remains linked
+- You can add or remove portfolios from the allocation
+- Percentages must still total 100%
+
+### Unallocating Transactions
+
+To unallocate a transaction:
+
+1. Navigate to the **Processed** tab
+2. Click **Unallocate** on the transaction
+3. Confirm the action
+
+**What happens**:
+- All portfolio transactions created from this allocation are deleted
+- The IBKR transaction reverts to "pending" status
+- The transaction reappears in the **Pending** tab
+- You can then re-allocate it differently
+
+### IBKR Badge on Portfolio Transactions
+
+Transactions imported from IBKR are marked with an **IBKR** badge in your portfolio transaction list. This helps you:
+- Identify which transactions came from IBKR vs manually entered
+- Understand the source of your data
+- Track IBKR imports across your portfolios
+
+Manual transactions show a **Manual** badge for comparison.
+
 ## IBKR Flex API Details
 
 ### API Endpoints:
