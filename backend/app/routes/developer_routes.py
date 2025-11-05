@@ -474,7 +474,7 @@ def import_fund_prices():
         try:
             # Read and decode the file content
             file_content = file.read()
-            decoded_content = file_content.decode("utf-8")
+            decoded_content = file_content.decode("utf-8-sig")
 
             # Check if the file has the correct headers
             first_line = decoded_content.split("\n")[0].strip()
