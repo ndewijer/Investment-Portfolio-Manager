@@ -189,6 +189,66 @@ class DeveloperService:
         }
 
     @staticmethod
+    def _process_csv_content(file_content, required_fields, row_processor_func):
+        """
+        Common CSV processing utility that handles BOM, header mapping, and row processing.
+
+        Args:
+            file_content (bytes): UTF-8 encoded CSV file content
+            required_fields (list): List of required field names
+            row_processor_func (callable): Function to process each row, takes (mapped_row, row_num)
+
+        Returns:
+            list: List of processed objects
+
+        Raises:
+            ValueError: If file format is invalid or processing fails
+        """
+        results = []
+
+        try:
+            decoded_content = file_content.decode("utf-8")
+            csv_reader = csv.DictReader(decoded_content.splitlines())
+            header_mapping = {}
+
+            # Map headers to standardized names (handles BOM and whitespace)
+            for std_name in required_fields:
+                for actual_name in csv_reader.fieldnames:
+                    if actual_name.lower().strip() == std_name:
+                        header_mapping[actual_name] = std_name
+
+            # Validate all required fields are present
+            if len(header_mapping) != len(required_fields):
+                missing_fields = set(required_fields) - set(header_mapping.values())
+                raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
+
+            for row_num, row in enumerate(csv_reader, start=2):
+                try:
+                    # Map and sanitize fields
+                    mapped_row = {}
+                    for actual_name, value in row.items():
+                        if actual_name in header_mapping:
+                            mapped_row[header_mapping[actual_name]] = value
+
+                    # Process the row using the provided function
+                    result = row_processor_func(mapped_row, row_num)
+                    if result is not None:
+                        results.append(result)
+
+                except ValueError as e:
+                    raise ValueError(f"Error in row {row_num}: {e!s}") from e
+
+            if not results:
+                raise ValueError("No valid records found in CSV file")
+
+            return results
+
+        except UnicodeDecodeError as e:
+            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.") from e
+        except csv.Error as e:
+            raise ValueError(f"CSV file error: {e!s}") from e
+
+    @staticmethod
     def validate_utf8(file_content):
         """
         Validate that the file content is UTF-8 encoded.
@@ -226,67 +286,33 @@ class DeveloperService:
         Raises:
             ValueError: If file format is invalid or import fails
         """
-        transactions = []
-        required_fields = ["date", "type", "shares", "cost_per_share"]
         portfolio_fund = PortfolioFund.query.get(portfolio_fund_id)
-
         if not portfolio_fund:
             raise ValueError("Portfolio-fund relationship not found")
 
+        def process_transaction_row(mapped_row, row_num):
+            """Process a single transaction row."""
+            return Transaction(
+                id=str(uuid.uuid4()),
+                portfolio_fund_id=portfolio_fund.id,
+                date=DeveloperService.sanitize_date(mapped_row["date"]),
+                type=DeveloperService.sanitize_string(mapped_row["type"]).lower(),
+                shares=DeveloperService.sanitize_float(mapped_row["shares"]),
+                cost_per_share=DeveloperService.sanitize_float(mapped_row["cost_per_share"]),
+            )
+
+        required_fields = ["date", "type", "shares", "cost_per_share"]
+        transactions = DeveloperService._process_csv_content(
+            file_content, required_fields, process_transaction_row
+        )
+
         try:
-            decoded_content = file_content.decode("utf-8")
-            csv_reader = csv.DictReader(decoded_content.splitlines())
-            header_mapping = {}
-
-            # Map headers to standardized names
-            for std_name in required_fields:
-                for actual_name in csv_reader.fieldnames:
-                    if actual_name.lower().strip() == std_name:
-                        header_mapping[actual_name] = std_name
-
-            for row_num, row in enumerate(csv_reader, start=2):
-                try:
-                    # Map and sanitize fields
-                    mapped_row = {}
-                    for actual_name, value in row.items():
-                        if actual_name in header_mapping:
-                            mapped_row[header_mapping[actual_name]] = value
-
-                    # Create transaction with UUID
-                    transaction = Transaction(
-                        id=str(uuid.uuid4()),  # Generate UUID for transaction
-                        portfolio_fund_id=portfolio_fund.id,
-                        date=DeveloperService.sanitize_date(mapped_row["date"]),
-                        type=DeveloperService.sanitize_string(mapped_row["type"]).lower(),
-                        shares=DeveloperService.sanitize_float(mapped_row["shares"]),
-                        cost_per_share=DeveloperService.sanitize_float(
-                            mapped_row["cost_per_share"]
-                        ),
-                    )
-                    transactions.append(transaction)
-
-                except ValueError as e:
-                    raise ValueError(f"Error in row {row_num}: {e!s}") from e
-
-            if not transactions:
-                raise ValueError("No valid transactions found in CSV file")
-
-            try:
-                db.session.add_all(transactions)
-                db.session.commit()
-                return len(transactions)
-            except Exception as e:
-                db.session.rollback()
-                raise ValueError(f"Database error while saving transactions: {e!s}") from e
-
-        except UnicodeDecodeError as e:
-            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.") from e
-        except csv.Error as e:
-            raise ValueError(f"CSV file error: {e!s}") from e
+            db.session.add_all(transactions)
+            db.session.commit()
+            return len(transactions)
         except Exception as e:
-            if "transactions" in locals():
-                db.session.rollback()
-            raise ValueError(f"Error processing CSV file: {e!s}") from e
+            db.session.rollback()
+            raise ValueError(f"Database error while saving transactions: {e!s}") from e
 
     @staticmethod
     def get_exchange_rate(from_currency, to_currency, date):
@@ -330,37 +356,28 @@ class DeveloperService:
         Raises:
             ValueError: If file format is invalid or import fails
         """
-        prices = []
+
+        def process_fund_price_row(mapped_row, row_num):
+            """Process a single fund price row."""
+            return FundPrice(
+                id=str(uuid.uuid4()),
+                fund_id=fund_id,
+                date=DeveloperService.sanitize_date(mapped_row["date"]),
+                price=DeveloperService.sanitize_float(mapped_row["price"]),
+            )
+
+        required_fields = ["date", "price"]
+        prices = DeveloperService._process_csv_content(
+            file_content, required_fields, process_fund_price_row
+        )
+
         try:
-            decoded_content = file_content.decode("utf-8")
-            csv_reader = csv.DictReader(decoded_content.splitlines())
-
-            for row_num, row in enumerate(csv_reader, start=2):
-                try:
-                    # Create fund price with UUID
-                    fund_price = FundPrice(
-                        id=str(uuid.uuid4()),  # Generate UUID for fund price
-                        fund_id=fund_id,
-                        date=DeveloperService.sanitize_date(row["date"]),
-                        price=DeveloperService.sanitize_float(row["price"]),
-                    )
-                    prices.append(fund_price)
-
-                except ValueError as e:
-                    raise ValueError(f"Error in row {row_num}: {e!s}") from e
-
-            try:
-                db.session.add_all(prices)
-                db.session.commit()
-                return len(prices)
-            except Exception as e:
-                db.session.rollback()
-                raise ValueError(f"Database error: {e!s}") from e
-
-        except UnicodeDecodeError as e:
-            raise ValueError("Invalid file encoding. Please use UTF-8 encoded CSV files.") from e
-        except csv.Error as e:
-            raise ValueError(f"CSV file error: {e!s}") from e
+            db.session.add_all(prices)
+            db.session.commit()
+            return len(prices)
+        except Exception as e:
+            db.session.rollback()
+            raise ValueError(f"Database error: {e!s}") from e
 
     @staticmethod
     def get_fund_price_csv_template():
