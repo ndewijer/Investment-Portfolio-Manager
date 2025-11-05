@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import { useFormat } from '../context/FormatContext';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';

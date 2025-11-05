@@ -301,7 +301,8 @@ const IBKRConfigTab = ({ setMessage, setError }) => {
             min={new Date().toISOString().split('T')[0]}
           />
           <small className="form-help">
-            IBKR tokens expire after max 1 year. You'll receive a warning 30 days before expiration.
+            IBKR tokens expire after max 1 year. You&apos;ll receive a warning 30 days before
+            expiration.
           </small>
         </div>
 
