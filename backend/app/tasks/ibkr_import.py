@@ -1,8 +1,4 @@
-"""
-Scheduled task to import IBKR transactions automatically.
-
-Should be run weekly on Sunday at 2:00 AM.
-"""
+"""Scheduled task to import IBKR transactions automatically."""
 
 from datetime import UTC, datetime
 
