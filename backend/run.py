@@ -311,10 +311,10 @@ def create_app():
         replace_existing=True,
     )
 
-    # Schedule the IBKR import task to run at 2:00 AM local time every Sunday
+    # Schedule the price update task to run at 23:55 local time every weekday
     scheduler.add_job(
         func=run_ibkr_import,
-        trigger=CronTrigger(hour=2, minute=0, day_of_week="sun"),
+        trigger=CronTrigger(hour=23, minute=55, day_of_week="mon-fri"),
         id="weekly_ibkr_import",
         name="Import IBKR transactions weekly",
         replace_existing=True,
