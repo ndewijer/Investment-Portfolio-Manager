@@ -21,8 +21,10 @@ const IBKRInbox = () => {
   const [matchInfo, setMatchInfo] = useState(null);
   const [allocationWarning, setAllocationWarning] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('pending');
-  const [modalMode, setModalMode] = useState('create'); // 'create' | 'view' | 'edit'
+  const [modalMode, setModalMode] = useState('create'); // 'create' | 'view' | 'edit' | 'bulk'
   const [existingAllocations, setExistingAllocations] = useState([]);
+  const [selectedTransactions, setSelectedTransactions] = useState([]); // Array of transaction IDs
+  const [isBulkMode, setIsBulkMode] = useState(false);
 
   const fetchTransactions = useCallback(
     async (status = selectedStatus) => {
@@ -83,50 +85,65 @@ const IBKRInbox = () => {
     }
   };
 
+  // Helper function to fetch eligibility for a single transaction
+  const fetchTransactionEligibility = async (transactionId) => {
+    try {
+      const response = await api.get(`ibkr/inbox/${transactionId}/eligible-portfolios`);
+      return {
+        success: true,
+        transactionId,
+        matchInfo: response.data.match_info,
+        eligiblePortfolios: response.data.portfolios,
+        warning: response.data.warning || '',
+      };
+    } catch (err) {
+      console.error(`Failed to fetch eligible portfolios for ${transactionId}:`, err);
+      return {
+        success: false,
+        transactionId,
+        error: err.response?.data?.error || 'Failed to check eligibility',
+      };
+    }
+  };
+
+  // Helper function to initialize allocations based on eligible portfolios
+  const initializeAllocations = (eligiblePortfolios) => {
+    if (eligiblePortfolios.length > 0) {
+      return [
+        {
+          portfolio_id: eligiblePortfolios[0].id,
+          percentage: 100,
+        },
+      ];
+    } else {
+      return [
+        {
+          portfolio_id: '',
+          percentage: 100,
+        },
+      ];
+    }
+  };
+
   const handleAllocateTransaction = async (transaction) => {
     setModalMode('create');
     setSelectedTransaction(transaction);
     setMatchInfo(null);
     setAllocationWarning('');
-    setExistingAllocations([]); // Clear any previous allocation data
+    setExistingAllocations([]);
 
-    // Fetch eligible portfolios for this specific transaction
-    try {
-      const response = await api.get(`ibkr/inbox/${transaction.id}/eligible-portfolios`);
-      const { match_info, portfolios: eligiblePortfolios, warning } = response.data;
+    const eligibility = await fetchTransactionEligibility(transaction.id);
 
-      setMatchInfo(match_info);
-      setPortfolios(eligiblePortfolios);
-      setAllocationWarning(warning || '');
-
-      // Initialize allocations with first eligible portfolio
-      if (eligiblePortfolios.length > 0) {
-        setAllocations([
-          {
-            portfolio_id: eligiblePortfolios[0].id,
-            percentage: 100,
-          },
-        ]);
-      } else {
-        // No eligible portfolios - set empty allocation
-        setAllocations([
-          {
-            portfolio_id: '',
-            percentage: 100,
-          },
-        ]);
-      }
-    } catch (err) {
-      console.error('Failed to fetch eligible portfolios:', err);
-      setError('Failed to load eligible portfolios');
-      // Fallback to all portfolios
-      fetchPortfolios();
-      setAllocations([
-        {
-          portfolio_id: portfolios.length > 0 ? portfolios[0].id : '',
-          percentage: 100,
-        },
-      ]);
+    if (eligibility.success) {
+      setMatchInfo(eligibility.matchInfo);
+      setPortfolios(eligibility.eligiblePortfolios);
+      setAllocationWarning(eligibility.warning);
+      setAllocations(initializeAllocations(eligibility.eligiblePortfolios));
+    } else {
+      setError(eligibility.error);
+      // Fallback to all portfolios only on error
+      await fetchPortfolios();
+      setAllocations(initializeAllocations(portfolios));
     }
   };
 
@@ -220,6 +237,78 @@ const IBKRInbox = () => {
     return allocations.reduce((sum, alloc) => sum + (parseFloat(alloc.percentage) || 0), 0);
   };
 
+  // Helper to calculate allocated amount for a percentage
+  const calculateAllocatedAmount = (percentage) => {
+    if (!selectedTransaction || modalMode === 'bulk') return null;
+    return (selectedTransaction.total_amount * percentage) / 100;
+  };
+
+  // Helper to calculate allocated shares for a percentage
+  const calculateAllocatedShares = (percentage) => {
+    if (!selectedTransaction || !selectedTransaction.quantity || modalMode === 'bulk') return null;
+    return (selectedTransaction.quantity * percentage) / 100;
+  };
+
+  // Allocation preset functions
+  const handleEqualDistribution = () => {
+    if (allocations.length === 0) {
+      setError('Please add at least one portfolio first');
+      return;
+    }
+
+    const equalPercentage = 100 / allocations.length;
+    const newAllocations = allocations.map((alloc) => ({
+      ...alloc,
+      percentage: parseFloat(equalPercentage.toFixed(2)),
+    }));
+
+    // Adjust last allocation to ensure exactly 100%
+    const total = newAllocations.reduce((sum, a) => sum + a.percentage, 0);
+    if (Math.abs(total - 100) > 0.01) {
+      newAllocations[newAllocations.length - 1].percentage += 100 - total;
+      newAllocations[newAllocations.length - 1].percentage = parseFloat(
+        newAllocations[newAllocations.length - 1].percentage.toFixed(2)
+      );
+    }
+
+    setAllocations(newAllocations);
+  };
+
+  const handleDistributeRemaining = () => {
+    const total = getTotalPercentage();
+    const remaining = 100 - total;
+
+    if (Math.abs(remaining) < 0.01) {
+      setError('All 100% is already allocated');
+      return;
+    }
+
+    // Find portfolios with 0%
+    const zeroPercentageIndices = allocations
+      .map((alloc, index) => (alloc.percentage === 0 ? index : -1))
+      .filter((index) => index !== -1);
+
+    if (zeroPercentageIndices.length === 0) {
+      setError('No portfolios with 0% to distribute remaining percentage');
+      return;
+    }
+
+    const distributeAmount = remaining / zeroPercentageIndices.length;
+    const newAllocations = [...allocations];
+
+    zeroPercentageIndices.forEach((index, i) => {
+      if (i === zeroPercentageIndices.length - 1) {
+        // Last one gets the remainder to ensure exactly 100%
+        const alreadyDistributed = distributeAmount * i;
+        newAllocations[index].percentage = parseFloat((remaining - alreadyDistributed).toFixed(2));
+      } else {
+        newAllocations[index].percentage = parseFloat(distributeAmount.toFixed(2));
+      }
+    });
+
+    setAllocations(newAllocations);
+  };
+
   const handleSubmitAllocation = async () => {
     const total = getTotalPercentage();
     if (Math.abs(total - 100) > 0.01) {
@@ -242,7 +331,32 @@ const IBKRInbox = () => {
 
     try {
       let response;
-      if (modalMode === 'edit') {
+      if (modalMode === 'bulk') {
+        // Bulk allocate multiple transactions
+        response = await api.post('ibkr/inbox/bulk-allocate', {
+          transaction_ids: selectedTransactions,
+          allocations: allocations.map((a) => ({
+            portfolio_id: a.portfolio_id,
+            percentage: a.percentage,
+          })),
+        });
+
+        if (response.data.success) {
+          setMessage(
+            `${response.data.processed} transaction(s) processed successfully${
+              response.data.failed > 0 ? `, ${response.data.failed} failed` : ''
+            }`
+          );
+          setSelectedTransaction(null);
+          setSelectedTransactions([]);
+          setAllocations([]);
+          setExistingAllocations([]);
+          fetchTransactions();
+          refreshIBKRTransactionCount();
+        } else {
+          setError(response.data.error || 'Failed to process transactions');
+        }
+      } else if (modalMode === 'edit') {
         // Modify existing allocations
         response = await api.put(`ibkr/inbox/${selectedTransaction.id}/allocations`, {
           allocations: allocations.map((a) => ({
@@ -250,29 +364,36 @@ const IBKRInbox = () => {
             percentage: a.percentage,
           })),
         });
+
+        if (response.data.success) {
+          setMessage('Allocations modified successfully');
+          setSelectedTransaction(null);
+          setAllocations([]);
+          setExistingAllocations([]);
+          fetchTransactions();
+          refreshIBKRTransactionCount();
+        } else {
+          setError(response.data.error || 'Failed to modify allocations');
+        }
       } else {
-        // Create new allocations
+        // Create new allocations (single transaction)
         response = await api.post(`ibkr/inbox/${selectedTransaction.id}/allocate`, {
           allocations: allocations.map((a) => ({
             portfolio_id: a.portfolio_id,
             percentage: a.percentage,
           })),
         });
-      }
 
-      if (response.data.success) {
-        setMessage(
-          modalMode === 'edit'
-            ? 'Allocations modified successfully'
-            : 'Transaction processed successfully'
-        );
-        setSelectedTransaction(null);
-        setAllocations([]);
-        setExistingAllocations([]);
-        fetchTransactions();
-        refreshIBKRTransactionCount();
-      } else {
-        setError(response.data.error || 'Failed to process transaction');
+        if (response.data.success) {
+          setMessage('Transaction processed successfully');
+          setSelectedTransaction(null);
+          setAllocations([]);
+          setExistingAllocations([]);
+          fetchTransactions();
+          refreshIBKRTransactionCount();
+        } else {
+          setError(response.data.error || 'Failed to process transaction');
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to process transaction');
@@ -312,6 +433,212 @@ const IBKRInbox = () => {
   const clearMessages = () => {
     setMessage('');
     setError('');
+  };
+
+  // Bulk selection handlers
+  const handleSelectTransaction = (transactionId) => {
+    setSelectedTransactions((prev) => {
+      if (prev.includes(transactionId)) {
+        return prev.filter((id) => id !== transactionId);
+      }
+      return [...prev, transactionId];
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTransactions.length === transactions.length) {
+      setSelectedTransactions([]);
+    } else {
+      setSelectedTransactions(transactions.map((t) => t.id));
+    }
+  };
+
+  const handleBulkAllocate = async () => {
+    if (selectedTransactions.length === 0) {
+      setError('Please select at least one transaction');
+      return;
+    }
+
+    setModalMode('bulk');
+    setMatchInfo(null);
+    setAllocationWarning('');
+    setExistingAllocations([]);
+
+    try {
+      // Check eligibility for all selected transactions using helper function
+      const eligibilityChecks = await Promise.all(
+        selectedTransactions.map((txnId) => fetchTransactionEligibility(txnId))
+      );
+
+      // Analyze results
+      const failedChecks = eligibilityChecks.filter((check) => !check.success);
+      const successfulChecks = eligibilityChecks.filter((check) => check.success);
+      const fundsNotFound = successfulChecks.filter((check) => !check.matchInfo.found);
+      const noEligiblePortfolios = successfulChecks.filter(
+        (check) => check.matchInfo.found && check.eligiblePortfolios.length === 0
+      );
+
+      // Build warning messages
+      let warnings = [];
+
+      if (failedChecks.length > 0) {
+        warnings.push(`⚠️ ${failedChecks.length} transaction(s) failed eligibility check`);
+      }
+
+      if (fundsNotFound.length > 0) {
+        warnings.push(
+          `⚠️ ${fundsNotFound.length} transaction(s) have funds not found in the system. Please add these funds first.`
+        );
+      }
+
+      if (noEligiblePortfolios.length > 0) {
+        warnings.push(
+          `⚠️ ${noEligiblePortfolios.length} transaction(s) have funds that are not assigned to any portfolio. Please add these funds to portfolios first.`
+        );
+      }
+
+      // Find common eligible portfolios (portfolios that can handle ALL transactions)
+      const transactionsWithPortfolios = successfulChecks.filter(
+        (check) => check.eligiblePortfolios.length > 0
+      );
+
+      let commonPortfolios = [];
+      let commonPortfolioObjects = [];
+
+      if (transactionsWithPortfolios.length > 0) {
+        // Calculate intersection of all eligible portfolio lists
+        commonPortfolios = transactionsWithPortfolios.reduce((common, check) => {
+          if (common === null) {
+            return check.eligiblePortfolios.map((p) => p.id);
+          }
+          const portfolioIds = check.eligiblePortfolios.map((p) => p.id);
+          return common.filter((id) => portfolioIds.includes(id));
+        }, null);
+
+        // Get full portfolio objects for common portfolios
+        if (commonPortfolios && commonPortfolios.length > 0) {
+          // Use portfolios from first successful check as reference
+          commonPortfolioObjects = transactionsWithPortfolios[0].eligiblePortfolios.filter((p) =>
+            commonPortfolios.includes(p.id)
+          );
+        }
+      }
+
+      // Set portfolios based on results
+      if (commonPortfolioObjects.length > 0) {
+        // We have common portfolios - only show these
+        setPortfolios(commonPortfolioObjects);
+
+        if (warnings.length === 0) {
+          warnings.push(
+            `✓ All transactions can be allocated to ${commonPortfolioObjects.length} portfolio(s)`
+          );
+        } else {
+          // Some transactions have issues but others can still be processed
+          warnings.push(
+            `✓ ${transactionsWithPortfolios.length} transaction(s) can be allocated to ${commonPortfolioObjects.length} portfolio(s)`
+          );
+        }
+      } else {
+        // No common portfolios - show NONE
+        setPortfolios([]);
+
+        if (warnings.length === 0) {
+          warnings.push(
+            '⚠️ No common portfolios found. Transactions have funds in different portfolios.'
+          );
+        }
+      }
+
+      setAllocationWarning(warnings.join('\n'));
+
+      // Initialize allocations with common portfolios
+      setAllocations(initializeAllocations(commonPortfolioObjects));
+    } catch (err) {
+      console.error('Error checking bulk eligibility:', err);
+      setError('Failed to check transaction eligibility');
+      // Only on catastrophic error, fall back to all portfolios
+      await fetchPortfolios();
+      setAllocations(initializeAllocations(portfolios));
+    }
+  };
+
+  const handleBulkIgnore = async () => {
+    if (selectedTransactions.length === 0) {
+      setError('Please select at least one transaction');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to ignore ${selectedTransactions.length} transaction(s)?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const transactionId of selectedTransactions) {
+        try {
+          await api.post(`ibkr/inbox/${transactionId}/ignore`);
+          successCount++;
+        } catch (err) {
+          errorCount++;
+          console.error(`Failed to ignore transaction ${transactionId}:`, err);
+        }
+      }
+
+      setMessage(
+        `${successCount} transaction(s) ignored${errorCount > 0 ? `, ${errorCount} failed` : ''}`
+      );
+      setSelectedTransactions([]);
+      fetchTransactions();
+      refreshIBKRTransactionCount();
+    } catch (err) {
+      setError('Failed to ignore transactions');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTransactions.length === 0) {
+      setError('Please select at least one transaction');
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${selectedTransactions.length} transaction(s)?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const transactionId of selectedTransactions) {
+        try {
+          await api.delete(`ibkr/inbox/${transactionId}`);
+          successCount++;
+        } catch (err) {
+          errorCount++;
+          console.error(`Failed to delete transaction ${transactionId}:`, err);
+        }
+      }
+
+      setMessage(
+        `${successCount} transaction(s) deleted${errorCount > 0 ? `, ${errorCount} failed` : ''}`
+      );
+      setSelectedTransactions([]);
+      fetchTransactions();
+      refreshIBKRTransactionCount();
+    } catch (err) {
+      setError('Failed to delete transactions');
+    }
   };
 
   const getActionsForTransaction = (item) => {
@@ -425,9 +752,58 @@ const IBKRInbox = () => {
         </button>
       </div>
 
+      {/* Bulk Actions for Pending Transactions */}
+      {selectedStatus === 'pending' && transactions.length > 0 && (
+        <div className="bulk-actions">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={
+                selectedTransactions.length === transactions.length && transactions.length > 0
+              }
+              onChange={handleSelectAll}
+            />
+            Select All ({selectedTransactions.length} selected)
+          </label>
+          {selectedTransactions.length > 0 && (
+            <div className="bulk-action-buttons">
+              <button className="default-button" onClick={handleBulkAllocate}>
+                Bulk Allocate
+              </button>
+              <button className="secondary-button" onClick={handleBulkIgnore}>
+                Bulk Ignore
+              </button>
+              <button className="danger-button" onClick={handleBulkDelete}>
+                Bulk Delete
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <DataTable
         data={transactions}
         columns={[
+          // Checkbox column for pending transactions
+          ...(selectedStatus === 'pending'
+            ? [
+                {
+                  key: 'checkbox',
+                  header: '',
+                  cellClassName: 'checkbox-cell',
+                  render: (_, item) => (
+                    <input
+                      type="checkbox"
+                      checked={selectedTransactions.includes(item.id)}
+                      onChange={() => handleSelectTransaction(item.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ),
+                  sortable: false,
+                  filterable: false,
+                },
+              ]
+            : []),
           {
             key: 'transaction_date',
             header: 'Date',
@@ -508,44 +884,51 @@ const IBKRInbox = () => {
         filterable={false}
       />
 
-      {selectedTransaction && (
+      {(selectedTransaction || modalMode === 'bulk') && (
         <Modal
           isOpen={true}
           onClose={() => {
             setSelectedTransaction(null);
+            setSelectedTransactions(modalMode === 'bulk' ? [] : selectedTransactions);
             setAllocations([]);
             setExistingAllocations([]);
+            setModalMode('create');
           }}
           title={
             modalMode === 'view'
               ? 'View Transaction Allocations'
               : modalMode === 'edit'
                 ? 'Modify Transaction Allocations'
-                : 'Allocate Transaction to Portfolios'
+                : modalMode === 'bulk'
+                  ? `Bulk Allocate ${selectedTransactions.length} Transactions`
+                  : 'Allocate Transaction to Portfolios'
           }
         >
           <div className="allocation-modal">
-            <div className="transaction-summary">
-              <h3>Transaction Details</h3>
-              <p>
-                <strong>Symbol:</strong> {selectedTransaction.symbol}
-              </p>
-              <p>
-                <strong>Description:</strong> {selectedTransaction.description}
-              </p>
-              <p>
-                <strong>Type:</strong> {selectedTransaction.transaction_type}
-              </p>
-              <p>
-                <strong>Total Amount:</strong> {selectedTransaction.total_amount.toFixed(2)}{' '}
-                {selectedTransaction.currency}
-              </p>
-              {selectedTransaction.quantity && (
+            {modalMode === 'bulk' ? (
+              <div className="transaction-summary">
+                <h3>Bulk Allocation</h3>
                 <p>
-                  <strong>Quantity:</strong> {selectedTransaction.quantity}
+                  <strong>Selected Transactions:</strong> {selectedTransactions.length}
                 </p>
-              )}
-            </div>
+                <p className="bulk-info">
+                  ℹ️ All selected transactions will be allocated using the same portfolio
+                  distribution percentages.
+                </p>
+              </div>
+            ) : (
+              <div className="transaction-summary compact">
+                <strong>{selectedTransaction.symbol}</strong> • {selectedTransaction.description} •{' '}
+                {selectedTransaction.transaction_type} •{' '}
+                {formatCurrencyWithCode(
+                  selectedTransaction.total_amount,
+                  selectedTransaction.currency
+                )}
+                {selectedTransaction.quantity && (
+                  <> • {formatNumber(selectedTransaction.quantity, 4)} shares</>
+                )}
+              </div>
+            )}
 
             {modalMode === 'create' && matchInfo && matchInfo.found && (
               <div className="match-info success">
@@ -556,6 +939,25 @@ const IBKRInbox = () => {
 
             {modalMode === 'create' && allocationWarning && (
               <div className="allocation-warning">⚠️ {allocationWarning}</div>
+            )}
+
+            {modalMode === 'bulk' && allocationWarning && (
+              <div className="bulk-eligibility-info">
+                {allocationWarning.split('\n').map((line, index) => (
+                  <div
+                    key={index}
+                    className={
+                      line.includes('✓')
+                        ? 'eligibility-line success'
+                        : line.includes('⚠️')
+                          ? 'eligibility-line warning'
+                          : 'eligibility-line'
+                    }
+                  >
+                    {line}
+                  </div>
+                ))}
+              </div>
             )}
 
             {modalMode === 'view' && (
@@ -586,78 +988,140 @@ const IBKRInbox = () => {
               </div>
             )}
 
-            {(modalMode === 'create' || modalMode === 'edit') && portfolios.length > 0 && (
-              <div className="allocations-section">
-                <h3>Portfolio Allocations</h3>
-                {allocations.map((allocation, index) => (
-                  <div key={index} className="allocation-row">
-                    <select
-                      value={allocation.portfolio_id}
-                      onChange={(e) =>
-                        handleAllocationChange(index, 'portfolio_id', e.target.value)
-                      }
-                      required
+            {(modalMode === 'create' || modalMode === 'edit' || modalMode === 'bulk') &&
+              portfolios.length > 0 && (
+                <div className="allocations-section">
+                  <h3>Portfolio Allocations</h3>
+
+                  {/* Allocation Preset Buttons */}
+                  <div className="allocation-presets">
+                    <button
+                      type="button"
+                      className="preset-button"
+                      onClick={handleEqualDistribution}
+                      title="Distribute 100% equally among currently selected portfolios"
                     >
-                      <option value="">Select Portfolio...</option>
-                      {portfolios.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={allocation.percentage}
-                      onChange={(e) => handleAllocationChange(index, 'percentage', e.target.value)}
-                      placeholder="Percentage"
-                      required
-                    />
-                    <span className="percentage-label">%</span>
-                    {allocations.length > 1 && (
-                      <button
-                        type="button"
-                        className="small-button danger"
-                        onClick={() => handleRemoveAllocation(index)}
-                      >
-                        Remove
-                      </button>
-                    )}
+                      📊 Equal Distribution
+                    </button>
+                    <button
+                      type="button"
+                      className="preset-button"
+                      onClick={handleDistributeRemaining}
+                      title="Distribute remaining % to portfolios with 0%"
+                    >
+                      ➕ Distribute Remaining
+                    </button>
                   </div>
-                ))}
 
-                <div className="allocation-total">
-                  <strong>Total:</strong>
-                  <span className={getTotalPercentage() === 100 ? 'valid' : 'invalid'}>
-                    {getTotalPercentage().toFixed(2)}%
-                  </span>
+                  {allocations.map((allocation, index) => (
+                    <div key={index} className="allocation-item">
+                      <div className="allocation-row">
+                        <select
+                          value={allocation.portfolio_id}
+                          onChange={(e) =>
+                            handleAllocationChange(index, 'portfolio_id', e.target.value)
+                          }
+                          required
+                        >
+                          <option value="">Select Portfolio...</option>
+                          {portfolios.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={allocation.percentage}
+                          onChange={(e) =>
+                            handleAllocationChange(index, 'percentage', e.target.value)
+                          }
+                          placeholder="Percentage"
+                          required
+                        />
+                        <span className="percentage-label">%</span>
+                        {allocations.length > 1 && (
+                          <button
+                            type="button"
+                            className="small-button danger"
+                            onClick={() => handleRemoveAllocation(index)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Show allocated amount for individual transactions */}
+                      {modalMode !== 'bulk' && selectedTransaction && allocation.percentage > 0 && (
+                        <div
+                          className={`allocation-amount-preview ${
+                            allocations.length > 1 ? 'with-remove-button' : ''
+                          }`}
+                        >
+                          {calculateAllocatedAmount(allocation.percentage) !== null && (
+                            <>
+                              {formatCurrencyWithCode(
+                                calculateAllocatedAmount(allocation.percentage),
+                                selectedTransaction.currency
+                              )}
+                              {calculateAllocatedShares(allocation.percentage) !== null && (
+                                <>
+                                  {' '}
+                                  •{' '}
+                                  {formatNumber(
+                                    calculateAllocatedShares(allocation.percentage),
+                                    4
+                                  )}{' '}
+                                  shares
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  <div className="allocation-total">
+                    <strong>Total:</strong>
+                    <span className={getTotalPercentage() === 100 ? 'valid' : 'invalid'}>
+                      {getTotalPercentage().toFixed(2)}%
+                    </span>
+                  </div>
+
+                  <button type="button" className="secondary-button" onClick={handleAddAllocation}>
+                    + Add Portfolio
+                  </button>
                 </div>
-
-                <button type="button" className="secondary-button" onClick={handleAddAllocation}>
-                  + Add Portfolio
-                </button>
-              </div>
-            )}
+              )}
 
             <div className="modal-actions">
-              {(modalMode === 'create' || modalMode === 'edit') && portfolios.length > 0 && (
-                <>
-                  {Math.abs(getTotalPercentage() - 100) > 0.01 && (
-                    <div className="allocation-error">Allocations must sum to exactly 100%</div>
-                  )}
-                  <button className="default-button" onClick={handleSubmitAllocation}>
-                    {modalMode === 'edit' ? 'Update Allocations' : 'Process Transaction'}
-                  </button>
-                </>
-              )}
+              {(modalMode === 'create' || modalMode === 'edit' || modalMode === 'bulk') &&
+                portfolios.length > 0 && (
+                  <>
+                    {Math.abs(getTotalPercentage() - 100) > 0.01 && (
+                      <div className="allocation-error">Allocations must sum to exactly 100%</div>
+                    )}
+                    <button className="default-button" onClick={handleSubmitAllocation}>
+                      {modalMode === 'edit'
+                        ? 'Update Allocations'
+                        : modalMode === 'bulk'
+                          ? `Process ${selectedTransactions.length} Transactions`
+                          : 'Process Transaction'}
+                    </button>
+                  </>
+                )}
               <button
                 className="secondary-button"
                 onClick={() => {
                   setSelectedTransaction(null);
+                  setSelectedTransactions(modalMode === 'bulk' ? [] : selectedTransactions);
                   setAllocations([]);
                   setExistingAllocations([]);
+                  setModalMode('create');
                 }}
               >
                 Close

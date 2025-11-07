@@ -970,6 +970,116 @@ def modify_transaction_allocations(transaction_id):
         return jsonify(response), status
 
 
+@ibkr.route("/ibkr/inbox/bulk-allocate", methods=["POST"])
+@track_request
+def bulk_allocate_transactions():
+    """
+    Process multiple IBKR transactions with the same allocations.
+
+    Request body:
+        {
+            "transaction_ids": ["id1", "id2", ...],
+            "allocations": [
+                {
+                    "portfolio_id": "string",
+                    "percentage": number
+                },
+                ...
+            ]
+        }
+
+    Returns:
+        JSON response with bulk processing results
+    """
+    from ..services.ibkr_transaction_service import IBKRTransactionService
+
+    data = request.get_json()
+
+    if not data or "transaction_ids" not in data or "allocations" not in data:
+        return jsonify({"error": "Missing transaction_ids or allocations"}), 400
+
+    transaction_ids = data["transaction_ids"]
+    allocations = data["allocations"]
+
+    if not transaction_ids or len(transaction_ids) == 0:
+        return jsonify({"error": "No transactions selected"}), 400
+
+    if not allocations or len(allocations) == 0:
+        return jsonify({"error": "No allocations provided"}), 400
+
+    # Validate allocations sum to 100%
+    total_percentage = sum(a.get("percentage", 0) for a in allocations)
+    if abs(total_percentage - 100) > 0.01:
+        return jsonify({"error": "Allocations must sum to exactly 100%"}), 400
+
+    processed_count = 0
+    failed_count = 0
+    errors = []
+
+    try:
+        for transaction_id in transaction_ids:
+            try:
+                result = IBKRTransactionService.process_transaction_allocation(
+                    transaction_id, allocations
+                )
+
+                if result["success"]:
+                    processed_count += 1
+                else:
+                    failed_count += 1
+                    errors.append(
+                        {
+                            "transaction_id": transaction_id,
+                            "error": result.get("error", "Unknown error"),
+                        }
+                    )
+
+            except Exception as e:
+                failed_count += 1
+                errors.append({"transaction_id": transaction_id, "error": str(e)})
+                logger.log(
+                    level=LogLevel.ERROR,
+                    category=LogCategory.IBKR,
+                    message=f"Error processing transaction {transaction_id} in bulk operation",
+                    details={"transaction_id": transaction_id, "error": str(e)},
+                )
+
+        logger.log(
+            level=LogLevel.INFO,
+            category=LogCategory.IBKR,
+            message=(
+                f"Bulk allocation completed: {processed_count} processed, {failed_count} failed"
+            ),
+            details={
+                "processed": processed_count,
+                "failed": failed_count,
+                "total": len(transaction_ids),
+            },
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "processed": processed_count,
+                    "failed": failed_count,
+                    "errors": errors if errors else None,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.IBKR,
+            message="Failed to process bulk allocation",
+            details={"error": str(e), "transaction_count": len(transaction_ids)},
+            http_status=500,
+        )
+        return jsonify(response), status
+
+
 # Register view class
 ibkr_config_view = IBKRConfigAPI.as_view("ibkr_config")
 ibkr.add_url_rule("/ibkr/config", view_func=ibkr_config_view, methods=["GET", "POST", "DELETE"])
