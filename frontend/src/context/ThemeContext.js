@@ -10,20 +10,34 @@ export const useTheme = () => {
   return context;
 };
 
+// Initialize state from localStorage to avoid setState in effects
+const getInitialDarkModeEnabled = () => {
+  const savedDarkModeEnabled = localStorage.getItem('darkModeEnabled');
+  return savedDarkModeEnabled !== null ? JSON.parse(savedDarkModeEnabled) : false;
+};
+
+const getInitialTheme = () => {
+  return localStorage.getItem('theme') || 'light';
+};
+
+const getInitialSystemPreference = () => {
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  return mediaQuery.matches ? 'dark' : 'light';
+};
+
 export const ThemeProvider = ({ children }) => {
-  // Feature flag to control dark mode availability
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  // Feature flag to control dark mode availability - load from localStorage
+  const [darkModeEnabled, setDarkModeEnabled] = useState(getInitialDarkModeEnabled);
 
-  // Current theme state (light/dark)
-  const [theme, setTheme] = useState('light');
+  // Current theme state (light/dark) - load from localStorage
+  const [theme, setTheme] = useState(getInitialTheme);
 
-  // Auto-detect system preference
-  const [systemPreference, setSystemPreference] = useState('light');
+  // Auto-detect system preference - initialize with current media query state
+  const [systemPreference, setSystemPreference] = useState(getInitialSystemPreference);
 
-  // Detect system color scheme preference
+  // Detect system color scheme preference changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setSystemPreference(mediaQuery.matches ? 'dark' : 'light');
 
     const handleChange = (e) => {
       setSystemPreference(e.matches ? 'dark' : 'light');
@@ -31,20 +45,6 @@ export const ThemeProvider = ({ children }) => {
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  // Load saved preferences from localStorage
-  useEffect(() => {
-    const savedDarkModeEnabled = localStorage.getItem('darkModeEnabled');
-    const savedTheme = localStorage.getItem('theme');
-
-    if (savedDarkModeEnabled !== null) {
-      setDarkModeEnabled(JSON.parse(savedDarkModeEnabled));
-    }
-
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
   }, []);
 
   // Apply theme to document
