@@ -26,6 +26,7 @@ export const AppProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [ibkrTransactionCount, setIbkrTransactionCount] = useState(0);
+  const [ibkrEnabled, setIbkrEnabled] = useState(false);
 
   const fetchVersionInfo = useCallback(async () => {
     try {
@@ -53,6 +54,20 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
+  const fetchIBKRConfig = useCallback(async () => {
+    try {
+      const response = await api.get('ibkr/config');
+      if (response.data.configured) {
+        setIbkrEnabled(response.data.enabled);
+      } else {
+        setIbkrEnabled(false);
+      }
+    } catch (err) {
+      console.error('Failed to fetch IBKR config:', err);
+      setIbkrEnabled(false);
+    }
+  }, []);
+
   const fetchIBKRTransactionCount = useCallback(async () => {
     try {
       const response = await api.get('ibkr/inbox/count', {
@@ -70,12 +85,19 @@ export const AppProvider = ({ children }) => {
     fetchVersionInfo();
   }, [fetchVersionInfo]);
 
-  // Fetch IBKR transaction count when IBKR integration is enabled
+  // Fetch IBKR config when IBKR integration is available
   useEffect(() => {
     if (versionInfo.features.ibkr_integration) {
+      fetchIBKRConfig();
+    }
+  }, [versionInfo.features.ibkr_integration, fetchIBKRConfig]);
+
+  // Fetch IBKR transaction count when IBKR integration is enabled
+  useEffect(() => {
+    if (versionInfo.features.ibkr_integration && ibkrEnabled) {
       fetchIBKRTransactionCount();
     }
-  }, [versionInfo.features.ibkr_integration, fetchIBKRTransactionCount]);
+  }, [versionInfo.features.ibkr_integration, ibkrEnabled, fetchIBKRTransactionCount]);
 
   const value = {
     versionInfo,
@@ -84,7 +106,9 @@ export const AppProvider = ({ children }) => {
     error,
     refreshVersionInfo: fetchVersionInfo,
     ibkrTransactionCount,
+    ibkrEnabled,
     refreshIBKRTransactionCount: fetchIBKRTransactionCount,
+    refreshIBKRConfig: fetchIBKRConfig,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

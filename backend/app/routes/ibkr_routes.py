@@ -63,6 +63,7 @@ class IBKRConfigAPI(MethodView):
                     config.last_import_date.isoformat() if config.last_import_date else None
                 ),
                 "auto_import_enabled": config.auto_import_enabled,
+                "enabled": config.enabled,
                 "created_at": config.created_at.isoformat(),
                 "updated_at": config.updated_at.isoformat(),
             }
@@ -113,6 +114,8 @@ class IBKRConfigAPI(MethodView):
                     config.token_expires_at = token_expires_at
                 if "auto_import_enabled" in data:
                     config.auto_import_enabled = data["auto_import_enabled"]
+                if "enabled" in data:
+                    config.enabled = data["enabled"]
                 config.updated_at = datetime.now()
             else:
                 # Create new
@@ -121,6 +124,7 @@ class IBKRConfigAPI(MethodView):
                     flex_query_id=data["flex_query_id"],
                     token_expires_at=token_expires_at,
                     auto_import_enabled=data.get("auto_import_enabled", False),
+                    enabled=data.get("enabled", True),
                 )
                 db.session.add(config)
 
@@ -231,6 +235,9 @@ def trigger_import():
 
     if not config:
         return jsonify({"error": "IBKR not configured"}), 400
+
+    if not config.enabled:
+        return jsonify({"error": "IBKR integration is disabled"}), 403
 
     try:
         service = IBKRFlexService()

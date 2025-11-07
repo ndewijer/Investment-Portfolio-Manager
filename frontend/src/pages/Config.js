@@ -11,7 +11,7 @@ import { useApiState } from '../components/shared';
 
 const Config = () => {
   const [activeTab, setActiveTab] = useState('ibkr');
-  const { features } = useApp();
+  const { features, refreshIBKRConfig } = useApp();
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -58,7 +58,11 @@ const Config = () => {
 
       <div className="config-content">
         {activeTab === 'ibkr' && features.ibkr_integration && (
-          <IBKRConfigTab setMessage={setMessage} setError={setError} />
+          <IBKRConfigTab
+            setMessage={setMessage}
+            setError={setError}
+            refreshIBKRConfig={refreshIBKRConfig}
+          />
         )}
         {activeTab === 'system' && (
           <SystemSettingsTab setMessage={setMessage} setError={setError} />
@@ -71,12 +75,13 @@ const Config = () => {
 };
 
 // IBKR Configuration Tab
-const IBKRConfigTab = ({ setMessage, setError }) => {
+const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
   const [config, setConfig] = useState({
     flex_token: '',
     flex_query_id: '',
     token_expires_at: '',
     auto_import_enabled: false,
+    enabled: true,
   });
   const [existingConfig, setExistingConfig] = useState(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
@@ -98,7 +103,11 @@ const IBKRConfigTab = ({ setMessage, setError }) => {
           token_expires_at: response.data.token_expires_at
             ? response.data.token_expires_at.split('T')[0]
             : '',
-          auto_import_enabled: response.data.auto_import_enabled || false,
+          auto_import_enabled:
+            response.data.auto_import_enabled !== undefined
+              ? response.data.auto_import_enabled
+              : false,
+          enabled: response.data.enabled !== undefined ? response.data.enabled : true,
         });
       }
     } catch (err) {
@@ -110,11 +119,23 @@ const IBKRConfigTab = ({ setMessage, setError }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if disabling with auto-import enabled - show warning
+    if (existingConfig && !config.enabled && existingConfig.enabled && config.auto_import_enabled) {
+      const confirmed = window.confirm(
+        'Warning: Disabling IBKR integration will also disable automated imports. Are you sure you want to continue?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
     try {
       const payload = {
         flex_token: config.flex_token,
         flex_query_id: config.flex_query_id,
         auto_import_enabled: config.auto_import_enabled,
+        enabled: config.enabled,
       };
 
       if (config.token_expires_at) {
@@ -125,6 +146,10 @@ const IBKRConfigTab = ({ setMessage, setError }) => {
       setMessage('IBKR configuration saved successfully');
       setConfig({ ...config, flex_token: '' });
       fetchConfig();
+      // Refresh IBKR config in AppContext to update navigation
+      if (refreshIBKRConfig) {
+        refreshIBKRConfig();
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save configuration');
     }
@@ -262,60 +287,83 @@ const IBKRConfigTab = ({ setMessage, setError }) => {
 
       <form onSubmit={handleSubmit} className="config-form">
         <div className="form-group">
-          <label>
-            Flex Token:
-            <span className="required">*</span>
-          </label>
-          <input
-            type="password"
-            value={config.flex_token}
-            onChange={(e) => setConfig({ ...config, flex_token: e.target.value })}
-            placeholder={existingConfig ? 'Enter new token to update' : 'Enter Flex Token'}
-            required={!existingConfig}
-          />
-          <small className="form-help">
-            Token is encrypted and stored securely. It will never be displayed after saving.
-          </small>
-        </div>
-
-        <div className="form-group">
-          <label>
-            Flex Query ID:
-            <span className="required">*</span>
-          </label>
-          <input
-            type="text"
-            value={config.flex_query_id}
-            onChange={(e) => setConfig({ ...config, flex_query_id: e.target.value })}
-            placeholder="Enter Query ID (e.g., 123456)"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Token Expiration Date:</label>
-          <input
-            type="date"
-            value={config.token_expires_at}
-            onChange={(e) => setConfig({ ...config, token_expires_at: e.target.value })}
-            min={new Date().toISOString().split('T')[0]}
-          />
-          <small className="form-help">
-            IBKR tokens expire after max 1 year. You&apos;ll receive a warning 30 days before
-            expiration.
-          </small>
-        </div>
-
-        <div className="form-group">
           <label className="checkbox-label">
             <input
               type="checkbox"
-              checked={config.auto_import_enabled}
-              onChange={(e) => setConfig({ ...config, auto_import_enabled: e.target.checked })}
+              checked={config.enabled}
+              onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
             />
-            Enable weekly automated imports (daily at 23:55)
+            Enable IBKR Integration
           </label>
+          <small className="form-help">
+            When disabled, IBKR Inbox will be hidden and automated imports will be paused. Manual
+            imports will also be unavailable.
+          </small>
         </div>
+
+        {config.enabled && (
+          <>
+            <div className="form-group">
+              <label>
+                Flex Token:
+                <span className="required">*</span>
+              </label>
+              <input
+                type="password"
+                value={config.flex_token}
+                onChange={(e) => setConfig({ ...config, flex_token: e.target.value })}
+                placeholder={
+                  existingConfig
+                    ? '*** Token Set *** (enter new token to update)'
+                    : 'Enter Flex Token'
+                }
+                required={!existingConfig}
+              />
+              <small className="form-help">
+                Token is encrypted and stored securely. It will never be displayed after saving.
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label>
+                Flex Query ID:
+                <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                value={config.flex_query_id}
+                onChange={(e) => setConfig({ ...config, flex_query_id: e.target.value })}
+                placeholder="Enter Query ID (e.g., 123456)"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Token Expiration Date:</label>
+              <input
+                type="date"
+                value={config.token_expires_at}
+                onChange={(e) => setConfig({ ...config, token_expires_at: e.target.value })}
+                min={new Date().toISOString().split('T')[0]}
+              />
+              <small className="form-help">
+                IBKR tokens expire after max 1 year. You&apos;ll receive a warning 30 days before
+                expiration.
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={config.auto_import_enabled}
+                  onChange={(e) => setConfig({ ...config, auto_import_enabled: e.target.checked })}
+                />
+                Enable daily automated imports (23:55)
+              </label>
+            </div>
+          </>
+        )}
 
         <div className="button-group">
           <button type="submit" className="default-button">
