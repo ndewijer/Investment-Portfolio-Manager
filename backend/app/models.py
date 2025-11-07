@@ -512,6 +512,7 @@ class IBKRConfig(db.Model):
         token_expires_at (datetime): Token expiration date (max 1 year from creation)
         last_import_date (datetime): Last successful import timestamp
         auto_import_enabled (bool): Whether automated weekly imports are enabled
+        enabled (bool): Whether IBKR integration is enabled (master toggle)
         created_at (datetime): Configuration creation timestamp
         updated_at (datetime): Configuration update timestamp
     """
@@ -524,6 +525,7 @@ class IBKRConfig(db.Model):
     token_expires_at = db.Column(db.DateTime, nullable=True)  # Token expiration date
     last_import_date = db.Column(db.DateTime, nullable=True)
     auto_import_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    enabled = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(
         db.DateTime,

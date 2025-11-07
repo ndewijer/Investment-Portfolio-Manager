@@ -30,6 +30,15 @@ def run_automated_ibkr_import():
             )
             return
 
+        if not config.enabled:
+            logger.log(
+                level=LogLevel.DEBUG,
+                category=LogCategory.IBKR,
+                message="IBKR integration disabled, skipping automated import",
+                details={},
+            )
+            return
+
         if not config.auto_import_enabled:
             logger.log(
                 level=LogLevel.DEBUG,
