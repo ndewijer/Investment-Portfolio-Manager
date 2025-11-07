@@ -43,7 +43,7 @@ class IBKRFlexService:
     )
 
     # Cache settings
-    CACHE_DURATION_HOURS = 24
+    CACHE_DURATION_HOURS = 1
 
     # IBKR Flex API Error Codes
     # Source: https://www.interactivebrokers.com/campus/ibkr-api-page/flex-web-service/#error-codes
