@@ -15,11 +15,23 @@ The Investment Portfolio Manager uses a **version-based feature flag system** to
 
 **Backend Version**: `backend/VERSION`
 ```
-1.3.0
+1.3.1
 ```
 - Single source of truth for application version
 - Updated when releasing new features
 - Read by `get_app_version()` in `system_routes.py`
+
+**Frontend Version**: `frontend/package.json`
+```json
+{
+  "name": "investment-portfolio-manager",
+  "version": "1.3.1",
+  ...
+}
+```
+- Must be kept in sync with backend VERSION
+- Updated whenever backend version changes
+- **Important**: While backend and frontend are in the same repository, versions must match
 
 **Database Version**: Stored in `alembic_version` table
 ```sql
@@ -277,11 +289,23 @@ def check_feature_availability(db_version):
 
 **Note**: For simple column additions, you might not need a new feature flag. Just check if `ibkr_integration` is enabled.
 
-#### 5. Update VERSION File
+#### 5. Update VERSION Files
 
+**Backend Version**:
 ```bash
 echo "1.3.1" > backend/VERSION
 ```
+
+**Frontend Version** (package.json):
+```bash
+# Edit frontend/package.json
+# Change "version": "1.3.0" to "version": "1.3.1"
+```
+
+**Important**: Both backend and frontend versions **must be updated together** while they remain in the same repository. This ensures:
+- Clear version tracking across the entire application
+- Consistent release versioning
+- Easier debugging and support (version mismatch indicates incomplete update)
 
 #### 6. Update Frontend to Use Feature
 
@@ -351,9 +375,41 @@ flask shell
 | 1.1.1 | 2024-11 | Added realized_gain_loss tracking |
 | 1.1.2 | 2024-11 | Performance indexes (no feature flag) |
 | 1.3.0 | 2025-11 | IBKR Flex integration |
-| 1.3.1 | 2025-11 | *(Planned)* IBKR enable/disable toggle |
+| 1.3.1 | 2025-11 | IBKR enable/disable toggle, mobile navigation improvements |
 
 ## Best Practices
+
+### Version Alignment
+
+**Critical Rule**: While backend and frontend are in the same repository, their versions **must always match**.
+
+**When bumping version**:
+1. Update `backend/VERSION`
+2. Update `frontend/package.json` version field
+3. Create database migration with matching revision ID (if schema changes)
+4. Commit all version changes together
+
+**Why this matters**:
+- Single repository = single release unit
+- Version mismatch indicates incomplete/broken update
+- Simplifies deployment and rollback procedures
+- Clear correlation between frontend features and backend capabilities
+- Easier for users to report issues ("I'm on version 1.3.1")
+
+**Example version update**:
+```bash
+# Update backend
+echo "1.3.1" > backend/VERSION
+
+# Update frontend (edit package.json)
+# Change: "version": "1.3.0" → "version": "1.3.1"
+
+# Commit together
+git add backend/VERSION frontend/package.json
+git commit -m "Bump version to 1.3.1"
+```
+
+**If repositories separate in the future**: This requirement may be relaxed, allowing independent versioning. Update this document accordingly.
 
 ### When to Add a Feature Flag
 
