@@ -416,9 +416,17 @@
   margin: 0;
 }
 
+.bulk-actions .checkbox-label input[type='checkbox'] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .bulk-action-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .checkbox-cell {
@@ -430,6 +438,61 @@
   cursor: pointer;
   width: 18px;
   height: 18px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .bulk-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .bulk-actions .checkbox-label {
+    justify-content: center;
+  }
+
+  .bulk-actions .checkbox-label input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+  }
+
+  .bulk-action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .bulk-action-buttons button {
+    width: 100%;
+  }
+
+  /* Hide the colon in mobile card checkboxes */
+  .mobile-cards .card-field .field-label:has(+ .field-value input[type='checkbox'])::after {
+    content: none;
+  }
+
+  /* Adjust checkbox field layout in mobile cards */
+  .mobile-cards .card-field:has(input[type='checkbox']) {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .mobile-cards .card-field:has(input[type='checkbox']) .field-label {
+    display: none;
+  }
+
+  .mobile-cards .card-field:has(input[type='checkbox']) .field-value {
+    text-align: left;
+  }
+
+  .mobile-cards .card-field input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+  }
 }
 
 .danger-button {
