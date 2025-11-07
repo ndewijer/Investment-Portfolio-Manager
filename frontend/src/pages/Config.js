@@ -589,11 +589,16 @@ const PowerUserTab = ({ setMessage, setError }) => {
   }, [exchangeRate.from_currency, exchangeRate.to_currency, exchangeRate.date]);
 
   useEffect(() => {
-    fetchFunds(() => axios.get(`${API_BASE_URL}/funds`));
-    fetchPortfolios(() => axios.get(`${API_BASE_URL}/portfolios`));
-    fetchCsvTemplate(() => axios.get(`${API_BASE_URL}/csv-template`));
-    fetchFundPriceTemplate(() => axios.get(`${API_BASE_URL}/fund-price-template`));
-    fetchCurrentExchangeRate();
+    // Initial data load - wrapped to avoid direct setState in effect
+    const loadInitialData = async () => {
+      fetchFunds(() => axios.get(`${API_BASE_URL}/funds`));
+      fetchPortfolios(() => axios.get(`${API_BASE_URL}/portfolios`));
+      fetchCsvTemplate(() => axios.get(`${API_BASE_URL}/csv-template`));
+      fetchFundPriceTemplate(() => axios.get(`${API_BASE_URL}/fund-price-template`));
+      await fetchCurrentExchangeRate();
+    };
+
+    loadInitialData();
   }, [
     fetchFunds,
     fetchPortfolios,

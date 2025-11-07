@@ -24,7 +24,6 @@ const IBKRInbox = () => {
   const [modalMode, setModalMode] = useState('create'); // 'create' | 'view' | 'edit' | 'bulk'
   const [existingAllocations, setExistingAllocations] = useState([]);
   const [selectedTransactions, setSelectedTransactions] = useState([]); // Array of transaction IDs
-  const [isBulkMode, setIsBulkMode] = useState(false);
 
   const fetchTransactions = useCallback(
     async (status = selectedStatus) => {
@@ -597,7 +596,7 @@ const IBKRInbox = () => {
       setSelectedTransactions([]);
       fetchTransactions();
       refreshIBKRTransactionCount();
-    } catch (err) {
+    } catch {
       setError('Failed to ignore transactions');
     }
   };
@@ -636,7 +635,7 @@ const IBKRInbox = () => {
       setSelectedTransactions([]);
       fetchTransactions();
       refreshIBKRTransactionCount();
-    } catch (err) {
+    } catch {
       setError('Failed to delete transactions');
     }
   };

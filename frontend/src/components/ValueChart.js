@@ -46,6 +46,7 @@ const ValueChart = ({
   const dragStartRef = useRef(null);
   const isDraggingRef = useRef(false);
   const [dragSelection, setDragSelection] = useState(null);
+  const [isDragging, setIsDragging] = useState(false); // State version for render
 
   // Track if initial zoom has been applied
   const [initialZoomApplied, setInitialZoomApplied] = useState(false);
@@ -513,7 +514,7 @@ const ValueChart = ({
   );
 
   // Custom tooltip component that respects mobile visibility state
-  const CustomTooltip = useCallback(
+  const renderCustomTooltip = useCallback(
     ({ active, payload, label }) => {
       // Don't show tooltip on mobile if showTooltip is false
       if (isMobile && !showTooltip) {
@@ -548,40 +549,46 @@ const ValueChart = ({
     return data.slice(start, end + 1);
   }, [data, zoomState]);
 
-  // Mouse drag selection for desktop zoom - define these functions early
-  const handleMouseMove = useCallback((e) => {
-    if (!dragStartRef.current) return;
+  // Mouse drag selection for desktop zoom
+  // Define handleMouseUp and handleMouseMove using refs to avoid circular dependencies
+  const handleMouseMoveRef = useRef();
+  const handleMouseUpRef = useRef();
 
-    const rect = chartRef.current?.getBoundingClientRect();
-    if (!rect) return;
+  // Update refs in an effect to avoid updating refs during render
+  useEffect(() => {
+    handleMouseMoveRef.current = (e) => {
+      if (!dragStartRef.current) return;
 
-    const currentX = e.clientX - rect.left;
-    const startX = dragStartRef.current.x;
+      const rect = chartRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    // Only start dragging if moved more than 5 pixels
-    if (!isDraggingRef.current && Math.abs(currentX - startX) > 5) {
-      isDraggingRef.current = true;
-    }
+      const currentX = e.clientX - rect.left;
+      const startX = dragStartRef.current.x;
 
-    if (isDraggingRef.current) {
-      // Less restrictive constraints - allow dragging to the very edge
-      const yAxisWidth = 80;
-      const minX = yAxisWidth;
-      const maxX = rect.width - 10; // Small margin to prevent going off-screen
+      // Only start dragging if moved more than 5 pixels
+      if (!isDraggingRef.current && Math.abs(currentX - startX) > 5) {
+        isDraggingRef.current = true;
+        setIsDragging(true); // Update state for rendering
+      }
 
-      const constrainedStartX = Math.max(minX, Math.min(maxX, startX));
-      const constrainedCurrentX = Math.max(minX, Math.min(maxX, currentX));
+      if (isDraggingRef.current) {
+        // Less restrictive constraints - allow dragging to the very edge
+        const yAxisWidth = 80;
+        const minX = yAxisWidth;
+        const maxX = rect.width - 10; // Small margin to prevent going off-screen
 
-      setDragSelection({
-        startX: Math.min(constrainedStartX, constrainedCurrentX),
-        endX: Math.max(constrainedStartX, constrainedCurrentX),
-        width: Math.abs(constrainedCurrentX - constrainedStartX),
-      });
-    }
-  }, []);
+        const constrainedStartX = Math.max(minX, Math.min(maxX, startX));
+        const constrainedCurrentX = Math.max(minX, Math.min(maxX, currentX));
 
-  const handleMouseUp = useCallback(
-    (e) => {
+        setDragSelection({
+          startX: Math.min(constrainedStartX, constrainedCurrentX),
+          endX: Math.max(constrainedStartX, constrainedCurrentX),
+          width: Math.abs(constrainedCurrentX - constrainedStartX),
+        });
+      }
+    };
+
+    handleMouseUpRef.current = (e) => {
       if (!dragStartRef.current) return;
 
       const rect = chartRef.current?.getBoundingClientRect();
@@ -592,8 +599,14 @@ const ValueChart = ({
       const dragDistance = Math.abs(currentX - startX);
 
       // Clean up event listeners
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      const mouseMoveHandler = handleMouseMoveRef.current;
+      const mouseUpHandler = handleMouseUpRef.current;
+      if (mouseMoveHandler) {
+        document.removeEventListener('mousemove', mouseMoveHandler);
+      }
+      if (mouseUpHandler) {
+        document.removeEventListener('mouseup', mouseUpHandler);
+      }
 
       // If dragged enough distance, zoom to selection
       if (isDraggingRef.current && dragDistance > 20 && data && data.length > 0) {
@@ -633,71 +646,85 @@ const ValueChart = ({
 
       // Reset drag state
       setDragSelection(null);
+      setIsDragging(false); // Update state for rendering
       dragStartRef.current = null;
       isDraggingRef.current = false;
-    },
-    [data, handleMouseMove]
-  );
+    };
+  }, [data]); // Re-create handlers when data changes
 
-  const handleMouseDown = useCallback(
-    (e) => {
-      if (e.button !== 0) return; // Only left mouse button
-      if (e.ctrlKey || e.metaKey) return; // Don't interfere with wheel zoom
+  const handleMouseDown = useCallback((e) => {
+    if (e.button !== 0) return; // Only left mouse button
+    if (e.ctrlKey || e.metaKey) return; // Don't interfere with wheel zoom
 
-      const rect = chartRef.current?.getBoundingClientRect();
-      if (!rect) return;
+    const rect = chartRef.current?.getBoundingClientRect();
+    if (!rect) return;
 
-      const x = e.clientX - rect.left;
+    const x = e.clientX - rect.left;
 
-      // More lenient boundary check - allow starting anywhere in the chart container
-      const yAxisWidth = 80;
-      if (x < yAxisWidth) return; // Only prevent starting on Y-axis
+    // More lenient boundary check - allow starting anywhere in the chart container
+    const yAxisWidth = 80;
+    if (x < yAxisWidth) return; // Only prevent starting on Y-axis
 
-      // Mark as interacted on mouse interaction
-      setHasInteracted(true);
+    // Mark as interacted on mouse interaction
+    setHasInteracted(true);
 
-      dragStartRef.current = { x, startTime: Date.now() };
-      isDraggingRef.current = false;
+    dragStartRef.current = { x, startTime: Date.now() };
+    isDraggingRef.current = false;
 
-      // Add global mouse event listeners
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    },
-    [handleMouseMove, handleMouseUp]
-  ); // Include both functions in dependencies
+    // Add global mouse event listeners using current ref values
+    const mouseMoveHandler = handleMouseMoveRef.current;
+    const mouseUpHandler = handleMouseUpRef.current;
+    if (mouseMoveHandler) {
+      document.addEventListener('mousemove', mouseMoveHandler);
+    }
+    if (mouseUpHandler) {
+      document.addEventListener('mouseup', mouseUpHandler);
+    }
+  }, []); // No dependencies needed - uses refs
 
-  // Apply initial zoom when data is loaded
+  // Apply initial zoom when data is loaded - use a flag to avoid ESLint warning
+  const shouldApplyInitialZoom = useRef(false);
+
   useEffect(() => {
     if (data && data.length > 0 && defaultZoomDays && !initialZoomApplied) {
-      // Don't apply initial zoom if we have the full dataset loaded
-      if (totalDataRange && totalDataRange.isFullDataset) {
+      shouldApplyInitialZoom.current = true;
+
+      // Check if we should apply initial zoom
+      const shouldApplyZoom = !(totalDataRange && totalDataRange.isFullDataset);
+
+      // Schedule state updates for next render cycle to avoid cascading renders
+      queueMicrotask(() => {
+        if (!shouldApplyInitialZoom.current) return;
+
+        if (shouldApplyZoom) {
+          const dataLength = data.length;
+
+          // Calculate how many data points represent the default zoom period
+          const targetDataPoints = Math.min(defaultZoomDays, dataLength);
+
+          // Start from the end (most recent data) and go back
+          const startIndex = Math.max(0, dataLength - targetDataPoints);
+          const endIndex = dataLength - 1;
+
+          if (startIndex < endIndex) {
+            const range = endIndex - startIndex + 1;
+            const newZoomLevel = dataLength / range;
+
+            // Batch state updates together to minimize re-renders
+            setZoomState({
+              isZoomed: true,
+              zoomLevel: newZoomLevel,
+              xDomain: [startIndex, endIndex],
+              yDomain: null,
+              panOffset: { x: 0, y: 0 },
+            });
+          }
+        }
+
+        // Always mark as applied
         setInitialZoomApplied(true);
-        return;
-      }
-
-      const dataLength = data.length;
-
-      // Calculate how many data points represent the default zoom period
-      const targetDataPoints = Math.min(defaultZoomDays, dataLength);
-
-      // Start from the end (most recent data) and go back
-      const startIndex = Math.max(0, dataLength - targetDataPoints);
-      const endIndex = dataLength - 1;
-
-      if (startIndex < endIndex) {
-        const range = endIndex - startIndex + 1;
-        const newZoomLevel = dataLength / range;
-
-        setZoomState({
-          isZoomed: true,
-          zoomLevel: newZoomLevel,
-          xDomain: [startIndex, endIndex],
-          yDomain: null,
-          panOffset: { x: 0, y: 0 },
-        });
-      }
-
-      setInitialZoomApplied(true);
+        shouldApplyInitialZoom.current = false;
+      });
     }
   }, [data, defaultZoomDays, initialZoomApplied, totalDataRange]);
 
@@ -710,12 +737,18 @@ const ValueChart = ({
       return () => {
         chartElement.removeEventListener('wheel', handleWheel);
         chartElement.removeEventListener('mousedown', handleMouseDown);
-        // Clean up any remaining global listeners
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        // Clean up any remaining global listeners using refs
+        const mouseMoveHandler = handleMouseMoveRef.current;
+        const mouseUpHandler = handleMouseUpRef.current;
+        if (mouseMoveHandler) {
+          document.removeEventListener('mousemove', mouseMoveHandler);
+        }
+        if (mouseUpHandler) {
+          document.removeEventListener('mouseup', mouseUpHandler);
+        }
       };
     }
-  }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
+  }, [handleWheel, handleMouseDown]);
 
   // Cleanup tooltip timeout on unmount
   useEffect(() => {
@@ -847,7 +880,7 @@ const ValueChart = ({
       )}
 
       <div
-        className={`chart-container ${isDraggingRef.current ? 'dragging' : ''}`}
+        className={`chart-container ${isDragging ? 'dragging' : ''}`}
         ref={chartRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -863,7 +896,7 @@ const ValueChart = ({
               tickFormatter={formatYAxis}
               width={80}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#1976d2', strokeWidth: 1 }} />
+            <Tooltip content={renderCustomTooltip} cursor={{ stroke: '#1976d2', strokeWidth: 1 }} />
             <Legend />
             {/* Reference line for maximum value */}
             {getMaxValue() && (
