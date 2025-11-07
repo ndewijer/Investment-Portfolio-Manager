@@ -92,8 +92,9 @@ export const formatChartData = (fundHistory) => {
   if (!fundHistory.length) return [];
 
   return fundHistory.map((day) => {
+    // Use YYYY-MM-DD format for unambiguous date display
     const dayData = {
-      date: new Date(day.date).toLocaleDateString(),
+      date: day.date,
     };
 
     const totalValue = day.funds.reduce((sum, f) => sum + f.value, 0);
@@ -107,11 +108,13 @@ export const formatChartData = (fundHistory) => {
     dayData.unrealizedGain = totalUnrealizedGain;
     dayData.totalGain = totalRealizedGain + totalUnrealizedGain;
 
-    day.funds.forEach((fund, index) => {
-      dayData[`funds[${index}].value`] = fund.value;
-      dayData[`funds[${index}].cost`] = fund.cost;
-      dayData[`funds[${index}].realized`] = fund.realized_gain || 0;
-      dayData[`funds[${index}].unrealized`] = fund.value - fund.cost || 0;
+    // Use portfolio_fund_id as unique identifier instead of array index
+    day.funds.forEach((fund) => {
+      const fundId = fund.portfolio_fund_id;
+      dayData[`fund_${fundId}_value`] = fund.value;
+      dayData[`fund_${fundId}_cost`] = fund.cost;
+      dayData[`fund_${fundId}_realized`] = fund.realized_gain || 0;
+      dayData[`fund_${fundId}_unrealized`] = fund.value - fund.cost || 0;
     });
 
     return dayData;
@@ -178,10 +181,12 @@ export const getChartLines = (portfolioFunds, visibleMetrics) => {
     });
   }
 
+  // Use portfolio_fund_id (fund.id) as unique identifier instead of array index
   portfolioFunds.forEach((fund, index) => {
+    const fundId = fund.id; // portfolio_fund_id
     if (visibleMetrics.value) {
       lines.push({
-        dataKey: `funds[${index}].value`,
+        dataKey: `fund_${fundId}_value`,
         name: `${fund.fund_name} Value`,
         color: getFundColor(index),
         strokeWidth: 1,
@@ -191,7 +196,7 @@ export const getChartLines = (portfolioFunds, visibleMetrics) => {
     }
     if (visibleMetrics.cost) {
       lines.push({
-        dataKey: `funds[${index}].cost`,
+        dataKey: `fund_${fundId}_cost`,
         name: `${fund.fund_name} Cost`,
         color: getFundColor(index),
         strokeWidth: 1,

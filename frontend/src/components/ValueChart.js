@@ -610,10 +610,15 @@ const ValueChart = ({
 
       // If dragged enough distance, zoom to selection
       if (isDraggingRef.current && dragDistance > 20 && data && data.length > 0) {
-        // Simplified and more accurate calculation
+        // Account for Y-axis width and Recharts internal padding
+        // These values were empirically tuned for best accuracy in center selections
+        // Note: Edge selections (far left/right) may be slightly less accurate due to
+        // Recharts' internal margin handling
         const yAxisWidth = 80;
-        const chartStartX = yAxisWidth;
-        const chartEndX = rect.width - 10; // Small margin
+        const leftPadding = 5; // Recharts internal left margin
+        const rightPadding = 7; // Recharts internal right margin
+        const chartStartX = yAxisWidth + leftPadding;
+        const chartEndX = rect.width - rightPadding;
         const chartWidth = chartEndX - chartStartX;
 
         // Convert pixel positions to ratios
@@ -626,8 +631,17 @@ const ValueChart = ({
 
         // Convert ratios to data indices
         const dataLength = data.length;
-        const startIndex = Math.max(0, Math.floor(startRatio * dataLength));
-        const endIndex = Math.min(dataLength - 1, Math.ceil(endRatio * dataLength));
+        // Add adjustments to align better across different zoom levels
+        // At higher zoom (more pixels per day), we need slightly different alignment
+        const pixelsPerDay = chartWidth / (dataLength - 1);
+        const startAdjustment = pixelsPerDay > 2 ? 0.5 : 0; // Adjust when zoomed in
+        const endAdjustment = pixelsPerDay > 2 ? 0.6 : 0; // Slightly more for end
+
+        const startIndex = Math.max(0, Math.floor(startRatio * (dataLength - 1) + startAdjustment));
+        const endIndex = Math.min(
+          dataLength - 1,
+          Math.floor(endRatio * (dataLength - 1) + endAdjustment)
+        );
 
         // Ensure we have a meaningful selection
         if (endIndex > startIndex) {

@@ -546,6 +546,8 @@ class PortfolioService:
 
                     daily_values["funds"].append(
                         {
+                            # Add portfolio_fund_id for unique identification
+                            "portfolio_fund_id": pf.id,
                             "fund_id": fund_metrics["fund_id"],
                             "fund_name": fund_metrics["fund_name"],
                             "value": fund_metrics["value"],
