@@ -83,8 +83,9 @@ const Overview = () => {
 
   const formatChartData = () => {
     return portfolioHistory.map((day) => {
+      // Use YYYY-MM-DD format for unambiguous date display
       const dayData = {
-        date: new Date(day.date).toLocaleDateString(),
+        date: day.date,
       };
 
       // Calculate totals for this day using the new backend data structure
@@ -371,7 +372,7 @@ const Overview = () => {
         </div>
       </div>
 
-      <div className="charts-section">
+      <div className="chart-section">
         <div className="chart-container">
           <h2>Portfolio Value Over Time</h2>
           <ValueChart
