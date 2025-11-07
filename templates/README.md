@@ -23,13 +23,15 @@ This folder contains reusable templates for project documentation.
 
 **How to use**:
 1. Copy the template to root directory
-2. Rename to `RELEASE_NOTES_X.X.X_DRAFT.md` (keep DRAFT suffix until release)
+2. Rename to `RELEASE_NOTES_X.X.X_DRAFT.md` (keep DRAFT suffix while working)
 3. Fill in all sections as you develop features
 4. When ready to release, review and finalize
-5. Remove "_DRAFT" suffix when releasing
-6. Keep in root directory for visibility
+5. Use the content for GitHub release notes
+6. Delete the file after creating the GitHub release
 
-**Example**: `RELEASE_NOTES_1.3.1_DRAFT.md`
+**Example**: `RELEASE_NOTES_1.3.1_DRAFT.md` → Copy to GitHub release → Delete file
+
+**Note**: Release notes are published on GitHub, not stored in the repository
 
 ---
 

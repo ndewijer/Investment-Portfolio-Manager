@@ -374,8 +374,8 @@ flask shell
 | 1.1.0 | 2024-11 | Added exclude_from_overview to portfolios |
 | 1.1.1 | 2024-11 | Added realized_gain_loss tracking |
 | 1.1.2 | 2024-11 | Performance indexes (no feature flag) |
-| 1.3.0 | 2025-11 | IBKR Flex integration |
-| 1.3.1 | 2025-11 | IBKR enable/disable toggle, mobile navigation improvements |
+| 1.3.0 | 2024-11 | IBKR Flex integration |
+| 1.3.1 | 2024-11-07 | IBKR enable/disable toggle, bulk transaction processing, allocation presets, mobile UI fixes, chart improvements |
 
 ## Best Practices
 

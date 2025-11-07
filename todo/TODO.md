@@ -22,7 +22,7 @@ This folder contains planning documents and task lists for the Investment Portfo
 - [x] Automated daily imports
 - [x] Configuration management (token, query ID)
 
-### Version 1.3.1 - IBKR Productivity Enhancements (In Progress)
+### Version 1.3.1 - IBKR Productivity Enhancements ✅ COMPLETED
 - [x] IBKR integration enable/disable toggle
 - [x] Dynamic navigation based on integration status
 - [x] Bulk transaction processing
@@ -40,17 +40,16 @@ This folder contains planning documents and task lists for the Investment Portfo
 - [x] Compact transaction details UI
 - [x] Comprehensive user documentation (IBKR_FEATURES.md)
 - [x] DRY refactoring (eligibility checking, allocation initialization)
+- [x] Mobile UI fixes (checkbox sizing, bulk actions stacking)
+- [x] Chart fixes (styling consistency, date formatting, drag-to-zoom accuracy)
+
+**Released**: November 7, 2024
 
 ---
 
 ## 🚧 In Progress
 
-### Version 1.3.1 - Final Steps
-- [ ] Final testing of bulk allocation features
-- [ ] Testing of amount display in various scenarios
-- [ ] Browser compatibility testing (laptop screens)
-- [ ] Documentation review and updates
-- [ ] Merge to main branch
+_No active development at this time_
 
 ---
 
@@ -131,6 +130,6 @@ If you encounter these, fix them:
 
 ---
 
-**Last Updated**: 2025-01-07
-**Current Version**: 1.3.1 (in progress)
+**Last Updated**: 2024-11-07
+**Current Version**: 1.3.1 (released)
 **Philosophy**: Feature complete - only add what's needed
