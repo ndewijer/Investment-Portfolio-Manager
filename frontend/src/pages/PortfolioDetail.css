@@ -305,41 +305,8 @@
     opacity: 0.9;
   }
 
-  /* Adjust summary cards for mobile */
-  .portfolio-detail-container .summary-cards {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .portfolio-detail-container .summary-card {
-    padding: 16px;
-  }
-
-  .portfolio-detail-container .summary-card h3 {
-    font-size: 0.8rem;
-  }
-
-  .portfolio-detail-container .summary-card .value {
-    font-size: 1.2rem;
-  }
-
-  /* Adjust section headers for mobile */
-  .portfolio-detail-container .section-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .portfolio-detail-container .section-header h2 {
-    margin: 0;
-  }
-
-  .portfolio-detail-container .section-header .add-button {
-    width: 100%;
-    padding: 12px;
-    font-size: 0.9rem;
-  }
+  /* Common mobile patterns moved to mobile.css */
+  /* Page-specific card layouts below */
 }
 
 /* Very small screens */

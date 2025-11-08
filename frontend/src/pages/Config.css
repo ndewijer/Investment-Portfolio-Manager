@@ -462,64 +462,9 @@
   color: #e0e0e0;
 }
 
-/* Mobile Responsive Styles */
+/* Config-specific mobile styles (common patterns moved to mobile.css) */
 @media (max-width: 768px) {
-  .config-page {
-    padding: 1rem;
-  }
-
-  .config-tabs {
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .tab-button {
-    flex: 1 1 auto;
-    min-width: 120px;
-    padding: 0.625rem 1rem;
-    font-size: 0.9rem;
-  }
-
-  .config-section,
-  .config-form {
-    padding: 1.25rem;
-  }
-
-  .config-section h2 {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-  }
-
-  .button-group {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .default-button,
-  .secondary-button,
-  .danger-button {
-    width: 100%;
-    justify-content: center;
-    padding: 0.75rem 1.5rem;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .version-cards {
-    grid-template-columns: 1fr;
-  }
-
   .ibkr-versions h4 {
-    font-size: 1rem;
-  }
-
-  .version-card {
-    padding: 1.25rem;
-  }
-
-  .version-card h5 {
     font-size: 1rem;
   }
 

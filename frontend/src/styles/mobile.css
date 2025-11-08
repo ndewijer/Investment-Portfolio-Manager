@@ -1,0 +1,240 @@
+/* ===========================================================================
+   MOBILE RESPONSIVE STYLES
+   Consolidated mobile patterns for Investment Portfolio Manager
+   Target breakpoint: max-width 768px (mobile/tablet), max-width 480px (small mobile)
+
+   This file contains DRY mobile patterns used across multiple pages/components.
+   Component-specific mobile behavior remains in component CSS files.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   LAYOUT PATTERNS
+   --------------------------------------------------------------------------- */
+
+/* Button Groups - Stack vertically on mobile */
+@media (max-width: 768px) {
+  .button-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .button-group button,
+  .button-group .default-button,
+  .button-group .secondary-button,
+  .button-group .danger-button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+/* Form Layouts - Single column on mobile */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Section Headers - Stack vertically */
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .section-header h2 {
+    margin: 0;
+  }
+
+  .section-header button,
+  .section-header .add-button {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Summary Cards Grid */
+@media (max-width: 768px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .summary-card {
+    padding: 16px;
+  }
+
+  .summary-card h3 {
+    font-size: 0.8rem;
+  }
+
+  .summary-card .value {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   COMPONENT PATTERNS
+   --------------------------------------------------------------------------- */
+
+/* Modal Responsive */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-content {
+    min-width: unset;
+    max-height: calc(100vh - 20px);
+    padding: 15px;
+  }
+
+  .modal-content.modal-small,
+  .modal-content.modal-medium,
+  .modal-content.modal-large {
+    max-width: 95vw;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .modal-close {
+    font-size: 24px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Form Modal Responsive */
+@media (max-width: 768px) {
+  .form-modal-actions {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+  }
+
+  .form-field {
+    margin-bottom: 0.75rem;
+  }
+
+  .field-label {
+    font-size: 0.85rem;
+  }
+}
+
+/* Tab Navigation */
+@media (max-width: 768px) {
+  .config-tabs,
+  .inbox-tabs {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .tab-button,
+  .inbox-tab {
+    flex: 1 1 auto;
+    min-width: 120px;
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Action Buttons - Full width on mobile */
+@media (max-width: 768px) {
+  .action-buttons-horizontal {
+    flex-direction: column;
+  }
+
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .action-btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    min-height: 36px;
+  }
+
+  .action-btn-medium {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.95rem;
+    min-height: 42px;
+  }
+
+  .action-btn-large {
+    padding: 0.875rem 1.75rem;
+    font-size: 1.05rem;
+    min-height: 48px;
+  }
+}
+
+/* Error Message - Vertical layout */
+@media (max-width: 768px) {
+  .error-message {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .error-actions {
+    margin-left: 0;
+    margin-top: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  .error-content {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   CONTAINER & PAGE PADDING
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .config-page,
+  .ibkr-inbox {
+    padding: 1rem;
+  }
+
+  .config-section,
+  .config-form {
+    padding: 1.25rem;
+  }
+
+  .config-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Version Cards Grid */
+@media (max-width: 768px) {
+  .version-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .version-card {
+    padding: 1.25rem;
+  }
+
+  .version-card h5 {
+    font-size: 1rem;
+  }
+}

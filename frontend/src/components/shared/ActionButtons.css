@@ -240,35 +240,7 @@
   }
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .action-buttons-horizontal {
-    flex-direction: column;
-  }
-
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .action-btn-small {
-    padding: 0.5rem 1rem;
-    font-size: 0.85rem;
-    min-height: 36px;
-  }
-
-  .action-btn-medium {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.95rem;
-    min-height: 42px;
-  }
-
-  .action-btn-large {
-    padding: 0.875rem 1.75rem;
-    font-size: 1.05rem;
-    min-height: 48px;
-  }
-}
+/* Mobile styles moved to mobile.css */
 
 /* Dark mode support - class-based with feature flag control */
 .dark-theme .action-btn-default {

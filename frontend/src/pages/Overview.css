@@ -228,26 +228,7 @@
   }
 }
 
-/* Ensure summary cards are also mobile-friendly */
-@media (max-width: 768px) {
-  .overview-container .summary-cards {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .overview-container .summary-card {
-    padding: 16px;
-  }
-
-  .overview-container .summary-card h3 {
-    font-size: 0.8rem;
-  }
-
-  .overview-container .summary-card .value {
-    font-size: 1.2rem;
-  }
-}
+/* Common mobile patterns moved to mobile.css */
 
 /* Very small screens */
 @media (max-width: 480px) {
@@ -255,11 +236,7 @@
     padding: 12px;
   }
 
-  .overview-container .summary-cards {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
+  /* Page-specific mobile styles */
   .overview-container .portfolio-card {
     padding: 12px;
     margin-bottom: 8px;

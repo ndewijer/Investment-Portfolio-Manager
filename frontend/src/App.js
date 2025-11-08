@@ -16,6 +16,8 @@ import IBKRInbox from './pages/IBKRInbox';
 
 // Import global CSS first
 import './App.css';
+import './styles/common.css';
+import './styles/mobile.css';
 
 // Import component CSS after global CSS
 import './components/Navigation.css';
