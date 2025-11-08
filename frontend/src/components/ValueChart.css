@@ -280,3 +280,226 @@
     background-color: rgba(25, 118, 210, 0.02);
   }
 }
+
+/* Mobile Full-Screen Chart Feature */
+
+/* Mobile chart CTA container */
+.mobile-chart-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 12px;
+  border: 2px solid #2196f3;
+}
+
+/* Prominent fullscreen button */
+.fullscreen-cta-button {
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  width: 100%;
+  max-width: 300px;
+  justify-content: center;
+}
+
+.fullscreen-cta-button:hover {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+  transform: translateY(-2px);
+}
+
+.fullscreen-cta-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+/* Hint text below button */
+.mobile-chart-hint {
+  margin: 0;
+  font-size: 13px;
+  color: #1565c0;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Minimal zoom controls on mobile (normal mode) */
+.mobile-zoom-controls-minimal {
+  justify-content: center;
+  gap: 12px;
+}
+
+.mobile-zoom-controls-minimal .zoom-button {
+  min-width: 80px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Fullscreen Modal Styling */
+.fullscreen-chart-modal {
+  z-index: 9999;
+}
+
+.fullscreen-chart-modal .modal-content {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 16px;
+  border-radius: 0;
+  overflow-y: auto;
+}
+
+.fullscreen-chart-modal .modal-header {
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.fullscreen-chart-modal .modal-header h2 {
+  font-size: 18px;
+}
+
+.fullscreen-chart-modal .modal-close {
+  width: 48px;
+  height: 48px;
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+/* Fullscreen chart content wrapper */
+.fullscreen-chart-content {
+  width: 100%;
+  height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Fullscreen controls - compact layout */
+.fullscreen-controls {
+  margin-bottom: 8px;
+}
+
+/* Horizontal scrollable metric toggles for fullscreen */
+.fullscreen-metric-toggles {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #1976d2 #f0f7ff;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fullscreen-metric-toggles::-webkit-scrollbar {
+  height: 6px;
+}
+
+.fullscreen-metric-toggles::-webkit-scrollbar-track {
+  background: #f0f7ff;
+  border-radius: 3px;
+}
+
+.fullscreen-metric-toggles::-webkit-scrollbar-thumb {
+  background: #1976d2;
+  border-radius: 3px;
+}
+
+.fullscreen-metric-toggles .transaction-button {
+  flex-shrink: 0;
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+/* Compact zoom controls in fullscreen */
+.fullscreen-zoom-controls {
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fullscreen-zoom-controls .zoom-button {
+  flex-shrink: 0;
+  min-width: 48px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* Fullscreen chart container adjustments */
+.fullscreen-chart-content .chart-container {
+  flex: 1;
+  height: auto;
+  margin-bottom: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-chart-content .recharts-responsive-container {
+  flex: 1;
+  margin: 0 !important;
+}
+
+/* Hide metric toggles on mobile in normal mode, but show minimal zoom controls */
+@media (max-width: 768px) {
+  .mobile-chart-wrapper .metric-toggles {
+    display: none;
+  }
+
+  /* In fullscreen modal, show horizontal metric toggles */
+  .fullscreen-chart-modal .metric-toggles {
+    display: flex !important;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .fullscreen-cta-button {
+    font-size: 16px;
+    padding: 12px 24px;
+    max-width: 280px;
+  }
+
+  .mobile-chart-hint {
+    font-size: 12px;
+  }
+
+  .fullscreen-chart-modal .modal-content {
+    padding: 12px;
+  }
+
+  .fullscreen-zoom-controls .zoom-button {
+    min-width: 42px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .fullscreen-metric-toggles .transaction-button {
+    min-width: 100px;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+}
