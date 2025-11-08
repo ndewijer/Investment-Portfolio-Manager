@@ -49,9 +49,9 @@ const FundDetail = () => {
           setFund(fundResponse.data);
           setError(null);
 
-          // Update price history
+          // Update price history (sorted newest to oldest for table display)
           const sortedPrices = pricesResponse.data.sort(
-            (a, b) => new Date(a.date) - new Date(b.date)
+            (a, b) => new Date(b.date) - new Date(a.date)
           );
           setPriceHistory(sortedPrices);
           setFilteredPriceHistory(sortedPrices);
@@ -133,7 +133,7 @@ const FundDetail = () => {
         // Only fetch new data if prices were actually updated
         try {
           const pricesRes = await api.get(`/fund-prices/${id}`);
-          const sortedPrices = pricesRes.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+          const sortedPrices = pricesRes.data.sort((a, b) => new Date(b.date) - new Date(a.date));
           setPriceHistory(sortedPrices);
           setFilteredPriceHistory(sortedPrices);
         } catch (refreshError) {
@@ -274,6 +274,7 @@ const FundDetail = () => {
           emptyMessage="No price history available"
           sortable={true}
           filterable={true}
+          defaultSort={{ key: 'date', direction: 'desc' }}
         />
         {activeFilter === 'date' && (
           <div

@@ -20,9 +20,10 @@ const DataTable = ({
   onRetry = null,
   pagination = null,
   onPaginationChange = null,
+  defaultSort = null,
   ...props
 }) => {
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState(defaultSort || { key: null, direction: 'asc' });
   const [filters, setFilters] = useState({});
   const [filterPopups, setFilterPopups] = useState({});
   const [filterPosition, setFilterPosition] = useState({ top: 0, left: 0 });
