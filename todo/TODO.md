@@ -57,10 +57,10 @@ _No active development at this time_
 
 ### When Time Allows / If Needed
 
-#### UI/UX Improvements (v1.3.3)
+#### UI/UX Improvements (v1.3.2)
 - [x] **Dividend button visibility**: Already implemented - button only shows when fund.dividend_type !== 'none'
 - [x] **FundDetail table sorting**: Sort table values by date from newest to oldest
-- [ ] **Mobile chart enhancement**: Revamp graphs to landscape orientation when clicked on mobile
+- [x] **Mobile chart enhancement**: Implemented full-screen mode with simplified normal view
 - [x] **IBKR Setup mobile fix**: Ensure buttons stay inside container div on mobile
 - [x] **Importing stock data should stay**: No changes needed - confirmed no active pruning logic exists
 

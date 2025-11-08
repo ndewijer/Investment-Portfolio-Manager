@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import './ValueChart.css';
 import { useFormat } from '../context/FormatContext';
+import Modal from './Modal';
 
 const ValueChart = ({
   data,
@@ -28,6 +29,9 @@ const ValueChart = ({
   totalDataRange = null, // New prop: information about the total data range
 }) => {
   const { formatCurrency } = useFormat();
+
+  // Full-screen state for mobile
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Zoom state management
   const [zoomState, setZoomState] = useState({
@@ -773,220 +777,514 @@ const ValueChart = ({
     };
   }, [tooltipTimeout]);
 
-  return (
-    <div className="chart-wrapper">
-      {visibleMetrics && (
-        <div className="chart-controls">
-          <div className="metric-toggles">
-            <button
-              className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
-              onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+  // Render chart content (reusable for normal and fullscreen modes)
+  const renderChartContent = (isFullScreenMode = false) => {
+    const chartHeight = isFullScreenMode ? '85vh' : height;
+
+    return (
+      <>
+        {visibleMetrics && (
+          <div className={`chart-controls ${isFullScreenMode ? 'fullscreen-controls' : ''}`}>
+            <div
+              className={`metric-toggles ${isFullScreenMode ? 'fullscreen-metric-toggles' : ''}`}
             >
-              Value
-            </button>
-            <button
-              className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
-              onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
-            >
-              Cost
-            </button>
-            <button
-              className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
-              onClick={() =>
-                setVisibleMetrics((prev) => ({
-                  ...prev,
-                  realizedGain: !prev.realizedGain,
-                }))
-              }
-            >
-              Realized Gain/Loss
-            </button>
-            <button
-              className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
-              onClick={() =>
-                setVisibleMetrics((prev) => ({
-                  ...prev,
-                  unrealizedGain: !prev.unrealizedGain,
-                }))
-              }
-            >
-              Unrealized Gain/Loss
-            </button>
-            <button
-              className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
-              onClick={() =>
-                setVisibleMetrics((prev) => ({
-                  ...prev,
-                  totalGain: !prev.totalGain,
-                }))
-              }
-            >
-              Total Gain/Loss
-            </button>
+              <button
+                className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+                onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+              >
+                Value
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+                onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
+              >
+                Cost
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    realizedGain: !prev.realizedGain,
+                  }))
+                }
+              >
+                Realized Gain/Loss
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    unrealizedGain: !prev.unrealizedGain,
+                  }))
+                }
+              >
+                Unrealized Gain/Loss
+              </button>
+              <button
+                className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    totalGain: !prev.totalGain,
+                  }))
+                }
+              >
+                Total Gain/Loss
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Zoom Controls */}
-      <div className="zoom-controls">
-        <button
-          className="zoom-button"
-          onClick={handleZoomIn}
-          disabled={zoomState.zoomLevel >= 10}
-          title="Zoom In (Ctrl + Mouse Wheel)"
-        >
-          🔍+
-        </button>
-        <button
-          className="zoom-button"
-          onClick={handleZoomOut}
-          disabled={zoomState.zoomLevel <= 1}
-          title="Zoom Out (Ctrl + Mouse Wheel)"
-        >
-          🔍-
-        </button>
-        <button
-          className="zoom-button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleZoomReset();
-            // Only load all data if we don't already have the full dataset
-            if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
-              onLoadAllData();
-            }
-          }}
-          title="Show All Data"
-          type="button"
-        >
-          All
-        </button>
-        <button className="zoom-button" onClick={() => handleZoomToPeriod(365)} title="Last Year">
-          1Y
-        </button>
-        <button
-          className="zoom-button"
-          onClick={() => handleZoomToPeriod(90)}
-          title="Last 3 Months"
-        >
-          3M
-        </button>
-        <button className="zoom-button" onClick={() => handleZoomToPeriod(30)} title="Last Month">
-          1M
-        </button>
-      </div>
-
-      {showTimeRangeButtons && (
-        <div className="time-range-buttons">
+        {/* Zoom Controls */}
+        <div className={`zoom-controls ${isFullScreenMode ? 'fullscreen-zoom-controls' : ''}`}>
           <button
-            className={`time-range-button ${timeRange === '1M' ? 'active' : ''}`}
-            onClick={() => onTimeRangeChange('1M')}
+            className="zoom-button"
+            onClick={handleZoomIn}
+            disabled={zoomState.zoomLevel >= 10}
+            title="Zoom In (Ctrl + Mouse Wheel)"
           >
-            Last Month
+            🔍+
           </button>
           <button
-            className={`time-range-button ${timeRange === 'ALL' ? 'active' : ''}`}
-            onClick={() => onTimeRangeChange('ALL')}
+            className="zoom-button"
+            onClick={handleZoomOut}
+            disabled={zoomState.zoomLevel <= 1}
+            title="Zoom Out (Ctrl + Mouse Wheel)"
           >
-            All Time
+            🔍-
           </button>
-        </div>
-      )}
-
-      <div
-        className={`chart-container ${isDragging ? 'dragging' : ''}`}
-        ref={chartRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={getVisibleData()} onClick={handleChartClick}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-            <YAxis
-              domain={calculateDomain()}
-              tick={{ fontSize: 12 }}
-              tickFormatter={formatYAxis}
-              width={80}
-            />
-            <Tooltip content={renderCustomTooltip} cursor={{ stroke: '#1976d2', strokeWidth: 1 }} />
-            <Legend />
-            {/* Reference line for maximum value */}
-            {getMaxValue() && (
-              <ReferenceLine
-                y={getMaxValue()}
-                stroke="#ff6b35"
-                strokeDasharray="8 8"
-                strokeWidth={2}
-                label={{
-                  value: `Peak: ${formatCurrency(getMaxValue())}`,
-                  position: 'top',
-                  offset: 10,
-                  style: {
-                    textAnchor: 'middle',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    fill: '#ff6b35',
-                  },
-                }}
-              />
-            )}
-            {lines.map((line) => (
-              <Line
-                key={line.dataKey}
-                type="monotone"
-                dataKey={line.dataKey}
-                name={line.name}
-                stroke={line.color}
-                dot={false}
-                strokeWidth={line.strokeWidth || 2}
-                strokeDasharray={line.strokeDasharray}
-                opacity={line.opacity}
-                connectNulls={true}
-              />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-
-        {/* Drag selection overlay */}
-        {dragSelection && (
-          <div
-            className="drag-selection-overlay"
-            style={{
-              left: `${dragSelection.startX}px`,
-              width: `${dragSelection.width}px`,
-              top: '0px',
-              height: '100%',
-              position: 'absolute',
-              backgroundColor: 'rgba(25, 118, 210, 0.2)',
-              border: '2px solid #1976d2',
-              borderRadius: '4px',
-              pointerEvents: 'none',
-              zIndex: 10,
+          <button
+            className="zoom-button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleZoomReset();
+              // Only load all data if we don't already have the full dataset
+              if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
+                onLoadAllData();
+              }
             }}
-          />
-        )}
+            title="Show All Data"
+            type="button"
+          >
+            All
+          </button>
+          <button className="zoom-button" onClick={() => handleZoomToPeriod(365)} title="Last Year">
+            1Y
+          </button>
+          <button
+            className="zoom-button"
+            onClick={() => handleZoomToPeriod(90)}
+            title="Last 3 Months"
+          >
+            3M
+          </button>
+          <button className="zoom-button" onClick={() => handleZoomToPeriod(30)} title="Last Month">
+            1M
+          </button>
+        </div>
 
-        {!hasInteracted && zoomState.isZoomed && (
-          <div className="zoom-instructions">
-            <p>
-              💡 Desktop: Drag to select area, Hold Ctrl/Cmd + scroll to zoom | Mobile: Pinch to
-              zoom, swipe to pan, tap chart to toggle tooltip
-            </p>
+        {showTimeRangeButtons && (
+          <div className="time-range-buttons">
+            <button
+              className={`time-range-button ${timeRange === '1M' ? 'active' : ''}`}
+              onClick={() => onTimeRangeChange('1M')}
+            >
+              Last Month
+            </button>
+            <button
+              className={`time-range-button ${timeRange === 'ALL' ? 'active' : ''}`}
+              onClick={() => onTimeRangeChange('ALL')}
+            >
+              All Time
+            </button>
           </div>
         )}
 
-        {!hasInteracted && !zoomState.isZoomed && (
-          <div className="zoom-instructions">
-            <p>
-              💡 Desktop: Click and drag to zoom to selection, Hold Ctrl/Cmd + scroll to zoom |
-              Mobile: Pinch to zoom, tap chart to show values
-            </p>
+        <div
+          className={`chart-container ${isDragging ? 'dragging' : ''}`}
+          ref={chartRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <LineChart data={getVisibleData()} onClick={handleChartClick}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+              <YAxis
+                domain={calculateDomain()}
+                tick={{ fontSize: 12 }}
+                tickFormatter={formatYAxis}
+                width={80}
+              />
+              <Tooltip
+                content={renderCustomTooltip}
+                cursor={{ stroke: '#1976d2', strokeWidth: 1 }}
+              />
+              <Legend />
+              {/* Reference line for maximum value */}
+              {getMaxValue() && (
+                <ReferenceLine
+                  y={getMaxValue()}
+                  stroke="#ff6b35"
+                  strokeDasharray="8 8"
+                  strokeWidth={2}
+                  label={{
+                    value: `Peak: ${formatCurrency(getMaxValue())}`,
+                    position: 'top',
+                    offset: 10,
+                    style: {
+                      textAnchor: 'middle',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      fill: '#ff6b35',
+                    },
+                  }}
+                />
+              )}
+              {lines.map((line) => (
+                <Line
+                  key={line.dataKey}
+                  type="monotone"
+                  dataKey={line.dataKey}
+                  name={line.name}
+                  stroke={line.color}
+                  dot={false}
+                  strokeWidth={line.strokeWidth || 2}
+                  strokeDasharray={line.strokeDasharray}
+                  opacity={line.opacity}
+                  connectNulls={true}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+
+          {/* Drag selection overlay */}
+          {dragSelection && (
+            <div
+              className="drag-selection-overlay"
+              style={{
+                left: `${dragSelection.startX}px`,
+                width: `${dragSelection.width}px`,
+                top: '0px',
+                height: '100%',
+                position: 'absolute',
+                backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                border: '2px solid #1976d2',
+                borderRadius: '4px',
+                pointerEvents: 'none',
+                zIndex: 10,
+              }}
+            />
+          )}
+
+          {!hasInteracted && zoomState.isZoomed && !isFullScreenMode && (
+            <div className="zoom-instructions">
+              <p>
+                💡 Desktop: Drag to select area, Hold Ctrl/Cmd + scroll to zoom | Mobile: Pinch to
+                zoom, swipe to pan, tap chart to toggle tooltip
+              </p>
+            </div>
+          )}
+
+          {!hasInteracted && !zoomState.isZoomed && !isFullScreenMode && (
+            <div className="zoom-instructions">
+              <p>
+                💡 Desktop: Click and drag to zoom to selection, Hold Ctrl/Cmd + scroll to zoom |
+                Mobile: Pinch to zoom, tap chart to show values
+              </p>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <>
+      {/* Normal Mode */}
+      <div className={`chart-wrapper ${isMobile ? 'mobile-chart-wrapper' : ''}`}>
+        {/* Mobile: Hide metric toggles in normal mode, show prominent fullscreen button */}
+        {isMobile && visibleMetrics ? (
+          <div className="mobile-chart-cta">
+            <button className="fullscreen-cta-button" onClick={() => setIsFullScreen(true)}>
+              📊 View Full Screen
+            </button>
+            <p className="mobile-chart-hint">Open full screen for complete chart controls</p>
+          </div>
+        ) : (
+          // Desktop: show all metric toggles normally
+          visibleMetrics && (
+            <div className="chart-controls">
+              <div className="metric-toggles">
+                <button
+                  className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+                  onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+                >
+                  Value
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+                  onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
+                >
+                  Cost
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+                  onClick={() =>
+                    setVisibleMetrics((prev) => ({
+                      ...prev,
+                      realizedGain: !prev.realizedGain,
+                    }))
+                  }
+                >
+                  Realized Gain/Loss
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+                  onClick={() =>
+                    setVisibleMetrics((prev) => ({
+                      ...prev,
+                      unrealizedGain: !prev.unrealizedGain,
+                    }))
+                  }
+                >
+                  Unrealized Gain/Loss
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+                  onClick={() =>
+                    setVisibleMetrics((prev) => ({
+                      ...prev,
+                      totalGain: !prev.totalGain,
+                    }))
+                  }
+                >
+                  Total Gain/Loss
+                </button>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Mobile: Show minimal zoom controls in normal mode */}
+        <div className={`zoom-controls ${isMobile ? 'mobile-zoom-controls-minimal' : ''}`}>
+          {isMobile ? (
+            // Show only All and 1Y buttons on mobile in normal mode
+            <>
+              <button
+                className="zoom-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleZoomReset();
+                  if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
+                    onLoadAllData();
+                  }
+                }}
+                title="Show All Data"
+                type="button"
+              >
+                All
+              </button>
+              <button
+                className="zoom-button"
+                onClick={() => handleZoomToPeriod(365)}
+                title="Last Year"
+              >
+                1Y
+              </button>
+            </>
+          ) : (
+            // Desktop: show all zoom controls
+            <>
+              <button
+                className="zoom-button"
+                onClick={handleZoomIn}
+                disabled={zoomState.zoomLevel >= 10}
+                title="Zoom In (Ctrl + Mouse Wheel)"
+              >
+                🔍+
+              </button>
+              <button
+                className="zoom-button"
+                onClick={handleZoomOut}
+                disabled={zoomState.zoomLevel <= 1}
+                title="Zoom Out (Ctrl + Mouse Wheel)"
+              >
+                🔍-
+              </button>
+              <button
+                className="zoom-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleZoomReset();
+                  if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
+                    onLoadAllData();
+                  }
+                }}
+                title="Show All Data"
+                type="button"
+              >
+                All
+              </button>
+              <button
+                className="zoom-button"
+                onClick={() => handleZoomToPeriod(365)}
+                title="Last Year"
+              >
+                1Y
+              </button>
+              <button
+                className="zoom-button"
+                onClick={() => handleZoomToPeriod(90)}
+                title="Last 3 Months"
+              >
+                3M
+              </button>
+              <button
+                className="zoom-button"
+                onClick={() => handleZoomToPeriod(30)}
+                title="Last Month"
+              >
+                1M
+              </button>
+            </>
+          )}
+        </div>
+
+        {showTimeRangeButtons && (
+          <div className="time-range-buttons">
+            <button
+              className={`time-range-button ${timeRange === '1M' ? 'active' : ''}`}
+              onClick={() => onTimeRangeChange('1M')}
+            >
+              Last Month
+            </button>
+            <button
+              className={`time-range-button ${timeRange === 'ALL' ? 'active' : ''}`}
+              onClick={() => onTimeRangeChange('ALL')}
+            >
+              All Time
+            </button>
           </div>
         )}
+
+        <div
+          className={`chart-container ${isDragging ? 'dragging' : ''}`}
+          ref={chartRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <ResponsiveContainer width="100%" height={height}>
+            <LineChart data={getVisibleData()} onClick={handleChartClick}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+              <YAxis
+                domain={calculateDomain()}
+                tick={{ fontSize: 12 }}
+                tickFormatter={formatYAxis}
+                width={80}
+              />
+              <Tooltip
+                content={renderCustomTooltip}
+                cursor={{ stroke: '#1976d2', strokeWidth: 1 }}
+              />
+              <Legend />
+              {/* Reference line for maximum value */}
+              {getMaxValue() && (
+                <ReferenceLine
+                  y={getMaxValue()}
+                  stroke="#ff6b35"
+                  strokeDasharray="8 8"
+                  strokeWidth={2}
+                  label={{
+                    value: `Peak: ${formatCurrency(getMaxValue())}`,
+                    position: 'top',
+                    offset: 10,
+                    style: {
+                      textAnchor: 'middle',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      fill: '#ff6b35',
+                    },
+                  }}
+                />
+              )}
+              {lines.map((line) => (
+                <Line
+                  key={line.dataKey}
+                  type="monotone"
+                  dataKey={line.dataKey}
+                  name={line.name}
+                  stroke={line.color}
+                  dot={false}
+                  strokeWidth={line.strokeWidth || 2}
+                  strokeDasharray={line.strokeDasharray}
+                  opacity={line.opacity}
+                  connectNulls={true}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+
+          {/* Drag selection overlay */}
+          {dragSelection && (
+            <div
+              className="drag-selection-overlay"
+              style={{
+                left: `${dragSelection.startX}px`,
+                width: `${dragSelection.width}px`,
+                top: '0px',
+                height: '100%',
+                position: 'absolute',
+                backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                border: '2px solid #1976d2',
+                borderRadius: '4px',
+                pointerEvents: 'none',
+                zIndex: 10,
+              }}
+            />
+          )}
+
+          {!hasInteracted && zoomState.isZoomed && (
+            <div className="zoom-instructions">
+              <p>
+                💡 Desktop: Drag to select area, Hold Ctrl/Cmd + scroll to zoom | Mobile: Pinch to
+                zoom, swipe to pan, tap chart to toggle tooltip
+              </p>
+            </div>
+          )}
+
+          {!hasInteracted && !zoomState.isZoomed && (
+            <div className="zoom-instructions">
+              <p>
+                💡 Desktop: Click and drag to zoom to selection, Hold Ctrl/Cmd + scroll to zoom |
+                Mobile: Pinch to zoom, tap chart to show values
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Full-Screen Modal (Mobile Only) */}
+      {isMobile && isFullScreen && (
+        <Modal
+          isOpen={isFullScreen}
+          onClose={() => setIsFullScreen(false)}
+          title="Chart View"
+          size="xlarge"
+          className="fullscreen-chart-modal"
+        >
+          <div className="fullscreen-chart-content">{renderChartContent(true)}</div>
+        </Modal>
+      )}
+    </>
   );
 };
 
