@@ -109,28 +109,7 @@
   flex-shrink: 0;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .modal-overlay {
-    padding: 10px;
-  }
-
-  .modal-content {
-    min-width: unset;
-    max-height: calc(100vh - 20px);
-    padding: 15px;
-  }
-
-  .modal-header h2 {
-    font-size: 1.25rem;
-  }
-
-  .modal-close {
-    font-size: 24px;
-    width: 28px;
-    height: 28px;
-  }
-}
+/* Mobile styles moved to mobile.css */
 
 /* Dark mode support */
 .dark-theme .modal-content {

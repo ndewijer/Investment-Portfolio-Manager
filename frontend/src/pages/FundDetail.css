@@ -285,25 +285,7 @@
     font-size: 1rem;
   }
 
-  /* Adjust section header for mobile */
-  .fund-detail-container .section-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .fund-detail-container .button-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .fund-detail-container .toggle-history-button,
-  .fund-detail-container .update-prices-button {
-    width: 100%;
-    padding: 12px;
-    font-size: 0.9rem;
-  }
+  /* Common mobile patterns moved to mobile.css */
 }
 
 /* Very small screens */
