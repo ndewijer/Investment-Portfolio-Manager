@@ -31,6 +31,8 @@ const ValueChart = ({
 
   // Full-screen state for mobile
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showMetricControls, setShowMetricControls] = useState(false);
+  const [showZoomControls, setShowZoomControls] = useState(false);
 
   // Zoom state management
   const [zoomState, setZoomState] = useState({
@@ -132,8 +134,8 @@ const ValueChart = ({
       });
     });
 
-    // Add 5% padding to the top and bottom
-    const padding = (max - min) * 0.05;
+    // Add 10% padding to the top and bottom (increased from 5% to prevent peak line cutoff)
+    const padding = (max - min) * 0.1;
     return [
       Math.max(0, Math.floor(min - padding)), // Round down and don't go below 0
       Math.ceil(max + padding), // Round up
@@ -776,17 +778,164 @@ const ValueChart = ({
     };
   }, [tooltipTimeout]);
 
+  // Prevent body scroll when fullscreen is active
+  useEffect(() => {
+    if (isFullScreen) {
+      // Save current body overflow and position
+      const originalOverflow = document.body.style.overflow;
+      const originalPosition = document.body.style.position;
+
+      // Prevent scrolling
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+
+      return () => {
+        // Restore original values
+        document.body.style.overflow = originalOverflow;
+        document.body.style.position = originalPosition;
+        document.body.style.width = '';
+      };
+    }
+  }, [isFullScreen]);
+
   // Render chart content (reusable for normal and fullscreen modes)
   const renderChartContent = (isFullScreenMode = false) => {
-    const chartHeight = isFullScreenMode ? '85vh' : height;
+    const chartHeight = isFullScreenMode ? '100%' : height;
+
+    const zoomButtons = (
+      <>
+        <button
+          className="zoom-button"
+          onClick={handleZoomIn}
+          disabled={zoomState.zoomLevel >= 10}
+          title="Zoom In (Ctrl + Mouse Wheel)"
+        >
+          🔍+
+        </button>
+        <button
+          className="zoom-button"
+          onClick={handleZoomOut}
+          disabled={zoomState.zoomLevel <= 1}
+          title="Zoom Out (Ctrl + Mouse Wheel)"
+        >
+          🔍-
+        </button>
+        <button
+          className="zoom-button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleZoomReset();
+            if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
+              onLoadAllData();
+            }
+          }}
+          title="Show All Data"
+          type="button"
+        >
+          All
+        </button>
+        <button className="zoom-button" onClick={() => handleZoomToPeriod(365)} title="Last Year">
+          1Y
+        </button>
+        <button
+          className="zoom-button"
+          onClick={() => handleZoomToPeriod(90)}
+          title="Last 3 Months"
+        >
+          3M
+        </button>
+        <button className="zoom-button" onClick={() => handleZoomToPeriod(30)} title="Last Month">
+          1M
+        </button>
+      </>
+    );
 
     return (
       <>
-        {visibleMetrics && (
-          <div className={`chart-controls ${isFullScreenMode ? 'fullscreen-controls' : ''}`}>
-            <div
-              className={`metric-toggles ${isFullScreenMode ? 'fullscreen-metric-toggles' : ''}`}
-            >
+        {/* Fullscreen: Toggle buttons for controls */}
+        {isFullScreenMode && visibleMetrics && (
+          <>
+            {/* Toggle buttons - always visible */}
+            <div className="fullscreen-toggle-buttons">
+              <button
+                className={`control-toggle-button ${showMetricControls ? 'active' : ''}`}
+                onClick={() => setShowMetricControls(!showMetricControls)}
+                title="Toggle Metrics"
+              >
+                ⚙️
+              </button>
+              <button
+                className={`control-toggle-button ${showZoomControls ? 'active' : ''}`}
+                onClick={() => setShowZoomControls(!showZoomControls)}
+                title="Toggle Zoom"
+              >
+                🔍
+              </button>
+            </div>
+
+            {/* Metric Controls - shown when toggled */}
+            {showMetricControls && (
+              <div className="chart-controls fullscreen-metric-panel">
+                <button
+                  className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+                  onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
+                >
+                  Value
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+                  onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
+                >
+                  Cost
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+                  onClick={() =>
+                    setVisibleMetrics((prev) => ({
+                      ...prev,
+                      realizedGain: !prev.realizedGain,
+                    }))
+                  }
+                >
+                  Realized Gain/Loss
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+                  onClick={() =>
+                    setVisibleMetrics((prev) => ({
+                      ...prev,
+                      unrealizedGain: !prev.unrealizedGain,
+                    }))
+                  }
+                >
+                  Unrealized Gain/Loss
+                </button>
+                <button
+                  className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+                  onClick={() =>
+                    setVisibleMetrics((prev) => ({
+                      ...prev,
+                      totalGain: !prev.totalGain,
+                    }))
+                  }
+                >
+                  Total Gain/Loss
+                </button>
+              </div>
+            )}
+
+            {/* Zoom Controls - shown when toggled */}
+            {showZoomControls && (
+              <div className="chart-controls fullscreen-zoom-panel">{zoomButtons}</div>
+            )}
+          </>
+        )}
+
+        {visibleMetrics && !isFullScreenMode && (
+          <div className="chart-controls">
+            <div className="metric-toggles">
               <button
                 className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
                 onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
@@ -836,54 +985,8 @@ const ValueChart = ({
           </div>
         )}
 
-        {/* Zoom Controls */}
-        <div className={`zoom-controls ${isFullScreenMode ? 'fullscreen-zoom-controls' : ''}`}>
-          <button
-            className="zoom-button"
-            onClick={handleZoomIn}
-            disabled={zoomState.zoomLevel >= 10}
-            title="Zoom In (Ctrl + Mouse Wheel)"
-          >
-            🔍+
-          </button>
-          <button
-            className="zoom-button"
-            onClick={handleZoomOut}
-            disabled={zoomState.zoomLevel <= 1}
-            title="Zoom Out (Ctrl + Mouse Wheel)"
-          >
-            🔍-
-          </button>
-          <button
-            className="zoom-button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleZoomReset();
-              // Only load all data if we don't already have the full dataset
-              if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
-                onLoadAllData();
-              }
-            }}
-            title="Show All Data"
-            type="button"
-          >
-            All
-          </button>
-          <button className="zoom-button" onClick={() => handleZoomToPeriod(365)} title="Last Year">
-            1Y
-          </button>
-          <button
-            className="zoom-button"
-            onClick={() => handleZoomToPeriod(90)}
-            title="Last 3 Months"
-          >
-            3M
-          </button>
-          <button className="zoom-button" onClick={() => handleZoomToPeriod(30)} title="Last Month">
-            1M
-          </button>
-        </div>
+        {/* Zoom Controls - separate in normal mode */}
+        {!isFullScreenMode && <div className="zoom-controls">{zoomButtons}</div>}
 
         {showTimeRangeButtons && (
           <div className="time-range-buttons">
@@ -1006,155 +1109,123 @@ const ValueChart = ({
     <>
       {/* Normal Mode */}
       <div className={`chart-wrapper ${isMobile ? 'mobile-chart-wrapper' : ''}`}>
-        {/* Mobile: Hide metric toggles in normal mode, show prominent fullscreen button */}
-        {isMobile && visibleMetrics ? (
-          <div className="mobile-chart-cta">
-            <button className="fullscreen-cta-button" onClick={() => setIsFullScreen(true)}>
-              📊 View Full Screen
-            </button>
-            <p className="mobile-chart-hint">Open full screen for complete chart controls</p>
-          </div>
-        ) : (
-          // Desktop: show all metric toggles normally
-          visibleMetrics && (
-            <div className="chart-controls">
-              <div className="metric-toggles">
-                <button
-                  className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
-                  onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
-                >
-                  Value
-                </button>
-                <button
-                  className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
-                  onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
-                >
-                  Cost
-                </button>
-                <button
-                  className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
-                  onClick={() =>
-                    setVisibleMetrics((prev) => ({
-                      ...prev,
-                      realizedGain: !prev.realizedGain,
-                    }))
-                  }
-                >
-                  Realized Gain/Loss
-                </button>
-                <button
-                  className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
-                  onClick={() =>
-                    setVisibleMetrics((prev) => ({
-                      ...prev,
-                      unrealizedGain: !prev.unrealizedGain,
-                    }))
-                  }
-                >
-                  Unrealized Gain/Loss
-                </button>
-                <button
-                  className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
-                  onClick={() =>
-                    setVisibleMetrics((prev) => ({
-                      ...prev,
-                      totalGain: !prev.totalGain,
-                    }))
-                  }
-                >
-                  Total Gain/Loss
-                </button>
-              </div>
-            </div>
-          )
+        {/* Mobile: Minimalist - just show chart, small fullscreen button in corner */}
+        {isMobile && visibleMetrics && (
+          <button className="mobile-minimal-fullscreen-btn" onClick={() => setIsFullScreen(true)}>
+            ⛶
+          </button>
         )}
 
-        {/* Mobile: Show minimal zoom controls in normal mode */}
-        <div className={`zoom-controls ${isMobile ? 'mobile-zoom-controls-minimal' : ''}`}>
-          {isMobile ? (
-            // Show only All and 1Y buttons on mobile in normal mode
-            <>
+        {/* Desktop: show all metric toggles normally */}
+        {!isMobile && visibleMetrics && (
+          <div className="chart-controls">
+            <div className="metric-toggles">
               <button
-                className="zoom-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleZoomReset();
-                  if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
-                    onLoadAllData();
-                  }
-                }}
-                title="Show All Data"
-                type="button"
+                className={`transaction-button ${visibleMetrics.value ? 'active' : ''}`}
+                onClick={() => setVisibleMetrics((prev) => ({ ...prev, value: !prev.value }))}
               >
-                All
+                Value
               </button>
               <button
-                className="zoom-button"
-                onClick={() => handleZoomToPeriod(365)}
-                title="Last Year"
+                className={`transaction-button ${visibleMetrics.cost ? 'active' : ''}`}
+                onClick={() => setVisibleMetrics((prev) => ({ ...prev, cost: !prev.cost }))}
               >
-                1Y
-              </button>
-            </>
-          ) : (
-            // Desktop: show all zoom controls
-            <>
-              <button
-                className="zoom-button"
-                onClick={handleZoomIn}
-                disabled={zoomState.zoomLevel >= 10}
-                title="Zoom In (Ctrl + Mouse Wheel)"
-              >
-                🔍+
+                Cost
               </button>
               <button
-                className="zoom-button"
-                onClick={handleZoomOut}
-                disabled={zoomState.zoomLevel <= 1}
-                title="Zoom Out (Ctrl + Mouse Wheel)"
+                className={`transaction-button ${visibleMetrics.realizedGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    realizedGain: !prev.realizedGain,
+                  }))
+                }
               >
-                🔍-
+                Realized Gain/Loss
               </button>
               <button
-                className="zoom-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleZoomReset();
-                  if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
-                    onLoadAllData();
-                  }
-                }}
-                title="Show All Data"
-                type="button"
+                className={`transaction-button ${visibleMetrics.unrealizedGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    unrealizedGain: !prev.unrealizedGain,
+                  }))
+                }
               >
-                All
+                Unrealized Gain/Loss
               </button>
               <button
-                className="zoom-button"
-                onClick={() => handleZoomToPeriod(365)}
-                title="Last Year"
+                className={`transaction-button ${visibleMetrics.totalGain ? 'active' : ''}`}
+                onClick={() =>
+                  setVisibleMetrics((prev) => ({
+                    ...prev,
+                    totalGain: !prev.totalGain,
+                  }))
+                }
               >
-                1Y
+                Total Gain/Loss
               </button>
-              <button
-                className="zoom-button"
-                onClick={() => handleZoomToPeriod(90)}
-                title="Last 3 Months"
-              >
-                3M
-              </button>
-              <button
-                className="zoom-button"
-                onClick={() => handleZoomToPeriod(30)}
-                title="Last Month"
-              >
-                1M
-              </button>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop: Show zoom controls */}
+        {!isMobile && (
+          <div className="zoom-controls">
+            <button
+              className="zoom-button"
+              onClick={handleZoomIn}
+              disabled={zoomState.zoomLevel >= 10}
+              title="Zoom In (Ctrl + Mouse Wheel)"
+            >
+              🔍+
+            </button>
+            <button
+              className="zoom-button"
+              onClick={handleZoomOut}
+              disabled={zoomState.zoomLevel <= 1}
+              title="Zoom Out (Ctrl + Mouse Wheel)"
+            >
+              🔍-
+            </button>
+            <button
+              className="zoom-button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleZoomReset();
+                if (onLoadAllData && (!totalDataRange || !totalDataRange.isFullDataset)) {
+                  onLoadAllData();
+                }
+              }}
+              title="Show All Data"
+              type="button"
+            >
+              All
+            </button>
+            <button
+              className="zoom-button"
+              onClick={() => handleZoomToPeriod(365)}
+              title="Last Year"
+            >
+              1Y
+            </button>
+            <button
+              className="zoom-button"
+              onClick={() => handleZoomToPeriod(90)}
+              title="Last 3 Months"
+            >
+              3M
+            </button>
+            <button
+              className="zoom-button"
+              onClick={() => handleZoomToPeriod(30)}
+              title="Last Month"
+            >
+              1M
+            </button>
+          </div>
+        )}
 
         {showTimeRangeButtons && (
           <div className="time-range-buttons">

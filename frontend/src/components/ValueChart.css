@@ -1,6 +1,7 @@
 .chart-wrapper {
   width: 100%;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .chart-controls {
@@ -361,6 +362,8 @@
   background-color: #ffffff;
   z-index: 10000;
   overflow: hidden;
+  touch-action: none; /* Prevent touch events from propagating to underlying page */
+  -webkit-overflow-scrolling: auto; /* Disable momentum scrolling */
 }
 
 /* Fullscreen close button - fixed in top-right corner */
@@ -406,7 +409,48 @@
   overflow: hidden;
 }
 
-/* Fullscreen controls - positioned as overlay at top */
+/* Toggle buttons for showing/hiding controls */
+.fullscreen-toggle-buttons {
+  position: absolute;
+  top: 8px;
+  left: 64px;
+  z-index: 10003;
+  display: flex;
+  gap: 8px;
+}
+
+.control-toggle-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid #1976d2;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.control-toggle-button:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+  transform: scale(1.05);
+}
+
+.control-toggle-button.active {
+  background-color: #1976d2;
+  border-color: #1976d2;
+}
+
+.control-toggle-button:active {
+  transform: scale(0.95);
+}
+
+/* Control panels - horizontal scrollable single row */
 .chart-fullscreen-container .chart-controls {
   position: absolute;
   top: 64px;
@@ -415,69 +459,48 @@
   z-index: 10002;
   background-color: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
-  padding: 8px;
+  padding: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(4px);
-}
-
-.fullscreen-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Horizontal scrollable metric toggles for fullscreen */
-.fullscreen-metric-toggles {
+  touch-action: auto;
   display: flex;
   flex-direction: row;
-  gap: 6px;
+  gap: 4px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 2px 0;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #1976d2 #f0f7ff;
-  -webkit-overflow-scrolling: touch;
 }
 
-.fullscreen-metric-toggles::-webkit-scrollbar {
+.chart-fullscreen-container .chart-controls::-webkit-scrollbar {
   height: 4px;
 }
 
-.fullscreen-metric-toggles::-webkit-scrollbar-track {
+.chart-fullscreen-container .chart-controls::-webkit-scrollbar-track {
   background: #f0f7ff;
   border-radius: 2px;
 }
 
-.fullscreen-metric-toggles::-webkit-scrollbar-thumb {
+.chart-fullscreen-container .chart-controls::-webkit-scrollbar-thumb {
   background: #1976d2;
   border-radius: 2px;
 }
 
-.fullscreen-metric-toggles .transaction-button {
+/* Buttons inside control panels */
+.chart-fullscreen-container .chart-controls .transaction-button,
+.chart-fullscreen-container .chart-controls .zoom-button {
   flex-shrink: 0;
-  min-width: 100px;
-  min-height: 40px;
+  min-width: 75px;
+  min-height: 36px;
   white-space: nowrap;
-  font-size: 13px;
-  padding: 6px 12px;
+  font-size: 12px;
+  padding: 5px 10px;
 }
 
-/* Compact zoom controls in fullscreen */
-.fullscreen-zoom-controls {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.fullscreen-zoom-controls .zoom-button {
-  flex-shrink: 0;
-  min-width: 44px;
-  min-height: 40px;
-  padding: 6px 10px;
-  font-size: 13px;
+.chart-fullscreen-container .chart-controls .zoom-button {
+  min-width: 40px;
 }
 
 /* Fullscreen chart container - fills entire viewport */
@@ -490,10 +513,11 @@
   width: 100vw;
   height: 100vh;
   margin: 0;
-  padding: 8px;
+  padding: 14px 26px 4px 0px; /* More top (14px), more right (26px), no left */
   box-shadow: none;
   background-color: white;
   border-radius: 0;
+  touch-action: pan-x pan-y pinch-zoom; /* Allow chart touch gestures */
 }
 
 .chart-fullscreen-container .recharts-responsive-container {
@@ -502,10 +526,60 @@
   margin: 0 !important;
 }
 
+/* Smaller legend text in fullscreen */
+.chart-fullscreen-container .recharts-legend-wrapper {
+  font-size: 10px !important;
+}
+
+.chart-fullscreen-container .recharts-legend-item-text {
+  font-size: 10px !important;
+}
+
+/* Mobile minimal fullscreen button - small icon in corner */
+.mobile-minimal-fullscreen-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 2px solid #1976d2;
+  color: #1976d2;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 100;
+}
+
+.mobile-minimal-fullscreen-btn:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+  transform: scale(1.05);
+}
+
+.mobile-minimal-fullscreen-btn:active {
+  transform: scale(0.95);
+}
+
 /* Hide metric toggles on mobile in normal mode */
 @media (max-width: 768px) {
   .mobile-chart-wrapper .metric-toggles {
     display: none;
+  }
+
+  /* Reduce legend font size in normal mobile view */
+  .mobile-chart-wrapper .recharts-legend-wrapper {
+    font-size: 10px !important;
+  }
+
+  .mobile-chart-wrapper .recharts-legend-item-text {
+    font-size: 10px !important;
   }
 
   /* In fullscreen, controls are overlays at top */
@@ -518,10 +592,16 @@
 
 /* Landscape orientation optimizations for fullscreen */
 @media (max-width: 1024px) and (orientation: landscape) {
-  /* Move controls to more compact top position in landscape */
-  .chart-fullscreen-container .chart-controls {
+  /* In landscape, keep toggle buttons at same level as close button */
+  .fullscreen-toggle-buttons {
     top: 8px;
     left: 64px;
+  }
+
+  /* Control panels appear below toggle buttons */
+  .chart-fullscreen-container .chart-controls {
+    top: 56px;
+    left: 8px;
     right: 64px;
     padding: 6px;
   }
@@ -532,18 +612,18 @@
     right: auto;
   }
 
-  .fullscreen-metric-toggles .transaction-button {
-    min-width: 80px;
-    min-height: 36px;
-    font-size: 12px;
-    padding: 4px 10px;
+  .chart-fullscreen-container .chart-controls .transaction-button {
+    min-width: 70px;
+    min-height: 34px;
+    font-size: 11px;
+    padding: 4px 8px;
   }
 
-  .fullscreen-zoom-controls .zoom-button {
-    min-width: 40px;
-    min-height: 36px;
-    padding: 4px 8px;
-    font-size: 12px;
+  .chart-fullscreen-container .chart-controls .zoom-button {
+    min-width: 38px;
+    min-height: 34px;
+    padding: 4px 6px;
+    font-size: 11px;
   }
 }
 

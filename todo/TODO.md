@@ -64,6 +64,9 @@ _No active development at this time_
 - [x] **IBKR Setup mobile fix**: Ensure buttons stay inside container div on mobile
 - [x] **Importing stock data should stay**: No changes needed - confirmed no active pruning logic exists
 
+#### Speed Improvements (V1.3.2)
+- [ ] **Slow load due to possible large amount of data**: Troubleshoot why certain portfolios take a long time to load. Inefficient SQL? Just to much data and truncate if not required?
+
 **Trigger**: When time allows for UI polish
 
 #### IBKR Fee Transaction Allocation (v1.3.3 or v1.4.0)
