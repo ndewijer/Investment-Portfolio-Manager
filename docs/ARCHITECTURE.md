@@ -14,7 +14,7 @@
 
 ## Automated Tasks
 - Daily fund price updates (weekdays at 23:55)
-- Weekly IBKR transaction imports (weekdays at 23:55)
+- Weekly IBKR transaction imports (Tue-Sat at 05:05)
 - Protected endpoints with API key authentication
 - Scheduled tasks run with application context
 
@@ -217,7 +217,7 @@ For detailed implementation, see [IBKR Transaction Lifecycle Documentation](IBKR
 - Manual imports can bypass cache for testing
 
 ### Scheduled Tasks
-- Weekly import runs Weekdays at 23:55 (if auto-import enabled)
+- Weekly import runs Tuesday - Saturday at 05:05 (if auto-import enabled)
 - Uses same workflow as manual imports
 - Results logged for monitoring
 

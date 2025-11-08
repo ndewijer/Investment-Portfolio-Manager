@@ -359,7 +359,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                   checked={config.auto_import_enabled}
                   onChange={(e) => setConfig({ ...config, auto_import_enabled: e.target.checked })}
                 />
-                Enable daily automated imports (23:55)
+                Enable automated imports (Tuesday - Saturday at 05:05)
               </label>
             </div>
           </>

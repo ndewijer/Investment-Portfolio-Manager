@@ -342,8 +342,7 @@ const IBKRInbox = () => {
 
         if (response.data.success) {
           setMessage(
-            `${response.data.processed} transaction(s) processed successfully${
-              response.data.failed > 0 ? `, ${response.data.failed} failed` : ''
+            `${response.data.processed} transaction(s) processed successfully${response.data.failed > 0 ? `, ${response.data.failed} failed` : ''
             }`
           );
           setSelectedTransaction(null);
@@ -683,7 +682,7 @@ const IBKRInbox = () => {
           <p>No pending transactions</p>
           <p className="empty-state-hint">
             Click &quot;Import Now&quot; to fetch transactions from IBKR, or they will be imported
-            automatically, daily at 23:55 if auto-import is enabled.
+            automatically, Tuesday - Saturday at 05:05 if auto-import is enabled.
           </p>
         </div>
       );
@@ -786,22 +785,22 @@ const IBKRInbox = () => {
           // Checkbox column for pending transactions
           ...(selectedStatus === 'pending'
             ? [
-                {
-                  key: 'checkbox',
-                  header: '',
-                  cellClassName: 'checkbox-cell',
-                  render: (_, item) => (
-                    <input
-                      type="checkbox"
-                      checked={selectedTransactions.includes(item.id)}
-                      onChange={() => handleSelectTransaction(item.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ),
-                  sortable: false,
-                  filterable: false,
-                },
-              ]
+              {
+                key: 'checkbox',
+                header: '',
+                cellClassName: 'checkbox-cell',
+                render: (_, item) => (
+                  <input
+                    type="checkbox"
+                    checked={selectedTransactions.includes(item.id)}
+                    onChange={() => handleSelectTransaction(item.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ),
+                sortable: false,
+                filterable: false,
+              },
+            ]
             : []),
           {
             key: 'transaction_date',
@@ -902,6 +901,8 @@ const IBKRInbox = () => {
                   ? `Bulk Allocate ${selectedTransactions.length} Transactions`
                   : 'Allocate Transaction to Portfolios'
           }
+          size="large"
+          closeOnOverlayClick={modalMode === 'view'}
         >
           <div className="allocation-modal">
             {modalMode === 'bulk' ? (
@@ -1056,9 +1057,8 @@ const IBKRInbox = () => {
                       {/* Show allocated amount for individual transactions */}
                       {modalMode !== 'bulk' && selectedTransaction && allocation.percentage > 0 && (
                         <div
-                          className={`allocation-amount-preview ${
-                            allocations.length > 1 ? 'with-remove-button' : ''
-                          }`}
+                          className={`allocation-amount-preview ${allocations.length > 1 ? 'with-remove-button' : ''
+                            }`}
                         >
                           {calculateAllocatedAmount(allocation.percentage) !== null && (
                             <>
