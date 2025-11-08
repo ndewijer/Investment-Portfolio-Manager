@@ -58,7 +58,7 @@ _No active development at this time_
 ### When Time Allows / If Needed
 
 #### UI/UX Improvements (v1.3.3)
-- [ ] **Dividend button visibility**: Only show Add Dividend button on PortfolioDetail when fund/stock has dividends
+- [x] **Dividend button visibility**: Already implemented - button only shows when fund.dividend_type !== 'none'
 - [x] **FundDetail table sorting**: Sort table values by date from newest to oldest
 - [ ] **Mobile chart enhancement**: Revamp graphs to landscape orientation when clicked on mobile
 - [x] **IBKR Setup mobile fix**: Ensure buttons stay inside container div on mobile
