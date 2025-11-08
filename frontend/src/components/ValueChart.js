@@ -12,7 +12,6 @@ import {
 } from 'recharts';
 import './ValueChart.css';
 import { useFormat } from '../context/FormatContext';
-import Modal from './Modal';
 
 const ValueChart = ({
   data,
@@ -1272,17 +1271,21 @@ const ValueChart = ({
         </div>
       </div>
 
-      {/* Full-Screen Modal (Mobile Only) */}
+      {/* True Full-Screen Experience (Mobile Only) */}
       {isMobile && isFullScreen && (
-        <Modal
-          isOpen={isFullScreen}
-          onClose={() => setIsFullScreen(false)}
-          title="Chart View"
-          size="xlarge"
-          className="fullscreen-chart-modal"
-        >
-          <div className="fullscreen-chart-content">{renderChartContent(true)}</div>
-        </Modal>
+        <div className="chart-fullscreen-overlay">
+          {/* Close button overlay */}
+          <button
+            className="chart-fullscreen-close"
+            onClick={() => setIsFullScreen(false)}
+            aria-label="Close fullscreen"
+          >
+            ×
+          </button>
+
+          {/* Fullscreen chart content */}
+          <div className="chart-fullscreen-container">{renderChartContent(true)}</div>
+        </div>
       )}
     </>
   );

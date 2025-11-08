@@ -349,93 +349,124 @@
   font-weight: 600;
 }
 
-/* Fullscreen Modal Styling */
-.fullscreen-chart-modal {
-  z-index: 9999;
-}
-
-.fullscreen-chart-modal .modal-content {
-  max-width: 100vw !important;
-  max-height: 100vh !important;
+/* True Fullscreen Experience */
+.chart-fullscreen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100vw;
   height: 100vh;
-  margin: 0;
-  padding: 16px;
-  border-radius: 0;
-  overflow-y: auto;
-}
-
-.fullscreen-chart-modal .modal-header {
-  padding: 12px 16px;
-  margin-bottom: 12px;
-}
-
-.fullscreen-chart-modal .modal-header h2 {
-  font-size: 18px;
-}
-
-.fullscreen-chart-modal .modal-close {
-  width: 48px;
-  height: 48px;
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-/* Fullscreen chart content wrapper */
-.fullscreen-chart-content {
-  width: 100%;
-  height: calc(100vh - 100px);
-  display: flex;
-  flex-direction: column;
+  background-color: #ffffff;
+  z-index: 10000;
   overflow: hidden;
 }
 
-/* Fullscreen controls - compact layout */
+/* Fullscreen close button - fixed in top-right corner */
+.chart-fullscreen-close {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(33, 150, 243, 0.9);
+  color: white;
+  border: 2px solid white;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.chart-fullscreen-close:hover {
+  background-color: rgba(25, 118, 210, 0.95);
+  transform: scale(1.05);
+}
+
+.chart-fullscreen-close:active {
+  transform: scale(0.95);
+}
+
+/* Fullscreen chart container - fills entire screen */
+.chart-fullscreen-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Fullscreen controls - positioned as overlay at top */
+.chart-fullscreen-container .chart-controls {
+  position: absolute;
+  top: 64px;
+  left: 8px;
+  right: 64px;
+  z-index: 10002;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+}
+
 .fullscreen-controls {
-  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* Horizontal scrollable metric toggles for fullscreen */
 .fullscreen-metric-toggles {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 8px;
+  padding: 2px 0;
   scrollbar-width: thin;
   scrollbar-color: #1976d2 #f0f7ff;
   -webkit-overflow-scrolling: touch;
 }
 
 .fullscreen-metric-toggles::-webkit-scrollbar {
-  height: 6px;
+  height: 4px;
 }
 
 .fullscreen-metric-toggles::-webkit-scrollbar-track {
   background: #f0f7ff;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .fullscreen-metric-toggles::-webkit-scrollbar-thumb {
   background: #1976d2;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .fullscreen-metric-toggles .transaction-button {
   flex-shrink: 0;
-  min-width: 120px;
+  min-width: 100px;
+  min-height: 40px;
   white-space: nowrap;
+  font-size: 13px;
+  padding: 6px 12px;
 }
 
 /* Compact zoom controls in fullscreen */
 .fullscreen-zoom-controls {
+  display: flex;
   justify-content: center;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -443,35 +474,76 @@
 
 .fullscreen-zoom-controls .zoom-button {
   flex-shrink: 0;
-  min-width: 48px;
-  padding: 8px 12px;
-  font-size: 14px;
+  min-width: 44px;
+  min-height: 40px;
+  padding: 6px 10px;
+  font-size: 13px;
 }
 
-/* Fullscreen chart container adjustments */
-.fullscreen-chart-content .chart-container {
-  flex: 1;
-  height: auto;
-  margin-bottom: 0;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
+/* Fullscreen chart container - fills entire viewport */
+.chart-fullscreen-container .chart-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 8px;
+  box-shadow: none;
+  background-color: white;
+  border-radius: 0;
 }
 
-.fullscreen-chart-content .recharts-responsive-container {
-  flex: 1;
+.chart-fullscreen-container .recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
   margin: 0 !important;
 }
 
-/* Hide metric toggles on mobile in normal mode, but show minimal zoom controls */
+/* Hide metric toggles on mobile in normal mode */
 @media (max-width: 768px) {
   .mobile-chart-wrapper .metric-toggles {
     display: none;
   }
 
-  /* In fullscreen modal, show horizontal metric toggles */
-  .fullscreen-chart-modal .metric-toggles {
-    display: flex !important;
+  /* In fullscreen, controls are overlays at top */
+  .chart-fullscreen-container .chart-controls {
+    top: 64px;
+    left: 8px;
+    right: 64px;
+  }
+}
+
+/* Landscape orientation optimizations for fullscreen */
+@media (max-width: 1024px) and (orientation: landscape) {
+  /* Move controls to more compact top position in landscape */
+  .chart-fullscreen-container .chart-controls {
+    top: 8px;
+    left: 64px;
+    right: 64px;
+    padding: 6px;
+  }
+
+  .chart-fullscreen-close {
+    top: 8px;
+    left: 8px;
+    right: auto;
+  }
+
+  .fullscreen-metric-toggles .transaction-button {
+    min-width: 80px;
+    min-height: 36px;
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  .fullscreen-zoom-controls .zoom-button {
+    min-width: 40px;
+    min-height: 36px;
+    padding: 4px 8px;
+    font-size: 12px;
   }
 }
 
@@ -487,19 +559,22 @@
     font-size: 12px;
   }
 
-  .fullscreen-chart-modal .modal-content {
-    padding: 12px;
+  /* Fullscreen controls adjustments for small screens */
+  .chart-fullscreen-container .chart-controls {
+    left: 4px;
+    right: 56px;
+    padding: 6px;
   }
 
   .fullscreen-zoom-controls .zoom-button {
-    min-width: 42px;
-    padding: 6px 10px;
-    font-size: 13px;
+    min-width: 40px;
+    padding: 5px 8px;
+    font-size: 12px;
   }
 
   .fullscreen-metric-toggles .transaction-button {
-    min-width: 100px;
-    font-size: 14px;
-    padding: 8px 12px;
+    min-width: 90px;
+    font-size: 13px;
+    padding: 6px 10px;
   }
 }
