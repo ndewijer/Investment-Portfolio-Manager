@@ -111,14 +111,14 @@ const IBKRInbox = () => {
       return [
         {
           portfolio_id: eligiblePortfolios[0].id,
-          percentage: 100,
+          percentage: '',
         },
       ];
     } else {
       return [
         {
           portfolio_id: '',
-          percentage: 100,
+          percentage: '',
         },
       ];
     }
@@ -216,7 +216,7 @@ const IBKRInbox = () => {
       ...allocations,
       {
         portfolio_id: '',
-        percentage: 0,
+        percentage: '',
       },
     ]);
   };
@@ -282,9 +282,9 @@ const IBKRInbox = () => {
       return;
     }
 
-    // Find portfolios with 0%
+    // Find portfolios with 0% or empty
     const zeroPercentageIndices = allocations
-      .map((alloc, index) => (alloc.percentage === 0 ? index : -1))
+      .map((alloc, index) => (alloc.percentage === 0 || alloc.percentage === '' ? index : -1))
       .filter((index) => index !== -1);
 
     if (zeroPercentageIndices.length === 0) {
@@ -342,13 +342,15 @@ const IBKRInbox = () => {
 
         if (response.data.success) {
           setMessage(
-            `${response.data.processed} transaction(s) processed successfully${response.data.failed > 0 ? `, ${response.data.failed} failed` : ''
+            `${response.data.processed} transaction(s) processed successfully${
+              response.data.failed > 0 ? `, ${response.data.failed} failed` : ''
             }`
           );
           setSelectedTransaction(null);
           setSelectedTransactions([]);
           setAllocations([]);
           setExistingAllocations([]);
+          setModalMode('create');
           fetchTransactions();
           refreshIBKRTransactionCount();
         } else {
@@ -368,6 +370,7 @@ const IBKRInbox = () => {
           setSelectedTransaction(null);
           setAllocations([]);
           setExistingAllocations([]);
+          setModalMode('create');
           fetchTransactions();
           refreshIBKRTransactionCount();
         } else {
@@ -387,6 +390,7 @@ const IBKRInbox = () => {
           setSelectedTransaction(null);
           setAllocations([]);
           setExistingAllocations([]);
+          setModalMode('create');
           fetchTransactions();
           refreshIBKRTransactionCount();
         } else {
@@ -785,22 +789,22 @@ const IBKRInbox = () => {
           // Checkbox column for pending transactions
           ...(selectedStatus === 'pending'
             ? [
-              {
-                key: 'checkbox',
-                header: '',
-                cellClassName: 'checkbox-cell',
-                render: (_, item) => (
-                  <input
-                    type="checkbox"
-                    checked={selectedTransactions.includes(item.id)}
-                    onChange={() => handleSelectTransaction(item.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ),
-                sortable: false,
-                filterable: false,
-              },
-            ]
+                {
+                  key: 'checkbox',
+                  header: '',
+                  cellClassName: 'checkbox-cell',
+                  render: (_, item) => (
+                    <input
+                      type="checkbox"
+                      checked={selectedTransactions.includes(item.id)}
+                      onChange={() => handleSelectTransaction(item.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ),
+                  sortable: false,
+                  filterable: false,
+                },
+              ]
             : []),
           {
             key: 'transaction_date',
@@ -901,8 +905,8 @@ const IBKRInbox = () => {
                   ? `Bulk Allocate ${selectedTransactions.length} Transactions`
                   : 'Allocate Transaction to Portfolios'
           }
-          size="large"
-          closeOnOverlayClick={modalMode === 'view'}
+          size="medium"
+          closeOnOverlayClick={true}
         >
           <div className="allocation-modal">
             {modalMode === 'bulk' ? (
@@ -1057,8 +1061,9 @@ const IBKRInbox = () => {
                       {/* Show allocated amount for individual transactions */}
                       {modalMode !== 'bulk' && selectedTransaction && allocation.percentage > 0 && (
                         <div
-                          className={`allocation-amount-preview ${allocations.length > 1 ? 'with-remove-button' : ''
-                            }`}
+                          className={`allocation-amount-preview ${
+                            allocations.length > 1 ? 'with-remove-button' : ''
+                          }`}
                         >
                           {calculateAllocatedAmount(allocation.percentage) !== null && (
                             <>
