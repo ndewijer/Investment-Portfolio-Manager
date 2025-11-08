@@ -50,6 +50,75 @@ The application implements a centralized CSS architecture focusing on maintainab
    - Consistent spacing
    - Standard control layouts
 
+4. **Modals**
+   - Two reusable modal components: `Modal` (base) and `FormModal` (form-specific)
+   - Click outside to close (configurable)
+   - Escape key to close
+   - Scrollable content for tall modals
+   - Responsive sizing with viewport constraints
+   - Multiple size variants (small, medium, large, xlarge)
+   - Dark mode support
+
+   **Usage Examples:**
+   ```jsx
+   // Basic Modal
+   <Modal
+     isOpen={isOpen}
+     onClose={handleClose}
+     title="Modal Title"
+     size="medium"
+     closeOnOverlayClick={true}
+   >
+     <div>Modal content here</div>
+   </Modal>
+
+   // Form Modal (preferred for forms)
+   <FormModal
+     isOpen={isOpen}
+     onClose={handleClose}
+     title="Add Item"
+     onSubmit={handleSubmit}
+     loading={submitting}
+     submitText="Create"
+     size="medium"
+   >
+     <FormField
+       label="Name"
+       type="text"
+       value={name}
+       onChange={setName}
+       required
+     />
+   </FormModal>
+   ```
+
+   **Modal Features:**
+   - **Base Modal** (`components/Modal.js`):
+     - Basic modal wrapper with overlay
+     - Header with title and close button
+     - Scrollable body
+     - Props: `isOpen`, `onClose`, `title`, `size`, `closeOnOverlayClick`, `className`
+
+   - **Form Modal** (`components/shared/FormModal.js`):
+     - Extends base Modal with form handling
+     - Built-in submit/cancel buttons
+     - Loading states and error display
+     - Form field components included
+     - Props: All Modal props plus `onSubmit`, `submitText`, `cancelText`, `loading`, `error`, `submitDisabled`
+
+   **Size Variants:**
+   - `small`: 400px max-width
+   - `medium`: 600px max-width (default)
+   - `large`: 900px max-width
+   - `xlarge`: 1200px max-width
+
+   **Best Practices:**
+   - Use `FormModal` for all form-based modals (create, edit operations)
+   - Use base `Modal` for view-only or custom content
+   - Set `closeOnOverlayClick={false}` for forms to prevent accidental data loss
+   - Use appropriate size based on content (most forms work with `medium`)
+   - Leverage built-in `FormField` component for consistent form styling
+
 ## File Organization
 
 ```

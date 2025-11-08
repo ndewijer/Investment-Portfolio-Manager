@@ -127,6 +127,7 @@ const FormModal = ({
   size = 'medium',
   className = '',
   showCancel = true,
+  closeOnOverlayClick = true,
   onError,
   ...props
 }) => {
@@ -146,7 +147,15 @@ const FormModal = ({
   const modalClassName = `form-modal form-modal-${size} ${className}`;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} className={modalClassName} {...props}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      className={modalClassName}
+      size={size}
+      closeOnOverlayClick={closeOnOverlayClick}
+      {...props}
+    >
       <form onSubmit={handleSubmit} className="form-modal-form">
         {error && (
           <ErrorMessage error={error} variant="inline" showRetry={false} showDismiss={false} />
