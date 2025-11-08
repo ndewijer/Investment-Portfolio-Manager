@@ -57,6 +57,24 @@ _No active development at this time_
 
 ### When Time Allows / If Needed
 
+#### UI/UX Improvements (v1.3.3)
+- [ ] **Dividend button visibility**: Only show Add Dividend button on PortfolioDetail when fund/stock has dividends
+- [ ] **FundDetail table sorting**: Sort table values by date from newest to oldest
+- [ ] **Mobile chart enhancement**: Revamp graphs to landscape orientation when clicked on mobile
+- [ ] **IBKR Setup mobile fix**: Ensure buttons stay inside container div on mobile
+
+**Trigger**: When time allows for UI polish
+
+#### IBKR Fee Transaction Allocation (v1.3.3 or v1.4.0)
+- [ ] Automatically create fee transactions when allocating IBKR transactions
+- [ ] Extract fees/commission from IBKR transaction
+- [ ] Create separate "fee" type transactions for each portfolio allocation
+- [ ] Allocate fees proportionally based on allocation percentages
+- [ ] Backend: Modify `ibkr_transaction_service.py` allocation logic
+- [ ] Testing: Verify fee allocation calculations and transaction creation
+
+**Trigger**: When needed for accurate cost tracking in portfolios
+
 #### Multi-Currency Support (v1.4.0)
 **Plan**: See [CURRENCY_CONVERSION_PLAN.md](./CURRENCY_CONVERSION_PLAN.md)
 - [ ] Multiple currencies per portfolio
