@@ -33,6 +33,7 @@ const ValueChart = ({
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showMetricControls, setShowMetricControls] = useState(false);
   const [showZoomControls, setShowZoomControls] = useState(false);
+  const [orientationKey, setOrientationKey] = useState(0);
 
   // Zoom state management
   const [zoomState, setZoomState] = useState({
@@ -799,6 +800,27 @@ const ValueChart = ({
     }
   }, [isFullScreen]);
 
+  // Force chart remount on orientation change to fix ResponsiveContainer dimension issues
+  useEffect(() => {
+    if (isFullScreen) {
+      const handleOrientationChange = () => {
+        // Increment key to force chart remount
+        // This fixes ResponsiveContainer not recalculating dimensions properly on real devices
+        setOrientationKey((prev) => prev + 1);
+      };
+
+      // Listen for orientation changes
+      window.addEventListener('orientationchange', handleOrientationChange);
+      // Also listen for resize as a fallback
+      window.addEventListener('resize', handleOrientationChange);
+
+      return () => {
+        window.removeEventListener('orientationchange', handleOrientationChange);
+        window.removeEventListener('resize', handleOrientationChange);
+      };
+    }
+  }, [isFullScreen]);
+
   // Render chart content (reusable for normal and fullscreen modes)
   const renderChartContent = (isFullScreenMode = false) => {
     const chartHeight = isFullScreenMode ? '100%' : height;
@@ -1012,7 +1034,11 @@ const ValueChart = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <ResponsiveContainer width="100%" height={chartHeight}>
+          <ResponsiveContainer
+            width="100%"
+            height={chartHeight}
+            key={isFullScreenMode ? `chart-${orientationKey}` : undefined}
+          >
             <LineChart data={getVisibleData()} onClick={handleChartClick}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
