@@ -6,6 +6,7 @@ This folder contains planning documents and task lists for the Investment Portfo
 
 - **[API_DOCUMENTATION_GENERATION_PLAN.md](./API_DOCUMENTATION_GENERATION_PLAN.md)** - Plan for automated API documentation generation
 - **[CURRENCY_CONVERSION_PLAN.md](./CURRENCY_CONVERSION_PLAN.md)** - Plan for multi-currency support implementation
+- **[PERFORMANCE_OPTIMIZATION_PLAN.md](./PERFORMANCE_OPTIMIZATION_PLAN.md)** - Performance investigation and 3-phase optimization roadmap
 
 ---
 
@@ -64,8 +65,15 @@ _No active development at this time_
 - [x] **IBKR Setup mobile fix**: Ensure buttons stay inside container div on mobile
 - [x] **Importing stock data should stay**: No changes needed - confirmed no active pruning logic exists
 
-#### Speed Improvements (V1.3.2)
-- [ ] **Slow load due to possible large amount of data**: Troubleshoot why certain portfolios take a long time to load. Inefficient SQL? Just to much data and truncate if not required?
+#### Speed Improvements (V1.3.2 or v1.4.0)
+- [ ] **Performance optimization (Phase 1 - CRITICAL)**: Eliminate day-by-day processing - reduce 16,425 queries to ~50 queries (99.7% reduction)
+- [ ] **Performance optimization (Phase 2)**: Add eager loading to eliminate N+1 queries (~280 queries reduced)
+- [ ] **Performance optimization (Phase 3)**: Add response caching for repeated requests
+
+**See**: [PERFORMANCE_OPTIMIZATION_PLAN.md](./PERFORMANCE_OPTIMIZATION_PLAN.md) for detailed investigation and implementation plan
+
+**Current State**: Overview page loads slowly (5-10s, 16,460 queries). Portfolio detail loads slowly (3-5s, 7,900 queries).
+**Target State**: Overview <1s (50-100 queries). Portfolio detail <0.5s (20-30 queries).
 
 **Trigger**: When time allows for UI polish
 
