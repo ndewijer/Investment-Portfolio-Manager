@@ -357,8 +357,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  width: 100vw;
-  height: 100vh;
+  /* Width and height set via inline styles using window.innerWidth/innerHeight */
+  /* This accounts for mobile browser chrome (URL bars, etc.) */
   background-color: #ffffff;
   z-index: 10000;
   overflow: hidden;
