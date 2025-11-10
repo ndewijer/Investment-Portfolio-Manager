@@ -34,6 +34,10 @@ const ValueChart = ({
   const [showMetricControls, setShowMetricControls] = useState(false);
   const [showZoomControls, setShowZoomControls] = useState(false);
   const [orientationKey, setOrientationKey] = useState(0);
+  const [viewportDimensions, setViewportDimensions] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
 
   // Zoom state management
   const [zoomState, setZoomState] = useState({
@@ -800,18 +804,28 @@ const ValueChart = ({
     }
   }, [isFullScreen]);
 
-  // Force chart remount on orientation change to fix ResponsiveContainer dimension issues
+  // Force chart remount on orientation change and update viewport dimensions
   useEffect(() => {
     if (isFullScreen) {
       const handleOrientationChange = () => {
+        // Update viewport dimensions using actual window.innerWidth/innerHeight
+        // This accounts for mobile browser chrome (URL bars, etc.)
+        setViewportDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+
         // Increment key to force chart remount
         // This fixes ResponsiveContainer not recalculating dimensions properly on real devices
         setOrientationKey((prev) => prev + 1);
       };
 
+      // Set initial dimensions when entering fullscreen
+      handleOrientationChange();
+
       // Listen for orientation changes
       window.addEventListener('orientationchange', handleOrientationChange);
-      // Also listen for resize as a fallback
+      // Also listen for resize as a fallback (handles URL bar showing/hiding)
       window.addEventListener('resize', handleOrientationChange);
 
       return () => {
@@ -1370,7 +1384,13 @@ const ValueChart = ({
 
       {/* True Full-Screen Experience (Mobile Only) */}
       {isMobile && isFullScreen && (
-        <div className="chart-fullscreen-overlay">
+        <div
+          className="chart-fullscreen-overlay"
+          style={{
+            width: `${viewportDimensions.width}px`,
+            height: `${viewportDimensions.height}px`,
+          }}
+        >
           {/* Close button overlay */}
           <button
             className="chart-fullscreen-close"
