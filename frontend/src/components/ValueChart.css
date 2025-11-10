@@ -535,6 +535,15 @@
   font-size: 10px !important;
 }
 
+/* Ensure tooltip appears above toggle buttons in fullscreen */
+.chart-fullscreen-container .recharts-tooltip-wrapper {
+  z-index: 10004 !important;
+}
+
+.chart-fullscreen-container .recharts-default-tooltip {
+  z-index: 10004 !important;
+}
+
 /* Mobile minimal fullscreen button - small icon in corner */
 .mobile-minimal-fullscreen-btn {
   position: absolute;
