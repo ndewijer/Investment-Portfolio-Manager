@@ -799,27 +799,6 @@ const ValueChart = ({
     }
   }, [isFullScreen]);
 
-  // Handle orientation changes in fullscreen to fix chart overflow
-  useEffect(() => {
-    if (isFullScreen) {
-      const handleOrientationChange = () => {
-        // Force a small state update to trigger re-render and recalculate chart dimensions
-        // This fixes the chart overflow issue when rotating device
-        setZoomState((prev) => ({ ...prev }));
-      };
-
-      // Listen for orientation changes
-      window.addEventListener('orientationchange', handleOrientationChange);
-      // Also listen for resize as a fallback
-      window.addEventListener('resize', handleOrientationChange);
-
-      return () => {
-        window.removeEventListener('orientationchange', handleOrientationChange);
-        window.removeEventListener('resize', handleOrientationChange);
-      };
-    }
-  }, [isFullScreen]);
-
   // Render chart content (reusable for normal and fullscreen modes)
   const renderChartContent = (isFullScreenMode = false) => {
     const chartHeight = isFullScreenMode ? '100%' : height;

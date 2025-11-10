@@ -513,7 +513,7 @@
   width: 100vw;
   height: 100vh;
   margin: 0;
-  padding: 14px 26px 4px 0px; /* More top (14px), more right (26px), no left */
+  padding: 14px 10px 20px 5px; /* Balanced: 14px top (peak line), 10px right, 20px bottom (legend), 5px left */
   box-shadow: none;
   background-color: white;
   border-radius: 0;
