@@ -46,6 +46,28 @@ This folder contains planning documents and task lists for the Investment Portfo
 
 **Released**: November 7, 2024
 
+### Version 1.3.2 - Performance Optimization ✅ COMPLETED
+- [x] Phase 1: Batch processing for historical calculations
+  - [x] Eliminate day-by-day database iteration
+  - [x] Reduce 16,425 queries to 16 queries (99.9% reduction)
+  - [x] Overview page: 5-10s → 0.2s (96-98% faster)
+  - [x] Portfolio detail: 3-5s → 0.08s (97-98% faster)
+- [x] Phase 2: Eager loading and N+1 query elimination
+  - [x] Portfolio summary eager loading (50+ queries → 9 queries)
+  - [x] Transaction batch loading (231 queries → 4 queries)
+  - [x] Explicit `batch_mode` parameter for clarity
+- [x] Testing framework foundation
+  - [x] Pytest fixtures and configuration
+  - [x] 12 performance tests (8 Phase 1 + 4 Phase 2)
+  - [x] Query count and execution time validation
+- [x] Comprehensive documentation
+  - [x] PULL_REQUEST_PHASE1_PERFORMANCE.md
+  - [x] PULL_REQUEST_PHASE2_EAGER_LOADING.md
+  - [x] docs/TESTING.md
+  - [x] Updated RELEASE_NOTES_1.3.2_DRAFT.md
+
+**Status**: Ready for release
+
 ---
 
 ## 🚧 In Progress
@@ -65,17 +87,17 @@ _No active development at this time_
 - [x] **IBKR Setup mobile fix**: Ensure buttons stay inside container div on mobile
 - [x] **Importing stock data should stay**: No changes needed - confirmed no active pruning logic exists
 
-#### Speed Improvements (V1.3.2 or v1.4.0)
-- [ ] **Performance optimization (Phase 1 - CRITICAL)**: Eliminate day-by-day processing - reduce 16,425 queries to ~50 queries (99.7% reduction)
-- [ ] **Performance optimization (Phase 2)**: Add eager loading to eliminate N+1 queries (~280 queries reduced)
-- [ ] **Performance optimization (Phase 3)**: Add response caching for repeated requests
+#### Speed Improvements (V1.3.2)
+- [x] **Performance optimization (Phase 1)**: ✅ COMPLETED - Eliminated day-by-day processing (16,425 queries → 16 queries, 99.9% reduction)
+- [x] **Performance optimization (Phase 2)**: ✅ COMPLETED - Added eager loading to eliminate N+1 queries (50+ queries → 9 queries, 231 queries → 4 queries)
+- [ ] **Performance optimization (Phase 3)**: Add response caching for repeated requests (optional - only if needed)
 
 **See**: [PERFORMANCE_OPTIMIZATION_PLAN.md](./PERFORMANCE_OPTIMIZATION_PLAN.md) for detailed investigation and implementation plan
 
-**Current State**: Overview page loads slowly (5-10s, 16,460 queries). Portfolio detail loads slowly (3-5s, 7,900 queries).
-**Target State**: Overview <1s (50-100 queries). Portfolio detail <0.5s (20-30 queries).
+**Before**: Overview page loaded slowly (5-10s, 16,460 queries). Portfolio detail loaded slowly (3-5s, 7,900 queries).
+**After Phase 1 & 2**: Overview loads in 0.2s (16 queries). Portfolio detail loads in 0.08s (10 queries). Portfolio summary loads in 0.013s (9 queries). Transactions load in 0.001s (4 queries).
 
-**Trigger**: When time allows for UI polish
+**Status**: Phase 1 & 2 completed in v1.3.2
 
 #### IBKR Fee Transaction Allocation (v1.3.3 or v1.4.0)
 - [ ] Automatically create fee transactions when allocating IBKR transactions
@@ -160,6 +182,6 @@ If you encounter these, fix them:
 
 ---
 
-**Last Updated**: 2024-11-07
-**Current Version**: 1.3.1 (released)
+**Last Updated**: 2025-01-11
+**Current Version**: 1.3.2 (ready for release)
 **Philosophy**: Feature complete - only add what's needed

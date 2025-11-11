@@ -5,7 +5,10 @@ This module provides methods for calculating portfolio values, managing
 portfolio funds, and retrieving portfolio history and summaries.
 """
 
+from collections import defaultdict
 from datetime import datetime, timedelta
+
+from sqlalchemy.orm import selectinload
 
 from ..models import (
     Dividend,
@@ -489,14 +492,134 @@ class PortfolioService:
         """
         Get summary of all non-archived and visible portfolios.
 
+        Uses eager loading and batch queries to eliminate N+1 query patterns.
+
         Returns:
             list: List of portfolio summary dictionaries
         """
-        portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
+        # Eager load portfolios with their funds and fund details
+        portfolios = (
+            Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False)
+            .options(
+                selectinload(Portfolio.funds).joinedload(PortfolioFund.fund),
+            )
+            .all()
+        )
 
+        if not portfolios:
+            return []
+
+        # Get all portfolio and fund IDs for batch loading
+        portfolio_ids = [p.id for p in portfolios]
+        portfolio_fund_ids = []
+        fund_ids = set()
+
+        for portfolio in portfolios:
+            for pf in portfolio.funds:
+                portfolio_fund_ids.append(pf.id)
+                fund_ids.add(pf.fund_id)
+
+        # Batch load all transactions
+        all_transactions = (
+            Transaction.query.filter(Transaction.portfolio_fund_id.in_(portfolio_fund_ids))
+            .order_by(Transaction.date.asc())
+            .all()
+        )
+
+        # Group transactions by portfolio_fund_id
+        transactions_by_pf = defaultdict(list)
+        for t in all_transactions:
+            transactions_by_pf[t.portfolio_fund_id].append(t)
+
+        # Batch load all fund prices (latest for each fund)
+        latest_prices = {}
+        if fund_ids:
+            price_subquery = (
+                FundPrice.query.filter(FundPrice.fund_id.in_(fund_ids))
+                .order_by(FundPrice.fund_id, FundPrice.date.desc())
+                .all()
+            )
+            # Get latest price for each fund
+            for price in price_subquery:
+                if price.fund_id not in latest_prices:
+                    latest_prices[price.fund_id] = price.price
+
+        # Batch load all realized gains
+        all_realized_gains = RealizedGainLoss.query.filter(
+            RealizedGainLoss.portfolio_id.in_(portfolio_ids)
+        ).all()
+
+        # Group realized gains by portfolio_id and fund_id
+        realized_gains_by_portfolio_fund = defaultdict(list)
+        for gain in all_realized_gains:
+            realized_gains_by_portfolio_fund[(gain.portfolio_id, gain.fund_id)].append(gain)
+
+        # Batch load all dividends
+        all_dividends_data = Dividend.query.filter(
+            Dividend.portfolio_fund_id.in_(portfolio_fund_ids)
+        ).all()
+
+        # Group dividends by portfolio_fund_id
+        dividends_by_pf = defaultdict(list)
+        dividend_shares_by_pf = defaultdict(float)
+
+        for dividend in all_dividends_data:
+            dividends_by_pf[dividend.portfolio_fund_id].append(dividend)
+            # Get dividend shares from reinvestment transaction
+            if dividend.reinvestment_transaction_id:
+                for t in transactions_by_pf[dividend.portfolio_fund_id]:
+                    if t.id == dividend.reinvestment_transaction_id:
+                        dividend_shares_by_pf[dividend.portfolio_fund_id] += t.shares or 0
+
+        # Calculate metrics for each portfolio
         summary = []
         for portfolio in portfolios:
-            portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(portfolio.funds)
+            portfolio_funds_data = []
+
+            for pf in portfolio.funds:
+                # Get transactions for this fund
+                transactions = transactions_by_pf.get(pf.id, [])
+
+                # Calculate shares and cost using existing method
+                dividend_shares = dividend_shares_by_pf.get(pf.id, 0)
+                shares, cost = PortfolioService._process_transactions_for_date(
+                    transactions, datetime.now().date(), dividend_shares
+                )
+
+                # Get price
+                price_value = latest_prices.get(pf.fund_id, 0)
+
+                # Calculate current value
+                current_value = shares * price_value
+
+                # Get realized gains for this fund
+                realized_records = realized_gains_by_portfolio_fund.get(
+                    (pf.portfolio_id, pf.fund_id), []
+                )
+                realized_gain_loss = sum(r.realized_gain_loss for r in realized_records)
+
+                # Get total dividends
+                dividends = dividends_by_pf.get(pf.id, [])
+                total_dividends = sum(d.total_amount for d in dividends)
+
+                portfolio_funds_data.append(
+                    {
+                        "id": pf.id,
+                        "fund_id": pf.fund_id,
+                        "fund_name": pf.fund.name,
+                        "total_shares": shares,
+                        "latest_price": price_value,
+                        "average_cost": cost / shares if shares > 0 else 0,
+                        "total_cost": cost,
+                        "current_value": current_value,
+                        "unrealized_gain_loss": current_value - cost,
+                        "realized_gain_loss": realized_gain_loss,
+                        "total_gain_loss": realized_gain_loss + (current_value - cost),
+                        "total_dividends": total_dividends,
+                        "dividend_type": pf.fund.dividend_type.value,
+                        "investment_type": pf.fund.investment_type.value,
+                    }
+                )
 
             if portfolio_funds_data:
                 has_transactions = any(pf["total_shares"] > 0 for pf in portfolio_funds_data)
