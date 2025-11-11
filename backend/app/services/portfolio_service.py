@@ -280,6 +280,198 @@ class PortfolioService:
         return all_dividends
 
     @staticmethod
+    def _load_historical_data_batch(portfolio_ids, start_date, end_date):
+        """
+        Load all historical data needed for calculations in a single batch.
+
+        This method loads all transactions, prices, realized gains, and dividends
+        for the specified portfolios within the date range, avoiding repeated
+        database queries in loops.
+
+        Args:
+            portfolio_ids (list): List of portfolio IDs
+            start_date (date): Start date for data loading
+            end_date (date): End date for data loading
+
+        Returns:
+            dict: Dictionary containing:
+                - transactions: List of all transactions
+                - prices: List of all fund prices
+                - realized_gains: List of all realized gain/loss records
+                - dividends: List of all dividend records
+        """
+        # Load all transactions for these portfolios up to end_date
+        transactions = (
+            Transaction.query.join(PortfolioFund)
+            .filter(
+                PortfolioFund.portfolio_id.in_(portfolio_ids),
+                Transaction.date <= end_date,
+            )
+            .order_by(Transaction.date.asc())
+            .all()
+        )
+
+        # Get unique fund IDs from transactions
+        fund_ids = set()
+        portfolio_fund_ids = set()
+        for t in transactions:
+            fund_ids.add(t.portfolio_fund.fund_id)
+            portfolio_fund_ids.add(t.portfolio_fund_id)
+
+        # Load all fund prices for these funds up to end_date
+        prices = (
+            FundPrice.query.filter(
+                FundPrice.fund_id.in_(fund_ids),
+                FundPrice.date <= end_date,
+            )
+            .order_by(FundPrice.fund_id, FundPrice.date.asc())
+            .all()
+        )
+
+        # Load all realized gains for these portfolios up to end_date
+        realized_gains = (
+            RealizedGainLoss.query.filter(
+                RealizedGainLoss.portfolio_id.in_(portfolio_ids),
+                RealizedGainLoss.transaction_date <= end_date,
+            )
+            .order_by(RealizedGainLoss.transaction_date.asc())
+            .all()
+        )
+
+        # Load all dividends for these portfolio funds
+        dividends = []
+        if portfolio_fund_ids:
+            dividends = (
+                Dividend.query.filter(Dividend.portfolio_fund_id.in_(portfolio_fund_ids))
+                .join(
+                    Transaction,
+                    Dividend.reinvestment_transaction_id == Transaction.id,
+                    isouter=True,
+                )
+                .filter(Dividend.ex_dividend_date <= end_date)
+                .with_entities(
+                    Dividend.portfolio_fund_id,
+                    Dividend.ex_dividend_date,
+                    Transaction.shares,
+                )
+                .all()
+            )
+
+        return {
+            "transactions": transactions,
+            "prices": prices,
+            "realized_gains": realized_gains,
+            "dividends": dividends,
+        }
+
+    @staticmethod
+    def _build_date_lookup_tables(batch_data):
+        """
+        Build efficient lookup tables from batch-loaded data.
+
+        Organizes data into dictionaries and sorted lists for fast in-memory lookups
+        without repeated database queries.
+
+        Args:
+            batch_data (dict): Dictionary from _load_historical_data_batch()
+
+        Returns:
+            dict: Dictionary containing:
+                - prices_by_fund: {fund_id: [(date, price), ...]} sorted by date
+                - transactions_by_portfolio_fund: {portfolio_fund_id: [Transaction, ...]}
+                - realized_gains_by_portfolio: {portfolio_id: {fund_id: [RealizedGainLoss, ...]}}
+                - dividends_by_portfolio_fund: {portfolio_fund_id: [(ex_date, shares), ...]}
+        """
+        from collections import defaultdict
+
+        # Build price lookup: fund_id -> sorted list of (date, price)
+        prices_by_fund = defaultdict(list)
+        for price in batch_data["prices"]:
+            prices_by_fund[price.fund_id].append((price.date, price.price))
+
+        # Sort prices by date for each fund
+        for fund_id in prices_by_fund:
+            prices_by_fund[fund_id].sort(key=lambda x: x[0])
+
+        # Build transaction lookup: portfolio_fund_id -> list of transactions
+        transactions_by_portfolio_fund = defaultdict(list)
+        for transaction in batch_data["transactions"]:
+            transactions_by_portfolio_fund[transaction.portfolio_fund_id].append(transaction)
+
+        # Build realized gains lookup: portfolio_id -> fund_id -> list of gains
+        realized_gains_by_portfolio = defaultdict(lambda: defaultdict(list))
+        for gain in batch_data["realized_gains"]:
+            realized_gains_by_portfolio[gain.portfolio_id][gain.fund_id].append(gain)
+
+        # Build dividend lookup: portfolio_fund_id -> list of (ex_date, shares)
+        dividends_by_portfolio_fund = defaultdict(list)
+        for dividend in batch_data["dividends"]:
+            dividends_by_portfolio_fund[dividend.portfolio_fund_id].append(
+                (dividend.ex_dividend_date, dividend.shares or 0)
+            )
+
+        # Sort dividends by date for each portfolio fund
+        for pf_id in dividends_by_portfolio_fund:
+            dividends_by_portfolio_fund[pf_id].sort(key=lambda x: x[0])
+
+        return {
+            "prices_by_fund": dict(prices_by_fund),
+            "transactions_by_portfolio_fund": dict(transactions_by_portfolio_fund),
+            "realized_gains_by_portfolio": dict(realized_gains_by_portfolio),
+            "dividends_by_portfolio_fund": dict(dividends_by_portfolio_fund),
+        }
+
+    @staticmethod
+    def _get_price_for_date_from_lookup(fund_id, target_date, prices_by_fund):
+        """
+        Get the latest price on or before a target date from lookup tables.
+
+        Args:
+            fund_id: Fund identifier
+            target_date (date): Target date
+            prices_by_fund (dict): Price lookup table from _build_date_lookup_tables
+
+        Returns:
+            float: Price value, or 0 if no price found
+        """
+        if fund_id not in prices_by_fund:
+            return 0
+
+        prices = prices_by_fund[fund_id]
+        # Binary search for the latest price on or before target_date
+        # Prices are sorted by date in ascending order
+        result_price = 0
+        for price_date, price_value in prices:
+            if price_date <= target_date:
+                result_price = price_value
+            else:
+                break
+
+        return result_price
+
+    @staticmethod
+    def _get_dividend_shares_from_lookup(
+        portfolio_fund_id, target_date, dividends_by_portfolio_fund
+    ):
+        """
+        Get total dividend shares up to a target date from lookup tables.
+
+        Args:
+            portfolio_fund_id: Portfolio fund identifier
+            target_date (date): Target date
+            dividends_by_portfolio_fund (dict): Dividend lookup table
+
+        Returns:
+            float: Total dividend shares
+        """
+        if portfolio_fund_id not in dividends_by_portfolio_fund:
+            return 0
+
+        dividends = dividends_by_portfolio_fund[portfolio_fund_id]
+        total_shares = sum(shares for ex_date, shares in dividends if ex_date <= target_date)
+        return total_shares
+
+    @staticmethod
     def calculate_portfolio_fund_values(portfolio_funds):
         """
         Calculate current values and metrics for a list of portfolio funds.
@@ -355,6 +547,9 @@ class PortfolioService:
         """
         Get historical value data for all non-archived and visible portfolios.
 
+        Uses batch processing to load all data once and calculate values in memory,
+        avoiding repeated database queries.
+
         Args:
             start_date (str, optional): Start date in YYYY-MM-DD format
             end_date (str, optional): End date in YYYY-MM-DD format
@@ -362,37 +557,28 @@ class PortfolioService:
         Returns:
             list: List of daily values containing portfolio history
         """
+        from collections import defaultdict
+
         portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
 
         if not portfolios:
             return []
 
-        # Get portfolio date ranges
-        portfolio_date_ranges = {}
-        for portfolio in portfolios:
-            portfolio_transactions = (
-                Transaction.query.join(PortfolioFund)
-                .filter(PortfolioFund.portfolio_id == portfolio.id)
-                .order_by(Transaction.date)
-                .all()
-            )
+        portfolio_ids = [p.id for p in portfolios]
 
-            if portfolio_transactions:
-                portfolio_date_ranges[portfolio.id] = {
-                    "start_date": portfolio_transactions[0].date,
-                    "end_date": datetime.now().date(),
-                }
+        # Determine date range
+        # Get the earliest transaction for any portfolio
+        earliest_transaction = (
+            Transaction.query.join(PortfolioFund)
+            .filter(PortfolioFund.portfolio_id.in_(portfolio_ids))
+            .order_by(Transaction.date.asc())
+            .first()
+        )
 
-        if not portfolio_date_ranges:
+        if not earliest_transaction:
             return []
 
-        # Preload dividend data
-        all_dividends = PortfolioService._preload_dividend_data(portfolios)
-
-        # Calculate date range - start from the earliest transaction date or provided start_date
-        earliest_transaction_date = min(
-            range["start_date"] for range in portfolio_date_ranges.values()
-        )
+        earliest_transaction_date = earliest_transaction.date
 
         # Parse provided dates
         if start_date:
@@ -413,72 +599,118 @@ class PortfolioService:
         else:
             end_date_to_use = datetime.now().date()
 
-        # Generate history
+        # Load all data in batch
+        batch_data = PortfolioService._load_historical_data_batch(
+            portfolio_ids, start_date_to_use, end_date_to_use
+        )
+
+        # Build lookup tables
+        lookups = PortfolioService._build_date_lookup_tables(batch_data)
+
+        # Build portfolio_fund mapping for quick access
+        portfolio_fund_map = defaultdict(list)
+        for portfolio in portfolios:
+            for pf in portfolio.funds:
+                portfolio_fund_map[portfolio.id].append(pf)
+
+        # Determine each portfolio's start date
+        portfolio_start_dates = {}
+        for portfolio_id, portfolio_funds in portfolio_fund_map.items():
+            min_date = None
+            for pf in portfolio_funds:
+                if pf.id in lookups["transactions_by_portfolio_fund"]:
+                    transactions = lookups["transactions_by_portfolio_fund"][pf.id]
+                    if transactions:
+                        pf_min_date = min(t.date for t in transactions)
+                        if min_date is None or pf_min_date < min_date:
+                            min_date = pf_min_date
+            if min_date:
+                portfolio_start_dates[portfolio_id] = min_date
+
+        # Generate history by iterating through dates
         history = []
         current_date = start_date_to_use
 
         while current_date <= end_date_to_use:
-            daily_values = PortfolioService._calculate_daily_values(
-                current_date, portfolios, portfolio_date_ranges, all_dividends
-            )
+            daily_values = {"date": current_date.isoformat(), "portfolios": []}
+
+            for portfolio in portfolios:
+                # Skip if portfolio hasn't started yet
+                if portfolio.id not in portfolio_start_dates:
+                    continue
+                if current_date < portfolio_start_dates[portfolio.id]:
+                    continue
+
+                total_value = 0
+                total_cost = 0
+                total_realized_gain = 0
+
+                # Calculate realized gains up to this date
+                if portfolio.id in lookups["realized_gains_by_portfolio"]:
+                    portfolio_gains = lookups["realized_gains_by_portfolio"][portfolio.id]
+                    for _fund_id, gains in portfolio_gains.items():
+                        for gain in gains:
+                            if gain.transaction_date <= current_date:
+                                total_realized_gain += gain.realized_gain_loss
+
+                # Calculate values for each fund
+                for pf in portfolio_fund_map[portfolio.id]:
+                    # Get dividend shares up to this date
+                    dividend_shares = PortfolioService._get_dividend_shares_from_lookup(
+                        pf.id, current_date, lookups["dividends_by_portfolio_fund"]
+                    )
+
+                    # Get transactions up to this date
+                    transactions = []
+                    if pf.id in lookups["transactions_by_portfolio_fund"]:
+                        transactions = [
+                            t
+                            for t in lookups["transactions_by_portfolio_fund"][pf.id]
+                            if t.date <= current_date
+                        ]
+
+                    # Calculate shares and cost
+                    shares, cost = PortfolioService._process_transactions_for_date(
+                        transactions, current_date, dividend_shares
+                    )
+
+                    # Get price for this date
+                    price = PortfolioService._get_price_for_date_from_lookup(
+                        pf.fund_id, current_date, lookups["prices_by_fund"]
+                    )
+
+                    # Calculate value
+                    value = shares * price
+                    total_value += value
+                    total_cost += cost
+
+                # Calculate unrealized gains
+                total_unrealized_gain = total_value - total_cost
+
+                if total_value > 0 or total_cost > 0 or total_realized_gain != 0:
+                    daily_values["portfolios"].append(
+                        {
+                            "id": portfolio.id,
+                            "name": portfolio.name,
+                            "value": total_value,
+                            "cost": total_cost,
+                            "realized_gain": total_realized_gain,
+                            "unrealized_gain": total_unrealized_gain,
+                        }
+                    )
+
             history.append(daily_values)
             current_date += timedelta(days=1)
 
         return history
 
     @staticmethod
-    def _calculate_daily_values(current_date, portfolios, portfolio_date_ranges, all_dividends):
-        """Calculate portfolio values for a specific date."""
-        daily_values = {"date": current_date.isoformat(), "portfolios": []}
-
-        for portfolio in portfolios:
-            if (
-                portfolio.id not in portfolio_date_ranges
-                or current_date < portfolio_date_ranges[portfolio.id]["start_date"]
-            ):
-                continue
-
-            total_value = 0
-            total_cost = 0
-            total_realized_gain = 0
-
-            realized_gains = RealizedGainLoss.query.filter(
-                RealizedGainLoss.portfolio_id == portfolio.id,
-                RealizedGainLoss.transaction_date <= current_date,
-            ).all()
-            total_realized_gain = sum(rg.realized_gain_loss for rg in realized_gains)
-
-            for pf in portfolio.funds:
-                fund_metrics = PortfolioService._calculate_fund_metrics(
-                    pf, current_date, all_dividends, force_historical_format=True
-                )
-                try:
-                    total_value += fund_metrics["value"]
-                    total_cost += fund_metrics["cost"]
-                except Exception as e:
-                    print(f"Error processing fund metrics: {e}")
-
-            # Calculate unrealized gains for this date
-            total_unrealized_gain = total_value - total_cost
-
-            if total_value > 0 or total_cost > 0 or total_realized_gain != 0:
-                daily_values["portfolios"].append(
-                    {
-                        "id": portfolio.id,
-                        "name": portfolio.name,
-                        "value": total_value,
-                        "cost": total_cost,
-                        "realized_gain": total_realized_gain,
-                        "unrealized_gain": total_unrealized_gain,
-                    }
-                )
-
-        return daily_values
-
-    @staticmethod
     def get_portfolio_fund_history(portfolio_id, start_date=None, end_date=None):
         """
         Get historical value data for funds in a portfolio.
+
+        Uses batch processing to load all data once and calculate values in memory,
+        avoiding repeated database queries.
 
         Args:
             portfolio_id (str): Portfolio identifier
@@ -494,16 +726,16 @@ class PortfolioService:
         earliest_transaction = (
             Transaction.query.join(PortfolioFund)
             .filter(PortfolioFund.portfolio_id == portfolio_id)
-            .order_by(Transaction.date)
+            .order_by(Transaction.date.asc())
             .first()
         )
 
         if not earliest_transaction:
             return []
 
-        # Parse provided dates
         earliest_date = earliest_transaction.date
 
+        # Parse provided dates
         if start_date:
             try:
                 start_date_parsed = datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -522,6 +754,15 @@ class PortfolioService:
         else:
             end_date_to_use = datetime.now().date()
 
+        # Load all data in batch for this portfolio
+        batch_data = PortfolioService._load_historical_data_batch(
+            [portfolio_id], start_date_to_use, end_date_to_use
+        )
+
+        # Build lookup tables
+        lookups = PortfolioService._build_date_lookup_tables(batch_data)
+
+        # Generate history by iterating through dates
         history = []
         current_date = start_date_to_use
 
@@ -529,33 +770,56 @@ class PortfolioService:
             daily_values = {"date": current_date.isoformat(), "funds": []}
 
             for pf in portfolio.funds:
-                fund_metrics = PortfolioService._calculate_fund_metrics(
-                    pf, current_date, force_historical_format=True
+                # Get dividend shares up to this date
+                dividend_shares = PortfolioService._get_dividend_shares_from_lookup(
+                    pf.id, current_date, lookups["dividends_by_portfolio_fund"]
                 )
 
-                if fund_metrics["shares"] > 0:
-                    # Calculate realized gains for this fund up to this date
-                    from ..models import RealizedGainLoss
+                # Get transactions up to this date
+                transactions = []
+                if pf.id in lookups["transactions_by_portfolio_fund"]:
+                    transactions = [
+                        t
+                        for t in lookups["transactions_by_portfolio_fund"][pf.id]
+                        if t.date <= current_date
+                    ]
 
-                    realized_gains = RealizedGainLoss.query.filter(
-                        RealizedGainLoss.portfolio_id == portfolio_id,
-                        RealizedGainLoss.fund_id == pf.fund_id,
-                        RealizedGainLoss.transaction_date <= current_date,
-                    ).all()
-                    fund_realized_gain = sum(rg.realized_gain_loss for rg in realized_gains)
+                # Calculate shares and cost
+                shares, cost = PortfolioService._process_transactions_for_date(
+                    transactions, current_date, dividend_shares
+                )
+
+                if shares > 0:
+                    # Get price for this date
+                    price = PortfolioService._get_price_for_date_from_lookup(
+                        pf.fund_id, current_date, lookups["prices_by_fund"]
+                    )
+
+                    # Calculate value
+                    value = shares * price
+
+                    # Calculate realized gains for this fund up to this date
+                    fund_realized_gain = 0
+                    if (
+                        portfolio_id in lookups["realized_gains_by_portfolio"]
+                        and pf.fund_id in lookups["realized_gains_by_portfolio"][portfolio_id]
+                    ):
+                        gains = lookups["realized_gains_by_portfolio"][portfolio_id][pf.fund_id]
+                        for gain in gains:
+                            if gain.transaction_date <= current_date:
+                                fund_realized_gain += gain.realized_gain_loss
 
                     daily_values["funds"].append(
                         {
-                            # Add portfolio_fund_id for unique identification
                             "portfolio_fund_id": pf.id,
-                            "fund_id": fund_metrics["fund_id"],
-                            "fund_name": fund_metrics["fund_name"],
-                            "value": fund_metrics["value"],
-                            "cost": fund_metrics["cost"],
-                            "shares": fund_metrics["shares"],
-                            "price": fund_metrics["price"],
+                            "fund_id": pf.fund_id,
+                            "fund_name": pf.fund.name,
+                            "value": value,
+                            "cost": cost,
+                            "shares": shares,
+                            "price": price,
                             "realized_gain": fund_realized_gain,
-                            "unrealized_gain": fund_metrics["value"] - fund_metrics["cost"],
+                            "unrealized_gain": value - cost,
                         }
                     )
 
