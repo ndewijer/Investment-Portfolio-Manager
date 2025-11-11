@@ -247,6 +247,99 @@ class TestPortfolioHistoryCorrectness:
         assert 29 <= len(result) <= 32  # Allow some flexibility for weekends, etc.
 
 
+class TestPhase2EagerLoadingPerformance:
+    """
+    Performance tests for Phase 2 eager loading optimizations.
+
+    Tests N+1 query elimination in portfolio summary and transaction loading.
+    """
+
+    def test_portfolio_summary_query_count(self, app_context, query_counter):
+        """
+        Test that portfolio summary uses eager loading with minimal queries.
+
+        Target: < 10 queries (was ~50+ with N+1 pattern)
+        """
+        query_counter.reset()
+
+        # Get portfolio summary
+        result = PortfolioService.get_portfolio_summary()
+
+        # Verify we got results
+        assert isinstance(result, list)
+
+        # Check query count
+        print(f"\n✓ Portfolio summary query count: {query_counter.count}")
+        assert query_counter.count < 10, f"Too many queries: {query_counter.count} (target: < 10)"
+
+    def test_portfolio_summary_execution_time(self, app_context, timer):
+        """
+        Test that portfolio summary completes quickly.
+
+        Target: < 0.2 seconds
+        """
+        timer.start()
+        result = PortfolioService.get_portfolio_summary()
+        elapsed = timer.stop()
+
+        # Verify we got results
+        assert isinstance(result, list)
+
+        # Check execution time
+        print(f"\n✓ Portfolio summary time: {elapsed:.3f}s")
+        assert elapsed < 0.2, f"Too slow: {elapsed:.3f}s (target: < 0.2s)"
+
+    def test_portfolio_transactions_query_count(self, app_context, query_counter):
+        """
+        Test that portfolio transactions use batch loading for IBKR allocations.
+
+        Target: < 5 queries (was 231+ with N+1 pattern for 230 transactions)
+        """
+        from app.models import Portfolio
+        from app.services.transaction_service import TransactionService
+
+        portfolio = Portfolio.query.filter_by(is_archived=False).first()
+        if not portfolio:
+            pytest.skip("No portfolio found")
+
+        query_counter.reset()
+
+        # Get portfolio transactions
+        result = TransactionService.get_portfolio_transactions(portfolio.id)
+
+        # Verify we got results
+        assert isinstance(result, list)
+
+        # Check query count
+        print(f"\n✓ Portfolio transactions query count: {query_counter.count}")
+        print(f"✓ Transaction count: {len(result)}")
+        assert query_counter.count < 5, f"Too many queries: {query_counter.count} (target: < 5)"
+
+    def test_portfolio_transactions_execution_time(self, app_context, timer):
+        """
+        Test that portfolio transactions load quickly.
+
+        Target: < 0.1 seconds
+        """
+        from app.models import Portfolio
+        from app.services.transaction_service import TransactionService
+
+        portfolio = Portfolio.query.filter_by(is_archived=False).first()
+        if not portfolio:
+            pytest.skip("No portfolio found")
+
+        timer.start()
+        result = TransactionService.get_portfolio_transactions(portfolio.id)
+        elapsed = timer.stop()
+
+        # Verify we got results
+        assert isinstance(result, list)
+
+        # Check execution time
+        print(f"\n✓ Portfolio transactions time: {elapsed:.3f}s")
+        assert elapsed < 0.1, f"Too slow: {elapsed:.3f}s (target: < 0.1s)"
+
+
 # Pytest markers for categorizing tests
 pytestmark = [
     pytest.mark.performance,  # Mark all tests in this module as performance tests

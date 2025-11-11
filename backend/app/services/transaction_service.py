@@ -38,26 +38,76 @@ class TransactionService:
         """
         Retrieve all transactions for a specific portfolio.
 
+        Uses batch loading for IBKR allocations to eliminate N+1 queries.
+
         Args:
             portfolio_id (str): Portfolio identifier
 
         Returns:
             list: List of formatted transaction dictionaries
         """
-        transactions = (
-            Transaction.query.join(PortfolioFund)
-            .filter(PortfolioFund.portfolio_id == portfolio_id)
-            .all()
-        )
-        return [TransactionService.format_transaction(t) for t in transactions]
+        from ..models import Fund, IBKRTransactionAllocation
+
+        # Get all portfolio_funds for this portfolio
+        portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
+        portfolio_fund_ids = [pf.id for pf in portfolio_funds]
+
+        # Build portfolio_fund lookup with fund names
+        portfolio_fund_lookup = {}
+        fund_ids = [pf.fund_id for pf in portfolio_funds]
+
+        # Batch load all funds
+        funds = Fund.query.filter(Fund.id.in_(fund_ids)).all()
+        fund_lookup = {f.id: f.name for f in funds}
+
+        # Build portfolio_fund lookup
+        for pf in portfolio_funds:
+            portfolio_fund_lookup[pf.id] = fund_lookup.get(pf.fund_id, "Unknown")
+
+        # Load transactions without eager loading
+        transactions = Transaction.query.filter(
+            Transaction.portfolio_fund_id.in_(portfolio_fund_ids)
+        ).all()
+
+        # Batch load IBKR allocations for all transactions
+        transaction_ids = [t.id for t in transactions]
+        ibkr_allocations = {}
+
+        if transaction_ids:
+            allocations = IBKRTransactionAllocation.query.filter(
+                IBKRTransactionAllocation.transaction_id.in_(transaction_ids)
+            ).all()
+
+            # Create lookup dictionary
+            for allocation in allocations:
+                ibkr_allocations[allocation.transaction_id] = allocation
+
+        # Format transactions with pre-loaded data
+        return [
+            TransactionService.format_transaction(
+                t, ibkr_allocations.get(t.id), portfolio_fund_lookup, batch_mode=True
+            )
+            for t in transactions
+        ]
 
     @staticmethod
-    def format_transaction(transaction):
+    def format_transaction(
+        transaction, ibkr_allocation=None, portfolio_fund_lookup=None, batch_mode=False
+    ):
         """
         Format a transaction object into a dictionary.
 
         Args:
             transaction (Transaction): Transaction object
+            ibkr_allocation (IBKRTransactionAllocation, optional): Pre-loaded IBKR
+                allocation to avoid N+1 queries. If None and batch_mode is False,
+                will query database (for backwards compatibility).
+            portfolio_fund_lookup (dict, optional): Pre-loaded portfolio_fund_id to
+                fund_name mapping to avoid N+1 queries. If None and batch_mode is
+                False, will access relationships (for backwards compatibility).
+            batch_mode (bool, optional): If True, skip database queries for missing
+                data. Use when calling with pre-loaded data to avoid N+1 queries.
+                Default: False.
 
         Returns:
             dict: Formatted transaction containing:
@@ -71,17 +121,26 @@ class TransactionService:
                 - ibkr_linked: Boolean indicating if transaction came from IBKR
                 - ibkr_transaction_id: ID of parent IBKR transaction (if applicable)
         """
-        from ..models import IBKRTransactionAllocation
+        # If IBKR allocation not provided, query it (backwards compatibility)
+        # Skip querying if in batch mode to avoid N+1 queries
+        if ibkr_allocation is None and not batch_mode:
+            from ..models import IBKRTransactionAllocation
 
-        # Check if transaction is linked to IBKR
-        ibkr_allocation = IBKRTransactionAllocation.query.filter_by(
-            transaction_id=transaction.id
-        ).first()
+            ibkr_allocation = IBKRTransactionAllocation.query.filter_by(
+                transaction_id=transaction.id
+            ).first()
+
+        # Get fund name from lookup or relationship (backwards compatibility)
+        if portfolio_fund_lookup is not None:
+            fund_name = portfolio_fund_lookup.get(transaction.portfolio_fund_id, "Unknown")
+        else:
+            # Only access relationship if not in batch mode
+            fund_name = transaction.portfolio_fund.fund.name if not batch_mode else "Unknown"
 
         return {
             "id": transaction.id,
             "portfolio_fund_id": transaction.portfolio_fund_id,
-            "fund_name": transaction.portfolio_fund.fund.name,
+            "fund_name": fund_name,
             "date": transaction.date.isoformat(),
             "type": transaction.type,
             "shares": transaction.shares,

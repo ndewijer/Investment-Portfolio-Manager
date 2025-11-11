@@ -34,13 +34,15 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 
 As of version 1.3.2:
 
-- **Performance Tests**: `test_portfolio_performance.py` (8 tests)
+- **Performance Tests**: `test_portfolio_performance.py` (12 tests)
+  - Phase 1: Batch processing tests (8 tests)
+  - Phase 2: Eager loading tests (4 tests)
   - Query count validation
   - Execution time benchmarks
   - Data structure correctness
   - Edge case handling
 
-**Test Coverage**: 75% for `portfolio_service.py`, 31% overall
+**Test Coverage**: 75% for `portfolio_service.py`, 34% for `transaction_service.py`, 28% overall
 
 ### Goals
 
