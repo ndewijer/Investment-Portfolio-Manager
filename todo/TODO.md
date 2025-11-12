@@ -7,6 +7,7 @@ This folder contains planning documents and task lists for the Investment Portfo
 - **[API_DOCUMENTATION_GENERATION_PLAN.md](./API_DOCUMENTATION_GENERATION_PLAN.md)** - Plan for automated API documentation generation
 - **[CURRENCY_CONVERSION_PLAN.md](./CURRENCY_CONVERSION_PLAN.md)** - Plan for multi-currency support implementation
 - **[PERFORMANCE_OPTIMIZATION_PLAN.md](./PERFORMANCE_OPTIMIZATION_PLAN.md)** - Performance investigation and 3-phase optimization roadmap
+- **[TESTING_PLAN_1.3.3.md](./TESTING_PLAN_1.3.3.md)** - Comprehensive testing strategy for v1.3.3 (80%+ coverage goal)
 
 ---
 
@@ -79,7 +80,57 @@ This folder contains planning documents and task lists for the Investment Portfo
 
 ## 🚧 In Progress
 
-_No active development at this time_
+### Version 1.3.3 - Comprehensive Backend Testing 🚧 IN PROGRESS
+**Plan**: See [TESTING_PLAN_1.3.3.md](./TESTING_PLAN_1.3.3.md)
+**Goal**: Achieve 80%+ backend test coverage with CI/CD integration
+**Timeline**: 3-4 weeks (30 days)
+**Started**: 2025-11-12
+
+#### Phase 1: Infrastructure & Test Database Setup (Days 1-3)
+- [ ] Create isolated test database configuration
+- [ ] Add testing dependencies (pytest-mock, responses, freezegun, factory-boy, faker, pytest-timeout)
+- [ ] Create test data factories
+- [ ] Enhance test fixtures
+
+#### Phase 2: Refactoring - Move Business Logic to Services (Days 4-10)
+- [ ] DividendService refactoring (dividend update logic)
+- [ ] IBKRTransactionService refactoring (allocation modification logic)
+- [ ] TransactionService refactoring (delete with cleanup)
+- [ ] PortfolioService refactoring (multiple methods)
+- [ ] FundService refactoring (create, usage, delete)
+- [ ] IBKRConfigService creation (config save logic)
+
+#### Phase 3: Service Layer Unit Tests (Days 11-20)
+- [ ] DividendService tests (90%+ coverage target)
+- [ ] TransactionService tests (85%+ coverage target)
+- [ ] IBKRFlexService tests (80%+ coverage target)
+- [ ] IBKRTransactionService tests (85%+ coverage target)
+- [ ] PortfolioService tests (expand to 90%+ coverage)
+- [ ] PriceUpdateService tests (80%+ coverage target)
+- [ ] Remaining services tests (70%+ coverage target)
+
+#### Phase 4: Route Integration Tests (Days 21-24)
+- [ ] Portfolio routes integration tests (8 endpoints)
+- [ ] Transaction routes integration tests (5 endpoints)
+- [ ] Dividend routes integration tests (5 endpoints)
+- [ ] Fund routes integration tests (10 endpoints)
+- [ ] IBKR routes integration tests (16 endpoints)
+- [ ] System & Developer routes tests (14 endpoints)
+
+#### Phase 5: Coverage Analysis & Edge Cases (Days 25-27)
+- [ ] Run coverage analysis and identify gaps
+- [ ] Fill coverage gaps to reach 80%+
+- [ ] Test critical edge cases (dividends, transactions, IBKR, dates)
+- [ ] Update docs/TESTING.md with patterns and statistics
+
+#### Phase 6: CI/CD Integration (Days 28-30)
+- [ ] Integrate tests into pre-commit hooks
+- [ ] Create GitHub Actions workflow for backend tests
+- [ ] Configure branch protection rules (require tests pass, 80%+ coverage)
+- [ ] Update documentation (TESTING.md, CONTRIBUTING.md, README.md)
+- [ ] Add coverage and CI badges to README.md
+
+**Status**: Planning complete, ready to begin Phase 1
 
 ---
 
@@ -142,16 +193,6 @@ _No active development at this time_
 
 **Trigger**: When wanted for personal use
 
-#### Testing & Quality
-- [ ] Add comprehensive test coverage
-  - [ ] Unit tests for services
-  - [ ] Integration tests for API endpoints
-  - [ ] Frontend component tests
-- [ ] Add tests to GitHub Actions PR workflow
-- [ ] Set up test coverage reporting
-
-**Trigger**: Before adding more complex features or accepting external contributions
-
 #### Documentation Maintenance
 - [ ] Keep all docs up to date with code changes
 - [ ] Ensure LLMs have accurate context (README, ARCHITECTURE, etc.)
@@ -190,5 +231,5 @@ If you encounter these, fix them:
 ---
 
 **Last Updated**: 2025-11-12
-**Current Version**: 1.3.2 (released)
+**Current Version**: 1.3.2 (released), 1.3.3 (in progress - testing)
 **Philosophy**: Feature complete - only add what's needed
