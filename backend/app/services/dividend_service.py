@@ -162,6 +162,106 @@ class DividendService:
             raise ValueError(f"Error saving dividend: {e!s}") from e
 
     @staticmethod
+    def update_dividend(dividend_id, data):
+        """
+        Update an existing dividend record.
+
+        Args:
+            dividend_id (str): Dividend identifier
+            data (dict): Updated dividend data containing:
+                - record_date (str): Record date in YYYY-MM-DD format
+                - ex_dividend_date (str): Ex-dividend date in YYYY-MM-DD format
+                - dividend_per_share (float): Dividend amount per share
+                - buy_order_date (str, optional): Buy order date for reinvestment
+                - reinvestment_shares (float, optional): Number of shares for reinvestment
+                - reinvestment_price (float, optional): Price per share for reinvestment
+
+        Returns:
+            tuple: (updated_dividend, original_values) for logging purposes
+
+        Raises:
+            ValueError: If dividend not found or invalid data provided
+        """
+        dividend = Dividend.query.get(dividend_id)
+        if not dividend:
+            raise ValueError(f"Dividend {dividend_id} not found")
+
+        # Store original values for logging
+        original_values = {
+            "record_date": dividend.record_date,
+            "ex_dividend_date": dividend.ex_dividend_date,
+            "dividend_per_share": dividend.dividend_per_share,
+            "reinvestment_status": dividend.reinvestment_status.value,
+        }
+
+        try:
+            # Update basic dividend information
+            dividend.record_date = datetime.strptime(data["record_date"], "%Y-%m-%d").date()
+            dividend.ex_dividend_date = datetime.strptime(
+                data["ex_dividend_date"], "%Y-%m-%d"
+            ).date()
+            dividend.dividend_per_share = float(data["dividend_per_share"])
+
+            # Update buy_order_date if provided
+            if data.get("buy_order_date"):
+                dividend.buy_order_date = datetime.strptime(
+                    data["buy_order_date"], "%Y-%m-%d"
+                ).date()
+
+            # Recalculate total amount
+            dividend.total_amount = dividend.shares_owned * dividend.dividend_per_share
+
+            # Handle stock dividend updates
+            if dividend.fund.dividend_type == DividendType.STOCK:
+                if data.get("reinvestment_shares") and data.get("reinvestment_price"):
+                    reinvestment_shares = float(data["reinvestment_shares"])
+                    reinvestment_price = float(data["reinvestment_price"])
+
+                    if reinvestment_shares <= 0 or reinvestment_price <= 0:
+                        raise ValueError("Reinvestment shares and price must be positive numbers")
+
+                    if dividend.reinvestment_transaction_id:
+                        # Update existing reinvestment transaction
+                        transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
+                        if transaction:
+                            transaction.date = dividend.buy_order_date or dividend.ex_dividend_date
+                            transaction.shares = reinvestment_shares
+                            transaction.cost_per_share = reinvestment_price
+                            db.session.add(transaction)
+                            dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
+                    else:
+                        # Create new reinvestment transaction
+                        transaction = Transaction(
+                            id=str(uuid.uuid4()),
+                            portfolio_fund_id=dividend.portfolio_fund_id,
+                            date=dividend.buy_order_date or dividend.ex_dividend_date,
+                            type="dividend",
+                            shares=reinvestment_shares,
+                            cost_per_share=reinvestment_price,
+                        )
+                        db.session.add(transaction)
+                        db.session.flush()
+                        dividend.reinvestment_transaction_id = transaction.id
+                        dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
+                elif dividend.reinvestment_transaction_id:
+                    # If reinvestment data is removed, delete the transaction
+                    transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
+                    if transaction:
+                        db.session.delete(transaction)
+                    dividend.reinvestment_transaction_id = None
+                    dividend.reinvestment_status = ReinvestmentStatus.PENDING
+            else:
+                # For cash dividends, always set status to COMPLETED
+                dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
+
+            db.session.commit()
+            return dividend, original_values
+
+        except Exception as e:
+            db.session.rollback()
+            raise ValueError(f"Error updating dividend: {e!s}") from e
+
+    @staticmethod
     def get_fund_dividends(fund_id):
         """
         Get all dividends for a fund.

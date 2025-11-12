@@ -261,17 +261,108 @@ class TransactionService:
     @staticmethod
     def delete_transaction(transaction_id):
         """
-        Delete a transaction.
+        Delete a transaction with proper cleanup.
+
+        This method handles:
+        - IBKR allocation cleanup and status reversion
+        - Realized gain/loss record deletion for sell transactions
+        - Cascading deletions
 
         Args:
             transaction_id (str): Transaction identifier
 
+        Returns:
+            dict: Dictionary with deletion details including:
+                - transaction_details: Details of deleted transaction
+                - ibkr_transaction_id: ID of associated IBKR transaction (if any)
+                - ibkr_reverted: Whether IBKR status was reverted to pending
+                - realized_gain_deleted: Whether realized gain/loss was deleted
+
         Raises:
-            404: If transaction not found
+            ValueError: If transaction not found
         """
-        transaction = Transaction.query.get_or_404(transaction_id)
-        db.session.delete(transaction)
-        db.session.commit()
+        from ..models import IBKRTransaction, IBKRTransactionAllocation, LogCategory, LogLevel
+        from ..services.logging_service import logger
+
+        transaction = Transaction.query.get(transaction_id)
+        if not transaction:
+            raise ValueError(f"Transaction {transaction_id} not found")
+
+        # Store transaction details for logging before deletion
+        transaction_details = {
+            "type": transaction.type,
+            "shares": transaction.shares,
+            "cost_per_share": transaction.cost_per_share,
+            "date": transaction.date.isoformat(),
+        }
+
+        try:
+            # Check if this transaction is linked to an IBKR allocation
+            ibkr_allocation = IBKRTransactionAllocation.query.filter_by(
+                transaction_id=transaction_id
+            ).first()
+
+            # Handle IBKR allocation cleanup BEFORE deletion
+            ibkr_transaction_id = None
+            ibkr_reverted = False
+            if ibkr_allocation:
+                ibkr_transaction_id = ibkr_allocation.ibkr_transaction_id
+
+                # Check how many allocations exist for this IBKR transaction
+                allocation_count = IBKRTransactionAllocation.query.filter_by(
+                    ibkr_transaction_id=ibkr_transaction_id
+                ).count()
+
+                # If this is the last allocation, revert IBKR transaction to pending
+                if allocation_count == 1:
+                    ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
+                    if ibkr_txn and ibkr_txn.status == "processed":
+                        ibkr_txn.status = "pending"
+                        ibkr_txn.processed_at = None
+                        ibkr_reverted = True
+                        transaction_details["ibkr_status_reverted"] = True
+
+                        logger.log(
+                            level=LogLevel.INFO,
+                            category=LogCategory.IBKR,
+                            message="IBKR transaction status reverted to pending",
+                            details={
+                                "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
+                                "reason": "All allocations deleted",
+                                "allocation_count": 0,
+                            },
+                        )
+
+            # If this is a sell transaction, delete associated realized gain/loss record
+            realized_gain = None
+            if transaction.type == "sell":
+                portfolio_fund = transaction.portfolio_fund
+                realized_gain = RealizedGainLoss.query.filter_by(
+                    portfolio_id=portfolio_fund.portfolio_id,
+                    fund_id=portfolio_fund.fund_id,
+                    transaction_date=transaction.date,
+                    shares_sold=transaction.shares,
+                ).first()
+
+                if realized_gain:
+                    db.session.delete(realized_gain)
+
+            # Delete the transaction (will cascade delete the IBKR allocation)
+            db.session.delete(transaction)
+            db.session.commit()
+
+            return {
+                "transaction_details": transaction_details,
+                "ibkr_transaction_id": ibkr_transaction_id,
+                "ibkr_reverted": ibkr_reverted,
+                "realized_gain_deleted": (
+                    bool(realized_gain) if transaction.type == "sell" else None
+                ),
+            }
+
+        except Exception as e:
+            db.session.rollback()
+            raise ValueError(f"Error deleting transaction: {e!s}") from e
 
     @staticmethod
     def calculate_current_position(portfolio_fund_id):

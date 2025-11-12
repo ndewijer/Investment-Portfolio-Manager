@@ -15,6 +15,7 @@ from flask.views import MethodView
 
 from ..models import IBKRConfig, IBKRTransaction, LogCategory, LogLevel, Portfolio, db
 from ..services.ibkr_flex_service import IBKRFlexService
+from ..services.ibkr_transaction_service import IBKRTransactionService
 from ..services.logging_service import logger, track_request
 
 ibkr = Blueprint("ibkr", __name__)
@@ -831,139 +832,29 @@ def modify_transaction_allocations(transaction_id):
     Returns:
         JSON response with success status
     """
-    from ..models import IBKRTransactionAllocation, PortfolioFund, Transaction
-
     data = request.get_json()
 
     if not data or "allocations" not in data:
         return jsonify({"error": "Missing allocations"}), 400
 
     try:
-        ibkr_txn = IBKRTransaction.query.get_or_404(transaction_id)
+        result = IBKRTransactionService.modify_allocations(transaction_id, data["allocations"])
+        return jsonify(result), 200
 
-        if ibkr_txn.status != "processed":
-            return jsonify({"error": "Transaction is not processed"}), 400
-
-        allocations = data["allocations"]
-
-        # Validate percentages sum to 100%
-        total_percentage = sum(a.get("percentage", 0) for a in allocations)
-        if abs(total_percentage - 100) > 0.01:
-            return jsonify({"error": "Allocations must sum to exactly 100%"}), 400
-
-        # Get existing allocations
-        existing_allocations = {
-            alloc.portfolio_id: alloc
-            for alloc in IBKRTransactionAllocation.query.filter_by(
-                ibkr_transaction_id=transaction_id
-            ).all()
-        }
-
-        # Track which portfolios are in the new allocation list
-        new_portfolio_ids = {a["portfolio_id"] for a in allocations}
-        existing_portfolio_ids = set(existing_allocations.keys())
-
-        # Delete allocations for portfolios no longer in the list
-        for portfolio_id in existing_portfolio_ids - new_portfolio_ids:
-            allocation = existing_allocations[portfolio_id]
-            if allocation.transaction_id:
-                transaction = Transaction.query.get(allocation.transaction_id)
-                if transaction:
-                    # Delete transaction - CASCADE DELETE will automatically
-                    # delete the corresponding ibkr_transaction_allocation record
-                    db.session.delete(transaction)
-
-        # Update or create allocations
-        from ..services.fund_matching_service import FundMatchingService
-
-        # Find fund for this IBKR transaction
-        fund = FundMatchingService.find_fund_by_transaction(ibkr_txn)
-        if not fund:
-            return jsonify({"error": "Fund not found for this IBKR transaction"}), 400
-
-        for alloc_data in allocations:
-            portfolio_id = alloc_data["portfolio_id"]
-            percentage = alloc_data["percentage"]
-
-            # Calculate allocated amounts
-            allocated_amount = (ibkr_txn.total_amount * percentage) / 100
-            allocated_shares = (ibkr_txn.quantity * percentage / 100) if ibkr_txn.quantity else 0
-
-            if portfolio_id in existing_allocations:
-                # Update existing allocation
-                allocation = existing_allocations[portfolio_id]
-                allocation.allocation_percentage = percentage
-                allocation.allocated_amount = allocated_amount
-                allocation.allocated_shares = allocated_shares
-
-                # Update associated transaction
-                if allocation.transaction_id:
-                    transaction = Transaction.query.get(allocation.transaction_id)
-                    if transaction:
-                        transaction.shares = allocated_shares
-                        # Cost per share stays the same, shares change
-            else:
-                # Create new allocation
-                # Get or create portfolio fund
-                portfolio_fund = PortfolioFund.query.filter_by(
-                    portfolio_id=portfolio_id, fund_id=fund.id
-                ).first()
-
-                if not portfolio_fund:
-                    portfolio_fund = PortfolioFund(portfolio_id=portfolio_id, fund_id=fund.id)
-                    db.session.add(portfolio_fund)
-                    db.session.flush()
-
-                # Create transaction
-                transaction = Transaction(
-                    portfolio_fund_id=portfolio_fund.id,
-                    date=ibkr_txn.transaction_date,
-                    type=ibkr_txn.transaction_type,
-                    shares=allocated_shares,
-                    cost_per_share=ibkr_txn.price if ibkr_txn.price else 0,
-                )
-                db.session.add(transaction)
-                db.session.flush()
-
-                # Create allocation
-                allocation = IBKRTransactionAllocation(
-                    ibkr_transaction_id=transaction_id,
-                    portfolio_id=portfolio_id,
-                    allocation_percentage=percentage,
-                    allocated_amount=allocated_amount,
-                    allocated_shares=allocated_shares,
-                    transaction_id=transaction.id,
-                )
-                db.session.add(allocation)
-
-        db.session.commit()
-
-        logger.log(
-            level=LogLevel.INFO,
-            category=LogCategory.IBKR,
-            message=f"Modified allocations for IBKR transaction: {ibkr_txn.ibkr_transaction_id}",
-            details={
-                "allocation_count": len(allocations),
-                "portfolios": list(new_portfolio_ids),
-            },
-        )
-
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "message": "Allocations modified successfully",
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        db.session.rollback()
+    except ValueError as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.IBKR,
             message="Failed to modify allocations",
+            details={"transaction_id": transaction_id, "error": str(e)},
+            http_status=400,
+        )
+        return jsonify(response), status
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.IBKR,
+            message="Unexpected error modifying allocations",
             details={"transaction_id": transaction_id, "error": str(e)},
             http_status=500,
         )
