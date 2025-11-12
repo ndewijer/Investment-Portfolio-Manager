@@ -21,9 +21,18 @@
     - Testing performed
     - Documentation updates made
     - Screenshots/examples if UI changes
-  - Can be removed after merge (or kept for reference)
+  - **IMPORTANT**: These PR markdown files are TEMPORARY - used only to paste content into GitHub PR description
+  - **DO NOT commit PR markdown files to the repository**
+  - Delete the PR markdown file after pasting content into GitHub
 
   ## Release Management
+
+  ### Documentation Strategy
+  - **PR Documentation**: Lives on GitHub in PR descriptions (link to PRs, don't store MD files)
+  - **Release Documentation**: Lives on GitHub in Release pages (link to releases, don't store MD files)
+  - **Only commit to repository**: CHANGELOG.md updates with PR links
+  - **Templates**: `templates/PULL_REQUEST_TEMPLATE.md` and `templates/RELEASE_NOTES_TEMPLATE.md` for creating content
+  - **Workflow**: Create MD → Paste into GitHub → Delete MD file
 
   ### Before Release (Checklist)
   When user says "let's release version X.X.X", check:
@@ -39,7 +48,9 @@
   2. **Draft Release Notes**: Is there a RELEASE_NOTES_X.X.X_DRAFT.md file?
      - If no, offer to create from `templates/RELEASE_NOTES_TEMPLATE.md`
      - If yes, review with user and finalize
-     - Remove "DRAFT" from filename when releasing
+     - **IMPORTANT**: Release notes markdown files are TEMPORARY - used only to paste content into GitHub Release description
+     - **DO NOT commit RELEASE_NOTES_X.X.X.md files to the repository**
+     - Delete the release notes file after pasting content into GitHub Release
 
   3. **TODO.md Updates**:
      - Move completed items from "In Progress" to "Recently Completed"
@@ -66,8 +77,9 @@
      - Clear old items from "Recently Completed" if too many
 
   2. Clean up:
-     - Remove draft documents
+     - **DELETE all RELEASE_NOTES_X.X.X.md and PULL_REQUEST_X.md files** (these should never be committed)
      - Update any "TBD" or "Coming Soon" references
+     - All release information lives on GitHub (PRs and Releases), not in the repository
 
   ## Documentation Maintenance
 
