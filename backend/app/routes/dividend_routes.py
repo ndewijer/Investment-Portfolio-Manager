@@ -7,20 +7,9 @@ This module provides routes for:
 - Managing dividend reinvestment
 """
 
-import uuid
-from datetime import datetime
-
 from flask import Blueprint, jsonify, request
 
-from ..models import (
-    Dividend,
-    DividendType,
-    LogCategory,
-    LogLevel,
-    ReinvestmentStatus,
-    Transaction,
-    db,
-)
+from ..models import Dividend, LogCategory, LogLevel
 from ..services.dividend_service import DividendService
 from ..services.logging_service import logger, track_request
 
@@ -174,73 +163,19 @@ def update_dividend(dividend_id):
     """
     try:
         data = request.json
-        dividend = Dividend.query.get_or_404(dividend_id)
-
-        # Store original values for logging
-        original_values = {
-            "record_date": dividend.record_date,
-            "ex_dividend_date": dividend.ex_dividend_date,
-            "dividend_per_share": dividend.dividend_per_share,
-            "reinvestment_status": dividend.reinvestment_status.value,
-        }
-
-        # Update basic dividend information
-        dividend.record_date = datetime.strptime(data["record_date"], "%Y-%m-%d").date()
-        dividend.ex_dividend_date = datetime.strptime(data["ex_dividend_date"], "%Y-%m-%d").date()
-        dividend.dividend_per_share = float(data["dividend_per_share"])
-
-        # Update buy_order_date if provided
-        if data.get("buy_order_date"):
-            dividend.buy_order_date = datetime.strptime(data["buy_order_date"], "%Y-%m-%d").date()
-
-        # Recalculate total amount
-        dividend.total_amount = dividend.shares_owned * dividend.dividend_per_share
-
-        # Handle stock dividend updates
-        if dividend.fund.dividend_type == DividendType.STOCK:
-            if data.get("reinvestment_shares") and data.get("reinvestment_price"):
-                if dividend.reinvestment_transaction_id:
-                    # Update existing reinvestment transaction
-                    transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
-                    if transaction:
-                        transaction.date = dividend.buy_order_date or dividend.ex_dividend_date
-                        transaction.shares = float(data["reinvestment_shares"])
-                        transaction.cost_per_share = float(data["reinvestment_price"])
-                        db.session.add(transaction)
-                        dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
-                else:
-                    # Create new reinvestment transaction
-                    transaction = Transaction(
-                        id=str(uuid.uuid4()),
-                        portfolio_fund_id=dividend.portfolio_fund_id,
-                        date=dividend.buy_order_date or dividend.ex_dividend_date,
-                        type="dividend",
-                        shares=float(data["reinvestment_shares"]),
-                        cost_per_share=float(data["reinvestment_price"]),
-                    )
-                    db.session.add(transaction)
-                    db.session.flush()
-                    dividend.reinvestment_transaction_id = transaction.id
-                    dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
-            elif dividend.reinvestment_transaction_id:
-                # If reinvestment data is removed, delete the transaction
-                transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
-                if transaction:
-                    db.session.delete(transaction)
-                dividend.reinvestment_transaction_id = None
-                dividend.reinvestment_status = ReinvestmentStatus.PENDING
-        else:
-            # For cash dividends, always set status to COMPLETED
-            dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
-
-        db.session.commit()
+        dividend, original_values = DividendService.update_dividend(dividend_id, data)
 
         logger.log(
             level=LogLevel.INFO,
             category=LogCategory.DIVIDEND,
             message=f"Successfully updated dividend {dividend_id}",
             details={
-                "original_values": original_values,
+                "original_values": {
+                    "record_date": original_values["record_date"].isoformat(),
+                    "ex_dividend_date": original_values["ex_dividend_date"].isoformat(),
+                    "dividend_per_share": original_values["dividend_per_share"],
+                    "reinvestment_status": original_values["reinvestment_status"],
+                },
                 "new_values": {
                     "record_date": dividend.record_date.isoformat(),
                     "ex_dividend_date": dividend.ex_dividend_date.isoformat(),
@@ -251,14 +186,22 @@ def update_dividend(dividend_id):
         )
 
         return jsonify(DividendService.format_dividend(dividend))
-    except Exception as e:
-        db.session.rollback()
+    except ValueError as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.DIVIDEND,
             message=f"Error updating dividend: {e!s}",
             details={"dividend_id": dividend_id, "error": str(e), "request_data": data},
             http_status=400,
+        )
+        return jsonify(response), status
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.DIVIDEND,
+            message=f"Unexpected error updating dividend: {e!s}",
+            details={"dividend_id": dividend_id, "error": str(e), "request_data": data},
+            http_status=500,
         )
         return jsonify(response), status
 

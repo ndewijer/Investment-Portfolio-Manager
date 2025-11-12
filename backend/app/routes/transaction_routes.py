@@ -14,7 +14,6 @@ from ..models import (
     LogLevel,
     RealizedGainLoss,
     Transaction,
-    db,
 )
 from ..services.logging_service import logger, track_request
 from ..services.transaction_service import TransactionService
@@ -254,94 +253,37 @@ def delete_transaction(transaction_id):
         Empty response with 204 status on success
     """
     try:
-        from ..models import IBKRTransaction, IBKRTransactionAllocation
-
-        transaction = Transaction.query.get_or_404(transaction_id)
-
-        # Store transaction details for logging before deletion
-        transaction_details = {
-            "type": transaction.type,
-            "shares": transaction.shares,
-            "cost_per_share": transaction.cost_per_share,
-            "date": transaction.date.isoformat(),
-        }
-
-        # Check if this transaction is linked to an IBKR allocation
-        ibkr_allocation = IBKRTransactionAllocation.query.filter_by(
-            transaction_id=transaction_id
-        ).first()
-
-        # Handle IBKR allocation cleanup BEFORE deletion
-        ibkr_transaction_id = None
-        ibkr_reverted = False
-        if ibkr_allocation:
-            ibkr_transaction_id = ibkr_allocation.ibkr_transaction_id
-
-            # Check how many allocations exist for this IBKR transaction
-            allocation_count = IBKRTransactionAllocation.query.filter_by(
-                ibkr_transaction_id=ibkr_transaction_id
-            ).count()
-
-            # If this is the last allocation, revert IBKR transaction to pending
-            if allocation_count == 1:
-                ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
-                if ibkr_txn and ibkr_txn.status == "processed":
-                    ibkr_txn.status = "pending"
-                    ibkr_txn.processed_at = None
-                    ibkr_reverted = True
-                    transaction_details["ibkr_status_reverted"] = True
-
-                    logger.log(
-                        level=LogLevel.INFO,
-                        category=LogCategory.IBKR,
-                        message="IBKR transaction status reverted to pending",
-                        details={
-                            "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
-                            "reason": "All allocations deleted",
-                            "allocation_count": 0,
-                        },
-                    )
-
-        # If this is a sell transaction, delete associated realized gain/loss record
-        realized_gain = None
-        if transaction.type == "sell":
-            portfolio_fund = transaction.portfolio_fund
-            realized_gain = RealizedGainLoss.query.filter_by(
-                portfolio_id=portfolio_fund.portfolio_id,
-                fund_id=portfolio_fund.fund_id,
-                transaction_date=transaction.date,
-                shares_sold=transaction.shares,
-            ).first()
-
-            if realized_gain:
-                db.session.delete(realized_gain)
-
-        # Delete the transaction (will cascade delete the IBKR allocation)
-        db.session.delete(transaction)
-        db.session.commit()
+        service = TransactionService()
+        result = service.delete_transaction(transaction_id)
 
         logger.log(
             level=LogLevel.INFO,
             category=LogCategory.TRANSACTION,
             message=f"Successfully deleted transaction {transaction_id}",
             details={
-                **transaction_details,
-                "ibkr_transaction_id": ibkr_transaction_id,
-                "ibkr_reverted": ibkr_reverted,
-                "realized_gain_deleted": (
-                    bool(realized_gain) if transaction.type == "sell" else None
-                ),
+                **result["transaction_details"],
+                "ibkr_transaction_id": result["ibkr_transaction_id"],
+                "ibkr_reverted": result["ibkr_reverted"],
+                "realized_gain_deleted": result["realized_gain_deleted"],
             },
         )
 
         return "", 204
-    except Exception as e:
-        db.session.rollback()
+    except ValueError as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
             category=LogCategory.TRANSACTION,
             message=f"Error deleting transaction: {e!s}",
             details={"transaction_id": transaction_id, "error": str(e)},
             http_status=400,
+        )
+        return jsonify(response), status
+    except Exception as e:
+        response, status = logger.log(
+            level=LogLevel.ERROR,
+            category=LogCategory.TRANSACTION,
+            message=f"Unexpected error deleting transaction: {e!s}",
+            details={"transaction_id": transaction_id, "error": str(e)},
+            http_status=500,
         )
         return jsonify(response), status

@@ -278,6 +278,158 @@ class IBKRTransactionService:
             return {"success": False, "error": f"Processing failed: {e!s}"}
 
     @staticmethod
+    def modify_allocations(transaction_id: str, allocations: list[dict]) -> dict:
+        """
+        Modify allocation percentages for a processed IBKR transaction.
+
+        This method allows updating allocations after a transaction has been processed.
+        It will:
+        - Validate that allocations sum to 100%
+        - Delete allocations (and their transactions) that are removed
+        - Update existing allocations and their associated transactions
+        - Create new allocations and transactions for new portfolios
+
+        Args:
+            transaction_id: IBKR Transaction ID
+            allocations: List of allocation dictionaries with:
+                - portfolio_id: Portfolio ID
+                - percentage: Allocation percentage
+
+        Returns:
+            Dictionary with:
+                - success: Boolean indicating success/failure
+                - message: Success/error message
+                - error: Error details (if applicable)
+
+        Raises:
+            ValueError: If transaction not found, not processed, or allocations invalid
+        """
+        # Get IBKR transaction
+        ibkr_txn = IBKRTransaction.query.get(transaction_id)
+        if not ibkr_txn:
+            raise ValueError(f"Transaction {transaction_id} not found")
+
+        if ibkr_txn.status != "processed":
+            raise ValueError("Transaction is not processed")
+
+        # Validate allocations
+        is_valid, error_message = IBKRTransactionService.validate_allocations(allocations)
+        if not is_valid:
+            raise ValueError(error_message)
+
+        try:
+            # Get existing allocations
+            existing_allocations = {
+                alloc.portfolio_id: alloc
+                for alloc in IBKRTransactionAllocation.query.filter_by(
+                    ibkr_transaction_id=transaction_id
+                ).all()
+            }
+
+            # Track which portfolios are in the new allocation list
+            new_portfolio_ids = {a["portfolio_id"] for a in allocations}
+            existing_portfolio_ids = set(existing_allocations.keys())
+
+            # Delete allocations for portfolios no longer in the list
+            for portfolio_id in existing_portfolio_ids - new_portfolio_ids:
+                allocation = existing_allocations[portfolio_id]
+                if allocation.transaction_id:
+                    transaction = Transaction.query.get(allocation.transaction_id)
+                    if transaction:
+                        # Delete transaction - CASCADE DELETE will automatically
+                        # delete the corresponding ibkr_transaction_allocation record
+                        db.session.delete(transaction)
+
+            # Find fund for this IBKR transaction
+            from ..services.fund_matching_service import FundMatchingService
+
+            fund = FundMatchingService.find_fund_by_transaction(ibkr_txn)
+            if not fund:
+                raise ValueError("Fund not found for this IBKR transaction")
+
+            # Update or create allocations
+            for alloc_data in allocations:
+                portfolio_id = alloc_data["portfolio_id"]
+                percentage = alloc_data["percentage"]
+
+                # Calculate allocated amounts
+                allocated_amount = (ibkr_txn.total_amount * percentage) / 100
+                allocated_shares = (
+                    (ibkr_txn.quantity * percentage / 100) if ibkr_txn.quantity else 0
+                )
+
+                if portfolio_id in existing_allocations:
+                    # Update existing allocation
+                    allocation = existing_allocations[portfolio_id]
+                    allocation.allocation_percentage = percentage
+                    allocation.allocated_amount = allocated_amount
+                    allocation.allocated_shares = allocated_shares
+
+                    # Update associated transaction
+                    if allocation.transaction_id:
+                        transaction = Transaction.query.get(allocation.transaction_id)
+                        if transaction:
+                            transaction.shares = allocated_shares
+                            # Cost per share stays the same, shares change
+                else:
+                    # Create new allocation
+                    # Get or create portfolio fund
+                    portfolio_fund = IBKRTransactionService._get_or_create_portfolio_fund(
+                        portfolio_id, fund.id
+                    )
+
+                    # Create transaction
+                    transaction = Transaction(
+                        portfolio_fund_id=portfolio_fund.id,
+                        date=ibkr_txn.transaction_date,
+                        type=ibkr_txn.transaction_type,
+                        shares=allocated_shares,
+                        cost_per_share=ibkr_txn.price if ibkr_txn.price else 0,
+                    )
+                    db.session.add(transaction)
+                    db.session.flush()
+
+                    # Create allocation
+                    allocation = IBKRTransactionAllocation(
+                        ibkr_transaction_id=transaction_id,
+                        portfolio_id=portfolio_id,
+                        allocation_percentage=percentage,
+                        allocated_amount=allocated_amount,
+                        allocated_shares=allocated_shares,
+                        transaction_id=transaction.id,
+                    )
+                    db.session.add(allocation)
+
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=(
+                    f"Modified allocations for IBKR transaction: {ibkr_txn.ibkr_transaction_id}"
+                ),
+                details={
+                    "allocation_count": len(allocations),
+                    "portfolios": list(new_portfolio_ids),
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Allocations modified successfully",
+            }
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to modify allocations",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            raise ValueError(f"Failed to modify allocations: {e!s}") from e
+
+    @staticmethod
     def get_pending_dividends(symbol: str | None = None, isin: str | None = None) -> list[dict]:
         """
         Get pending dividend records for matching.
