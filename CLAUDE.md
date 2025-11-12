@@ -27,29 +27,38 @@
 
   ### Before Release (Checklist)
   When user says "let's release version X.X.X", check:
-  1. **Draft Release Notes**: Is there a RELEASE_NOTES_X.X.X_DRAFT.md file?
+
+  1. **Identify All PRs in Release**: ALWAYS check what PRs are included
+     - Find previous release tag (e.g., `git tag --sort=-version:refname | head -5`)
+     - List commits since last release: `git log refs/tags/X.X.X..HEAD --oneline`
+     - Fetch merged PRs from GitHub: Check https://github.com/ndewijer/Investment-Portfolio-Manager/compare/X.X.X...main
+     - Or use WebFetch on: https://github.com/ndewijer/Investment-Portfolio-Manager/pulls?q=is%3Apr+is%3Amerged+merged%3A%3E[DATE]
+     - **IMPORTANT**: Include ALL merged PRs in release notes and CHANGELOG, not just the ones user mentions
+     - Link to each PR: `[#XX PR Title](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/XX)`
+
+  2. **Draft Release Notes**: Is there a RELEASE_NOTES_X.X.X_DRAFT.md file?
      - If no, offer to create from `templates/RELEASE_NOTES_TEMPLATE.md`
      - If yes, review with user and finalize
      - Remove "DRAFT" from filename when releasing
 
-  2. **TODO.md Updates**:
+  3. **TODO.md Updates**:
      - Move completed items from "In Progress" to "Recently Completed"
      - Update "Current Version" at bottom
      - Update "Last Updated" date
      - Mark version as released in version history
 
-  3. **Documentation Review**:
+  4. **Documentation Review**:
      - Check README.md has correct version
      - Verify ARCHITECTURE.md reflects current state
      - Ensure any new features are documented (docs/ folder)
-     - Update CHANGELOG if it exists
+     - Update CHANGELOG if it exists (include ALL PRs from step 1)
 
-  4. **Version Numbers**:
+  5. **Version Numbers**:
      - Backend version metadata
      - Frontend package.json (if versioned)
      - Database schema version (if schema changed)
 
-  5. **Testing Reminder**: Ask user if final testing is complete
+  6. **Testing Reminder**: Ask user if final testing is complete
 
   ### After Release
   1. Update todo/TODO.md:
