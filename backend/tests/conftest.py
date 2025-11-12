@@ -2,16 +2,20 @@
 Pytest configuration and fixtures for the Investment Portfolio Manager test suite.
 
 This module provides reusable fixtures for testing, including:
-- Flask app configuration
+- Flask app configuration with test database
 - Database setup and teardown
 - Query counting for performance tests
-- Test data fixtures (can be added later)
+- Time mocking for date-sensitive tests
+- Test data fixtures
 """
 
 import pytest
+from app.models import db
 from run import create_app
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+
+from tests.test_config import TEST_CONFIG, cleanup_test_database
 
 
 @pytest.fixture(scope="session")
@@ -19,18 +23,24 @@ def app():
     """
     Create and configure a Flask app instance for testing.
 
+    This fixture creates a Flask app with a separate test database.
+    The database is created once per test session and cleaned up at the end.
+
     Scope: session - created once per test session.
     """
     app = create_app()
-    app.config.update(
-        {
-            "TESTING": True,
-            # Use the existing database for now - in future, create a test database
-            # "SQLALCHEMY_DATABASE_URI": "sqlite:///test_portfolio.db"
-        }
-    )
+    app.config.update(TEST_CONFIG)
+
+    # Create all tables in the test database
+    with app.app_context():
+        db.create_all()
 
     yield app
+
+    # Cleanup: Drop all tables and remove test database file
+    with app.app_context():
+        db.drop_all()
+    cleanup_test_database()
 
 
 @pytest.fixture(scope="session")
@@ -142,8 +152,138 @@ def timer():
     return Timer()
 
 
-# Future fixtures to add:
-# - @pytest.fixture(scope="function") def test_db(): # Clean test database
-# - @pytest.fixture(scope="function") def sample_portfolio(): # Sample test data
-# - @pytest.fixture(scope="function") def sample_transactions(): # Sample transactions
-# - etc.
+@pytest.fixture(scope="function")
+def db_session(app_context):
+    """
+    Provide a database session that rolls back after each test.
+
+    This fixture ensures that database changes made during a test are
+    rolled back, keeping the database clean between tests.
+
+    Scope: function - created for each test.
+    """
+    # Start a transaction
+    connection = db.engine.connect()
+    transaction = connection.begin()
+
+    # Bind the session to the connection
+    session = db.create_scoped_session(options={"bind": connection, "binds": {}})
+    db.session = session
+
+    yield session
+
+    # Rollback the transaction and close the connection
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+
+@pytest.fixture(scope="function")
+def mock_yfinance(monkeypatch):
+    """
+    Mock yfinance API calls for testing.
+
+    This fixture mocks yfinance so tests don't make real API calls.
+    Can be customized per test to return specific data.
+
+    Usage:
+        def test_something(mock_yfinance):
+            # yfinance calls will be mocked
+            pass
+
+    Scope: function - created for each test.
+    """
+    # This is a placeholder - will be implemented when writing price update tests
+    pass
+
+
+@pytest.fixture(scope="function")
+def mock_ibkr_api(responses):
+    """
+    Mock IBKR API calls for testing.
+
+    This fixture uses the responses library to mock HTTP calls to IBKR.
+    Tests can add specific responses as needed.
+
+    Usage:
+        def test_something(mock_ibkr_api):
+            # Add a mock response
+            responses.add(
+                responses.POST,
+                "https://gdcdyn.interactivebrokers.com/...",
+                json={"status": "success"},
+                status=200
+            )
+
+    Scope: function - created for each test.
+    """
+    # The responses fixture is provided by the responses library
+    # This is just documentation of how to use it
+    pass
+
+
+@pytest.fixture(scope="function")
+def freeze_time():
+    """
+    Fixture that provides time freezing capability using freezegun.
+
+    This allows tests to control the current date/time for testing
+    date-sensitive logic.
+
+    Usage:
+        from freezegun import freeze_time as freeze
+
+        @freeze("2024-01-15")
+        def test_something(freeze_time):
+            # Time is frozen at 2024-01-15
+            pass
+
+    Scope: function - created for each test.
+    """
+    # The actual freezegun decorator is used directly in tests
+    # This is just documentation
+    pass
+
+
+# Sample data fixtures - these will be enhanced with factory_boy in factories.py
+# For now, these are placeholders that will be implemented in Phase 1
+
+
+@pytest.fixture(scope="function")
+def sample_portfolio(app_context):
+    """
+    Create a sample portfolio for testing.
+
+    Returns a Portfolio object that can be used in tests.
+    Will be enhanced with factory_boy.
+
+    Scope: function - created for each test.
+    """
+    # Placeholder - will be implemented with factories
+    pass
+
+
+@pytest.fixture(scope="function")
+def cash_dividend_fund(app_context):
+    """
+    Create a fund configured for CASH dividends.
+
+    Returns a Fund object with dividend_type = CASH.
+
+    Scope: function - created for each test.
+    """
+    # Placeholder - will be implemented with factories
+    pass
+
+
+@pytest.fixture(scope="function")
+def stock_dividend_fund(app_context):
+    """
+    Create a fund configured for STOCK dividends.
+
+    Returns a Fund object with dividend_type = STOCK.
+
+    Scope: function - created for each test.
+    """
+    # Placeholder - will be implemented with factories
+    pass

@@ -8,6 +8,14 @@ ENV/
 .env
 .flaskenv
 
+# Testing & Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+coverage.xml
+*.cover
+
 # Ruff
 .ruff_cache
 
