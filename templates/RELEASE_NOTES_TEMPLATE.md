@@ -294,8 +294,9 @@ When deploying to your environment:
 
 ### Getting Help
 
-- GitHub Issues: [Repository issues URL]
-- Pull Request: Link to PR if exists
+- **GitHub Issues**: [Report issues or questions](https://github.com/ndewijer/Investment-Portfolio-Manager/issues)
+- **Pull Requests**: Link to relevant PRs (e.g., [#XX Feature Name](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/XX))
+- **This Release**: [vX.X.X](https://github.com/ndewijer/Investment-Portfolio-Manager/releases/tag/vX.X.X)
 
 ---
 

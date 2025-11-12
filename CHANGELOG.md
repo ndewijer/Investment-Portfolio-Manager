@@ -5,6 +5,45 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2025-11-12
+
+### Added
+- Phase 1: Batch processing for historical calculations
+  - Eliminated day-by-day database iteration
+  - Reduced 16,425 queries to 16 queries (99.9% reduction)
+  - Overview page: 5-10s → 0.2s (96-98% faster)
+  - Portfolio detail: 3-5s → 0.08s (97-98% faster)
+- Phase 2: Eager loading and N+1 query elimination
+  - Portfolio summary eager loading (50+ queries → 9 queries)
+  - Transaction batch loading (231 queries → 4 queries)
+  - Explicit `batch_mode` parameter for clarity
+- Mobile chart experience redesign
+  - Minimalist normal view with fullscreen mode
+  - Toggleable controls (metrics and zoom)
+  - Mobile responsive optimizations
+- Enhanced modal system
+  - Click outside to close, Escape key support
+  - Scrollable content, better sizing
+- Testing framework foundation
+  - Pytest fixtures and configuration
+  - 12 performance tests (8 Phase 1 + 4 Phase 2)
+  - Query count and execution time validation
+
+### Changed
+- Performance improvements across all data-heavy pages
+  - Overview page: 16,460 queries → 16 queries
+  - Portfolio detail: 7,900 queries → 10 queries
+  - Portfolio summary: 50+ queries → 9 queries
+  - Transactions: 231 queries → 4 queries
+
+### Documentation
+- Comprehensive performance optimization documentation
+- GitHub PR [#81](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/81) - Modal Component Improvements
+- GitHub PR [#82](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/82) - UX Improvements - Frontend Cleanup & Mobile Responsive
+- GitHub PR [#83](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/83) - Phase 1 Batch Processing
+- GitHub PR [#84](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/84) - Phase 2 Eager Loading
+- Updated [TESTING.md](./docs/TESTING.md) with testing framework guide
+
 ## [1.3.1] - 2024-11-07
 
 ### Added

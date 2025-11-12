@@ -46,7 +46,7 @@ This folder contains planning documents and task lists for the Investment Portfo
 
 **Released**: November 7, 2024
 
-### Version 1.3.2 - Performance Optimization ✅ COMPLETED
+### Version 1.3.2 - Performance Optimization & Frontend UX ✅ RELEASED
 - [x] Phase 1: Batch processing for historical calculations
   - [x] Eliminate day-by-day database iteration
   - [x] Reduce 16,425 queries to 16 queries (99.9% reduction)
@@ -56,17 +56,24 @@ This folder contains planning documents and task lists for the Investment Portfo
   - [x] Portfolio summary eager loading (50+ queries → 9 queries)
   - [x] Transaction batch loading (231 queries → 4 queries)
   - [x] Explicit `batch_mode` parameter for clarity
+- [x] Mobile chart experience redesign
+  - [x] Minimalist normal view with fullscreen mode
+  - [x] Toggleable controls (metrics and zoom)
+  - [x] Mobile responsive optimizations
+- [x] Enhanced modal system
+  - [x] Click outside to close, Escape key support
+  - [x] Scrollable content, better sizing
 - [x] Testing framework foundation
   - [x] Pytest fixtures and configuration
   - [x] 12 performance tests (8 Phase 1 + 4 Phase 2)
   - [x] Query count and execution time validation
 - [x] Comprehensive documentation
-  - [x] PULL_REQUEST_PHASE1_PERFORMANCE.md
-  - [x] PULL_REQUEST_PHASE2_EAGER_LOADING.md
+  - [x] GitHub PR #83 (Phase 1) and #84 (Phase 2)
   - [x] docs/TESTING.md
-  - [x] Updated RELEASE_NOTES_1.3.2_DRAFT.md
+  - [x] Updated RELEASE_NOTES_1.3.2.md
 
-**Status**: Ready for release
+**Released**: November 12, 2025
+**GitHub Release**: https://github.com/ndewijer/Investment-Portfolio-Manager/releases/tag/v1.3.2
 
 ---
 
@@ -182,6 +189,6 @@ If you encounter these, fix them:
 
 ---
 
-**Last Updated**: 2025-01-11
-**Current Version**: 1.3.2 (ready for release)
+**Last Updated**: 2025-11-12
+**Current Version**: 1.3.2 (released)
 **Philosophy**: Feature complete - only add what's needed
