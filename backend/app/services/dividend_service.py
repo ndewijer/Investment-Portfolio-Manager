@@ -60,7 +60,7 @@ class DividendService:
         )
 
         for transaction in transactions:
-            if transaction.type == "buy":
+            if transaction.type in ("buy", "dividend"):
                 shares += transaction.shares
             else:
                 shares -= transaction.shares
@@ -124,8 +124,8 @@ class DividendService:
         # Handle stock dividend with immediate reinvestment
         if (
             portfolio_fund.fund.dividend_type == DividendType.STOCK
-            and data.get("reinvestment_shares")
-            and data.get("reinvestment_price")
+            and "reinvestment_shares" in data
+            and "reinvestment_price" in data
         ):
             try:
                 reinvestment_shares = float(data["reinvestment_shares"])
@@ -213,7 +213,7 @@ class DividendService:
 
             # Handle stock dividend updates
             if dividend.fund.dividend_type == DividendType.STOCK:
-                if data.get("reinvestment_shares") and data.get("reinvestment_price"):
+                if "reinvestment_shares" in data and "reinvestment_price" in data:
                     reinvestment_shares = float(data["reinvestment_shares"])
                     reinvestment_price = float(data["reinvestment_price"])
 
