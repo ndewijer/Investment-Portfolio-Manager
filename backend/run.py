@@ -182,22 +182,33 @@ def get_or_create_ibkr_encryption_key():
     return new_key
 
 
-def create_app():
-    """Create and configure the Flask application."""
+def create_app(config=None):
+    """Create and configure the Flask application.
+
+    Args:
+        config (dict, optional): Configuration dictionary to override default config.
+            Useful for testing with a separate test database.
+    """
     app = Flask(__name__)
     app.config["VERSION"] = get_version()  # Add version to app config
     app.wsgi_app = ProxyFix(app.wsgi_app)
 
-    # Get database directory from environment variable or use default
-    db_dir = os.environ.get("DB_DIR", os.path.join(os.getcwd(), "data/db"))
-    print(f"DB_DIR: {db_dir}")
-    # Ensure the directory exists
-    os.makedirs(db_dir, exist_ok=True)
+    # Apply custom config first if provided (e.g., for testing)
+    if config:
+        app.config.update(config)
 
-    # Configure database URI using the DB_DIR
-    db_path = os.path.join(db_dir, "portfolio_manager.db")
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Get database directory from environment variable or use default
+    # Skip if already configured (e.g., in test config)
+    if "SQLALCHEMY_DATABASE_URI" not in app.config:
+        db_dir = os.environ.get("DB_DIR", os.path.join(os.getcwd(), "data/db"))
+        print(f"DB_DIR: {db_dir}")
+        # Ensure the directory exists
+        os.makedirs(db_dir, exist_ok=True)
+
+        # Configure database URI using the DB_DIR
+        db_path = os.path.join(db_dir, "portfolio_manager.db")
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Configure logging directory
     log_dir = os.environ.get("LOG_DIR", os.path.join(os.getcwd(), "data/logs"))
@@ -287,8 +298,9 @@ def create_app():
 
             db.session.commit()
 
-        # Flush buffered startup logs to database
-        flush_startup_logs()
+        # Flush buffered startup logs to database (skip in test mode)
+        if not app.config.get("TESTING", False):
+            flush_startup_logs()
 
     # Set up scheduler
     scheduler = BackgroundScheduler()
