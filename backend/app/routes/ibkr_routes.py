@@ -14,6 +14,7 @@ from flask import Blueprint, jsonify, request
 from flask.views import MethodView
 
 from ..models import IBKRConfig, IBKRTransaction, LogCategory, LogLevel, Portfolio, db
+from ..services.ibkr_config_service import IBKRConfigService
 from ..services.ibkr_flex_service import IBKRFlexService
 from ..services.ibkr_transaction_service import IBKRTransactionService
 from ..services.logging_service import logger, track_request
@@ -39,36 +40,8 @@ class IBKRConfigAPI(MethodView):
         Returns:
             JSON response with configuration status (token excluded)
         """
-        config = IBKRConfig.query.first()
-
-        if not config:
-            return jsonify({"configured": False}), 200
-
-        # Check if token is expiring soon (within 30 days)
-        token_warning = None
-        if config.token_expires_at:
-            # SQLite stores naive datetimes, so compare with naive datetime
-            days_until_expiry = (config.token_expires_at - datetime.now()).days
-            if days_until_expiry < 30:
-                token_warning = f"Token expires in {days_until_expiry} days"
-
-        return jsonify(
-            {
-                "configured": True,
-                "flex_query_id": config.flex_query_id,
-                "token_expires_at": (
-                    config.token_expires_at.isoformat() if config.token_expires_at else None
-                ),
-                "token_warning": token_warning,
-                "last_import_date": (
-                    config.last_import_date.isoformat() if config.last_import_date else None
-                ),
-                "auto_import_enabled": config.auto_import_enabled,
-                "enabled": config.enabled,
-                "created_at": config.created_at.isoformat(),
-                "updated_at": config.updated_at.isoformat(),
-            }
-        )
+        config_status = IBKRConfigService.get_config_status()
+        return jsonify(config_status), 200
 
     def post(self):
         """
@@ -91,11 +64,6 @@ class IBKRConfigAPI(MethodView):
             return jsonify({"error": "Missing required fields"}), 400
 
         try:
-            service = IBKRFlexService()
-
-            # Encrypt the token
-            encrypted_token = service._encrypt_token(data["flex_token"])
-
             # Parse token expiration date if provided
             token_expires_at = None
             if data.get("token_expires_at"):
@@ -104,38 +72,20 @@ class IBKRConfigAPI(MethodView):
                 except (ValueError, TypeError):
                     return jsonify({"error": "Invalid token_expires_at format"}), 400
 
-            # Get or create config
-            config = IBKRConfig.query.first()
-
-            if config:
-                # Update existing
-                config.flex_token = encrypted_token
-                config.flex_query_id = data["flex_query_id"]
-                if token_expires_at:
-                    config.token_expires_at = token_expires_at
-                if "auto_import_enabled" in data:
-                    config.auto_import_enabled = data["auto_import_enabled"]
-                if "enabled" in data:
-                    config.enabled = data["enabled"]
-                config.updated_at = datetime.now()
-            else:
-                # Create new
-                config = IBKRConfig(
-                    flex_token=encrypted_token,
-                    flex_query_id=data["flex_query_id"],
-                    token_expires_at=token_expires_at,
-                    auto_import_enabled=data.get("auto_import_enabled", False),
-                    enabled=data.get("enabled", True),
-                )
-                db.session.add(config)
-
-            db.session.commit()
+            # Save config using service
+            config = IBKRConfigService.save_config(
+                flex_token=data["flex_token"],
+                flex_query_id=data["flex_query_id"],
+                token_expires_at=token_expires_at,
+                auto_import_enabled=data.get("auto_import_enabled"),
+                enabled=data.get("enabled"),
+            )
 
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
                 message="IBKR configuration saved",
-                details={"query_id": data["flex_query_id"]},
+                details={"query_id": config.flex_query_id},
             )
 
             return jsonify({"success": True, "message": "Configuration saved successfully"}), 200
@@ -157,23 +107,20 @@ class IBKRConfigAPI(MethodView):
         Returns:
             JSON response with success status
         """
-        config = IBKRConfig.query.first()
-
-        if not config:
-            return jsonify({"error": "No configuration found"}), 404
-
         try:
-            db.session.delete(config)
-            db.session.commit()
+            config_details = IBKRConfigService.delete_config()
 
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
                 message="IBKR configuration deleted",
-                details={},
+                details=config_details,
             )
 
             return jsonify({"success": True, "message": "Configuration deleted successfully"}), 200
+
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 404
 
         except Exception as e:
             db.session.rollback()
