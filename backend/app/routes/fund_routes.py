@@ -11,17 +11,8 @@ This module provides routes for:
 from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
-from ..models import (
-    DividendType,
-    Fund,
-    FundPrice,
-    InvestmentType,
-    LogCategory,
-    LogLevel,
-    PortfolioFund,
-    Transaction,
-    db,
-)
+from ..models import Fund, FundPrice, LogCategory, LogLevel, db
+from ..services.fund_service import FundService
 from ..services.logging_service import logger, track_request
 from ..services.price_update_service import HistoricalPriceService, TodayPriceService
 from ..services.symbol_lookup_service import SymbolLookupService
@@ -93,6 +84,7 @@ def create_fund():
         data = request.json
 
         # If symbol is provided, try to get symbol info before creating fund
+        symbol_info = None
         if data.get("symbol"):
             try:
                 symbol_info = SymbolLookupService.get_symbol_info(
@@ -113,23 +105,7 @@ def create_fund():
                     details={"symbol": data["symbol"]},
                 )
 
-        # Get investment_type from request, default to 'fund' if not provided
-        investment_type_str = data.get("investment_type", "fund")
-        investment_type = (
-            InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
-        )
-
-        fund = Fund(
-            name=data["name"],
-            isin=data["isin"],
-            symbol=data.get("symbol"),
-            currency=data["currency"],
-            exchange=data["exchange"],
-            investment_type=investment_type,
-            dividend_type=DividendType.NONE,
-        )
-        db.session.add(fund)
-        db.session.commit()
+        fund = FundService.create_fund(data, symbol_info=symbol_info)
 
         logger.log(
             level=LogLevel.INFO,
@@ -263,52 +239,26 @@ def update_fund(fund_id):
     """
     try:
         data = request.json
-        fund = Fund.query.get_or_404(fund_id)
-        fund.name = data["name"]
-        fund.isin = data["isin"]
+        fund, symbol_changed = FundService.update_fund(fund_id, data)
 
-        # Handle symbol update
-        if data.get("symbol"):
-            old_symbol = fund.symbol
-            new_symbol = data["symbol"]
-
-            # Only lookup if symbol has changed
-            if old_symbol != new_symbol:
-                fund.symbol = new_symbol
-                # Try to get symbol info and store it
-                try:
-                    symbol_info = SymbolLookupService.get_symbol_info(
-                        new_symbol, force_refresh=True
-                    )
-                    if symbol_info:
-                        logger.log(
-                            level=LogLevel.INFO,
-                            category=LogCategory.FUND,
-                            message=f"Successfully retrieved symbol info for {new_symbol}",
-                            details=symbol_info,
-                        )
-                except Exception as e:
+        # If symbol changed, try to get symbol info
+        if symbol_changed and fund.symbol:
+            try:
+                symbol_info = SymbolLookupService.get_symbol_info(fund.symbol, force_refresh=True)
+                if symbol_info:
                     logger.log(
-                        level=LogLevel.WARNING,
+                        level=LogLevel.INFO,
                         category=LogCategory.FUND,
-                        message=f"Failed to retrieve symbol info: {e!s}",
-                        details={"symbol": new_symbol},
+                        message=f"Successfully retrieved symbol info for {fund.symbol}",
+                        details=symbol_info,
                     )
-        else:
-            fund.symbol = None  # Clear symbol if not provided
-
-        fund.currency = data["currency"]
-        fund.exchange = data["exchange"]
-        if "dividend_type" in data:
-            fund.dividend_type = DividendType(data["dividend_type"])
-        if "investment_type" in data:
-            investment_type_str = data["investment_type"]
-            fund.investment_type = (
-                InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
-            )
-
-        db.session.add(fund)
-        db.session.commit()
+            except Exception as e:
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.FUND,
+                    message=f"Failed to retrieve symbol info: {e!s}",
+                    details={"symbol": fund.symbol},
+                )
 
         return jsonify(
             {
@@ -322,6 +272,8 @@ def update_fund(fund_id):
                 "investment_type": fund.investment_type.value,
             }
         )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
     except Exception as e:
         db.session.rollback()
         response, status = logger.log(
@@ -351,30 +303,17 @@ def check_fund_usage(fund_id):
         - Dividend count
     """
     try:
-        portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
-        if portfolio_funds:
-            # Get portfolios and their transaction counts
-            portfolio_data = []
-            for pf in portfolio_funds:
-                transaction_count = Transaction.query.filter_by(portfolio_fund_id=pf.id).count()
-                if transaction_count > 0:
-                    portfolio_data.append(
-                        {
-                            "id": pf.portfolio.id,
-                            "name": pf.portfolio.name,
-                            "transaction_count": transaction_count,
-                        }
-                    )
+        usage_info = FundService.check_fund_usage(fund_id)
 
-            if portfolio_data:
-                logger.log(
-                    level=LogLevel.INFO,
-                    category=LogCategory.FUND,
-                    message=f"Fund {fund_id} is in use",
-                    details={"in_use": True, "portfolios": portfolio_data},
-                )
-                return jsonify({"in_use": True, "portfolios": portfolio_data})
-        return jsonify({"in_use": False})
+        if usage_info["in_use"]:
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.FUND,
+                message=f"Fund {fund_id} is in use",
+                details=usage_info,
+            )
+
+        return jsonify(usage_info)
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
@@ -399,51 +338,34 @@ def delete_fund(fund_id):
         JSON response confirming deletion or error if fund is in use
     """
     try:
-        # First check if the fund exists
-        fund = Fund.query.get_or_404(fund_id)
-
-        # Check for any portfolio-fund relationships
-        portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
-        if portfolio_funds:
-            # Get list of portfolios this fund is attached to
-            portfolio_info = [
-                {"name": pf.portfolio.name, "id": pf.portfolio.id} for pf in portfolio_funds
-            ]
-
-            response, status = logger.log(
-                level=LogLevel.WARNING,
-                category=LogCategory.FUND,
-                message="Cannot delete fund while attached to portfolios",
-                details={
-                    "fund_id": fund_id,
-                    "fund_name": fund.name,
-                    "portfolios": portfolio_info,
-                    "user_message": (
-                        "Cannot delete {} because it is still attached to the "
-                        "following portfolios: {}. Please remove the fund from "
-                        "these portfolios first."
-                    ).format(fund.name, ", ".join(pf["name"] for pf in portfolio_info)),
-                },
-                http_status=409,
-            )
-            return jsonify(response), status
-
-        # If no portfolio relationships exist, proceed with deletion
-        # Delete any fund prices
-        FundPrice.query.filter_by(fund_id=fund_id).delete()
-
-        # Delete the fund
-        db.session.delete(fund)
-        db.session.commit()
+        fund_details = FundService.delete_fund(fund_id)
 
         response, status = logger.log(
             level=LogLevel.INFO,
             category=LogCategory.FUND,
-            message=f"Successfully deleted fund {fund.name}",
-            details={"fund_id": fund_id},
+            message=f"Successfully deleted fund {fund_details['fund_name']}",
+            details=fund_details,
             http_status=200,
         )
         return jsonify(response), status
+
+    except ValueError as e:
+        # Fund not found or fund is in use
+        error_message = str(e)
+
+        if "Cannot delete" in error_message and "attached to" in error_message:
+            # Fund is in use
+            response, status = logger.log(
+                level=LogLevel.WARNING,
+                category=LogCategory.FUND,
+                message="Cannot delete fund while attached to portfolios",
+                details={"fund_id": fund_id, "user_message": error_message},
+                http_status=409,
+            )
+            return jsonify(response), status
+        else:
+            # Fund not found
+            return jsonify({"error": error_message}), 404
 
     except Exception as e:
         db.session.rollback()
