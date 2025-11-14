@@ -952,3 +952,212 @@ class PortfolioService:
             current_date += timedelta(days=1)
 
         return history
+
+    @staticmethod
+    def create_portfolio(name, description=""):
+        """
+        Create a new portfolio.
+
+        Args:
+            name (str): Portfolio name
+            description (str, optional): Portfolio description
+
+        Returns:
+            Portfolio: Created portfolio object
+        """
+        from ..models import Portfolio, db
+
+        portfolio = Portfolio(name=name, description=description)
+        db.session.add(portfolio)
+        db.session.commit()
+        return portfolio
+
+    @staticmethod
+    def update_portfolio(portfolio_id, name, description="", exclude_from_overview=False):
+        """
+        Update an existing portfolio.
+
+        Args:
+            portfolio_id (str): Portfolio identifier
+            name (str): Portfolio name
+            description (str, optional): Portfolio description
+            exclude_from_overview (bool, optional): Exclude from overview flag
+
+        Returns:
+            Portfolio: Updated portfolio object
+
+        Raises:
+            ValueError: If portfolio not found
+        """
+        from ..models import Portfolio, db
+
+        portfolio = Portfolio.query.get(portfolio_id)
+        if not portfolio:
+            raise ValueError(f"Portfolio {portfolio_id} not found")
+
+        portfolio.name = name
+        portfolio.description = description
+        portfolio.exclude_from_overview = exclude_from_overview
+
+        db.session.commit()
+        return portfolio
+
+    @staticmethod
+    def delete_portfolio(portfolio_id):
+        """
+        Delete a portfolio.
+
+        Args:
+            portfolio_id (str): Portfolio identifier
+
+        Returns:
+            bool: True if deletion successful
+
+        Raises:
+            ValueError: If portfolio not found
+        """
+        from ..models import Portfolio, db
+
+        portfolio = Portfolio.query.get(portfolio_id)
+        if not portfolio:
+            raise ValueError(f"Portfolio {portfolio_id} not found")
+
+        db.session.delete(portfolio)
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def update_archive_status(portfolio_id, is_archived):
+        """
+        Update portfolio archive status.
+
+        Args:
+            portfolio_id (str): Portfolio identifier
+            is_archived (bool): Archive status
+
+        Returns:
+            Portfolio: Updated portfolio object
+
+        Raises:
+            ValueError: If portfolio not found
+        """
+        from ..models import Portfolio, db
+
+        portfolio = Portfolio.query.get(portfolio_id)
+        if not portfolio:
+            raise ValueError(f"Portfolio {portfolio_id} not found")
+
+        portfolio.is_archived = is_archived
+        db.session.commit()
+        return portfolio
+
+    @staticmethod
+    def get_portfolios_list(include_excluded=False):
+        """
+        Get list of portfolios with optional filtering.
+
+        Args:
+            include_excluded (bool, optional): Include portfolios excluded from overview
+
+        Returns:
+            list[Portfolio]: List of portfolio objects
+        """
+        from ..models import Portfolio
+
+        query = Portfolio.query
+        if not include_excluded:
+            query = query.filter_by(exclude_from_overview=False)
+
+        return query.all()
+
+    @staticmethod
+    def create_portfolio_fund(portfolio_id, fund_id):
+        """
+        Create a portfolio-fund relationship.
+
+        Args:
+            portfolio_id (str): Portfolio identifier
+            fund_id (str): Fund identifier
+
+        Returns:
+            PortfolioFund: Created relationship object
+
+        Raises:
+            ValueError: If portfolio or fund not found
+        """
+        from ..models import Fund, Portfolio, PortfolioFund, db
+
+        # Verify portfolio and fund exist
+        portfolio = Portfolio.query.get(portfolio_id)
+        if not portfolio:
+            raise ValueError(f"Portfolio {portfolio_id} not found")
+
+        fund = Fund.query.get(fund_id)
+        if not fund:
+            raise ValueError(f"Fund {fund_id} not found")
+
+        portfolio_fund = PortfolioFund(portfolio_id=portfolio_id, fund_id=fund_id)
+        db.session.add(portfolio_fund)
+        db.session.commit()
+        return portfolio_fund
+
+    @staticmethod
+    def delete_portfolio_fund(portfolio_fund_id, confirmed=False):
+        """
+        Delete a portfolio-fund relationship with cascade.
+
+        Args:
+            portfolio_fund_id (str): Portfolio-Fund relationship identifier
+            confirmed (bool, optional): Confirmation for deletion with transactions
+
+        Returns:
+            dict: Deletion result with counts and names
+
+        Raises:
+            ValueError: If portfolio-fund not found or confirmation required
+        """
+        from ..models import Dividend, PortfolioFund, Transaction, db
+
+        # Eager load the fund and portfolio relationships
+        portfolio_fund = (
+            PortfolioFund.query.options(
+                db.joinedload(PortfolioFund.fund), db.joinedload(PortfolioFund.portfolio)
+            )
+            .filter_by(id=portfolio_fund_id)
+            .first()
+        )
+
+        if not portfolio_fund:
+            raise ValueError(f"Portfolio-fund relationship {portfolio_fund_id} not found")
+
+        # Count associated transactions and dividends
+        transaction_count = Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).count()
+        dividend_count = Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id).count()
+
+        # Store fund and portfolio names before potential deletion
+        fund_name = portfolio_fund.fund.name
+        portfolio_name = portfolio_fund.portfolio.name
+
+        # If there are associated records and no confirmation, raise error with details
+        if (transaction_count > 0 or dividend_count > 0) and not confirmed:
+            raise ValueError(
+                f"Confirmation required: {transaction_count} transactions and "
+                f"{dividend_count} dividends will be deleted"
+            )
+
+        # Delete associated records if they exist
+        if transaction_count > 0:
+            Transaction.query.filter_by(portfolio_fund_id=portfolio_fund_id).delete()
+        if dividend_count > 0:
+            Dividend.query.filter_by(portfolio_fund_id=portfolio_fund_id).delete()
+
+        # Delete the portfolio-fund relationship
+        db.session.delete(portfolio_fund)
+        db.session.commit()
+
+        return {
+            "transactions_deleted": transaction_count,
+            "dividends_deleted": dividend_count,
+            "fund_name": fund_name,
+            "portfolio_name": portfolio_name,
+        }
