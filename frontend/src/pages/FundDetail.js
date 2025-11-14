@@ -155,10 +155,15 @@ const FundDetail = () => {
   };
 
   const formatChartData = () => {
-    return filteredPriceHistory.map((price) => ({
-      date: new Date(price.date).toLocaleDateString(),
-      price: price.price, // Use 'price' as the dataKey to match fund data structure
-    }));
+    // Chart needs data in chronological order (oldest to newest)
+    // filteredPriceHistory is sorted newest to oldest for the table
+    return filteredPriceHistory
+      .slice() // Create a copy to avoid mutating the original array
+      .reverse() // Reverse to get oldest to newest
+      .map((price) => ({
+        date: new Date(price.date).toLocaleDateString(),
+        price: price.price, // Use 'price' as the dataKey to match fund data structure
+      }));
   };
 
   const getChartLines = () => {
