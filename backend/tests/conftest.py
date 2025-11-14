@@ -28,8 +28,8 @@ def app():
 
     Scope: session - created once per test session.
     """
-    app = create_app()
-    app.config.update(TEST_CONFIG)
+    # Pass TEST_CONFIG to create_app() so it's applied BEFORE db.init_app()
+    app = create_app(config=TEST_CONFIG)
 
     # Create all tables in the test database
     with app.app_context():
