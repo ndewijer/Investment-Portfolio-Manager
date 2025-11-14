@@ -31,6 +31,13 @@ def app():
     # Pass TEST_CONFIG to create_app() so it's applied BEFORE db.init_app()
     app = create_app(config=TEST_CONFIG)
 
+    # Clear any buffered startup logs to prevent them from being written to production DB
+    # These logs are buffered during create_app() and would otherwise be flushed
+    # when the first database operation occurs
+    import run
+
+    run._startup_logs.clear()
+
     # Create all tables in the test database
     with app.app_context():
         db.create_all()

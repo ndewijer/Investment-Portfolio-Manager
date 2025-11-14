@@ -1,6 +1,7 @@
 """Main application entry point."""
 
 import os
+import sys
 
 import click
 from app.models import LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
@@ -62,6 +63,12 @@ def flush_startup_logs():
         return
 
     from app.services.logging_service import logger
+    from flask import current_app
+
+    # Double-check we're not in test mode before flushing
+    if current_app.config.get("TESTING", False):
+        _startup_logs.clear()
+        return
 
     count = len(_startup_logs)
     for log_entry in _startup_logs:
@@ -215,8 +222,12 @@ def create_app(config=None):
     os.makedirs(log_dir, exist_ok=True)
     app.config["LOG_DIR"] = log_dir
 
-    # Initialize IBKR encryption key
-    app.config["IBKR_ENCRYPTION_KEY"] = get_or_create_ibkr_encryption_key()
+    # Initialize IBKR encryption key (skip in test mode - tests don't need IBKR)
+    if not app.config.get("TESTING", False):
+        app.config["IBKR_ENCRYPTION_KEY"] = get_or_create_ibkr_encryption_key()
+    else:
+        # Use a dummy key for tests
+        app.config["IBKR_ENCRYPTION_KEY"] = "test-key-not-for-production"
 
     # Get hostname from environment variable
     frontend_host = os.environ.get("DOMAIN", "*")
@@ -276,30 +287,33 @@ def create_app(config=None):
     app.register_blueprint(ibkr, url_prefix="/api")
     app.register_blueprint(system, url_prefix="/api")
 
-    # Create database tables and set default settings
-    with app.app_context():
-        # Check if database exists by trying to query any table
-        try:
-            SystemSetting.query.first()
-        except Exception:
-            # If query fails, database doesn't exist yet
-            db.create_all()
-        else:
-            # Database exists, set default settings if needed
-            if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_ENABLED).first():
-                logging_enabled = SystemSetting(key=SystemSettingKey.LOGGING_ENABLED, value="true")
-                db.session.add(logging_enabled)
+    # Create database tables and set default settings (skip in test mode)
+    # Tests handle their own database setup in conftest.py
+    if not app.config.get("TESTING", False):
+        with app.app_context():
+            # Check if database exists by trying to query any table
+            try:
+                SystemSetting.query.first()
+            except Exception:
+                # If query fails, database doesn't exist yet
+                db.create_all()
+            else:
+                # Database exists, set default settings if needed
+                if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_ENABLED).first():
+                    logging_enabled = SystemSetting(
+                        key=SystemSettingKey.LOGGING_ENABLED, value="true"
+                    )
+                    db.session.add(logging_enabled)
 
-            if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_LEVEL).first():
-                logging_level = SystemSetting(
-                    key=SystemSettingKey.LOGGING_LEVEL, value=LogLevel.ERROR.value
-                )
-                db.session.add(logging_level)
+                if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_LEVEL).first():
+                    logging_level = SystemSetting(
+                        key=SystemSettingKey.LOGGING_LEVEL, value=LogLevel.ERROR.value
+                    )
+                    db.session.add(logging_level)
 
-            db.session.commit()
+                db.session.commit()
 
-        # Flush buffered startup logs to database (skip in test mode)
-        if not app.config.get("TESTING", False):
+            # Flush buffered startup logs to database
             flush_startup_logs()
 
     # Set up scheduler
@@ -346,10 +360,21 @@ def create_app(config=None):
     return app
 
 
-app = create_app()
+# Only create app at module level if not being imported by pytest
+# This prevents production app creation during test imports
+if "pytest" in sys.modules:
+    # During tests, conftest.py creates the app with TEST_CONFIG
+    app = None
+else:
+    # For production (gunicorn, direct execution, etc.)
+    app = create_app()
 
 if __name__ == "__main__":
     """Run the Flask application."""
+    # Create app if not already created (pytest case)
+    if app is None:
+        app = create_app()
+
     with app.app_context():
         db.create_all()
         if not Portfolio.query.first():
