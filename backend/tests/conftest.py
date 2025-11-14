@@ -162,27 +162,15 @@ def timer():
 @pytest.fixture(scope="function")
 def db_session(app_context):
     """
-    Provide a database session that rolls back after each test.
+    Provide a database session for tests.
 
-    This fixture ensures that database changes made during a test are
-    rolled back, keeping the database clean between tests.
+    This fixture provides access to db.session within the app context.
+    Database changes are automatically rolled back between tests via
+    the app_context fixture's table recreation.
 
     Scope: function - created for each test.
     """
-    # Start a transaction
-    connection = db.engine.connect()
-    transaction = connection.begin()
-
-    # Bind the session to the connection
-    session = db.create_scoped_session(options={"bind": connection, "binds": {}})
-    db.session = session
-
-    yield session
-
-    # Rollback the transaction and close the connection
-    session.close()
-    transaction.rollback()
-    connection.close()
+    yield db.session
 
 
 @pytest.fixture(scope="function")
