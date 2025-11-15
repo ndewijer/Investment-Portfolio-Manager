@@ -76,6 +76,34 @@ These documents explain:
 
 ---
 
+### 💸 TransactionService Tests
+
+**[TRANSACTION_SERVICE_TESTS.md](TRANSACTION_SERVICE_TESTS.md)** - Comprehensive guide to transaction testing
+
+**Stats**:
+- **26 tests**, all passing
+- **95% coverage** (far exceeds 85% target)
+- **1 critical bug** found and fixed
+
+**What it covers**:
+- Transaction retrieval tests (3 tests)
+- Transaction formatting tests (3 tests)
+- Transaction creation tests (3 tests)
+- Transaction update tests (3 tests)
+- Transaction deletion tests (3 tests)
+- Position calculation tests (5 tests)
+- Sell processing tests (3 tests)
+- Edge case tests (3 tests)
+
+**Special focus**:
+- IBKR allocation handling and cleanup
+- Realized gain/loss calculation
+- Cost basis tracking with average cost
+- Batch loading optimization
+- Bug fix: Cost basis calculation
+
+---
+
 ## Performance Tests
 
 ### ⚡ Portfolio Performance Tests
@@ -249,21 +277,23 @@ Tests and docs are updated together in the same commit. Never let docs fall behi
 | Component | Tests | Coverage | Status |
 |-----------|-------|----------|--------|
 | DividendService | 21 | 91% | ✅ Complete |
+| TransactionService | 26 | 95% | ✅ Complete |
 | Portfolio Performance | 12 | N/A | ✅ Complete (v1.3.2) |
-| TransactionService | - | - | ⏳ Planned |
 | PortfolioService | - | - | ⏳ Planned |
 | FundService | - | - | ⏳ Planned |
+| IBKRConfigService | - | - | ⏳ Planned |
 
 ### Documentation Coverage
 
 | Document | Status | Lines | Last Updated |
 |----------|--------|-------|--------------|
 | TESTING_INFRASTRUCTURE.md | ✅ Complete | ~800 | v1.3.3 |
-| BUG_FIXES_1.3.3.md | ✅ Complete | ~400 | v1.3.3 |
+| BUG_FIXES_1.3.3.md | ✅ Complete | ~600 | v1.3.3 |
 | DIVIDEND_SERVICE_TESTS.md | ✅ Complete | ~650 | v1.3.3 |
+| TRANSACTION_SERVICE_TESTS.md | ✅ Complete | ~650 | v1.3.3 |
 | PORTFOLIO_PERFORMANCE_TESTS.md | ✅ Complete | ~900 | v1.3.3 |
 
-**Total documentation**: ~2,750 lines of comprehensive test documentation
+**Total documentation**: ~3,600 lines of comprehensive test documentation
 
 ---
 

@@ -272,6 +272,155 @@ for div in suspect_dividends:
 
 ---
 
+## Bug #3: Cost Basis Calculation Used Sale Price Instead of Average Cost
+
+**Severity**: Critical
+**Discovered**: During TransactionService test development
+**File**: `app/services/transaction_service.py`
+**Lines**: 414-418
+**Affected Method**: `calculate_current_position()`
+
+### The Problem
+
+When calculating the current position after a sell transaction, the service was reducing the cost basis by the **sale price** instead of the **average cost** of the shares being sold.
+
+**Impact**:
+- All sell transactions had incorrect cost basis calculations
+- Realized gains/losses were completely wrong
+- Portfolio average cost tracking was broken
+- Position values were incorrect
+
+### Root Cause
+
+The `calculate_current_position()` method had incorrect cost basis logic:
+
+```python
+# BUGGY CODE (before fix)
+elif transaction.type == "sell":
+    if total_shares >= transaction.shares:
+        total_shares -= transaction.shares
+        total_cost -= transaction.cost_per_share * transaction.shares  # ❌ Uses sale price!
+```
+
+**Transaction cost_per_share meaning**:
+- For `buy`: Purchase price per share
+- For `sell`: Sale price per share (what you sold for)
+
+**Correct cost basis logic**:
+When you sell shares, you should reduce the cost basis by the **average cost** of those shares, not by what you sold them for. The sale price is used to calculate the gain/loss, not to adjust the cost basis.
+
+**Example of broken behavior**:
+```python
+# Portfolio has:
+- Buy 100 shares @ $10 = $1000 total cost
+- Average cost: $10
+
+# Sell 50 shares @ $15 (sale price)
+# Expected cost basis reduction: 50 × $10 (avg cost) = $500
+# Actual cost basis reduction: 50 × $15 (sale price) = $750 ❌
+
+# Expected remaining: 50 shares, $500 cost, $10 average
+# Actual remaining: 50 shares, $250 cost, $5 average ❌
+```
+
+### The Fix
+
+Changed to calculate and use average cost before the sell:
+
+```python
+# FIXED CODE (after fix)
+elif transaction.type == "sell":
+    if total_shares >= transaction.shares:
+        # Calculate average cost before the sale
+        average_cost = total_cost / total_shares if total_shares > 0 else 0
+        total_shares -= transaction.shares
+        # Reduce cost basis by average cost of shares sold, not sale price
+        total_cost -= average_cost * transaction.shares  # ✅ Uses average cost
+
+# Clean up near-zero values (floating point precision issues)
+if abs(total_shares) < 1e-07:
+    total_shares = 0
+    total_cost = 0
+if abs(total_cost) < 1e-07:
+    total_cost = 0
+```
+
+**Precision handling**: Added near-zero cleanup for both shares and cost to handle floating-point precision issues, consistent with other calculations in the codebase.
+
+### Test Validation
+
+**Tests affected** (6 tests validate the fix):
+1. `test_create_sell_transaction_with_realized_gain` - Realized gain calculation
+2. `test_update_sell_transaction_recalculates_gain` - Gain recalculation on updates
+3. `test_update_buy_to_sell_creates_realized_gain` - Type change handling
+4. `test_calculate_position_with_buys_and_sells` - Position calculation
+5. `test_process_sell_transaction` - Sell processing
+6. `test_process_sell_transaction_realized_loss` - Loss calculation
+
+**Example test** (`test_calculate_position_with_buys_and_sells`):
+```python
+# Buy 100 @ $10 = $1000
+# Buy 50 @ $12 = $600
+# Position: 150 shares, $1600 total, $10.67 average
+
+# Sell 30 shares @ $15
+# Average cost before sell: $1600 / 150 = $10.67
+# Cost basis reduction: 30 × $10.67 = $320
+# Remaining: 120 shares, $1280 cost, $10.67 average
+
+assert position["total_shares"] == 120.0
+assert position["total_cost"] == 1280.0  # Not 1150!
+assert position["average_cost"] == 10.67  # Stays same
+```
+
+**Before fix**: Would get $1150 total cost (wrong!)
+**After fix**: Gets $1280 total cost ✅
+
+### Impact Assessment
+
+**Who was affected**: All users with sell transactions
+
+**Data integrity**:
+- Realized gain/loss calculations were WRONG (stored in database)
+- Portfolio valuations were WRONG (calculated on-the-fly)
+- Average cost display was WRONG (calculated on-the-fly)
+- Only the calculation was wrong - transaction data itself is correct
+
+**Data cleanup needed**:
+- **RealizedGainLoss table**: All records need recalculation
+- Can be fixed by re-running sell transaction processing
+- Historical data is recoverable from transaction records
+
+### Recommended Cleanup
+
+```python
+# Script to recalculate all realized gains
+from app.models import RealizedGainLoss, Transaction
+from app.services.transaction_service import TransactionService
+
+# Get all sell transactions
+sell_transactions = Transaction.query.filter_by(type="sell").all()
+
+for txn in sell_transactions:
+    # Get the realized gain record
+    gain = RealizedGainLoss.query.filter_by(transaction_id=txn.id).first()
+    if gain:
+        # Recalculate with fixed logic
+        position = TransactionService.calculate_current_position(txn.portfolio_fund_id)
+        correct_cost_basis = position["average_cost"] * txn.shares
+        correct_gain = (txn.shares * txn.cost_per_share) - correct_cost_basis
+
+        # Update if different
+        if gain.realized_gain_loss != correct_gain:
+            print(f"Fixing gain for txn {txn.id}: {gain.realized_gain_loss} → {correct_gain}")
+            gain.cost_basis = correct_cost_basis
+            gain.realized_gain_loss = correct_gain
+
+db.session.commit()
+```
+
+---
+
 ## Summary
 
 ### Bug Statistics
@@ -280,12 +429,14 @@ for div in suspect_dividends:
 |-----|----------|---------------|-------------|-------------------|
 | #1 - Dividend share calculation | Critical | 1 | 1 | High - All STOCK dividends affected |
 | #2 - Validation skipped | Critical | 2 | 2 | Medium - Unknown data corruption |
+| #3 - Cost basis calculation | Critical | 4 | 6 | Critical - All sell transactions affected |
 
 ### Testing Value
 
-**Total bugs found**: 2 critical
+**Total bugs found**: 3 critical
 **Discovery method**: Writing comprehensive tests
-**Coverage achieved**: 91% (21 tests)
+**Services tested**: DividendService (21 tests), TransactionService (26 tests)
+**Combined coverage**: 47 tests, 93% average coverage
 
 These bugs were **only discovered** because we:
 1. Wrote comprehensive tests (not just happy paths)

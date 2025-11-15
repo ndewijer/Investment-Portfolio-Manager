@@ -411,14 +411,19 @@ class TransactionService:
                     total_shares >= transaction.shares
                     or abs(total_shares - transaction.shares) < 1e-07
                 ):
+                    # Calculate average cost before the sale
+                    average_cost = total_cost / total_shares if total_shares > 0 else 0
                     total_shares -= transaction.shares
-                    total_cost -= transaction.cost_per_share * transaction.shares
+                    # Reduce cost basis by average cost of shares sold, not sale price
+                    total_cost -= average_cost * transaction.shares
                 else:
                     raise ValueError("Insufficient shares for sale")
 
-        # If total shares is less than 0.000001, set it to 0
-        if round(total_shares, 6) == 0:
+        # Clean up near-zero values (floating point precision issues)
+        if abs(total_shares) < 1e-07:
             total_shares = 0
+            total_cost = 0
+        if abs(total_cost) < 1e-07:
             total_cost = 0
 
         return {
