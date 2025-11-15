@@ -1,8 +1,8 @@
 # Portfolio Performance Tests (v1.3.2)
 
-**Created**: Version 1.3.2
-**File**: `tests/test_portfolio_performance.py`
-**Total Tests**: 12 tests
+**Created**: Version 1.3.2\
+**File**: `tests/test_portfolio_performance.py`\
+**Total Tests**: 12 tests\
 **Purpose**: Validate performance optimizations and prevent regressions
 
 ---
@@ -59,8 +59,8 @@ These tests were created in v1.3.2 to validate two major performance optimizatio
 
 ## Test Suite 1: Portfolio History Performance
 
-**Class**: `TestPortfolioHistoryPerformance`
-**Tests**: 5 tests
+**Class**: `TestPortfolioHistoryPerformance`\
+**Tests**: 5 tests\
 **Focus**: Batch processing optimization for historical calculations
 
 ### Background: The N+1 Query Problem
@@ -137,8 +137,8 @@ assert query_counter.count < 100
 - 365 days is typical user behavior
 - Regression would be immediately noticeable (slow page load)
 
-**Before optimization**: 16,425 queries
-**After optimization**: ~50 queries
+**Before optimization**: 16,425 queries\
+**After optimization**: ~50 queries\
 **Improvement**: 99.7% reduction
 
 ---
@@ -170,8 +170,8 @@ assert elapsed < 1.0  # Must complete in under 1 second
 - Database query time is only part of total load time
 - Need headroom for network latency, rendering, etc.
 
-**Before optimization**: 5-10 seconds
-**After optimization**: ~0.3 seconds
+**Before optimization**: 5-10 seconds\
+**After optimization**: ~0.3 seconds\
 **Improvement**: 95%+ reduction
 
 ---
@@ -207,8 +207,8 @@ assert query_counter.count < 50
 - Users frequently drill into individual portfolios
 - More detailed data = more potential for N+1 queries
 
-**Before optimization**: 7,665 queries
-**After optimization**: ~30 queries
+**Before optimization**: 7,665 queries\
+**After optimization**: ~30 queries\
 **Improvement**: 99.6% reduction
 
 **Data dependency**: Skips if no portfolio found in database
@@ -243,8 +243,8 @@ assert elapsed < 0.5
 - Fewer funds (only those in selected portfolio)
 - Should be faster than overview page
 
-**Before optimization**: 3-5 seconds
-**After optimization**: ~0.2 seconds
+**Before optimization**: 3-5 seconds\
+**After optimization**: ~0.2 seconds\
 **Improvement**: 96%+ reduction
 
 ---
@@ -299,8 +299,8 @@ assert elapsed < 2.0
 
 ## Test Suite 2: Portfolio History Correctness
 
-**Class**: `TestPortfolioHistoryCorrectness`
-**Tests**: 3 tests
+**Class**: `TestPortfolioHistoryCorrectness`\
+**Tests**: 3 tests\
 **Focus**: Ensure optimization didn't break calculations
 
 ### Why These Tests Exist
@@ -436,8 +436,8 @@ assert 29 <= len(result) <= 32
 
 ## Test Suite 3: Phase 2 Eager Loading Performance
 
-**Class**: `TestPhase2EagerLoadingPerformance`
-**Tests**: 4 tests
+**Class**: `TestPhase2EagerLoadingPerformance`\
+**Tests**: 4 tests\
 **Focus**: N+1 query elimination in summary and transaction loading
 
 ### Background: Phase 2 N+1 Problems
@@ -499,8 +499,8 @@ assert query_counter.count < 10
 - Most frequent database operation
 - N+1 would scale badly with more portfolios
 
-**Before optimization**: ~50 queries for 10 portfolios
-**After optimization**: 3-5 queries
+**Before optimization**: ~50 queries for 10 portfolios\
+**After optimization**: 3-5 queries\
 **Improvement**: 90%+ reduction
 
 ---
@@ -578,8 +578,8 @@ assert query_counter.count < 5
 - Each portfolio might have 100+ transactions
 - IBKR allocations add complexity
 
-**Before optimization**: 231 queries for 230 transactions (1 + 230)
-**After optimization**: 2-3 queries
+**Before optimization**: 231 queries for 230 transactions (1 + 230)\
+**After optimization**: 2-3 queries\
 **Improvement**: 98.7%+ reduction
 
 **Data dependency**: Skips if no portfolio found

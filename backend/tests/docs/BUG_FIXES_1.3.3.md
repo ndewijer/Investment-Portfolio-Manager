@@ -6,10 +6,10 @@ This document details critical bugs discovered while writing comprehensive tests
 
 ## Bug #1: Dividend Transactions Subtracted from Share Count
 
-**Severity**: Critical
-**Discovered**: During DividendService test development
-**File**: `app/services/dividend_service.py`
-**Line**: 63
+**Severity**: Critical\
+**Discovered**: During DividendService test development\
+**File**: `app/services/dividend_service.py`\
+**Line**: 63\
 **Affected Method**: `calculate_shares_owned()`
 
 ### The Problem
@@ -65,7 +65,7 @@ for transaction in transactions:
 
 ### Test Validation
 
-**Test**: `test_calculate_shares_with_dividend_transactions`
+**Test**: `test_calculate_shares_with_dividend_transactions`\
 **Location**: `tests/test_dividend_service.py:189`
 
 ```python
@@ -96,7 +96,7 @@ def test_calculate_shares_with_dividend_transactions(self, app_context, db_sessi
     assert shares == 105  # ✅ Now passes, would have failed before fix
 ```
 
-**Before fix**: Test would fail with `assert 95.0 == 105`
+**Before fix**: Test would fail with `assert 95.0 == 105`\
 **After fix**: Test passes ✅
 
 ### Impact Assessment
@@ -117,10 +117,10 @@ def test_calculate_shares_with_dividend_transactions(self, app_context, db_sessi
 
 ## Bug #2: Validation Skipped for Zero/Negative Reinvestment Values
 
-**Severity**: Critical
-**Discovered**: During DividendService validation test development
-**File**: `app/services/dividend_service.py`
-**Lines**: 127-128 (create), 216 (update)
+**Severity**: Critical\
+**Discovered**: During DividendService validation test development\
+**File**: `app/services/dividend_service.py`\
+**Lines**: 127-128 (create), 216 (update)\
 **Affected Methods**: `create_dividend()`, `update_dividend()`
 
 ### The Problem
@@ -188,7 +188,7 @@ if "reinvestment_shares" in data and "reinvestment_price" in data:
 
 ### Test Validation
 
-**Test 1**: `test_create_stock_dividend_reinvestment_validation` (create path)
+**Test 1**: `test_create_stock_dividend_reinvestment_validation` (create path)\
 **Location**: `tests/test_dividend_service.py:383`
 
 ```python
@@ -213,7 +213,7 @@ def test_create_stock_dividend_reinvestment_validation(self, app_context, db_ses
         DividendService.create_dividend(dividend_data)  # ✅ Now raises (was passing before)
 ```
 
-**Test 2**: `test_update_dividend_validation_negative_reinvestment` (update path)
+**Test 2**: `test_update_dividend_validation_negative_reinvestment` (update path)\
 **Location**: `tests/test_dividend_service.py:641`
 
 ```python
@@ -232,7 +232,7 @@ def test_update_dividend_validation_negative_reinvestment(self, app_context, db_
         )  # ✅ Now raises (was passing before)
 ```
 
-**Before fix**: Tests would fail with `Failed: DID NOT RAISE <class 'ValueError'>`
+**Before fix**: Tests would fail with `Failed: DID NOT RAISE <class 'ValueError'>`\
 **After fix**: Tests pass, ValueError correctly raised ✅
 
 ### Affected Code Paths
@@ -274,10 +274,10 @@ for div in suspect_dividends:
 
 ## Bug #3: Cost Basis Calculation Used Sale Price Instead of Average Cost
 
-**Severity**: Critical
-**Discovered**: During TransactionService test development
-**File**: `app/services/transaction_service.py`
-**Lines**: 414-418
+**Severity**: Critical\
+**Discovered**: During TransactionService test development\
+**File**: `app/services/transaction_service.py`\
+**Lines**: 414-418\
 **Affected Method**: `calculate_current_position()`
 
 ### The Problem
@@ -373,7 +373,7 @@ assert position["total_cost"] == 1280.0  # Not 1150!
 assert position["average_cost"] == 10.67  # Stays same
 ```
 
-**Before fix**: Would get $1150 total cost (wrong!)
+**Before fix**: Would get $1150 total cost (wrong!)\
 **After fix**: Gets $1280 total cost ✅
 
 ### Impact Assessment
