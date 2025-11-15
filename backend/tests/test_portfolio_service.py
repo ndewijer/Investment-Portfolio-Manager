@@ -798,9 +798,10 @@ class TestPortfolioHistoricalMethods:
 
     def test_get_portfolio_history_no_portfolios(self, app_context, db_session):
         """Test portfolio history behavior when no valid portfolios have transactions."""
-        # Since get_portfolio_history queries ALL portfolios in the system, and we use Query-Specific Data
-        # pattern, we can't easily isolate this test. The method will return data if other tests
-        # created portfolios with transactions. Let's verify the method handles the empty case gracefully.
+        # Since get_portfolio_history queries ALL portfolios in the system, and we use
+        # Query-Specific Data pattern, we can't easily isolate this test. The method will
+        # return data if other tests created portfolios with transactions. Let's verify the
+        # method handles the empty case gracefully.
         result = PortfolioService.get_portfolio_history()
 
         # Verify result is a list (empty or not depends on other tests)
