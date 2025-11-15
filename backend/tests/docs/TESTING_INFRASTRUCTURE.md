@@ -51,7 +51,7 @@ Our testing approach:
 
 ### Isolation Strategy
 
-**Production Database**: `backend/data/db/portfolio_manager.db`
+**Production Database**: `backend/data/db/portfolio_manager.db`\
 **Test Database**: `/tmp/test_portfolio_manager.db`
 
 **Why separate**:
@@ -575,8 +575,8 @@ app/services/dividend_service.py       119     11    91%   160-162, 278, 294, 31
 
 ### Coverage Targets
 
-**Service layer**: 90%+ coverage
-**Route layer**: 80%+ coverage (future Phase 4)
+**Service layer**: 90%+ coverage\
+**Route layer**: 80%+ coverage (future Phase 4)\
 **Overall backend**: 80%+ coverage
 
 ### Interpreting Coverage

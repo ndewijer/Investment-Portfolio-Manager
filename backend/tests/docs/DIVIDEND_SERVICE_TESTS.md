@@ -1,9 +1,9 @@
 # DividendService Test Suite Documentation
 
-**File**: `tests/test_dividend_service.py`
-**Service**: `app/services/dividend_service.py`
-**Tests**: 21 tests
-**Coverage**: 91% (119 statements, 11 missed)
+**File**: `tests/test_dividend_service.py`\
+**Service**: `app/services/dividend_service.py`\
+**Tests**: 21 tests\
+**Coverage**: 91% (119 statements, 11 missed)\
 **Created**: Version 1.3.3 (Phase 3)
 
 ---
@@ -189,7 +189,7 @@ Transaction.query.filter(
 
 **Bug validated**: This test validates **Bug Fix #1** where dividend transactions were being subtracted instead of added.
 
-**Before fix**: Would get 95 (100 - 5)
+**Before fix**: Would get 95 (100 - 5)\
 **After fix**: Gets 105 (100 + 5) ✅
 
 See `BUG_FIXES_1.3.3.md` for details.

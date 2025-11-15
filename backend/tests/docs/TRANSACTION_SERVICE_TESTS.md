@@ -1,9 +1,9 @@
 # TransactionService Test Suite Documentation
 
-**File**: `tests/test_transaction_service.py`
-**Service**: `app/services/transaction_service.py`
-**Tests**: 26 tests
-**Coverage**: 95% (147 statements, 8 missed)
+**File**: `tests/test_transaction_service.py`\
+**Service**: `app/services/transaction_service.py`\
+**Tests**: 26 tests\
+**Coverage**: 95% (147 statements, 8 missed)\
 **Created**: Version 1.3.3 (Phase 3)
 
 ---
