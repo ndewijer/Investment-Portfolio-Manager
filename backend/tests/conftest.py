@@ -165,8 +165,8 @@ def db_session(app_context):
     Provide a database session for tests.
 
     This fixture provides access to db.session within the app context.
-    Database changes are automatically rolled back between tests via
-    the app_context fixture's table recreation.
+    Tests should query for specific data they create rather than assuming
+    an empty database, ensuring test independence regardless of execution order.
 
     Scope: function - created for each test.
     """
