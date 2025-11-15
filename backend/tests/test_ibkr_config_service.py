@@ -154,7 +154,7 @@ class TestConfigSave:
 
     def test_save_config_create_new(self, app_context, db_session, mock_encryption):
         """Test creating new configuration."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        mock_encrypt, _mock_decrypt = mock_encryption
 
         # Save new config
         config = IBKRConfigService.save_config(
@@ -180,7 +180,7 @@ class TestConfigSave:
 
     def test_save_config_with_all_fields(self, app_context, db_session, mock_encryption):
         """Test creating config with all optional fields."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        _mock_encrypt, _mock_decrypt = mock_encryption
         expires_at = datetime.now() + timedelta(days=90)
 
         config = IBKRConfigService.save_config(
@@ -198,7 +198,7 @@ class TestConfigSave:
 
     def test_save_config_update_existing(self, app_context, db_session, mock_encryption):
         """Test updating existing configuration."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        _mock_encrypt, _mock_decrypt = mock_encryption
 
         # Create initial config
         old_config = IBKRConfig(
@@ -229,7 +229,7 @@ class TestConfigSave:
 
     def test_save_config_update_partial_fields(self, app_context, db_session, mock_encryption):
         """Test updating only some fields preserves others."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        _mock_encrypt, _mock_decrypt = mock_encryption
 
         # Create initial config with expiration
         expires_at = datetime.now() + timedelta(days=90)
@@ -274,7 +274,7 @@ class TestConfigSave:
 
     def test_save_config_disable_config(self, app_context, db_session, mock_encryption):
         """Test disabling configuration."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        _mock_encrypt, _mock_decrypt = mock_encryption
 
         # Create enabled config
         config = IBKRConfigService.save_config(
@@ -346,7 +346,7 @@ class TestEdgeCases:
 
     def test_save_config_enabled_defaults_to_true(self, app_context, db_session, mock_encryption):
         """Test that enabled defaults to True when not specified."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        _mock_encrypt, _mock_decrypt = mock_encryption
 
         config = IBKRConfigService.save_config(
             flex_token="test_token",
@@ -360,7 +360,7 @@ class TestEdgeCases:
         self, app_context, db_session, mock_encryption
     ):
         """Test that auto_import defaults to False when not specified."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        _mock_encrypt, _mock_decrypt = mock_encryption
 
         config = IBKRConfigService.save_config(
             flex_token="test_token",
@@ -372,7 +372,7 @@ class TestEdgeCases:
 
     def test_save_config_update_token_expires_at(self, app_context, db_session, mock_encryption):
         """Test updating token expiration date."""
-        mock_encrypt, mock_decrypt = mock_encryption
+        _mock_encrypt, _mock_decrypt = mock_encryption
 
         # Create config without expiration
         config = IBKRConfig(
