@@ -383,20 +383,24 @@ class TestProcessTransactionAllocation:
         portfolio_b_fee = next(f for f in fee_txns if f["portfolio_name"] == "Second Portfolio")
         assert portfolio_b_fee["amount"] == 0.60  # 40% of $1.50
 
-        # Verify allocations
-        allocs = IBKRTransactionAllocation.query.filter_by(
+        # Verify allocations (should be 4 total: 2 main + 2 fee)
+        all_allocs = IBKRTransactionAllocation.query.filter_by(
             ibkr_transaction_id=sample_ibkr_transaction.id
         ).all()
-        assert len(allocs) == 2
+        assert len(all_allocs) == 4
+
+        # Filter to main transaction allocations (those with shares > 0)
+        main_allocs = [a for a in all_allocs if a.allocated_shares > 0]
+        assert len(main_allocs) == 2
 
         # Check first allocation (60%)
-        alloc1 = next(a for a in allocs if a.portfolio_id == sample_portfolio.id)
+        alloc1 = next(a for a in main_allocs if a.portfolio_id == sample_portfolio.id)
         assert alloc1.allocation_percentage == 60.0
         assert alloc1.allocated_amount == 9000.00  # 15000 * 0.6
         assert alloc1.allocated_shares == 60  # 100 * 0.6
 
         # Check second allocation (40%)
-        alloc2 = next(a for a in allocs if a.portfolio_id == second_portfolio.id)
+        alloc2 = next(a for a in main_allocs if a.portfolio_id == second_portfolio.id)
         assert alloc2.allocation_percentage == 40.0
         assert alloc2.allocated_amount == 6000.00  # 15000 * 0.4
         assert alloc2.allocated_shares == 40  # 100 * 0.4
@@ -1299,3 +1303,112 @@ class TestCommissionAllocation:
         assert fee_txn.cost_per_share == 1.50  # Fee amount stored here
         assert fee_txn.date == date(2025, 1, 15)  # Same date as IBKR transaction
         assert fee_txn.portfolio_fund_id is not None  # Linked to portfolio-fund
+
+    def test_fee_transaction_linked_to_ibkr(self, app_context, db_session, sample_portfolio):
+        """Test that fee transactions are linked to IBKR via IBKRTransactionAllocation."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=1.50,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+
+        result = IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        assert result["success"] is True
+
+        # Get the fee transaction
+        fee_txn = Transaction.query.filter_by(type="fee").first()
+        assert fee_txn is not None
+
+        # Verify fee transaction is linked to IBKR via allocation
+        fee_allocation = IBKRTransactionAllocation.query.filter_by(
+            transaction_id=fee_txn.id
+        ).first()
+        assert fee_allocation is not None
+        assert fee_allocation.ibkr_transaction_id == ibkr_txn.id
+        assert fee_allocation.portfolio_id == sample_portfolio.id
+        assert fee_allocation.allocated_amount == 1.50
+        assert fee_allocation.allocated_shares == 0
+
+    def test_fee_transaction_linked_to_ibkr_split_allocation(
+        self, app_context, db_session, sample_portfolio, second_portfolio
+    ):
+        """Test that fee transactions are linked to IBKR in split allocations."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=3.00,  # $3 commission
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # 60/40 split
+        allocations = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 60.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 40.0},
+        ]
+
+        result = IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        assert result["success"] is True
+
+        # Get all fee transactions
+        fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(fee_txns) == 2
+
+        # Verify both fee transactions are linked to IBKR
+        for fee_txn in fee_txns:
+            fee_allocation = IBKRTransactionAllocation.query.filter_by(
+                transaction_id=fee_txn.id
+            ).first()
+            assert fee_allocation is not None
+            assert fee_allocation.ibkr_transaction_id == ibkr_txn.id
+
+        # Verify allocation amounts
+        portfolio_a_fee_txn = (
+            Transaction.query.join(PortfolioFund)
+            .filter(
+                Transaction.type == "fee",
+                PortfolioFund.portfolio_id == sample_portfolio.id,
+            )
+            .first()
+        )
+        assert portfolio_a_fee_txn is not None
+        assert portfolio_a_fee_txn.cost_per_share == 1.80  # 60% of $3.00
+
+        portfolio_b_fee_txn = (
+            Transaction.query.join(PortfolioFund)
+            .filter(
+                Transaction.type == "fee",
+                PortfolioFund.portfolio_id == second_portfolio.id,
+            )
+            .first()
+        )
+        assert portfolio_b_fee_txn is not None
+        assert portfolio_b_fee_txn.cost_per_share == 1.20  # 40% of $3.00
