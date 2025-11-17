@@ -41,10 +41,11 @@ class SymbolLookupService:
             None: If symbol not found
         """
         try:
-            # Check cache first
-            cached_info = SymbolInfo.query.filter_by(symbol=symbol, is_valid=True).first()
+            # Check cache first (regardless of is_valid to avoid UNIQUE constraint errors)
+            cached_info = SymbolInfo.query.filter_by(symbol=symbol).first()
 
-            if cached_info and not force_refresh:
+            # Check if we can use cached data
+            if cached_info and cached_info.is_valid and not force_refresh:
                 # Ensure last_updated is timezone-aware
                 last_updated = cached_info.last_updated.replace(tzinfo=UTC)
                 # Check if cache is still valid

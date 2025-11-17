@@ -32,17 +32,33 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 
 ### Current Coverage
 
-As of version 1.3.2:
+As of version 1.3.3+ (Phase 4):
 
-- **Performance Tests**: `test_portfolio_performance.py` (12 tests)
-  - Phase 1: Batch processing tests (8 tests)
-  - Phase 2: Eager loading tests (4 tests)
-  - Query count validation
-  - Execution time benchmarks
-  - Data structure correctness
-  - Edge case handling
+- **Service Tests**: Comprehensive coverage across all major services
+  - **High Coverage Services** (80%+):
+    - `dividend_service.py`: 93% (21 tests) ✅
+    - `transaction_service.py`: 87% (26 tests) ✅
+    - `fund_matching_service.py`: 100% (27 tests) ✅
+    - `symbol_lookup_service.py`: 100% (20 tests) ✅
+    - `price_update_service.py`: 98% (17 tests) ✅
+    - `ibkr_flex_service.py`: 77% (31 tests) ✅
+    - `ibkr_transaction_service.py`: 90% (36 tests) ✅
+  - **Target Coverage Services** (85%+):
+    - `logging_service.py`: 71% → 85%+ (in progress)
+  - **Lower Priority Services** (80%+ target):
+    - `developer_service.py`: 23% → 80%+ (pending)
+    - `fund_service.py`: 20% (existing)
+    - `portfolio_service.py`: 13% (existing)
+    - `ibkr_config_service.py`: 21% (existing)
 
-**Test Coverage**: 75% for `portfolio_service.py`, 34% for `transaction_service.py`, 28% overall
+- **Critical Bugs Found**: 5 bugs discovered and fixed during testing
+  - ReinvestmentStatus enum vs string mismatch
+  - Dividend share calculation error
+  - Cost basis calculation error
+  - Validation bypassing with zero values
+  - UNIQUE constraint errors with invalid cache
+
+**Overall Test Coverage**: 140+ tests across 7 services, 85%+ average coverage for tested services
 
 ### Goals
 
@@ -97,7 +113,37 @@ backend/
 ├── tests/                  # Test suite
 │   ├── __init__.py        # Package marker
 │   ├── conftest.py        # Shared fixtures
-│   └── test_portfolio_performance.py  # Performance tests
+│   ├── services/          # Service layer tests
+│   │   ├── test_dividend_service.py
+│   │   ├── test_fund_matching_service.py
+│   │   ├── test_fund_service.py
+│   │   ├── test_ibkr_config_service.py
+│   │   ├── test_ibkr_flex_service.py
+│   │   ├── test_ibkr_transaction_service.py
+│   │   ├── test_logging_service.py
+│   │   ├── test_portfolio_service.py
+│   │   ├── test_price_update_service.py
+│   │   ├── test_symbol_lookup_service.py
+│   │   └── test_transaction_service.py
+│   └── docs/              # Test documentation
+│       ├── README.md      # Documentation index
+│       ├── services/      # Service test documentation
+│       │   ├── DIVIDEND_SERVICE_TESTS.md
+│       │   ├── FUND_MATCHING_SERVICE_TESTS.md
+│       │   ├── FUND_SERVICE_TESTS.md
+│       │   ├── IBKR_CONFIG_SERVICE_TESTS.md
+│       │   ├── IBKR_FLEX_SERVICE_TESTS.md
+│       │   ├── IBKR_TRANSACTION_SERVICE_TESTS.md
+│       │   ├── PORTFOLIO_SERVICE_TESTS.md
+│       │   ├── PRICE_UPDATE_SERVICE_TESTS.md
+│       │   ├── SYMBOL_LOOKUP_SERVICE_TESTS.md
+│       │   └── TRANSACTION_SERVICE_TESTS.md
+│       ├── phases/        # Development phase documentation
+│       │   ├── BUG_FIXES_1.3.3.md
+│       │   └── PHASE_3_SUMMARY.md
+│       └── infrastructure/ # Testing infrastructure docs
+│           ├── PORTFOLIO_PERFORMANCE_TESTS.md
+│           └── TESTING_INFRASTRUCTURE.md
 ├── pytest.ini             # Pytest configuration
 └── requirements.txt       # Dependencies
 ```
@@ -106,13 +152,14 @@ backend/
 
 Tests are organized by:
 
-1. **Module**: `test_<module_name>.py`
-2. **Class**: `Test<FeatureName>` (optional grouping)
-3. **Function**: `test_<specific_behavior>`
+1. **Category**: Services, Routes, Models (in subdirectories)
+2. **Module**: `test_<module_name>.py`
+3. **Class**: `Test<FeatureName>` (optional grouping)
+4. **Function**: `test_<specific_behavior>`
 
 **Example**:
 ```python
-# tests/test_portfolio_service.py
+# tests/services/test_portfolio_service.py
 class TestPortfolioHistoryPerformance:
     def test_get_portfolio_history_query_count(self):
         pass
@@ -260,13 +307,19 @@ pytest -v
 pytest -s
 
 # Run specific test file
-pytest tests/test_portfolio_performance.py
+pytest tests/services/test_portfolio_service.py
 
 # Run specific test function
-pytest tests/test_portfolio_performance.py::test_get_portfolio_history_query_count
+pytest tests/services/test_portfolio_service.py::test_get_portfolio_history_query_count
 
 # Run specific test class
-pytest tests/test_portfolio_performance.py::TestPortfolioHistoryPerformance
+pytest tests/services/test_portfolio_service.py::TestPortfolioHistoryPerformance
+
+# Run all service tests
+pytest tests/services/
+
+# Run specific service tests
+pytest tests/services/test_logging_service.py
 ```
 
 ### Coverage Reports

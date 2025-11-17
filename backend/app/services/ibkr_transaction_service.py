@@ -21,6 +21,7 @@ from ..models import (
     LogLevel,
     Portfolio,
     PortfolioFund,
+    ReinvestmentStatus,
     Transaction,
     db,
 )
@@ -441,7 +442,7 @@ class IBKRTransactionService:
         Returns:
             List of pending dividend records
         """
-        query = Dividend.query.filter_by(reinvestment_status="pending")
+        query = Dividend.query.filter_by(reinvestment_status=ReinvestmentStatus.PENDING)
 
         # Filter by fund if symbol/ISIN provided
         if symbol or isin:
