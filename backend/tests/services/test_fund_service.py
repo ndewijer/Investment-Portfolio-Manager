@@ -22,6 +22,7 @@ from app.models import (
     Transaction,
 )
 from app.services.fund_service import FundService
+from tests.test_helpers import make_id, make_isin
 from werkzeug.exceptions import NotFound
 
 
@@ -32,16 +33,16 @@ class TestFundRetrieval:
         """Test retrieving all funds."""
         # Create funds
         fund1 = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund 1",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
         fund2 = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund 2",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="EUR",
             exchange="LSE",
         )
@@ -60,9 +61,9 @@ class TestFundRetrieval:
         """Test retrieving a specific fund by ID."""
         # Create fund
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NASDAQ",
         )
@@ -80,7 +81,7 @@ class TestFundRetrieval:
 
     def test_get_fund_not_found(self, app_context, db_session):
         """Test get_fund raises 404 for nonexistent fund."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
 
         with pytest.raises(NotFound):
             FundService.get_fund(fake_id)
@@ -93,7 +94,7 @@ class TestFundCreation:
         """Test creating fund with minimal required fields."""
         data = {
             "name": "Test Fund",
-            "isin": f"US{uuid.uuid4().hex[:10].upper()}",
+            "isin": make_isin("US"),
             "currency": "USD",
             "exchange": "NYSE",
         }
@@ -118,7 +119,7 @@ class TestFundCreation:
         """Test creating fund with symbol."""
         data = {
             "name": "Apple Inc.",
-            "isin": f"US{uuid.uuid4().hex[:10].upper()}",
+            "isin": make_isin("US"),
             "currency": "USD",
             "exchange": "NASDAQ",
             "symbol": "AAPL",
@@ -132,7 +133,7 @@ class TestFundCreation:
         """Test creating fund with investment_type='stock'."""
         data = {
             "name": "Tesla Inc.",
-            "isin": f"US{uuid.uuid4().hex[:10].upper()}",
+            "isin": make_isin("US"),
             "currency": "USD",
             "exchange": "NASDAQ",
             "symbol": "TSLA",
@@ -147,7 +148,7 @@ class TestFundCreation:
         """Test creating fund with investment_type='fund'."""
         data = {
             "name": "Vanguard S&P 500",
-            "isin": f"US{uuid.uuid4().hex[:10].upper()}",
+            "isin": make_isin("US"),
             "currency": "USD",
             "exchange": "NYSE",
             "investment_type": "fund",
@@ -165,7 +166,7 @@ class TestFundUpdate:
         """Test updating basic fund fields."""
         # Create fund
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Original Name",
             isin="US1234567890",
             currency="USD",
@@ -195,9 +196,9 @@ class TestFundUpdate:
         """Test adding symbol to fund."""
         # Create fund without symbol
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
@@ -222,9 +223,9 @@ class TestFundUpdate:
         """Test changing fund symbol."""
         # Create fund with symbol
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
             symbol="OLD",
@@ -250,9 +251,9 @@ class TestFundUpdate:
         """Test removing symbol from fund."""
         # Create fund with symbol
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
             symbol="AAPL",
@@ -277,9 +278,9 @@ class TestFundUpdate:
         """Test updating dividend type."""
         # Create fund
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
             dividend_type=DividendType.NONE,
@@ -304,9 +305,9 @@ class TestFundUpdate:
         """Test updating investment type from fund to stock."""
         # Create fund
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
             investment_type=InvestmentType.FUND,
@@ -330,7 +331,7 @@ class TestFundUpdate:
 
     def test_update_fund_not_found(self, app_context, db_session):
         """Test update raises ValueError for nonexistent fund."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
         update_data = {
             "name": "Test",
             "isin": "US1234567890",
@@ -349,9 +350,9 @@ class TestFundDeletion:
         """Test checking usage for fund not in any portfolio."""
         # Create fund not attached to any portfolio
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Unused Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
@@ -367,15 +368,15 @@ class TestFundDeletion:
     def test_check_fund_usage_in_portfolio_no_transactions(self, app_context, db_session):
         """Test fund in portfolio but no transactions."""
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
@@ -390,13 +391,13 @@ class TestFundDeletion:
         # Create portfolio, fund, and transaction
         portfolio = Portfolio(id=str(uuid.uuid4()), name="Active Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
@@ -404,7 +405,7 @@ class TestFundDeletion:
         from datetime import date
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -427,9 +428,9 @@ class TestFundDeletion:
         """Test deleting fund not in any portfolio."""
         # Create fund
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund to Delete",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
@@ -455,14 +456,14 @@ class TestFundDeletion:
 
         # Create fund with prices
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund to Delete",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        price1 = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date(2024, 1, 1), price=10.0)
-        price2 = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date(2024, 1, 2), price=11.0)
+        price1 = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 1, 1), price=10.0)
+        price2 = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 1, 2), price=11.0)
         db_session.add_all([fund, price1, price2])
         db_session.commit()
         fund_id = fund.id
@@ -477,15 +478,15 @@ class TestFundDeletion:
     def test_delete_fund_in_portfolio(self, app_context, db_session):
         """Test deleting fund in portfolio raises ValueError."""
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Protected Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
         fund_id = fund.id
@@ -500,7 +501,7 @@ class TestFundDeletion:
 
     def test_delete_fund_not_found(self, app_context, db_session):
         """Test deleting nonexistent fund raises ValueError."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
 
         with pytest.raises(ValueError, match="not found"):
             FundService.delete_fund(fake_id)
@@ -513,7 +514,7 @@ class TestEdgeCases:
         """Test creating fund with duplicate ISIN raises error."""
         from sqlalchemy.exc import IntegrityError
 
-        isin = f"US{uuid.uuid4().hex[:10].upper()}"
+        isin = make_isin("US")
 
         # Create first fund
         data1 = {"name": "Fund 1", "isin": isin, "currency": "USD", "exchange": "NYSE"}
@@ -530,9 +531,9 @@ class TestEdgeCases:
         """Test updating fund with same symbol doesn't trigger change."""
         # Create fund with symbol
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
             symbol="AAPL",
@@ -560,23 +561,23 @@ class TestEdgeCases:
 
         # Create fund and multiple portfolios
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Popular Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        portfolio1 = Portfolio(id=str(uuid.uuid4()), name="Portfolio 1")
-        portfolio2 = Portfolio(id=str(uuid.uuid4()), name="Portfolio 2")
+        portfolio1 = Portfolio(id=make_id(), name="Portfolio 1")
+        portfolio2 = Portfolio(id=make_id(), name="Portfolio 2")
 
-        pf1 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio1.id, fund_id=fund.id)
-        pf2 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio2.id, fund_id=fund.id)
+        pf1 = PortfolioFund(id=make_id(), portfolio_id=portfolio1.id, fund_id=fund.id)
+        pf2 = PortfolioFund(id=make_id(), portfolio_id=portfolio2.id, fund_id=fund.id)
         db_session.add_all([fund, portfolio1, portfolio2, pf1, pf2])
         db_session.commit()
 
         # Add transactions to both
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf1.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -584,7 +585,7 @@ class TestEdgeCases:
             cost_per_share=10.0,
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf2.id,
             date=date(2024, 1, 1),
             type="buy",

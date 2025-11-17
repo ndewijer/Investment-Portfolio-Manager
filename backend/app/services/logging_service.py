@@ -116,7 +116,9 @@ class LoggingService:
             }
             if details and "user_message" in details:
                 response["message"] = details["user_message"]
-            return response, http_status or (500 if level == LogLevel.ERROR else 200)
+            error_levels = [LogLevel.ERROR, LogLevel.CRITICAL]
+            status = http_status or (500 if level in error_levels else 200)
+            return response, status
 
         # Create log entry
         log_entry = Log(
@@ -155,7 +157,9 @@ class LoggingService:
         if details and "user_message" in details:
             response["message"] = details["user_message"]
 
-        return response, http_status or (500 if level == LogLevel.ERROR else 200)
+        error_levels = [LogLevel.ERROR, LogLevel.CRITICAL]
+        status = http_status or (500 if level in error_levels else 200)
+        return response, status
 
     def _get_logging_level(self, level: LogLevel):
         """Convert our LogLevel to Python's logging level.

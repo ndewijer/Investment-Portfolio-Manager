@@ -14,12 +14,12 @@ from datetime import date
 import pytest
 from app.models import DividendType, ReinvestmentStatus
 from app.services.dividend_service import DividendService
-
 from tests.factories import (
     FundFactory,
     PortfolioFactory,
     PortfolioFundFactory,
 )
+from tests.test_helpers import make_id
 
 
 class TestCalculateSharesOwned:
@@ -33,12 +33,11 @@ class TestCalculateSharesOwned:
         db_session.commit()
 
         # Create buy transactions directly
-        import uuid
 
         from app.models import Transaction
 
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -46,7 +45,7 @@ class TestCalculateSharesOwned:
             date=date(2024, 1, 1),
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=50,
@@ -70,12 +69,11 @@ class TestCalculateSharesOwned:
         db_session.commit()
 
         # Create transactions directly
-        import uuid
 
         from app.models import Transaction
 
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -83,7 +81,7 @@ class TestCalculateSharesOwned:
             date=date(2024, 1, 1),
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="sell",
             shares=30,
@@ -91,7 +89,7 @@ class TestCalculateSharesOwned:
             date=date(2024, 2, 1),
         )
         txn3 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=50,
@@ -116,12 +114,11 @@ class TestCalculateSharesOwned:
         db_session.commit()
 
         # Create transaction directly
-        import uuid
 
         from app.models import Transaction
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -144,12 +141,11 @@ class TestCalculateSharesOwned:
         db_session.commit()
 
         # Create transactions directly
-        import uuid
 
         from app.models import Transaction
 
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -158,7 +154,7 @@ class TestCalculateSharesOwned:
         )
         # This should not be counted
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=50,
@@ -181,12 +177,11 @@ class TestCalculateSharesOwned:
         db_session.commit()
 
         # Create transactions directly
-        import uuid
 
         from app.models import Transaction
 
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -195,7 +190,7 @@ class TestCalculateSharesOwned:
         )
         # Dividend reinvestment transaction
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="dividend",
             shares=5,
@@ -222,12 +217,11 @@ class TestCreateDividendCash:
         db_session.commit()
 
         # Create buy transaction directly
-        import uuid
 
         from app.models import Transaction
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -261,12 +255,11 @@ class TestCreateDividendCash:
         db_session.commit()
 
         # Create buy transaction directly
-        import uuid
 
         from app.models import Transaction
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -307,12 +300,11 @@ class TestCreateDividendStock:
         db_session.commit()
 
         # Create buy transaction directly
-        import uuid
 
         from app.models import Transaction
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -343,12 +335,11 @@ class TestCreateDividendStock:
         db_session.commit()
 
         # Create buy transaction directly
-        import uuid
 
         from app.models import Transaction
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -395,12 +386,11 @@ class TestCreateDividendStock:
         db_session.commit()
 
         # Create buy transaction directly
-        import uuid
 
         from app.models import Transaction
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=100,
@@ -441,12 +431,11 @@ class TestUpdateDividend:
         portfolio_fund = PortfolioFundFactory(portfolio=portfolio, fund=fund)
 
         # Create dividend directly
-        import uuid
 
         from app.models import Dividend
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=portfolio_fund.id,
             record_date=date(2024, 3, 1),
@@ -482,12 +471,11 @@ class TestUpdateDividend:
         portfolio_fund = PortfolioFundFactory(portfolio=portfolio, fund=fund)
 
         # Create dividend directly
-        import uuid
 
         from app.models import Dividend
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=portfolio_fund.id,
             record_date=date(2024, 3, 1),
@@ -530,12 +518,11 @@ class TestUpdateDividend:
         portfolio_fund = PortfolioFundFactory(portfolio=portfolio, fund=fund)
 
         # Create dividend with reinvestment transaction
-        import uuid
 
         from app.models import Transaction
 
         transaction = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             date=date(2024, 2, 10),
             type="dividend",
@@ -548,7 +535,7 @@ class TestUpdateDividend:
         from app.models import Dividend
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=portfolio_fund.id,
             record_date=date(2024, 3, 1),
@@ -587,12 +574,11 @@ class TestUpdateDividend:
         portfolio_fund = PortfolioFundFactory(portfolio=portfolio, fund=fund)
 
         # Create dividend with reinvestment transaction
-        import uuid
 
         from app.models import Transaction
 
         transaction = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             date=date(2024, 2, 10),
             type="dividend",
@@ -605,7 +591,7 @@ class TestUpdateDividend:
         from app.models import Dividend
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=portfolio_fund.id,
             record_date=date(2024, 3, 1),
@@ -652,12 +638,11 @@ class TestUpdateDividend:
         db_session.commit()
 
         # Create dividend directly
-        import uuid
 
         from app.models import Dividend
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=portfolio_fund.id,
             record_date=date(2024, 3, 1),
@@ -707,12 +692,11 @@ class TestDeleteDividend:
         portfolio_fund = PortfolioFundFactory(portfolio=portfolio, fund=fund)
 
         # Create dividend directly
-        import uuid
 
         from app.models import Dividend
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=portfolio_fund.id,
             record_date=date(2024, 3, 1),
@@ -744,12 +728,11 @@ class TestDeleteDividend:
         portfolio_fund = PortfolioFundFactory(portfolio=portfolio, fund=fund)
 
         # Create dividend with transaction
-        import uuid
 
         from app.models import Transaction
 
         transaction = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             date=date(2024, 2, 10),
             type="dividend",
@@ -762,7 +745,7 @@ class TestDeleteDividend:
         from app.models import Dividend
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=portfolio_fund.id,
             record_date=date(2024, 3, 1),
@@ -825,12 +808,11 @@ class TestEdgeCases:
         db_session.commit()
 
         # Create transaction with fractional shares directly
-        import uuid
 
         from app.models import Transaction
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=portfolio_fund.id,
             type="buy",
             shares=123.456,  # Fractional shares

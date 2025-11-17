@@ -10,13 +10,13 @@ This test suite covers:
 - Error handling for invalid operations
 """
 
-import uuid
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
 from app.models import IBKRConfig
 from app.services.ibkr_config_service import IBKRConfigService
+from tests.test_helpers import make_id
 
 
 @pytest.fixture
@@ -61,7 +61,7 @@ class TestConfigRetrieval:
         """Test getting status when configuration exists."""
         # Create config with mock encrypted token
         config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_test_token_12345",
             flex_query_id="123456",
             auto_import_enabled=True,
@@ -89,7 +89,7 @@ class TestConfigRetrieval:
         # Create config with token expiring in 60 days
         expires_at = datetime.now() + timedelta(days=60)
         config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_test_token",
             flex_query_id="123456",
             token_expires_at=expires_at,
@@ -110,7 +110,7 @@ class TestConfigRetrieval:
         # Create config with token expiring in 15 days
         expires_at = datetime.now() + timedelta(days=15)
         config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_test_token",
             flex_query_id="123456",
             token_expires_at=expires_at,
@@ -133,7 +133,7 @@ class TestConfigRetrieval:
         # Create config with last import date
         last_import = datetime(2024, 1, 15, 10, 30, 0)
         config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_test_token",
             flex_query_id="123456",
             last_import_date=last_import,
@@ -202,7 +202,7 @@ class TestConfigSave:
 
         # Create initial config
         old_config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_old_token",
             flex_query_id="111111",
             auto_import_enabled=False,
@@ -234,7 +234,7 @@ class TestConfigSave:
         # Create initial config with expiration
         expires_at = datetime.now() + timedelta(days=90)
         old_config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_old_token",
             flex_query_id="111111",
             token_expires_at=expires_at,
@@ -296,7 +296,7 @@ class TestConfigDeletion:
         """Test deleting existing configuration."""
         # Create config
         config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_test_token",
             flex_query_id="123456",
             enabled=True,
@@ -330,7 +330,7 @@ class TestEdgeCases:
         # Token expires in a few hours (same day)
         expires_at = datetime.now() + timedelta(hours=5)
         config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_test_token",
             flex_query_id="123456",
             token_expires_at=expires_at,
@@ -376,7 +376,7 @@ class TestEdgeCases:
 
         # Create config without expiration
         config = IBKRConfig(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             flex_token="encrypted_test_token",
             flex_query_id="123456",
             enabled=True,
@@ -396,7 +396,7 @@ class TestEdgeCases:
         """Test that status never includes the encrypted token."""
         encrypted_token = "encrypted_secret_token"
         config = IBKRConfig(
-            id=str(uuid.uuid4()), flex_token=encrypted_token, flex_query_id="123456", enabled=True
+            id=make_id(), flex_token=encrypted_token, flex_query_id="123456", enabled=True
         )
         db_session.add(config)
         db_session.commit()

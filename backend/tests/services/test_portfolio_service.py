@@ -8,7 +8,6 @@ This test suite covers:
 - Error handling for invalid operations
 """
 
-import uuid
 from datetime import date
 
 import pytest
@@ -22,6 +21,7 @@ from app.models import (
     Transaction,
 )
 from app.services.portfolio_service import PortfolioService
+from tests.test_helpers import make_id, make_isin
 
 
 class TestPortfolioCRUD:
@@ -58,7 +58,7 @@ class TestPortfolioCRUD:
         """Test updating an existing portfolio."""
         # Create portfolio directly
         portfolio = Portfolio(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Original Name",
             description="Original description",
             exclude_from_overview=False,
@@ -87,7 +87,7 @@ class TestPortfolioCRUD:
 
     def test_update_nonexistent_portfolio(self, app_context, db_session):
         """Test updating a portfolio that doesn't exist."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
 
         with pytest.raises(ValueError, match=f"Portfolio {fake_id} not found"):
             PortfolioService.update_portfolio(portfolio_id=fake_id, name="New Name")
@@ -95,7 +95,7 @@ class TestPortfolioCRUD:
     def test_delete_portfolio(self, app_context, db_session):
         """Test deleting a portfolio."""
         # Create portfolio
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="To Delete")
+        portfolio = Portfolio(id=make_id(), name="To Delete")
         db_session.add(portfolio)
         db_session.commit()
         portfolio_id = portfolio.id
@@ -111,7 +111,7 @@ class TestPortfolioCRUD:
 
     def test_delete_nonexistent_portfolio(self, app_context, db_session):
         """Test deleting a portfolio that doesn't exist."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
 
         with pytest.raises(ValueError, match=f"Portfolio {fake_id} not found"):
             PortfolioService.delete_portfolio(fake_id)
@@ -119,7 +119,7 @@ class TestPortfolioCRUD:
     def test_update_archive_status(self, app_context, db_session):
         """Test archiving and unarchiving a portfolio."""
         # Create portfolio
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Archive Test", is_archived=False)
+        portfolio = Portfolio(id=make_id(), name="Archive Test", is_archived=False)
         db_session.add(portfolio)
         db_session.commit()
 
@@ -138,8 +138,8 @@ class TestPortfolioCRUD:
     def test_get_portfolios_list_default(self, app_context, db_session):
         """Test getting list of portfolios (default excludes excluded from overview)."""
         # Create portfolios with different flags
-        p1 = Portfolio(id=str(uuid.uuid4()), name="Normal Portfolio", exclude_from_overview=False)
-        p2 = Portfolio(id=str(uuid.uuid4()), name="Excluded Portfolio", exclude_from_overview=True)
+        p1 = Portfolio(id=make_id(), name="Normal Portfolio", exclude_from_overview=False)
+        p2 = Portfolio(id=make_id(), name="Excluded Portfolio", exclude_from_overview=True)
         db_session.add(p1)
         db_session.add(p2)
         db_session.commit()
@@ -161,8 +161,8 @@ class TestPortfolioCRUD:
     def test_get_portfolios_list_include_excluded(self, app_context, db_session):
         """Test getting all portfolios including excluded from overview."""
         # Create portfolios
-        p1 = Portfolio(id=str(uuid.uuid4()), name="Normal Portfolio", exclude_from_overview=False)
-        p2 = Portfolio(id=str(uuid.uuid4()), name="Excluded Portfolio", exclude_from_overview=True)
+        p1 = Portfolio(id=make_id(), name="Normal Portfolio", exclude_from_overview=False)
+        p2 = Portfolio(id=make_id(), name="Excluded Portfolio", exclude_from_overview=True)
         db_session.add(p1)
         db_session.add(p2)
         db_session.commit()
@@ -187,11 +187,11 @@ class TestPortfolioFundManagement:
     def test_create_portfolio_fund(self, app_context, db_session):
         """Test creating a portfolio-fund relationship."""
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",  # Unique ISIN
+            isin=make_isin("US"),  # Unique ISIN
             currency="USD",
             exchange="NYSE",
         )
@@ -217,16 +217,16 @@ class TestPortfolioFundManagement:
         """Test creating portfolio-fund with nonexistent portfolio."""
         # Create fund only
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
         db_session.add(fund)
         db_session.commit()
 
-        fake_portfolio_id = str(uuid.uuid4())
+        fake_portfolio_id = make_id()
 
         with pytest.raises(ValueError, match=f"Portfolio {fake_portfolio_id} not found"):
             PortfolioService.create_portfolio_fund(fake_portfolio_id, fund.id)
@@ -234,11 +234,11 @@ class TestPortfolioFundManagement:
     def test_create_portfolio_fund_invalid_fund(self, app_context, db_session):
         """Test creating portfolio-fund with nonexistent fund."""
         # Create portfolio only
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         db_session.add(portfolio)
         db_session.commit()
 
-        fake_fund_id = str(uuid.uuid4())
+        fake_fund_id = make_id()
 
         with pytest.raises(ValueError, match=f"Fund {fake_fund_id} not found"):
             PortfolioService.create_portfolio_fund(portfolio.id, fake_fund_id)
@@ -246,19 +246,19 @@ class TestPortfolioFundManagement:
     def test_get_all_portfolio_funds(self, app_context, db_session):
         """Test getting all portfolio-fund relationships."""
         # Create portfolios and funds
-        portfolio1 = Portfolio(id=str(uuid.uuid4()), name="Portfolio 1")
-        portfolio2 = Portfolio(id=str(uuid.uuid4()), name="Portfolio 2")
+        portfolio1 = Portfolio(id=make_id(), name="Portfolio 1")
+        portfolio2 = Portfolio(id=make_id(), name="Portfolio 2")
         fund1 = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund 1",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
         fund2 = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund 2",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NASDAQ",
         )
@@ -266,8 +266,8 @@ class TestPortfolioFundManagement:
         db_session.commit()
 
         # Create relationships
-        pf1 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio1.id, fund_id=fund1.id)
-        pf2 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio2.id, fund_id=fund2.id)
+        pf1 = PortfolioFund(id=make_id(), portfolio_id=portfolio1.id, fund_id=fund1.id)
+        pf2 = PortfolioFund(id=make_id(), portfolio_id=portfolio2.id, fund_id=fund2.id)
         db_session.add(pf1)
         db_session.add(pf2)
         db_session.commit()
@@ -302,15 +302,15 @@ class TestPortfolioFundManagement:
     def test_delete_portfolio_fund_no_transactions(self, app_context, db_session):
         """Test deleting portfolio-fund with no associated transactions."""
         # Create portfolio-fund relationship
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
         pf_id = pf.id
@@ -330,21 +330,21 @@ class TestPortfolioFundManagement:
     def test_delete_portfolio_fund_with_transactions_no_confirmation(self, app_context, db_session):
         """Test deleting portfolio-fund with transactions but no confirmation."""
         # Create portfolio-fund relationship
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transaction
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -361,21 +361,21 @@ class TestPortfolioFundManagement:
     def test_delete_portfolio_fund_with_transactions_confirmed(self, app_context, db_session):
         """Test deleting portfolio-fund with transactions when confirmed."""
         # Create portfolio-fund relationship
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transactions and dividend
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -383,7 +383,7 @@ class TestPortfolioFundManagement:
             cost_per_share=10.0,
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 2, 1),
             type="dividend",
@@ -391,7 +391,7 @@ class TestPortfolioFundManagement:
             cost_per_share=10.0,
         )
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             fund_id=fund.id,
             record_date=date(2024, 1, 10),
@@ -427,21 +427,21 @@ class TestPortfolioCalculations:
     def test_calculate_portfolio_fund_values_basic(self, app_context, db_session):
         """Test calculating values for portfolio funds with transactions."""
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transaction
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -452,7 +452,7 @@ class TestPortfolioCalculations:
         db_session.commit()
 
         # Add fund price
-        price = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date(2024, 1, 15), price=12.0)
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 1, 15), price=12.0)
         db_session.add(price)
         db_session.commit()
 
@@ -478,21 +478,21 @@ class TestPortfolioCalculations:
     def test_calculate_portfolio_fund_values_with_sell(self, app_context, db_session):
         """Test calculating values with buy and sell transactions."""
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transactions (buy 100, sell 30)
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -500,7 +500,7 @@ class TestPortfolioCalculations:
             cost_per_share=10.0,
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 2, 1),
             type="sell",
@@ -511,7 +511,7 @@ class TestPortfolioCalculations:
         db_session.commit()
 
         # Add fund price
-        price = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date(2024, 2, 15), price=12.0)
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 2, 15), price=12.0)
         db_session.add(price)
         db_session.commit()
 
@@ -529,29 +529,29 @@ class TestPortfolioCalculations:
     def test_get_portfolio_funds(self, app_context, db_session):
         """Test getting portfolio funds for a specific portfolio."""
         # Create portfolio and funds
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund1 = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund 1",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
         fund2 = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Fund 2",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NASDAQ",
         )
-        pf1 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund1.id)
-        pf2 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund2.id)
+        pf1 = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund1.id)
+        pf2 = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund2.id)
         db_session.add_all([portfolio, fund1, fund2, pf1, pf2])
         db_session.commit()
 
         # Add transactions
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf1.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -559,7 +559,7 @@ class TestPortfolioCalculations:
             cost_per_share=10.0,
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf2.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -583,21 +583,21 @@ class TestPortfolioCalculations:
         """Test getting summary of all portfolios."""
         # Create portfolios
         portfolio1 = Portfolio(
-            id=str(uuid.uuid4()), name="Portfolio 1", is_archived=False, exclude_from_overview=False
+            id=make_id(), name="Portfolio 1", is_archived=False, exclude_from_overview=False
         )
         portfolio2 = Portfolio(
-            id=str(uuid.uuid4()), name="Portfolio 2", is_archived=False, exclude_from_overview=False
+            id=make_id(), name="Portfolio 2", is_archived=False, exclude_from_overview=False
         )
         portfolio3 = Portfolio(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Archived Portfolio",
             is_archived=True,
             exclude_from_overview=False,
         )
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
@@ -605,14 +605,14 @@ class TestPortfolioCalculations:
         db_session.commit()
 
         # Create portfolio-fund relationships
-        pf1 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio1.id, fund_id=fund.id)
-        pf2 = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio2.id, fund_id=fund.id)
+        pf1 = PortfolioFund(id=make_id(), portfolio_id=portfolio1.id, fund_id=fund.id)
+        pf2 = PortfolioFund(id=make_id(), portfolio_id=portfolio2.id, fund_id=fund.id)
         db_session.add_all([pf1, pf2])
         db_session.commit()
 
         # Add transactions
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf1.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -620,7 +620,7 @@ class TestPortfolioCalculations:
             cost_per_share=10.0,
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf2.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -631,7 +631,7 @@ class TestPortfolioCalculations:
         db_session.commit()
 
         # Add fund price
-        price = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date(2024, 1, 15), price=15.0)
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 1, 15), price=15.0)
         db_session.add(price)
         db_session.commit()
 
@@ -667,25 +667,25 @@ class TestPortfolioCalculations:
         """Test portfolio summary includes realized gains."""
         # Create portfolio and fund
         portfolio = Portfolio(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Portfolio",
             is_archived=False,
             exclude_from_overview=False,
         )
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transactions (buy and sell)
         txn_buy = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -693,7 +693,7 @@ class TestPortfolioCalculations:
             cost_per_share=10.0,
         )
         txn_sell = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 2, 1),
             type="sell",
@@ -705,7 +705,7 @@ class TestPortfolioCalculations:
 
         # Add realized gain
         realized_gain = RealizedGainLoss(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_id=portfolio.id,
             fund_id=fund.id,
             transaction_id=txn_sell.id,
@@ -719,7 +719,7 @@ class TestPortfolioCalculations:
         db_session.commit()
 
         # Add fund price
-        price = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date(2024, 2, 15), price=12.0)
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 2, 15), price=12.0)
         db_session.add(price)
         db_session.commit()
 
@@ -742,14 +742,14 @@ class TestEdgeCases:
 
     def test_update_archive_status_nonexistent(self, app_context, db_session):
         """Test archiving a portfolio that doesn't exist."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
 
         with pytest.raises(ValueError, match=f"Portfolio {fake_id} not found"):
             PortfolioService.update_archive_status(fake_id, True)
 
     def test_delete_portfolio_fund_nonexistent(self, app_context, db_session):
         """Test deleting a portfolio-fund relationship that doesn't exist."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
 
         with pytest.raises(ValueError, match=f"Portfolio-fund relationship {fake_id} not found"):
             PortfolioService.delete_portfolio_fund(fake_id)
@@ -757,21 +757,21 @@ class TestEdgeCases:
     def test_calculate_portfolio_fund_values_no_price(self, app_context, db_session):
         """Test calculating values when no price data exists."""
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transaction but no price
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -815,7 +815,7 @@ class TestPortfolioHistoricalMethods:
     def test_get_portfolio_history_no_transactions(self, app_context, db_session):
         """Test portfolio history when a specific portfolio exists but has no transactions."""
         # Create portfolio with no transactions
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Empty Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Empty Portfolio")
         db_session.add(portfolio)
         db_session.commit()
 
@@ -836,22 +836,22 @@ class TestPortfolioHistoricalMethods:
         from datetime import date, timedelta
 
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transactions
         base_date = date.today() - timedelta(days=5)
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=base_date,
             type="buy",
@@ -859,7 +859,7 @@ class TestPortfolioHistoricalMethods:
             cost_per_share=10.0,
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=base_date + timedelta(days=2),
             type="buy",
@@ -870,12 +870,12 @@ class TestPortfolioHistoricalMethods:
         db_session.commit()
 
         # Add prices
-        price1 = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=base_date, price=10.0)
+        price1 = FundPrice(id=make_id(), fund_id=fund.id, date=base_date, price=10.0)
         price2 = FundPrice(
-            id=str(uuid.uuid4()), fund_id=fund.id, date=base_date + timedelta(days=2), price=12.0
+            id=make_id(), fund_id=fund.id, date=base_date + timedelta(days=2), price=12.0
         )
         price3 = FundPrice(
-            id=str(uuid.uuid4()), fund_id=fund.id, date=base_date + timedelta(days=4), price=15.0
+            id=make_id(), fund_id=fund.id, date=base_date + timedelta(days=4), price=15.0
         )
         db_session.add_all([price1, price2, price3])
         db_session.commit()
@@ -913,7 +913,7 @@ class TestPortfolioHistoricalMethods:
 
     def test_get_portfolio_fund_history_invalid_portfolio(self, app_context, db_session):
         """Test fund history with invalid portfolio ID."""
-        fake_id = str(uuid.uuid4())
+        fake_id = make_id()
 
         with pytest.raises((ValueError, Exception)):
             PortfolioService.get_portfolio_fund_history(fake_id)
@@ -921,7 +921,7 @@ class TestPortfolioHistoricalMethods:
     def test_get_portfolio_fund_history_no_transactions(self, app_context, db_session):
         """Test fund history when portfolio has no transactions."""
         # Create empty portfolio
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Empty Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Empty Portfolio")
         db_session.add(portfolio)
         db_session.commit()
 
@@ -933,22 +933,22 @@ class TestPortfolioHistoricalMethods:
         from datetime import date, timedelta
 
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transaction
         base_date = date.today() - timedelta(days=3)
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=base_date,
             type="buy",
@@ -959,7 +959,7 @@ class TestPortfolioHistoricalMethods:
         db_session.commit()
 
         # Add price
-        price = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=base_date, price=12.0)
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=base_date, price=12.0)
         db_session.add(price)
         db_session.commit()
 
@@ -999,21 +999,21 @@ class TestPortfolioHistoricalMethods:
         from datetime import date
 
         # Create portfolio and fund
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add buy transaction
         txn_buy = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -1023,7 +1023,7 @@ class TestPortfolioHistoricalMethods:
 
         # Add dividend reinvestment transaction
         txn_dividend = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 15),
             type="dividend",
@@ -1035,7 +1035,7 @@ class TestPortfolioHistoricalMethods:
 
         # Add dividend record with reinvestment
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             fund_id=fund.id,
             record_date=date(2024, 1, 10),
@@ -1049,7 +1049,7 @@ class TestPortfolioHistoricalMethods:
         db_session.commit()
 
         # Add current price
-        price = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date.today(), price=12.0)
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date.today(), price=12.0)
         db_session.add(price)
         db_session.commit()
 
@@ -1074,21 +1074,21 @@ class TestPortfolioHelperMethods:
         from datetime import date
 
         # Create test transactions that sell all shares
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Buy 100 shares
         txn_buy = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -1098,7 +1098,7 @@ class TestPortfolioHelperMethods:
 
         # Sell all 100 shares
         txn_sell = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 15),
             type="sell",
@@ -1121,21 +1121,21 @@ class TestPortfolioHelperMethods:
         """Test _process_transactions_for_date when sells exceed shares owned."""
         from datetime import date
 
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Buy 100 shares, sell 150 (more than owned)
         txn_buy = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -1144,7 +1144,7 @@ class TestPortfolioHelperMethods:
         )
 
         txn_sell = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 15),
             type="sell",
@@ -1168,21 +1168,21 @@ class TestPortfolioHelperMethods:
         from datetime import date, timedelta
 
         # Create portfolio fund with transaction
-        portfolio = Portfolio(id=str(uuid.uuid4()), name="Test Portfolio")
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
         fund = Fund(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             name="Test Fund",
-            isin=f"US{uuid.uuid4().hex[:10].upper()}",
+            isin=make_isin("US"),
             currency="USD",
             exchange="NYSE",
         )
-        pf = PortfolioFund(id=str(uuid.uuid4()), portfolio_id=portfolio.id, fund_id=fund.id)
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
         db_session.add_all([portfolio, fund, pf])
         db_session.commit()
 
         # Add transaction
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             date=date(2024, 1, 1),
             type="buy",
@@ -1193,7 +1193,7 @@ class TestPortfolioHelperMethods:
         db_session.commit()
 
         # Add price
-        price = FundPrice(id=str(uuid.uuid4()), fund_id=fund.id, date=date(2024, 1, 1), price=12.0)
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 1, 1), price=12.0)
         db_session.add(price)
         db_session.commit()
 

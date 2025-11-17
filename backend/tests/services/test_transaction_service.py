@@ -11,7 +11,6 @@ This test suite covers:
 - Sell transaction processing with realized gains
 """
 
-import uuid
 from datetime import date
 
 import pytest
@@ -24,8 +23,8 @@ from app.models import (
     Transaction,
 )
 from app.services.transaction_service import TransactionService
-
 from tests.factories import FundFactory, PortfolioFactory, PortfolioFundFactory
+from tests.test_helpers import make_id
 
 
 class TestGetTransactions:
@@ -40,7 +39,7 @@ class TestGetTransactions:
 
         # Create transactions directly
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf1.id,
             type="buy",
             shares=100,
@@ -48,7 +47,7 @@ class TestGetTransactions:
             date=date(2024, 1, 1),
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf2.id,
             type="sell",
             shares=50,
@@ -82,7 +81,7 @@ class TestGetTransactions:
 
         # Create transactions for each portfolio
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf1.id,
             type="buy",
             shares=100,
@@ -90,7 +89,7 @@ class TestGetTransactions:
             date=date(2024, 1, 1),
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf2.id,
             type="buy",
             shares=50,
@@ -118,7 +117,7 @@ class TestGetTransactions:
 
         # Create IBKR transaction
         ibkr_txn = IBKRTransaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             ibkr_transaction_id="IBKR-GET-PORTFOLIO-TX",
             transaction_date=date(2024, 1, 1),
             symbol="VWCE",
@@ -135,7 +134,7 @@ class TestGetTransactions:
 
         # Create transaction linked to IBKR
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -147,7 +146,7 @@ class TestGetTransactions:
 
         # Create allocation
         allocation = IBKRTransactionAllocation(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             ibkr_transaction_id=ibkr_txn.id,
             portfolio_id=portfolio.id,
             transaction_id=txn.id,
@@ -176,7 +175,7 @@ class TestFormatTransaction:
         db_session.commit()
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -208,7 +207,7 @@ class TestFormatTransaction:
 
         # Create IBKR transaction
         ibkr_txn = IBKRTransaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             ibkr_transaction_id="IBKR-FORMAT-TX",
             transaction_date=date(2024, 1, 1),
             symbol="VWCE",
@@ -223,7 +222,7 @@ class TestFormatTransaction:
         db_session.add(ibkr_txn)
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -235,7 +234,7 @@ class TestFormatTransaction:
 
         # Create allocation
         allocation = IBKRTransactionAllocation(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             ibkr_transaction_id=ibkr_txn.id,
             portfolio_id=portfolio.id,
             transaction_id=txn.id,
@@ -259,7 +258,7 @@ class TestFormatTransaction:
         db_session.commit()
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -316,7 +315,7 @@ class TestCreateTransaction:
 
         # Create buy transaction first (establish position)
         buy_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -377,7 +376,7 @@ class TestUpdateTransaction:
         db_session.commit()
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -409,7 +408,7 @@ class TestUpdateTransaction:
 
         # Create buy transaction
         buy_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -465,7 +464,7 @@ class TestUpdateTransaction:
 
         # Create two buy transactions (need shares to sell)
         buy1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -473,7 +472,7 @@ class TestUpdateTransaction:
             date=date(2024, 1, 1),
         )
         buy2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=50,
@@ -516,7 +515,7 @@ class TestDeleteTransaction:
         db_session.commit()
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -542,7 +541,7 @@ class TestDeleteTransaction:
 
         # Create buy and sell
         buy_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -581,7 +580,7 @@ class TestDeleteTransaction:
 
         # Create IBKR transaction
         ibkr_txn = IBKRTransaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             ibkr_transaction_id="IBKR-DELETE-TX",
             transaction_date=date(2024, 1, 1),
             symbol="VWCE",
@@ -596,7 +595,7 @@ class TestDeleteTransaction:
         db_session.add(ibkr_txn)
 
         txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -608,7 +607,7 @@ class TestDeleteTransaction:
 
         # Create allocation (only allocation for this IBKR transaction)
         allocation = IBKRTransactionAllocation(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             ibkr_transaction_id=ibkr_txn.id,
             portfolio_id=portfolio.id,
             transaction_id=txn.id,
@@ -642,7 +641,7 @@ class TestCalculateCurrentPosition:
 
         # Create buy transactions
         txn1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -650,7 +649,7 @@ class TestCalculateCurrentPosition:
             date=date(2024, 1, 1),
         )
         txn2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=50,
@@ -679,7 +678,7 @@ class TestCalculateCurrentPosition:
 
         # Create transactions
         buy1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -687,7 +686,7 @@ class TestCalculateCurrentPosition:
             date=date(2024, 1, 1),
         )
         buy2 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=50,
@@ -695,7 +694,7 @@ class TestCalculateCurrentPosition:
             date=date(2024, 2, 1),
         )
         sell1 = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="sell",
             shares=30,
@@ -730,7 +729,7 @@ class TestCalculateCurrentPosition:
 
         # Create buy transaction
         buy_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -742,7 +741,7 @@ class TestCalculateCurrentPosition:
 
         # Create dividend with reinvestment transaction
         dividend_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="dividend",
             shares=5,
@@ -753,7 +752,7 @@ class TestCalculateCurrentPosition:
         db_session.commit()
 
         dividend = Dividend(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             fund_id=fund.id,
             portfolio_fund_id=pf.id,
             record_date=date(2024, 2, 1),
@@ -794,7 +793,7 @@ class TestCalculateCurrentPosition:
 
         # Buy and sell all
         buy_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -802,7 +801,7 @@ class TestCalculateCurrentPosition:
             date=date(2024, 1, 1),
         )
         sell_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="sell",
             shares=100,
@@ -831,7 +830,7 @@ class TestProcessSellTransaction:
 
         # Create buy transaction first
         buy_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
@@ -881,7 +880,7 @@ class TestProcessSellTransaction:
 
         # Create buy transaction
         buy_txn = Transaction(
-            id=str(uuid.uuid4()),
+            id=make_id(),
             portfolio_fund_id=pf.id,
             type="buy",
             shares=100,
