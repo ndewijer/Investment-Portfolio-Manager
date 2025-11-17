@@ -248,6 +248,12 @@ const IBKRInbox = () => {
     return (selectedTransaction.quantity * percentage) / 100;
   };
 
+  // Helper to calculate allocated commission for a percentage
+  const calculateAllocatedCommission = (percentage) => {
+    if (!selectedTransaction || modalMode === 'bulk' || !selectedTransaction.fees) return null;
+    return (selectedTransaction.fees * percentage) / 100;
+  };
+
   // Allocation preset functions
   const handleEqualDistribution = () => {
     if (allocations.length === 0) {
@@ -1082,6 +1088,20 @@ const IBKRInbox = () => {
                                   shares
                                 </>
                               )}
+                              {calculateAllocatedCommission(allocation.percentage) !== null &&
+                                calculateAllocatedCommission(allocation.percentage) > 0 && (
+                                  <>
+                                    {' '}
+                                    •{' '}
+                                    <span className="commission-preview">
+                                      {formatCurrencyWithCode(
+                                        calculateAllocatedCommission(allocation.percentage),
+                                        selectedTransaction.currency
+                                      )}{' '}
+                                      commission
+                                    </span>
+                                  </>
+                                )}
                             </>
                           )}
                         </div>
