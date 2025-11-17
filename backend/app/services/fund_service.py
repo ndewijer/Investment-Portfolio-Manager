@@ -109,7 +109,7 @@ class FundService:
         Raises:
             ValueError: If fund not found
         """
-        fund = Fund.query.get(fund_id)
+        fund = db.session.get(Fund, fund_id)
         if not fund:
             raise ValueError(f"Fund {fund_id} not found")
 
@@ -193,7 +193,7 @@ class FundService:
         Raises:
             ValueError: If fund not found or fund is in use
         """
-        fund = Fund.query.get(fund_id)
+        fund = db.session.get(Fund, fund_id)
         if not fund:
             raise ValueError(f"Fund {fund_id} not found")
 

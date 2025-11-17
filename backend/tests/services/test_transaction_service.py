@@ -21,6 +21,7 @@ from app.models import (
     RealizedGainLoss,
     ReinvestmentStatus,
     Transaction,
+    db,
 )
 from app.services.transaction_service import TransactionService
 from tests.factories import FundFactory, PortfolioFactory, PortfolioFundFactory
@@ -305,7 +306,7 @@ class TestCreateTransaction:
         assert txn.cost_per_share == 10.0
 
         # Verify in database
-        db_txn = Transaction.query.get(txn.id)
+        db_txn = db.session.get(Transaction, txn.id)
         assert db_txn is not None
 
     def test_create_sell_transaction_with_realized_gain(self, app_context, db_session):
@@ -532,7 +533,7 @@ class TestDeleteTransaction:
 
         # Verify deletion
         assert result["transaction_details"]["type"] == "buy"
-        assert Transaction.query.get(txn_id) is None
+        assert db.session.get(Transaction, txn_id) is None
 
     def test_delete_sell_transaction_removes_realized_gain(self, app_context, db_session):
         """Test deleting sell transaction also deletes realized gain record."""
@@ -569,7 +570,7 @@ class TestDeleteTransaction:
 
         # Verify both transaction and realized gain deleted
         assert result["realized_gain_deleted"] is True
-        assert Transaction.query.get(sell_txn.id) is None
+        assert db.session.get(Transaction, sell_txn.id) is None
         assert RealizedGainLoss.query.filter_by(transaction_id=sell_txn.id).first() is None
 
     def test_delete_transaction_with_ibkr_allocation(self, app_context, db_session):
@@ -626,7 +627,7 @@ class TestDeleteTransaction:
         assert result["ibkr_transaction_id"] == ibkr_txn.id
 
         # Check IBKR transaction status
-        ibkr = IBKRTransaction.query.get(ibkr_txn.id)
+        ibkr = db.session.get(IBKRTransaction, ibkr_txn.id)
         assert ibkr.status == "pending"
         assert ibkr.processed_at is None
 

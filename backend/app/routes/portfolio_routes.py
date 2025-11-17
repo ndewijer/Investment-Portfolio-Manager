@@ -257,7 +257,7 @@ def handle_portfolio_funds():
         # Add dividend_type to each portfolio fund
         for pf in portfolio_funds:
             if "fund_id" in pf:  # Only for detailed fund data
-                fund = Fund.query.get(pf["fund_id"])
+                fund = db.session.get(Fund, pf["fund_id"])
                 if fund:
                     pf["dividend_type"] = fund.dividend_type.value
 

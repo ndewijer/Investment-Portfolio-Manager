@@ -265,7 +265,7 @@ suspect_dividends = Dividend.query.filter(
 
 for div in suspect_dividends:
     if div.reinvestment_transaction_id:
-        txn = Transaction.query.get(div.reinvestment_transaction_id)
+        txn = db.session.get(Transaction, div.reinvestment_transaction_id)
         if txn.cost_per_share <= 0 or txn.shares <= 0:
             print(f"Invalid dividend: {div.id}, price={txn.cost_per_share}, shares={txn.shares}")
 ```

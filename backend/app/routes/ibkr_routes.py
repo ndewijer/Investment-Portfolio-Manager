@@ -636,7 +636,7 @@ def unallocate_transaction(transaction_id):
 
         for allocation in allocations:
             if allocation.transaction_id:
-                transaction = Transaction.query.get(allocation.transaction_id)
+                transaction = db.session.get(Transaction, allocation.transaction_id)
                 if transaction:
                     # Delete transaction - CASCADE DELETE will automatically
                     # delete the corresponding ibkr_transaction_allocation record
@@ -709,7 +709,7 @@ def get_transaction_allocations(transaction_id):
         allocation_details = []
         for allocation in allocations:
             transaction = (
-                Transaction.query.get(allocation.transaction_id)
+                db.session.get(Transaction, allocation.transaction_id)
                 if allocation.transaction_id
                 else None
             )

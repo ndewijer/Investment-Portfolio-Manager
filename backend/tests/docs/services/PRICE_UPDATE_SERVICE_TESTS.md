@@ -560,34 +560,6 @@ db.session.commit()  # Single commit for all prices
 - **Mocked API**: No network latency
 - **Isolated Data**: Minimal database operations
 
-## yfinance Warnings
-
-Tests generate warnings from pandas/yfinance:
-
-### FutureWarning: Series.__getitem__
-```python
-# Line 96 in service:
-last_price = float(history["Close"][-1])
-
-# Should use:
-last_price = float(history["Close"].iloc[-1])
-```
-
-**Impact**: Works now but will break in future pandas versions\
-**Fix**: Update to use `.iloc[-1]` positional indexing
-
-### LegacyAPIWarning: Query.get()
-```python
-# Lines 52, 223 in service:
-fund = Fund.query.get(fund_id)
-
-# Should use:
-fund = db.session.get(Fund, fund_id)
-```
-
-**Impact**: Deprecated in SQLAlchemy 2.0\
-**Fix**: Update to Session.get() pattern
-
 ## Future Enhancements
 
 1. **Automatic Backfill on Transaction Creation**: When a new transaction is added, automatically fetch prices for that date

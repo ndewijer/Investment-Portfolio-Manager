@@ -12,7 +12,7 @@ Tests cover:
 from datetime import date
 
 import pytest
-from app.models import DividendType, ReinvestmentStatus
+from app.models import DividendType, ReinvestmentStatus, db
 from app.services.dividend_service import DividendService
 from tests.factories import (
     FundFactory,
@@ -371,7 +371,7 @@ class TestCreateDividendStock:
         # Verify transaction was created
         from app.models import Transaction
 
-        txn = Transaction.query.get(dividend.reinvestment_transaction_id)
+        txn = db.session.get(Transaction, dividend.reinvestment_transaction_id)
         assert txn is not None
         assert txn.type == "dividend"
         assert txn.shares == 2.5
@@ -507,7 +507,7 @@ class TestUpdateDividend:
         # Verify transaction was created
         from app.models import Transaction
 
-        txn = Transaction.query.get(updated_dividend.reinvestment_transaction_id)
+        txn = db.session.get(Transaction, updated_dividend.reinvestment_transaction_id)
         assert txn.type == "dividend"
         assert txn.shares == 2.5
 
@@ -563,7 +563,7 @@ class TestUpdateDividend:
         updated_dividend, _ = DividendService.update_dividend(dividend.id, update_data)
 
         # Verify transaction was updated
-        txn = Transaction.query.get(updated_dividend.reinvestment_transaction_id)
+        txn = db.session.get(Transaction, updated_dividend.reinvestment_transaction_id)
         assert txn.shares == 3.0
         assert txn.cost_per_share == 22.0
 
@@ -622,7 +622,7 @@ class TestUpdateDividend:
         # Verify transaction was deleted
         from app.models import Transaction
 
-        txn = Transaction.query.get(transaction_id)
+        txn = db.session.get(Transaction, transaction_id)
         assert txn is None
 
     def test_update_dividend_not_found(self, app_context, db_session):
@@ -718,7 +718,7 @@ class TestDeleteDividend:
         # Verify dividend was deleted
         from app.models import Dividend
 
-        deleted = Dividend.query.get(dividend_id)
+        deleted = db.session.get(Dividend, dividend_id)
         assert deleted is None
 
     def test_delete_stock_dividend_with_transaction(self, app_context, db_session):
@@ -769,8 +769,8 @@ class TestDeleteDividend:
         # Verify both dividend and transaction were deleted
         from app.models import Dividend, Transaction
 
-        assert Dividend.query.get(dividend_id) is None
-        assert Transaction.query.get(transaction_id) is None
+        assert db.session.get(Dividend, dividend_id) is None
+        assert db.session.get(Transaction, transaction_id) is None
 
 
 class TestEdgeCases:

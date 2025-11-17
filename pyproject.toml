@@ -48,3 +48,49 @@ ignore = [
     "SIM108", # Use ternary operator instead of if-else (sometimes less readable)
     "B008",   # Do not perform function calls in argument defaults (common in Flask)
 ]
+
+[tool.pytest.ini_options]
+# Default test path
+testpaths = ["backend/tests/services"]
+
+# Default command line options
+addopts = [
+    "--cov=backend/app/services",
+    # "--cov-report=term-missing",  # Show missing lines in coverage
+    # "--cov-report=html",           # Generate HTML coverage report
+    "--cov-fail-under=90",          # Make sure we adhere to a min code coverage
+    "--tb=short",                  # Short traceback format
+    "-q",                          # Quiet mode
+     "--strict-markers",            # Raise error on unknown markers
+     "--strict-config",             # Raise error on config issues
+]
+
+# Filter warnings
+filterwarnings = [
+    #"error",  # Turn warnings into errors for your code
+    "ignore::DeprecationWarning:.*site-packages.*",
+    "ignore::PendingDeprecationWarning:.*site-packages.*",
+]
+
+# Minimum Python version
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Custom markers (optional - define your own)
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+# Coverage settings
+source = ["backend/app/services"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    "*/venv/*",
+]
