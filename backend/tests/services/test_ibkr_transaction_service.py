@@ -975,3 +975,327 @@ class TestModifyAllocations:
 
         with pytest.raises(ValueError, match="not found"):
             IBKRTransactionService.modify_allocations(fake_id, allocs)
+
+
+class TestCommissionAllocation:
+    """Tests for commission/fee allocation functionality."""
+
+    def test_process_allocation_with_zero_commission(
+        self, app_context, db_session, sample_portfolio
+    ):
+        """Test that no fee transaction is created when commission is zero."""
+        # Create transaction with zero fees
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=0,  # No commission
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+
+        result = IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        assert result["success"] is True
+        # Should only create 1 transaction (buy), no fee transaction
+        assert len(result["created_transactions"]) == 1
+
+        # Main transaction doesn't have 'type' field in return dict
+        # Verify it has shares and amount (not a fee)
+        assert result["created_transactions"][0]["shares"] == 100
+        assert result["created_transactions"][0]["amount"] == 15000.00
+
+        # Verify no fee transactions in database
+        fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(fee_txns) == 0
+
+    def test_commission_allocated_proportionally(
+        self, app_context, db_session, sample_portfolio, second_portfolio
+    ):
+        """Test that commission is split proportionally across portfolios."""
+        # Create transaction with $3.00 commission for easy math
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=3.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # 60/40 split
+        allocations = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 60.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 40.0},
+        ]
+
+        result = IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        assert result["success"] is True
+
+        # Get fee transactions
+        fee_txns = [t for t in result["created_transactions"] if t.get("type") == "fee"]
+        assert len(fee_txns) == 2
+
+        # Check proportional allocation
+        portfolio_a_fee = next(f for f in fee_txns if f["portfolio_name"] == "Test Portfolio")
+        assert portfolio_a_fee["amount"] == 1.80  # 60% of $3.00
+
+        portfolio_b_fee = next(f for f in fee_txns if f["portfolio_name"] == "Second Portfolio")
+        assert portfolio_b_fee["amount"] == 1.20  # 40% of $3.00
+
+    def test_commission_rounding_fractional_cents(
+        self, app_context, db_session, sample_portfolio, second_portfolio
+    ):
+        """Test commission allocation with fractional cents (rounding)."""
+        # Create third portfolio for 3-way split
+        third_portfolio = Portfolio(id=make_id(), name="Third Portfolio")
+        db.session.add(third_portfolio)
+        db.session.commit()
+
+        # $2.00 commission split 3 ways = $0.6666... each
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=150,
+            price=100.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=2.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Equal 3-way split
+        allocations = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 33.33},
+            {"portfolio_id": second_portfolio.id, "percentage": 33.33},
+            {"portfolio_id": third_portfolio.id, "percentage": 33.34},
+        ]
+
+        result = IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        assert result["success"] is True
+
+        # Get fee transactions
+        fee_txns = [t for t in result["created_transactions"] if t.get("type") == "fee"]
+        assert len(fee_txns) == 3
+
+        # Check each allocation
+        fee1 = next(f for f in fee_txns if f["portfolio_name"] == "Test Portfolio")
+        assert abs(fee1["amount"] - 0.6666) < 0.0001  # 33.33% of $2.00
+
+        fee2 = next(f for f in fee_txns if f["portfolio_name"] == "Second Portfolio")
+        assert abs(fee2["amount"] - 0.6666) < 0.0001  # 33.33% of $2.00
+
+        fee3 = next(f for f in fee_txns if f["portfolio_name"] == "Third Portfolio")
+        assert abs(fee3["amount"] - 0.6668) < 0.0001  # 33.34% of $2.00
+
+    def test_modify_allocations_updates_fee_transactions(
+        self, app_context, db_session, sample_portfolio, second_portfolio, sample_fund
+    ):
+        """Test that modifying allocations updates fee transactions correctly."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol=sample_fund.symbol,
+            isin=sample_fund.isin,
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=3.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Initial allocation: 60/40
+        initial_allocs = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 60.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 40.0},
+        ]
+        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, initial_allocs)
+
+        # Verify initial fee allocation
+        initial_fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(initial_fee_txns) == 2
+
+        # Modify to 50/50
+        new_allocs = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 50.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 50.0},
+        ]
+        result = IBKRTransactionService.modify_allocations(ibkr_txn.id, new_allocs)
+
+        assert result["success"] is True
+
+        # Verify fee transactions updated
+        updated_fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(updated_fee_txns) == 2
+
+        # Check updated amounts (should now be $1.50 each for 50/50 split)
+        for fee_txn in updated_fee_txns:
+            assert fee_txn.cost_per_share == 1.50  # 50% of $3.00
+
+    def test_modify_allocations_removes_fee_transactions(
+        self, app_context, db_session, sample_portfolio, second_portfolio, sample_fund
+    ):
+        """Test that removing portfolio allocation also removes its fee transaction."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol=sample_fund.symbol,
+            isin=sample_fund.isin,
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=3.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Initial: 50/50 split
+        initial_allocs = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 50.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 50.0},
+        ]
+        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, initial_allocs)
+
+        # Verify 2 fee transactions created
+        initial_fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(initial_fee_txns) == 2
+
+        # Modify to 100% on first portfolio only
+        new_allocs = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+        result = IBKRTransactionService.modify_allocations(ibkr_txn.id, new_allocs)
+
+        assert result["success"] is True
+
+        # Verify only 1 fee transaction remains
+        remaining_fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(remaining_fee_txns) == 1
+        assert remaining_fee_txns[0].cost_per_share == 3.00  # 100% of commission
+
+    def test_modify_allocations_adds_fee_transactions(
+        self, app_context, db_session, sample_portfolio, second_portfolio, sample_fund
+    ):
+        """Test that adding new portfolio allocation creates new fee transaction."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol=sample_fund.symbol,
+            isin=sample_fund.isin,
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=3.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Initial: 100% to first portfolio
+        initial_allocs = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, initial_allocs)
+
+        # Verify 1 fee transaction created
+        initial_fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(initial_fee_txns) == 1
+        assert initial_fee_txns[0].cost_per_share == 3.00
+
+        # Modify to 60/40 split (adding second portfolio)
+        new_allocs = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 60.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 40.0},
+        ]
+        result = IBKRTransactionService.modify_allocations(ibkr_txn.id, new_allocs)
+
+        assert result["success"] is True
+
+        # Verify 2 fee transactions now exist
+        updated_fee_txns = Transaction.query.filter_by(type="fee").all()
+        assert len(updated_fee_txns) == 2
+
+        # Check amounts
+        fee_amounts = sorted([f.cost_per_share for f in updated_fee_txns])
+        assert fee_amounts == [1.20, 1.80]  # 40% and 60% of $3.00
+
+    def test_fee_transaction_has_correct_structure(self, app_context, db_session, sample_portfolio):
+        """Test that fee transactions have the correct field values."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=1.50,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+
+        result = IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        assert result["success"] is True
+
+        # Get the fee transaction from database
+        fee_txn = Transaction.query.filter_by(type="fee").first()
+        assert fee_txn is not None
+
+        # Verify structure
+        assert fee_txn.type == "fee"
+        assert fee_txn.shares == 0  # Fee transactions have no shares
+        assert fee_txn.cost_per_share == 1.50  # Fee amount stored here
+        assert fee_txn.date == date(2025, 1, 15)  # Same date as IBKR transaction
+        assert fee_txn.portfolio_fund_id is not None  # Linked to portfolio-fund
