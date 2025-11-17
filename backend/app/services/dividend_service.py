@@ -345,7 +345,11 @@ class DividendService:
         Raises:
             ValueError: If there is an error during deletion
         """
-        dividend = Dividend.query.get_or_404(dividend_id)
+        dividend = db.session.get(Dividend, dividend_id)
+        if not dividend:
+            from flask import abort
+
+            abort(404)
 
         try:
             # Delete associated transaction if it exists

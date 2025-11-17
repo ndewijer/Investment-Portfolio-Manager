@@ -67,7 +67,7 @@ addopts = [
 
 # Filter warnings
 filterwarnings = [
-    #"error",  # Turn warnings into errors for your code
+    "error",  # Turn warnings into errors for your code
     "ignore::DeprecationWarning:.*site-packages.*",
     "ignore::PendingDeprecationWarning:.*site-packages.*",
 ]
