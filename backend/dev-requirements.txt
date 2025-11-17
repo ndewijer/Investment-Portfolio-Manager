@@ -5,10 +5,22 @@ Flask-Cors
 Flask-Migrate
 Flask-SQLAlchemy
 python-dotenv
-pytz
 SQLAlchemy
 Werkzeug
 yfinance
+cryptography
+requests
+
+# Testing
+pytest
+pytest-flask
+pytest-cov
+pytest-mock
+responses
+freezegun
+factory-boy
+faker
+pytest-timeout
 
 # Testing
 pytest
