@@ -2,10 +2,10 @@
 
 **File**: `tests/test_ibkr_transaction_service.py`\
 **Service**: `app/services/ibkr_transaction_service.py`\
-**Tests**: 36 tests\
+**Tests**: 45 tests\
 **Coverage**: 90% (231/257 statements)\
 **Bugs Fixed**: 1 critical (ReinvestmentStatus enum)\
-**Created**: Version 1.3.3 (Phase 4)
+**Created**: Version 1.3.3 (Phase 4, 5)
 
 ## Overview
 
@@ -13,11 +13,14 @@ Comprehensive test suite for the IBKRTransactionService class, which handles pro
 - Validation of allocation percentages (must sum to 100%)
 - Fund creation and portfolio-fund relationship management
 - Transaction processing with multi-portfolio allocation
+- Commission/fee allocation proportional to transaction allocation
 - Transaction allocation modifications
 - Dividend matching to existing dividend records
 - Share and amount calculations based on allocation percentages
 
 The test suite achieves 90% coverage and discovered 1 critical bug during development (ReinvestmentStatus string vs enum mismatch).
+
+**Version 1.3.3 Phase 5 Enhancements**: Added commission allocation functionality with 9 new tests covering fee transaction creation, proportional allocation, rounding, and IBKR linking.
 
 ## Test Structure
 
@@ -76,6 +79,18 @@ Tests dividend matching functionality:
 - `test_match_dividend_multiple` - Match to multiple records, proportional allocation
 - `test_match_dividend_not_found` - Handle missing transaction
 - `test_match_dividend_wrong_type` - Reject non-dividend transactions
+
+#### 7. TestCommissionAllocation (9 tests)
+Tests commission/fee allocation functionality (Version 1.3.3 Phase 5):
+- `test_process_allocation_with_zero_commission` - No fee transaction when commission is 0
+- `test_commission_allocated_proportionally` - Commission split matches allocation % (60/40)
+- `test_commission_rounding_fractional_cents` - Handle fractional cents in 3-way split
+- `test_modify_allocations_updates_fee_transactions` - Update fees when percentages change
+- `test_modify_allocations_removes_fee_transactions` - Delete fees when portfolio removed
+- `test_modify_allocations_adds_fee_transactions` - Create fees when portfolio added
+- `test_fee_transaction_has_correct_structure` - Verify fee transaction fields (shares=0, cost_per_share=amount)
+- `test_fee_transaction_linked_to_ibkr` - Fee transactions linked via IBKRTransactionAllocation
+- `test_fee_transaction_linked_to_ibkr_split_allocation` - Fee allocations in split transactions
 
 ## Critical Bug Discovery
 
@@ -256,18 +271,50 @@ transaction = Transaction(
 )
 ```
 
-### Fee Transactions (No Shares)
-Fee transactions don't create Transaction records (only allocation records):
+### Fee Transactions (Commission Allocation)
+**Version 1.3.3 Phase 5**: Commission/fees from IBKR transactions are now allocated proportionally across portfolios as separate fee transactions:
+
 ```python
-if ibkr_txn.transaction_type != "fee":
-    # Create Transaction record
-    transaction = Transaction(...)
-else:
-    # Only create allocation record, no transaction
-    transaction_id = None
+# For each portfolio allocation:
+if ibkr_txn.fees and ibkr_txn.fees > 0:
+    allocated_fee = (ibkr_txn.fees * percentage) / 100.0
+
+    fee_transaction = Transaction(
+        portfolio_fund_id=portfolio_fund.id,
+        date=ibkr_txn.transaction_date,
+        type="fee",
+        shares=0,  # Fee transactions have no shares
+        cost_per_share=allocated_fee,  # Fee amount stored here
+    )
+    db.session.add(fee_transaction)
+
+    # Link to IBKR via allocation record
+    fee_allocation = IBKRTransactionAllocation(
+        ibkr_transaction_id=ibkr_txn.id,
+        portfolio_id=portfolio_id,
+        allocation_percentage=percentage,
+        allocated_amount=allocated_fee,
+        allocated_shares=0,
+        transaction_id=fee_transaction.id
+    )
+    db.session.add(fee_allocation)
 ```
 
-**Tested**: `test_process_fee_transaction`
+**Example**:
+```python
+# IBKR Transaction: $1500, 100 shares, $1.50 commission
+# Allocation: 60% Portfolio A, 40% Portfolio B
+
+# Portfolio A gets:
+# - Buy transaction: 60 shares, $900
+# - Fee transaction: 0 shares, $0.90 commission
+
+# Portfolio B gets:
+# - Buy transaction: 40 shares, $600
+# - Fee transaction: 0 shares, $0.60 commission
+```
+
+**Tested**: `test_commission_allocated_proportionally`, `test_fee_transaction_has_correct_structure`
 
 ## Dividend Proportional Allocation
 
@@ -582,7 +629,7 @@ except Exception:
 ```
 
 ### Test Performance
-- **36 tests**: Complete suite runs in ~0.9 seconds
+- **45 tests**: Complete suite runs in ~0.9 seconds
 - **Isolated Data**: Each test creates minimal required data
 - **No Cleanup Overhead**: Database reset between tests handled by fixtures
 
