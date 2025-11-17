@@ -160,7 +160,7 @@ class IBKRTransactionService:
             Dictionary with processing results
         """
         # Get IBKR transaction
-        ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
+        ibkr_txn = db.session.get(IBKRTransaction, ibkr_transaction_id)
         if not ibkr_txn:
             return {"success": False, "error": "Transaction not found"}
 
@@ -187,7 +187,7 @@ class IBKRTransactionService:
                 percentage = alloc["percentage"]
 
                 # Verify portfolio exists
-                portfolio = Portfolio.query.get(portfolio_id)
+                portfolio = db.session.get(Portfolio, portfolio_id)
                 if not portfolio:
                     raise ValueError(f"Portfolio not found: {portfolio_id}")
 
@@ -306,7 +306,7 @@ class IBKRTransactionService:
             ValueError: If transaction not found, not processed, or allocations invalid
         """
         # Get IBKR transaction
-        ibkr_txn = IBKRTransaction.query.get(transaction_id)
+        ibkr_txn = db.session.get(IBKRTransaction, transaction_id)
         if not ibkr_txn:
             raise ValueError(f"Transaction {transaction_id} not found")
 
@@ -332,14 +332,18 @@ class IBKRTransactionService:
             existing_portfolio_ids = set(existing_allocations.keys())
 
             # Delete allocations for portfolios no longer in the list
-            for portfolio_id in existing_portfolio_ids - new_portfolio_ids:
+            portfolios_to_remove = existing_portfolio_ids - new_portfolio_ids
+            for portfolio_id in portfolios_to_remove:
                 allocation = existing_allocations[portfolio_id]
                 if allocation.transaction_id:
-                    transaction = Transaction.query.get(allocation.transaction_id)
+                    transaction = db.session.get(Transaction, allocation.transaction_id)
                     if transaction:
                         # Delete transaction - CASCADE DELETE will automatically
                         # delete the corresponding ibkr_transaction_allocation record
                         db.session.delete(transaction)
+                else:
+                    # If no transaction_id, delete the allocation directly
+                    db.session.delete(allocation)
 
             # Find fund for this IBKR transaction
             from ..services.fund_matching_service import FundMatchingService
@@ -368,7 +372,7 @@ class IBKRTransactionService:
 
                     # Update associated transaction
                     if allocation.transaction_id:
-                        transaction = Transaction.query.get(allocation.transaction_id)
+                        transaction = db.session.get(Transaction, allocation.transaction_id)
                         if transaction:
                             transaction.shares = allocated_shares
                             # Cost per share stays the same, shares change
@@ -485,7 +489,7 @@ class IBKRTransactionService:
             Dictionary with matching results
         """
         # Get IBKR transaction
-        ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
+        ibkr_txn = db.session.get(IBKRTransaction, ibkr_transaction_id)
         if not ibkr_txn:
             return {"success": False, "error": "Transaction not found"}
 

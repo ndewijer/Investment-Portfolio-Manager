@@ -20,6 +20,7 @@ from app.models import (
     Portfolio,
     PortfolioFund,
     Transaction,
+    db,
 )
 from app.services.fund_service import FundService
 from tests.test_helpers import make_id, make_isin
@@ -111,7 +112,7 @@ class TestFundCreation:
         assert fund.symbol is None
 
         # Verify in database
-        db_fund = Fund.query.get(fund.id)
+        db_fund = db.session.get(Fund, fund.id)
         assert db_fund is not None
         assert db_fund.name == "Test Fund"
 
@@ -447,7 +448,7 @@ class TestFundDeletion:
         assert result["fund_name"] == fund_name
 
         # Verify fund no longer in database
-        deleted_fund = Fund.query.get(fund_id)
+        deleted_fund = db.session.get(Fund, fund_id)
         assert deleted_fund is None
 
     def test_delete_fund_with_prices(self, app_context, db_session):
@@ -496,7 +497,7 @@ class TestFundDeletion:
             FundService.delete_fund(fund_id)
 
         # Verify fund still exists
-        existing_fund = Fund.query.get(fund_id)
+        existing_fund = db.session.get(Fund, fund_id)
         assert existing_fund is not None
 
     def test_delete_fund_not_found(self, app_context, db_session):

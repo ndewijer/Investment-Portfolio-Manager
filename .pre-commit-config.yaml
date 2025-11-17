@@ -19,6 +19,17 @@ repos:
       - id: ruff-format
         language_version: python3.13
 
+  # Python testing and coverage
+  - repo: local
+    hooks:
+      - id: pytest-backend
+        name: pytest-backend
+        entry: ./backend/.venv/bin/pytest
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v9.39.1
     hooks:

@@ -284,7 +284,7 @@ class TransactionService:
         from ..models import IBKRTransaction, IBKRTransactionAllocation, LogCategory, LogLevel
         from ..services.logging_service import logger
 
-        transaction = Transaction.query.get(transaction_id)
+        transaction = db.session.get(Transaction, transaction_id)
         if not transaction:
             raise ValueError(f"Transaction {transaction_id} not found")
 
@@ -315,7 +315,7 @@ class TransactionService:
 
                 # If this is the last allocation, revert IBKR transaction to pending
                 if allocation_count == 1:
-                    ibkr_txn = IBKRTransaction.query.get(ibkr_transaction_id)
+                    ibkr_txn = db.session.get(IBKRTransaction, ibkr_transaction_id)
                     if ibkr_txn and ibkr_txn.status == "processed":
                         ibkr_txn.status = "pending"
                         ibkr_txn.processed_at = None

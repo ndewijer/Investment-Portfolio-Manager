@@ -237,7 +237,7 @@ def test_create_fund(self, app_context, db_session):
     db_session.commit()  # Save to test database
 
     # Query test data
-    found = Fund.query.get(fund.id)
+    found = db.session.get(Fund, fund.id)
     assert found is not None
 ```
 

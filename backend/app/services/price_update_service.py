@@ -49,7 +49,7 @@ class TodayPriceService:
             Exception: If price update fails
         """
         try:
-            fund = Fund.query.get(fund_id)
+            fund = db.session.get(Fund, fund_id)
             if not fund.symbol:
                 response, status = logger.log(
                     level=LogLevel.WARNING,
@@ -93,7 +93,7 @@ class TodayPriceService:
 
                 # Only add if we don't already have this date
                 if not FundPrice.query.filter_by(fund_id=fund_id, date=last_date).first():
-                    last_price = float(history["Close"][-1])
+                    last_price = float(history["Close"].iloc[-1])
                     price = FundPrice(fund_id=fund_id, date=last_date, price=last_price)
                     db.session.add(price)
                     db.session.commit()
@@ -220,7 +220,7 @@ class HistoricalPriceService:
             Exception: If historical price update fails
         """
         try:
-            fund = Fund.query.get(fund_id)
+            fund = db.session.get(Fund, fund_id)
             if not fund.symbol:
                 response, status = logger.log(
                     level=LogLevel.WARNING,

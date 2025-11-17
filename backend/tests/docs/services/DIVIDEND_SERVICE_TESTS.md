@@ -310,7 +310,7 @@ dividend_data = {
 assert dividend.reinvestment_status == ReinvestmentStatus.COMPLETED
 assert dividend.reinvestment_transaction_id is not None
 
-txn = Transaction.query.get(dividend.reinvestment_transaction_id)
+txn = db.session.get(Transaction, dividend.reinvestment_transaction_id)
 assert txn.type == "dividend"
 assert txn.shares == 2.5
 assert txn.cost_per_share == 20.0
@@ -431,7 +431,7 @@ original_txn_id = dividend.reinvestment_transaction_id
 # After update
 assert updated_dividend.reinvestment_transaction_id == original_txn_id
 
-txn = Transaction.query.get(original_txn_id)
+txn = db.session.get(Transaction, original_txn_id)
 assert txn.shares == 3.0
 assert txn.cost_per_share == 21.0
 ```
@@ -531,7 +531,7 @@ with pytest.raises(ValueError, match="must be positive"):
 ```python
 DividendService.delete_dividend(dividend_id)
 
-deleted = Dividend.query.get(dividend_id)
+deleted = db.session.get(Dividend, dividend_id)
 assert deleted is None
 ```
 
@@ -549,8 +549,8 @@ assert deleted is None
 ```python
 DividendService.delete_dividend(dividend_id)
 
-assert Dividend.query.get(dividend_id) is None
-assert Transaction.query.get(transaction_id) is None
+assert db.session.get(Dividend, dividend_id) is None
+assert db.session.get(Transaction, transaction_id) is None
 ```
 
 **Why**: Tests cascade deletion

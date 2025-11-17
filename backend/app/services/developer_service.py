@@ -286,7 +286,7 @@ class DeveloperService:
         Raises:
             ValueError: If file format is invalid or import fails
         """
-        portfolio_fund = PortfolioFund.query.get(portfolio_fund_id)
+        portfolio_fund = db.session.get(PortfolioFund, portfolio_fund_id)
         if not portfolio_fund:
             raise ValueError("Portfolio-fund relationship not found")
 

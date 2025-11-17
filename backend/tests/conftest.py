@@ -162,15 +162,81 @@ def timer():
 @pytest.fixture(scope="function")
 def db_session(app_context):
     """
-    Provide a database session for tests.
+    Provide a database session for tests with proper cleanup.
 
-    This fixture provides access to db.session within the app context.
-    Tests should query for specific data they create rather than assuming
-    an empty database, ensuring test independence regardless of execution order.
+    This fixture provides access to db.session within the app context and
+    ensures each test starts with a clean database state by manually
+    cleaning up all test data before each test.
 
     Scope: function - created for each test.
     """
+    # Clean up before each test
+    try:
+        # Roll back any active transaction
+        if db.session.is_active:
+            db.session.rollback()
+
+        # Import all models for cleanup
+        from app.models import (
+            Dividend,
+            Fund,
+            FundPrice,
+            IBKRConfig,
+            IBKRImportCache,
+            IBKRTransaction,
+            IBKRTransactionAllocation,
+            Log,
+            Portfolio,
+            PortfolioFund,
+            RealizedGainLoss,
+            SystemSetting,
+            Transaction,
+        )
+
+        # Delete in dependency order without disabling foreign keys
+        # Since foreign keys are properly enabled via run.py event listener,
+        # we just need to delete in the correct order
+        cleanup_tables = [
+            IBKRTransactionAllocation,
+            RealizedGainLoss,
+            Transaction,
+            FundPrice,
+            Dividend,
+            IBKRTransaction,
+            IBKRImportCache,
+            PortfolioFund,
+            Fund,
+            Portfolio,
+            IBKRConfig,
+            SystemSetting,
+            Log,
+        ]
+
+        for table in cleanup_tables:
+            db.session.query(table).delete()
+
+        db.session.commit()
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Warning: Pre-test database cleanup failed: {e}")
+        # Try to recover by recreating all tables
+        try:
+            db.drop_all()
+            db.create_all()
+            db.session.commit()
+        except Exception as recovery_error:
+            print(f"Error: Failed to recover database: {recovery_error}")
+            raise
+
     yield db.session
+
+    # Optional: Light cleanup after test (just rollback any uncommitted changes)
+    try:
+        if db.session.is_active:
+            db.session.rollback()
+    except Exception:
+        pass  # Ignore cleanup errors in teardown
 
 
 @pytest.fixture(scope="function")

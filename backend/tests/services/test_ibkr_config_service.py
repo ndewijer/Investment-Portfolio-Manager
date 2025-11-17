@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from app.models import IBKRConfig
+from app.models import IBKRConfig, db
 from app.services.ibkr_config_service import IBKRConfigService
 from tests.test_helpers import make_id
 
@@ -313,7 +313,7 @@ class TestConfigDeletion:
         assert result["was_enabled"] is True
 
         # Verify config deleted from database
-        deleted_config = IBKRConfig.query.get(config_id)
+        deleted_config = db.session.get(IBKRConfig, config_id)
         assert deleted_config is None
 
     def test_delete_config_not_found(self, app_context, db_session):

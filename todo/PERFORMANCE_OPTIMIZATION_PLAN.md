@@ -289,7 +289,7 @@ def get_portfolio_transactions(portfolio_id):
 ```python
 # Load once per request, not per portfolio or fund
 def get_portfolio_summary():
-    portfolios = Portfolio.query.filter_by(...).all()
+    portfolios = db.session.execute(select(Portfolio).where(Portfolio....))
     portfolio_ids = [p.id for p in portfolios]
 
     # Batch load all realized gains

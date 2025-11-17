@@ -326,7 +326,7 @@ class TestProcessTransactionAllocation:
         assert len(result["created_transactions"]) == 1
 
         # Verify IBKR transaction marked as processed
-        ibkr_txn = IBKRTransaction.query.get(sample_ibkr_transaction.id)
+        ibkr_txn = db.session.get(IBKRTransaction, sample_ibkr_transaction.id)
         assert ibkr_txn.status == "processed"
         assert ibkr_txn.processed_at is not None
 
@@ -617,11 +617,11 @@ class TestDividendMatching:
         assert result["updated_dividends"] == 1
 
         # Verify dividend updated with amount
-        updated_div = Dividend.query.get(div.id)
+        updated_div = db.session.get(Dividend, div.id)
         assert updated_div.total_amount == 250.00
 
         # Verify IBKR transaction marked as processed
-        updated_ibkr = IBKRTransaction.query.get(ibkr_txn.id)
+        updated_ibkr = db.session.get(IBKRTransaction, ibkr_txn.id)
         assert updated_ibkr.status == "processed"
 
     def test_match_dividend_multiple_portfolios(
@@ -690,8 +690,8 @@ class TestDividendMatching:
         assert result["updated_dividends"] == 2
 
         # Verify amounts allocated proportionally
-        updated_div1 = Dividend.query.get(div1.id)
-        updated_div2 = Dividend.query.get(div2.id)
+        updated_div1 = db.session.get(Dividend, div1.id)
+        updated_div2 = db.session.get(Dividend, div2.id)
 
         assert updated_div1.total_amount == 150.00  # 250 * (60/100)
         assert updated_div2.total_amount == 100.00  # 250 * (40/100)
@@ -883,7 +883,7 @@ class TestModifyAllocations:
         assert allocs[0].portfolio_id == sample_portfolio.id
 
         # Verify second portfolio's transaction was deleted
-        assert Transaction.query.get(txn2_id) is None
+        assert db.session.get(Transaction, txn2_id) is None
 
     def test_modify_allocations_not_processed(self, app_context, db_session, sample_fund):
         """Test that modifying unprocessed transaction fails."""

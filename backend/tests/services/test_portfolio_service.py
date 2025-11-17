@@ -19,6 +19,7 @@ from app.models import (
     PortfolioFund,
     RealizedGainLoss,
     Transaction,
+    db,
 )
 from app.services.portfolio_service import PortfolioService
 from tests.test_helpers import make_id, make_isin
@@ -42,7 +43,7 @@ class TestPortfolioCRUD:
         assert portfolio.exclude_from_overview is False
 
         # Verify it's in the database
-        db_portfolio = Portfolio.query.get(portfolio.id)
+        db_portfolio = db.session.get(Portfolio, portfolio.id)
         assert db_portfolio is not None
         assert db_portfolio.name == "Test Portfolio"
 
@@ -81,7 +82,7 @@ class TestPortfolioCRUD:
         assert updated.exclude_from_overview is True
 
         # Verify in database
-        db_portfolio = Portfolio.query.get(portfolio.id)
+        db_portfolio = db.session.get(Portfolio, portfolio.id)
         assert db_portfolio.name == "Updated Name"
         assert db_portfolio.exclude_from_overview is True
 
@@ -106,7 +107,7 @@ class TestPortfolioCRUD:
         assert result is True
 
         # Verify deletion
-        db_portfolio = Portfolio.query.get(portfolio_id)
+        db_portfolio = db.session.get(Portfolio, portfolio_id)
         assert db_portfolio is None
 
     def test_delete_nonexistent_portfolio(self, app_context, db_session):
@@ -128,7 +129,7 @@ class TestPortfolioCRUD:
         assert updated.is_archived is True
 
         # Verify in database
-        db_portfolio = Portfolio.query.get(portfolio.id)
+        db_portfolio = db.session.get(Portfolio, portfolio.id)
         assert db_portfolio.is_archived is True
 
         # Unarchive portfolio
@@ -208,7 +209,7 @@ class TestPortfolioFundManagement:
         assert pf.fund_id == fund.id
 
         # Verify in database
-        db_pf = PortfolioFund.query.get(pf.id)
+        db_pf = db.session.get(PortfolioFund, pf.id)
         assert db_pf is not None
         assert db_pf.portfolio_id == portfolio.id
         assert db_pf.fund_id == fund.id
@@ -325,7 +326,7 @@ class TestPortfolioFundManagement:
         assert result["portfolio_name"] == "Test Portfolio"
 
         # Verify removed from database
-        assert PortfolioFund.query.get(pf_id) is None
+        assert db.session.get(PortfolioFund, pf_id) is None
 
     def test_delete_portfolio_fund_with_transactions_no_confirmation(self, app_context, db_session):
         """Test deleting portfolio-fund with transactions but no confirmation."""
@@ -416,7 +417,7 @@ class TestPortfolioFundManagement:
         assert result["portfolio_name"] == "Test Portfolio"
 
         # Verify all deleted
-        assert PortfolioFund.query.get(pf_id) is None
+        assert db.session.get(PortfolioFund, pf_id) is None
         assert Transaction.query.filter_by(portfolio_fund_id=pf_id).count() == 0
         assert Dividend.query.filter_by(portfolio_fund_id=pf_id).count() == 0
 

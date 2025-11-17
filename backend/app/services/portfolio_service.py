@@ -991,7 +991,7 @@ class PortfolioService:
         """
         from ..models import Portfolio, db
 
-        portfolio = Portfolio.query.get(portfolio_id)
+        portfolio = db.session.get(Portfolio, portfolio_id)
         if not portfolio:
             raise ValueError(f"Portfolio {portfolio_id} not found")
 
@@ -1018,7 +1018,7 @@ class PortfolioService:
         """
         from ..models import Portfolio, db
 
-        portfolio = Portfolio.query.get(portfolio_id)
+        portfolio = db.session.get(Portfolio, portfolio_id)
         if not portfolio:
             raise ValueError(f"Portfolio {portfolio_id} not found")
 
@@ -1043,7 +1043,7 @@ class PortfolioService:
         """
         from ..models import Portfolio, db
 
-        portfolio = Portfolio.query.get(portfolio_id)
+        portfolio = db.session.get(Portfolio, portfolio_id)
         if not portfolio:
             raise ValueError(f"Portfolio {portfolio_id} not found")
 
@@ -1088,11 +1088,11 @@ class PortfolioService:
         from ..models import Fund, Portfolio, PortfolioFund, db
 
         # Verify portfolio and fund exist
-        portfolio = Portfolio.query.get(portfolio_id)
+        portfolio = db.session.get(Portfolio, portfolio_id)
         if not portfolio:
             raise ValueError(f"Portfolio {portfolio_id} not found")
 
-        fund = Fund.query.get(fund_id)
+        fund = db.session.get(Fund, fund_id)
         if not fund:
             raise ValueError(f"Fund {fund_id} not found")
 

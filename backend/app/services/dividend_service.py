@@ -82,7 +82,7 @@ class DividendService:
             ValueError: If portfolio-fund relationship not found
             ValueError: If dividend object is not found
         """
-        portfolio_fund = PortfolioFund.query.get(data["portfolio_fund_id"])
+        portfolio_fund = db.session.get(PortfolioFund, data["portfolio_fund_id"])
         if not portfolio_fund:
             raise ValueError("Portfolio-fund relationship not found")
 
@@ -182,7 +182,7 @@ class DividendService:
         Raises:
             ValueError: If dividend not found or invalid data provided
         """
-        dividend = Dividend.query.get(dividend_id)
+        dividend = db.session.get(Dividend, dividend_id)
         if not dividend:
             raise ValueError(f"Dividend {dividend_id} not found")
 
@@ -222,7 +222,9 @@ class DividendService:
 
                     if dividend.reinvestment_transaction_id:
                         # Update existing reinvestment transaction
-                        transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
+                        transaction = db.session.get(
+                            Transaction, dividend.reinvestment_transaction_id
+                        )
                         if transaction:
                             transaction.date = dividend.buy_order_date or dividend.ex_dividend_date
                             transaction.shares = reinvestment_shares
@@ -245,7 +247,7 @@ class DividendService:
                         dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
                 elif dividend.reinvestment_transaction_id:
                     # If reinvestment data is removed, delete the transaction
-                    transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
+                    transaction = db.session.get(Transaction, dividend.reinvestment_transaction_id)
                     if transaction:
                         db.session.delete(transaction)
                     dividend.reinvestment_transaction_id = None
@@ -348,7 +350,7 @@ class DividendService:
         try:
             # Delete associated transaction if it exists
             if dividend.reinvestment_transaction_id:
-                transaction = Transaction.query.get(dividend.reinvestment_transaction_id)
+                transaction = db.session.get(Transaction, dividend.reinvestment_transaction_id)
                 if transaction:
                     print(f"Deleting associated transaction {transaction.id}")
                     db.session.delete(transaction)
