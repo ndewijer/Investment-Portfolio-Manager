@@ -362,7 +362,16 @@ class IBKRTransactionService:
                 if allocation.transaction_id:
                     transaction = db.session.get(Transaction, allocation.transaction_id)
                     if transaction:
-                        # Delete transaction - CASCADE DELETE will automatically
+                        # Also delete any fee transactions for this portfolio_fund
+                        fee_transactions = Transaction.query.filter_by(
+                            portfolio_fund_id=transaction.portfolio_fund_id,
+                            date=ibkr_txn.transaction_date,
+                            type="fee",
+                        ).all()
+                        for fee_txn in fee_transactions:
+                            db.session.delete(fee_txn)
+
+                        # Delete main transaction - CASCADE DELETE will automatically
                         # delete the corresponding ibkr_transaction_allocation record
                         db.session.delete(transaction)
                 else:
@@ -400,6 +409,31 @@ class IBKRTransactionService:
                         if transaction:
                             transaction.shares = allocated_shares
                             # Cost per share stays the same, shares change
+
+                            # Update fee transaction if commission exists
+                            if ibkr_txn.fees and ibkr_txn.fees > 0:
+                                allocated_fee = (ibkr_txn.fees * percentage) / 100.0
+
+                                # Find existing fee transaction
+                                fee_transaction = Transaction.query.filter_by(
+                                    portfolio_fund_id=transaction.portfolio_fund_id,
+                                    date=ibkr_txn.transaction_date,
+                                    type="fee",
+                                ).first()
+
+                                if fee_transaction:
+                                    # Update existing fee transaction
+                                    fee_transaction.cost_per_share = allocated_fee
+                                else:
+                                    # Create new fee transaction if it doesn't exist
+                                    fee_transaction = Transaction(
+                                        portfolio_fund_id=transaction.portfolio_fund_id,
+                                        date=ibkr_txn.transaction_date,
+                                        type="fee",
+                                        shares=0,
+                                        cost_per_share=allocated_fee,
+                                    )
+                                    db.session.add(fee_transaction)
                 else:
                     # Create new allocation
                     # Get or create portfolio fund
@@ -417,6 +451,19 @@ class IBKRTransactionService:
                     )
                     db.session.add(transaction)
                     db.session.flush()
+
+                    # Create fee transaction if commission exists
+                    if ibkr_txn.fees and ibkr_txn.fees > 0:
+                        allocated_fee = (ibkr_txn.fees * percentage) / 100.0
+
+                        fee_transaction = Transaction(
+                            portfolio_fund_id=portfolio_fund.id,
+                            date=ibkr_txn.transaction_date,
+                            type="fee",
+                            shares=0,
+                            cost_per_share=allocated_fee,
+                        )
+                        db.session.add(fee_transaction)
 
                     # Create allocation
                     allocation = IBKRTransactionAllocation(
