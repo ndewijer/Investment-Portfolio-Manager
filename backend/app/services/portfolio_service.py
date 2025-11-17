@@ -17,6 +17,7 @@ from ..models import (
     PortfolioFund,
     RealizedGainLoss,
     Transaction,
+    db,
 )
 
 
@@ -843,7 +844,11 @@ class PortfolioService:
         Returns:
             list: List of daily fund values
         """
-        portfolio = Portfolio.query.get_or_404(portfolio_id)
+        portfolio = db.session.get(Portfolio, portfolio_id)
+        if not portfolio:
+            from flask import abort
+
+            abort(404)
 
         # Get the earliest transaction date for this portfolio
         earliest_transaction = (

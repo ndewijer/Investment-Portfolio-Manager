@@ -45,7 +45,12 @@ class FundService:
         Raises:
             404: If fund not found
         """
-        return Fund.query.get_or_404(fund_id)
+        fund = db.session.get(Fund, fund_id)
+        if not fund:
+            from flask import abort
+
+            abort(404)
+        return fund
 
     @staticmethod
     def create_fund(data, symbol_info=None):

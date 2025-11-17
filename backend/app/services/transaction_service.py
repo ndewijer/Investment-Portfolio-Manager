@@ -211,7 +211,11 @@ class TransactionService:
         Raises:
             404: If transaction not found
         """
-        transaction = Transaction.query.get_or_404(transaction_id)
+        transaction = db.session.get(Transaction, transaction_id)
+        if not transaction:
+            from flask import abort
+
+            abort(404)
         old_type = transaction.type
 
         transaction.date = datetime.strptime(data["date"], "%Y-%m-%d").date()
@@ -437,7 +441,11 @@ class TransactionService:
     @staticmethod
     def process_sell_transaction(portfolio_fund_id, shares, price, date):
         """Process a sell transaction and record realized gains/losses."""
-        pf = PortfolioFund.query.get_or_404(portfolio_fund_id)
+        pf = db.session.get(PortfolioFund, portfolio_fund_id)
+        if not pf:
+            from flask import abort
+
+            abort(404)
 
         # Calculate and record the realized gain/loss
         current_position = TransactionService.calculate_current_position(portfolio_fund_id)
