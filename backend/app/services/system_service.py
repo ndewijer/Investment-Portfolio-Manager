@@ -90,6 +90,8 @@ class SystemService:
             migrations_dir = os.path.join(os.path.dirname(__file__), "../../migrations")
             alembic_cfg = Config(os.path.join(migrations_dir, "alembic.ini"))
             alembic_cfg.set_main_option("script_location", migrations_dir)
+            # Set path_separator to suppress warning
+            alembic_cfg.set_main_option("path_separator", os.pathsep)
 
             # Get script directory
             script = ScriptDirectory.from_config(alembic_cfg)
