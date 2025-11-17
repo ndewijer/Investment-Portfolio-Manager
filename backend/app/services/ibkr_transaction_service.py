@@ -232,6 +232,7 @@ class IBKRTransactionService:
                     )
 
                 # Create fee transaction if commission exists
+                fee_transaction = None
                 if ibkr_txn.fees and ibkr_txn.fees > 0:
                     allocated_fee = (ibkr_txn.fees * percentage) / 100.0
 
@@ -255,7 +256,7 @@ class IBKRTransactionService:
                         }
                     )
 
-                # Create allocation record
+                # Create allocation record for main transaction
                 allocation_record = IBKRTransactionAllocation(
                     ibkr_transaction_id=ibkr_txn.id,
                     portfolio_id=portfolio_id,
@@ -265,6 +266,18 @@ class IBKRTransactionService:
                     transaction_id=transaction.id if transaction else None,
                 )
                 db.session.add(allocation_record)
+
+                # Create allocation record for fee transaction to link it to IBKR
+                if fee_transaction:
+                    fee_allocation_record = IBKRTransactionAllocation(
+                        ibkr_transaction_id=ibkr_txn.id,
+                        portfolio_id=portfolio_id,
+                        allocation_percentage=percentage,
+                        allocated_amount=allocated_fee,  # Fee amount
+                        allocated_shares=0,  # No shares for fees
+                        transaction_id=fee_transaction.id,
+                    )
+                    db.session.add(fee_allocation_record)
 
             # Update IBKR transaction status
             ibkr_txn.status = "processed"
@@ -424,6 +437,12 @@ class IBKRTransactionService:
                                 if fee_transaction:
                                     # Update existing fee transaction
                                     fee_transaction.cost_per_share = allocated_fee
+                                    # Update the IBKR allocation record for fee transaction
+                                    fee_allocation = IBKRTransactionAllocation.query.filter_by(
+                                        transaction_id=fee_transaction.id
+                                    ).first()
+                                    if fee_allocation:
+                                        fee_allocation.allocated_amount = allocated_fee
                                 else:
                                     # Create new fee transaction if it doesn't exist
                                     fee_transaction = Transaction(
@@ -434,6 +453,18 @@ class IBKRTransactionService:
                                         cost_per_share=allocated_fee,
                                     )
                                     db.session.add(fee_transaction)
+                                    db.session.flush()
+
+                                    # Create IBKR allocation for new fee transaction
+                                    fee_allocation = IBKRTransactionAllocation(
+                                        ibkr_transaction_id=transaction_id,
+                                        portfolio_id=portfolio_id,
+                                        allocation_percentage=percentage,
+                                        allocated_amount=allocated_fee,
+                                        allocated_shares=0,
+                                        transaction_id=fee_transaction.id,
+                                    )
+                                    db.session.add(fee_allocation)
                 else:
                     # Create new allocation
                     # Get or create portfolio fund
@@ -453,6 +484,7 @@ class IBKRTransactionService:
                     db.session.flush()
 
                     # Create fee transaction if commission exists
+                    fee_transaction = None
                     if ibkr_txn.fees and ibkr_txn.fees > 0:
                         allocated_fee = (ibkr_txn.fees * percentage) / 100.0
 
@@ -464,8 +496,9 @@ class IBKRTransactionService:
                             cost_per_share=allocated_fee,
                         )
                         db.session.add(fee_transaction)
+                        db.session.flush()
 
-                    # Create allocation
+                    # Create allocation for main transaction
                     allocation = IBKRTransactionAllocation(
                         ibkr_transaction_id=transaction_id,
                         portfolio_id=portfolio_id,
@@ -475,6 +508,18 @@ class IBKRTransactionService:
                         transaction_id=transaction.id,
                     )
                     db.session.add(allocation)
+
+                    # Create allocation for fee transaction
+                    if fee_transaction:
+                        fee_allocation = IBKRTransactionAllocation(
+                            ibkr_transaction_id=transaction_id,
+                            portfolio_id=portfolio_id,
+                            allocation_percentage=percentage,
+                            allocated_amount=allocated_fee,
+                            allocated_shares=0,
+                            transaction_id=fee_transaction.id,
+                        )
+                        db.session.add(fee_allocation)
 
             db.session.commit()
 
