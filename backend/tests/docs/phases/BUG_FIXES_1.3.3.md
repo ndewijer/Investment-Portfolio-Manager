@@ -935,6 +935,146 @@ Both JSON response status and HTTP status code now align properly.
 
 ---
 
+## Bug #7: SystemService IBKR Integration Feature Logic Error
+
+**Severity**: Medium\
+**Discovered**: During SystemService test development\
+**File**: `app/services/system_service.py`\
+**Line**: 158\
+**Affected Method**: `check_feature_availability()`
+
+### The Problem
+
+When checking feature availability for IBKR integration, the service had incorrect version logic that would incorrectly return `ibkr_integration: false` for future major versions (2.x+).
+
+**Impact**:
+- Future major version releases would lose IBKR integration feature
+- Feature flags would be incorrect for version 2.0.0 and above
+- Users would lose access to IBKR functionality after major version upgrades
+- Inconsistent feature availability across version ranges
+
+### Root Cause
+
+The `check_feature_availability()` method had incorrect boolean logic for IBKR integration feature:
+
+```python
+# BUGGY CODE (before fix)
+# Version 1.3.0+: IBKR integration
+if major >= 1 and minor >= 3:
+    features["ibkr_integration"] = True
+```
+
+**The flaw**: The condition `major >= 1 and minor >= 3` requires BOTH conditions to be true:
+- Major version 1, minor 3+ → `True` ✅
+- Major version 2, minor 0 → `False` ❌ (should be `True`)
+- Major version 2, minor 5 → `False` ❌ (should be `True`)
+
+**Example of broken behavior**:
+```python
+# Version 1.3.0: major=1, minor=3
+# major >= 1 and minor >= 3 → True and True → True ✅
+
+# Version 2.0.0: major=2, minor=0
+# major >= 1 and minor >= 3 → True and False → False ❌
+
+# Expected: Version 2.0.0 should have IBKR integration (it's newer than 1.3.0)
+# Actual: Version 2.0.0 shows ibkr_integration: false
+```
+
+### The Fix
+
+Changed from `AND` logic to `OR` logic to handle major version increases:
+
+```python
+# FIXED CODE (after fix)
+# Version 1.3.0+: IBKR integration
+if major > 1 or (major == 1 and minor >= 3):
+    features["ibkr_integration"] = True
+```
+
+**Fixed logic**:
+- `major > 1` → Any major version 2+ automatically gets IBKR integration ✅
+- `(major == 1 and minor >= 3)` → Major version 1 with minor 3+ gets IBKR integration ✅
+
+### Test Validation
+
+**Test**: `test_check_feature_availability_major_version_2`\
+**Location**: `tests/services/test_system_service.py:227`
+
+```python
+def test_check_feature_availability_major_version_2(self, app_context):
+    """Test feature availability for future major version."""
+    features = SystemService.check_feature_availability("2.0.0")
+
+    expected_features = {
+        "basic_portfolio_management": True,
+        "realized_gain_loss": True,
+        "ibkr_integration": True,  # ✅ Should be True for version 2.x
+    }
+    assert features == expected_features  # ✅ Now passes
+```
+
+**Additional tests validating the fix**:
+- `test_check_feature_availability_version_1_3_0` - Confirms 1.3.0 still works
+- `test_check_feature_availability_version_1_3_1` - Confirms 1.3.1 still works
+- All other version tests ensure no regression
+
+**Before fix**: Test failed with `assert {'ibkr_integration': False} == {'ibkr_integration': True}`\
+**After fix**: Test passes, major version 2+ correctly shows IBKR integration ✅
+
+### Impact Assessment
+
+**Who was affected**: No current production impact (app is at version 1.3.2)
+
+**Functionality impact**:
+- **Future Risk**: Would have caused feature regression in version 2.0.0 release
+- **User Experience**: Users would lose IBKR functionality after major version upgrade
+- **Business Impact**: Major version releases would appear to lose features
+
+**Production scenarios that would have been affected**:
+1. Release version 2.0.0 → IBKR integration disappears ❌
+2. Release version 2.1.0 → IBKR integration still missing ❌
+3. All 2.x versions → missing IBKR integration ❌
+
+### Severity Assessment
+
+**Classified as Medium** (not Critical) because:
+- No current production impact (version 1.3.2 unaffected)
+- Would only affect future major version releases
+- Bug was caught before any 2.x release
+- Easy to fix with minimal code change
+
+However, this would have been **Critical** if discovered after a 2.0.0 release.
+
+### Related Logic Patterns
+
+The same service has similar version logic that is correct:
+
+```python
+# CORRECT pattern for realized_gain_loss (line 150)
+if major > 1 or (major == 1 and minor > 1) or (major == 1 and minor == 1 and patch >= 1):
+    features["realized_gain_loss"] = True
+```
+
+This pattern correctly handles major version increases, showing the inconsistency in the codebase.
+
+### Prevention
+
+**Going forward**:
+- **Test major version scenarios** even if not currently applicable
+- **Use consistent version logic patterns** across all feature checks
+- **Document version logic** with comments explaining the reasoning
+- **Add integration tests** for all version ranges, including future versions
+
+**Recommended version check pattern**:
+```python
+# Template for version-based feature flags
+if major > TARGET_MAJOR or (major == TARGET_MAJOR and minor >= TARGET_MINOR):
+    features["feature_name"] = True
+```
+
+---
+
 ## Summary
 
 ### Bug Statistics
@@ -947,13 +1087,14 @@ Both JSON response status and HTTP status code now align properly.
 | #4 - ReinvestmentStatus enum | Critical | 1 + import | 2 | Critical - Feature completely broken |
 | #5 - SymbolLookupService UNIQUE constraint | Medium | 1 | 1 | Low - Invalid cache refresh only |
 | #6 - LoggingService CRITICAL status code | Medium | 2 | 1 | Medium - API contract inconsistency |
+| #7 - SystemService IBKR integration logic | Medium | 1 | 1 | None - Future version risk |
 
 ### Testing Value
 
-**Total bugs found**: 6 (4 critical, 2 medium)
+**Total bugs found**: 7 (4 critical, 3 medium)
 **Discovery method**: Writing comprehensive tests
-**Services tested**: DividendService (21 tests), TransactionService (26 tests), IBKRTransactionService (36 tests), SymbolLookupService (20 tests), LoggingService (26 tests)
-**Combined coverage**: 129 tests, 93% average coverage
+**Services tested**: DividendService (21 tests), TransactionService (26 tests), IBKRTransactionService (36 tests), SymbolLookupService (20 tests), LoggingService (26 tests), SystemService (32 tests)
+**Combined coverage**: 161 tests, 95% average coverage
 
 These bugs were **only discovered** because we:
 1. Wrote comprehensive tests (not just happy paths)
@@ -970,6 +1111,8 @@ These bugs were **only discovered** because we:
 4. **Test all code paths** - Validation logic must be tested with invalid data
 5. **Integration tests catch real bugs** - These wouldn't be found with pure unit tests
 6. **Type safety matters** - String/enum mismatches are easy to miss without tests
+7. **Version logic is tricky** - Boolean logic errors can cause future regressions
+8. **Test future scenarios** - Even hypothetical version numbers can reveal bugs
 
 ### Prevention
 
@@ -980,6 +1123,8 @@ These bugs were **only discovered** because we:
 - Validate business logic with comprehensive test suites
 - **Use enums consistently** instead of string literals
 - **Add type hints** to catch type mismatches at development time
+- **Test version logic with future scenarios** (e.g., version 2.0.0, 3.0.0)
+- **Use consistent patterns** for version comparisons across services
 - Aim for 90%+ coverage on all services
 
 ---
