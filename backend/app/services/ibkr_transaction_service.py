@@ -231,6 +231,30 @@ class IBKRTransactionService:
                         }
                     )
 
+                # Create fee transaction if commission exists
+                if ibkr_txn.fees and ibkr_txn.fees > 0:
+                    allocated_fee = (ibkr_txn.fees * percentage) / 100.0
+
+                    fee_transaction = Transaction(
+                        portfolio_fund_id=portfolio_fund.id,
+                        date=ibkr_txn.transaction_date,
+                        type="fee",
+                        shares=0,  # Fee transactions have no shares
+                        cost_per_share=allocated_fee,  # Store fee amount in cost_per_share
+                    )
+                    db.session.add(fee_transaction)
+                    db.session.flush()  # Get transaction ID
+
+                    created_transactions.append(
+                        {
+                            "transaction_id": fee_transaction.id,
+                            "portfolio_name": portfolio.name,
+                            "shares": 0,
+                            "amount": allocated_fee,
+                            "type": "fee",
+                        }
+                    )
+
                 # Create allocation record
                 allocation_record = IBKRTransactionAllocation(
                     ibkr_transaction_id=ibkr_txn.id,
