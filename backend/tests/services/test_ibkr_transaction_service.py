@@ -323,7 +323,18 @@ class TestProcessTransactionAllocation:
 
         assert result["success"] is True
         assert "fund_id" in result
-        assert len(result["created_transactions"]) == 1
+        # Should create 2 transactions: 1 buy + 1 fee (commission=$1.50)
+        assert len(result["created_transactions"]) == 2
+
+        # Verify main transaction
+        buy_txn = next(t for t in result["created_transactions"] if t.get("type") != "fee")
+        assert buy_txn["shares"] == 100.0
+        assert buy_txn["amount"] == 15000.00
+
+        # Verify fee transaction
+        fee_txn = next(t for t in result["created_transactions"] if t.get("type") == "fee")
+        assert fee_txn["shares"] == 0
+        assert fee_txn["amount"] == 1.50
 
         # Verify IBKR transaction marked as processed
         ibkr_txn = db.session.get(IBKRTransaction, sample_ibkr_transaction.id)
@@ -353,7 +364,24 @@ class TestProcessTransactionAllocation:
         )
 
         assert result["success"] is True
-        assert len(result["created_transactions"]) == 2
+        # Should create 4 transactions: 2 buy + 2 fee (commission split 60/40)
+        assert len(result["created_transactions"]) == 4
+
+        # Filter transactions by type
+        buy_txns = [t for t in result["created_transactions"] if t.get("type") != "fee"]
+        fee_txns = [t for t in result["created_transactions"] if t.get("type") == "fee"]
+
+        # Verify 2 buy transactions
+        assert len(buy_txns) == 2
+        # Verify 2 fee transactions
+        assert len(fee_txns) == 2
+
+        # Check commission allocation (total fee = $1.50)
+        portfolio_a_fee = next(f for f in fee_txns if f["portfolio_name"] == "Test Portfolio")
+        assert portfolio_a_fee["amount"] == 0.90  # 60% of $1.50
+
+        portfolio_b_fee = next(f for f in fee_txns if f["portfolio_name"] == "Second Portfolio")
+        assert portfolio_b_fee["amount"] == 0.60  # 40% of $1.50
 
         # Verify allocations
         allocs = IBKRTransactionAllocation.query.filter_by(
