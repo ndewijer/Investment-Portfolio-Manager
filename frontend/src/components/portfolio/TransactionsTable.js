@@ -143,8 +143,15 @@ const TransactionsTable = ({
     {
       key: 'total',
       header: 'Total',
-      render: (value, transaction) =>
-        formatCurrency(calculateTransactionTotal(transaction.shares, transaction.cost_per_share)),
+      render: (value, transaction) => {
+        // For fee transactions, total is just the cost_per_share value (not shares * cost_per_share)
+        if (transaction.type === 'fee') {
+          return formatCurrency(transaction.cost_per_share);
+        }
+        return formatCurrency(
+          calculateTransactionTotal(transaction.shares, transaction.cost_per_share)
+        );
+      },
     },
     {
       key: 'actions',
