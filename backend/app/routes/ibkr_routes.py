@@ -330,7 +330,7 @@ def get_inbox_transaction(transaction_id):
     Returns:
         JSON object with transaction details
     """
-    txn = IBKRTransaction.query.get_or_404(transaction_id)
+    txn = IBKRTransactionService.get_transaction(transaction_id)
 
     return jsonify(
         {
@@ -375,34 +375,8 @@ def ignore_transaction(transaction_id):
     Returns:
         JSON response with success status
     """
-    txn = IBKRTransaction.query.get_or_404(transaction_id)
-
-    if txn.status == "processed":
-        return jsonify({"error": "Cannot ignore processed transaction"}), 400
-
-    try:
-        txn.status = "ignored"
-        txn.processed_at = datetime.now()
-        db.session.commit()
-
-        logger.log(
-            level=LogLevel.INFO,
-            category=LogCategory.IBKR,
-            message=f"Transaction marked as ignored: {txn.ibkr_transaction_id}",
-            details={"transaction_id": transaction_id},
-        )
-
-        return jsonify({"success": True, "message": "Transaction marked as ignored"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        logger.log(
-            level=LogLevel.ERROR,
-            category=LogCategory.IBKR,
-            message="Failed to ignore transaction",
-            details={"transaction_id": transaction_id, "error": str(e)},
-        )
-        return jsonify({"error": "Failed to ignore transaction", "details": str(e)}), 500
+    response, status = IBKRTransactionService.ignore_transaction(transaction_id)
+    return jsonify(response), status
 
 
 @ibkr.route("/ibkr/inbox/<transaction_id>", methods=["DELETE"])
@@ -416,33 +390,8 @@ def delete_transaction(transaction_id):
     Returns:
         JSON response with success status
     """
-    txn = IBKRTransaction.query.get_or_404(transaction_id)
-
-    if txn.status == "processed":
-        return jsonify({"error": "Cannot delete processed transaction"}), 400
-
-    try:
-        db.session.delete(txn)
-        db.session.commit()
-
-        logger.log(
-            level=LogLevel.INFO,
-            category=LogCategory.IBKR,
-            message=f"Transaction deleted: {txn.ibkr_transaction_id}",
-            details={"transaction_id": transaction_id},
-        )
-
-        return jsonify({"success": True, "message": "Transaction deleted"}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        logger.log(
-            level=LogLevel.ERROR,
-            category=LogCategory.IBKR,
-            message="Failed to delete transaction",
-            details={"transaction_id": transaction_id, "error": str(e)},
-        )
-        return jsonify({"error": "Failed to delete transaction", "details": str(e)}), 500
+    response, status = IBKRTransactionService.delete_transaction(transaction_id)
+    return jsonify(response), status
 
 
 @ibkr.route("/ibkr/portfolios", methods=["GET"])

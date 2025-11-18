@@ -221,10 +221,6 @@ class TestIBKRInbox:
         assert "count" in data
         assert data["count"] >= 2
 
-    @pytest.mark.skip(
-        reason="Endpoint uses IBKRTransaction.query.get_or_404() which causes "
-        "session scoping issues in tests. Documented in ROUTE_REFACTORING_REMEDIATION_PLAN.md"
-    )
     def test_get_inbox_transaction(self, app_context, client, db_session):
         """Test GET /ibkr/inbox/<transaction_id> returns specific transaction."""
         txn = IBKRTransaction(
@@ -249,10 +245,6 @@ class TestIBKRInbox:
         assert data["id"] == txn.id
         assert data["symbol"] == "AAPL"
 
-    @pytest.mark.skip(
-        reason="Endpoint uses IBKRTransaction.query.get_or_404() which causes "
-        "session scoping issues in tests. Documented in ROUTE_REFACTORING_REMEDIATION_PLAN.md"
-    )
     def test_ignore_transaction(self, app_context, client, db_session):
         """Test POST /ibkr/inbox/<transaction_id>/ignore marks transaction as ignored."""
         txn = IBKRTransaction(
@@ -278,10 +270,6 @@ class TestIBKRInbox:
         db_session.refresh(txn)
         assert txn.status == "ignored"
 
-    @pytest.mark.skip(
-        reason="Endpoint uses IBKRTransaction.query.get_or_404() which causes "
-        "session scoping issues in tests. Documented in ROUTE_REFACTORING_REMEDIATION_PLAN.md"
-    )
     def test_delete_transaction(self, app_context, client, db_session):
         """Test DELETE /ibkr/inbox/<transaction_id> removes transaction."""
         txn = IBKRTransaction(

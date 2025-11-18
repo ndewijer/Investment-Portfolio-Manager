@@ -40,6 +40,109 @@ class IBKRTransactionService:
     """
 
     @staticmethod
+    def get_transaction(transaction_id: str) -> IBKRTransaction:
+        """
+        Retrieve an IBKR transaction by ID.
+
+        Args:
+            transaction_id: Transaction ID
+
+        Returns:
+            IBKRTransaction: The transaction object
+
+        Raises:
+            404: If transaction not found
+        """
+        txn = db.session.get(IBKRTransaction, transaction_id)
+        if not txn:
+            from flask import abort
+
+            abort(404)
+        return txn
+
+    @staticmethod
+    def ignore_transaction(transaction_id: str) -> tuple[dict, int]:
+        """
+        Mark an IBKR transaction as ignored.
+
+        Args:
+            transaction_id: Transaction ID
+
+        Returns:
+            tuple: (response dict, status code)
+        """
+        txn = IBKRTransactionService.get_transaction(transaction_id)
+
+        if txn.status == "processed":
+            return {"error": "Cannot ignore processed transaction"}, 400
+
+        try:
+            txn.status = "ignored"
+            txn.processed_at = datetime.now()
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Transaction marked as ignored: {txn.ibkr_transaction_id}",
+                details={"transaction_id": transaction_id},
+            )
+
+            return {"success": True, "message": "Transaction marked as ignored"}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to ignore transaction",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": "Failed to ignore transaction", "details": str(e)}, 500
+
+    @staticmethod
+    def delete_transaction(transaction_id: str) -> tuple[dict, int]:
+        """
+        Delete an IBKR transaction (only if not processed).
+
+        Args:
+            transaction_id: Transaction ID
+
+        Returns:
+            tuple: (response dict, status code)
+        """
+        txn = IBKRTransactionService.get_transaction(transaction_id)
+
+        if txn.status == "processed":
+            return {"error": "Cannot delete processed transaction"}, 400
+
+        try:
+            # Store transaction ID before deletion for logging
+            ibkr_transaction_id = txn.ibkr_transaction_id
+
+            db.session.delete(txn)
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Transaction deleted: {ibkr_transaction_id}",
+                details={"transaction_id": transaction_id},
+            )
+
+            return {"success": True, "message": "Transaction deleted"}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to delete transaction",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": "Failed to delete transaction", "details": str(e)}, 500
+
+    @staticmethod
     def validate_allocations(allocations: list[dict]) -> tuple[bool, str]:
         """
         Validate that allocations sum to 100%.

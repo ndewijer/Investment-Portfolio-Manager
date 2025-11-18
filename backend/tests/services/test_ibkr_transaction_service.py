@@ -1412,3 +1412,106 @@ class TestCommissionAllocation:
         )
         assert portfolio_b_fee_txn is not None
         assert portfolio_b_fee_txn.cost_per_share == 1.20  # 40% of $3.00
+
+
+class TestTransactionManagement:
+    """Tests for transaction management methods (get, ignore, delete)."""
+
+    def test_get_transaction_success(self, app_context, db_session, sample_ibkr_transaction):
+        """Test get_transaction retrieves existing transaction."""
+        txn = IBKRTransactionService.get_transaction(sample_ibkr_transaction.id)
+
+        assert txn is not None
+        assert txn.id == sample_ibkr_transaction.id
+        assert txn.symbol == sample_ibkr_transaction.symbol
+
+    def test_get_transaction_not_found(self, app_context, db_session):
+        """Test get_transaction raises 404 for non-existent transaction."""
+        fake_id = make_id()
+
+        # Flask abort() raises werkzeug HTTPException
+        from werkzeug.exceptions import NotFound
+
+        with pytest.raises(NotFound):
+            IBKRTransactionService.get_transaction(fake_id)
+
+    def test_ignore_transaction_success(self, app_context, db_session, sample_ibkr_transaction):
+        """Test ignore_transaction marks transaction as ignored."""
+        response, status = IBKRTransactionService.ignore_transaction(sample_ibkr_transaction.id)
+
+        assert status == 200
+        assert response["success"] is True
+        assert "ignored" in response["message"]
+
+        # Verify transaction status updated
+        db_session.refresh(sample_ibkr_transaction)
+        assert sample_ibkr_transaction.status == "ignored"
+        assert sample_ibkr_transaction.processed_at is not None
+
+    def test_ignore_transaction_already_processed(
+        self, app_context, db_session, sample_ibkr_transaction
+    ):
+        """Test ignore_transaction rejects already-processed transaction."""
+        # Mark as processed
+        sample_ibkr_transaction.status = "processed"
+        db_session.commit()
+
+        response, status = IBKRTransactionService.ignore_transaction(sample_ibkr_transaction.id)
+
+        assert status == 400
+        assert "error" in response
+        assert "processed" in response["error"]
+
+        # Status should remain processed
+        db_session.refresh(sample_ibkr_transaction)
+        assert sample_ibkr_transaction.status == "processed"
+
+    def test_ignore_transaction_not_found(self, app_context, db_session):
+        """Test ignore_transaction handles non-existent transaction."""
+        fake_id = make_id()
+
+        from werkzeug.exceptions import NotFound
+
+        with pytest.raises(NotFound):
+            IBKRTransactionService.ignore_transaction(fake_id)
+
+    def test_delete_transaction_success(self, app_context, db_session, sample_ibkr_transaction):
+        """Test delete_transaction removes transaction."""
+        transaction_id = sample_ibkr_transaction.id
+
+        response, status = IBKRTransactionService.delete_transaction(transaction_id)
+
+        assert status == 200
+        assert response["success"] is True
+        assert "deleted" in response["message"]
+
+        # Verify transaction deleted
+        deleted = db.session.get(IBKRTransaction, transaction_id)
+        assert deleted is None
+
+    def test_delete_transaction_already_processed(
+        self, app_context, db_session, sample_ibkr_transaction
+    ):
+        """Test delete_transaction rejects already-processed transaction."""
+        # Mark as processed
+        sample_ibkr_transaction.status = "processed"
+        db_session.commit()
+
+        response, status = IBKRTransactionService.delete_transaction(sample_ibkr_transaction.id)
+
+        assert status == 400
+        assert "error" in response
+        assert "processed" in response["error"]
+
+        # Transaction should still exist
+        txn = db.session.get(IBKRTransaction, sample_ibkr_transaction.id)
+        assert txn is not None
+
+    def test_delete_transaction_not_found(self, app_context, db_session):
+        """Test delete_transaction handles non-existent transaction."""
+        fake_id = make_id()
+
+        from werkzeug.exceptions import NotFound
+
+        with pytest.raises(NotFound):
+            IBKRTransactionService.delete_transaction(fake_id)

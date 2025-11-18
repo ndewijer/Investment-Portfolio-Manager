@@ -24,7 +24,6 @@ todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md and will be fixed during route refact
 from datetime import datetime
 from decimal import Decimal
 
-import pytest
 from app.models import Fund, FundPrice, Portfolio, PortfolioFund, Transaction, db
 from tests.test_helpers import make_id, make_isin, make_symbol
 
@@ -124,10 +123,6 @@ class TestFundListAndCreate:
 class TestFundRetrieveUpdateDelete:
     """Test fund retrieval, update, and deletion endpoints."""
 
-    @pytest.mark.skip(
-        reason="Endpoint uses Fund.query.get_or_404() which has session scoping issues. "
-        "Requires route refactoring (see todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md #8)"
-    )
     def test_get_fund_detail(self, app_context, client, db_session):
         """Test GET /funds/<fund_id> returns fund details."""
         fund = create_fund("US", "VTI", "Vanguard Total Stock Market ETF")
@@ -143,10 +138,6 @@ class TestFundRetrieveUpdateDelete:
         assert data["symbol"] == fund.symbol
         assert "latest_price" in data
 
-    @pytest.mark.skip(
-        reason="Endpoint uses Fund.query.get_or_404() which has session scoping issues. "
-        "Requires route refactoring (see todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md #8)"
-    )
     def test_get_fund_with_latest_price(self, app_context, client, db_session):
         """Test GET /funds/<fund_id> includes latest price."""
         fund = create_fund("US", "VOO", "Vanguard S&P 500 ETF")
@@ -169,10 +160,6 @@ class TestFundRetrieveUpdateDelete:
         assert data["latest_price"] is not None
         assert data["latest_price"] == 450.00
 
-    @pytest.mark.skip(
-        reason="Endpoint uses Fund.query.get_or_404() which has session scoping issues. "
-        "Requires route refactoring (see todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md #8)"
-    )
     def test_get_fund_not_found(self, app_context, client):
         """Test GET /funds/<fund_id> handles non-existent fund."""
         fake_id = make_id()
@@ -362,11 +349,6 @@ class TestSymbolLookup:
 class TestFundPrices:
     """Test fund price endpoints."""
 
-    @pytest.mark.skip(
-        reason="Endpoint uses Fund.query.get_or_404() and FundPrice.query.filter_by() which have "
-        "session scoping issues. Requires route refactoring "
-        "(see todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md #9)"
-    )
     def test_get_fund_prices(self, app_context, client, db_session):
         """Test GET /fund-prices/<fund_id> returns price history."""
         fund = create_fund("US", "VTI", "Vanguard Total Stock Market ETF")
