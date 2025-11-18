@@ -2,8 +2,8 @@
 
 **File**: `tests/routes/test_fund_routes.py`
 **Route File**: `app/routes/fund_routes.py`
-**Test Count**: 19 tests (15 passing, 4 skipped)
-**Status**: ✅ Core functionality tested
+**Test Count**: 19 tests (19 passing, 0 skipped)
+**Status**: ✅ All tests passing (Phase 1 - Query.get_or_404() issues resolved)
 
 ---
 
@@ -15,23 +15,23 @@ Integration tests for fund management API endpoints. These tests verify fund CRU
 
 1. **GET /api/funds** - List all funds ✅
 2. **POST /api/funds** - Create fund ✅
-3. **GET /api/funds/<fund_id>** - Get fund detail (SKIPPED)
+3. **GET /api/funds/<fund_id>** - Get fund detail ✅ (FIXED in Phase 1)
 4. **PUT /api/funds/<fund_id>** - Update fund ✅
 5. **DELETE /api/funds/<fund_id>** - Delete fund ✅
 6. **GET /api/funds/<fund_id>/check-usage** - Check fund usage ✅
 7. **GET /api/lookup-symbol-info/<symbol>** - Lookup symbol info ✅
-8. **GET /api/fund-prices/<fund_id>** - Get fund prices (SKIPPED)
+8. **GET /api/fund-prices/<fund_id>** - Get fund prices ✅ (FIXED in Phase 1)
 9. **POST /api/fund-prices/<fund_id>/update** - Update fund prices ✅
 10. **POST /api/funds/update-all-prices** - Update all fund prices ✅
 
-### Skipped Tests
+### Phase 1 Fixes - Query.get_or_404() Session Scoping
 
-**4 tests skipped** for the following reasons:
+**4 tests fixed** by moving database queries to service layer:
 
-1. **GET /api/funds/<fund_id>** (3 tests) - Uses `Fund.query.get_or_404()` which has session scoping issues
-2. **GET /api/fund-prices/<fund_id>** (1 test) - Uses `Fund.query.get_or_404()` and `FundPrice.query.filter_by()`
+1. **GET /api/funds/<fund_id>** (3 tests) - Now uses `FundService.get_fund()` and `FundService.get_latest_fund_price()`
+2. **GET /api/fund-prices/<fund_id>** (1 test) - Now uses `FundService.get_fund()` and `FundService.get_fund_price_history()`
 
-These endpoints are documented in `todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md` for future refactoring.
+Service methods use `db.session.get()` instead of deprecated `Query.get_or_404()`, resolving session scoping issues.
 
 ---
 
@@ -44,27 +44,27 @@ These endpoints are documented in `todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md` f
    - Create fund
    - Duplicate ISIN rejection
 
-2. **TestFundRetrieveUpdateDelete** (8 tests, 3 skipped)
-   - Get fund detail (SKIPPED)
-   - Get fund with latest price (SKIPPED)
-   - Get fund not found (SKIPPED)
-   - Update fund
-   - Update fund not found
-   - Delete fund
-   - Delete fund in use (409 conflict)
+2. **TestFundRetrieveUpdateDelete** (8 tests)
+   - Get fund detail ✅
+   - Get fund with latest price ✅
+   - Get fund not found (404) ✅
+   - Update fund ✅
+   - Update fund not found (404) ✅
+   - Delete fund ✅
+   - Delete fund in use (409 conflict) ✅
 
 3. **TestFundUsage** (2 tests)
-   - Check fund usage when in use
-   - Check fund usage when not in use
+   - Check fund usage when in use ✅
+   - Check fund usage when not in use ✅
 
 4. **TestSymbolLookup** (2 tests)
-   - Lookup symbol info (mocked)
-   - Lookup invalid symbol (404)
+   - Lookup symbol info (mocked) ✅
+   - Lookup invalid symbol (404) ✅
 
-5. **TestFundPrices** (3 tests, 1 skipped)
-   - Get fund prices (SKIPPED)
-   - Update today's price (mocked)
-   - Update historical prices (mocked)
+5. **TestFundPrices** (3 tests)
+   - Get fund prices ✅
+   - Update today's price (mocked) ✅
+   - Update historical prices (mocked) ✅
 
 6. **TestUpdateAllPrices** (1 test)
    - Update all fund prices (with API key authentication)

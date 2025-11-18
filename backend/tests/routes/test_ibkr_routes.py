@@ -351,10 +351,10 @@ class TestIBKRAllocation:
         data = response.get_json()
         assert isinstance(data, list)
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 400 error. Requires investigation of route's validation "
-        "and business logic."
-    )
+    # @pytest.mark.skip(
+    #     reason="Endpoint returns 400 error. Requires investigation of route's validation "
+    #     "and business logic."
+    # )
     def test_allocate_transaction(self, app_context, client, db_session):
         """Test POST /ibkr/inbox/<transaction_id>/allocate allocates transaction."""
         # Create fund and portfolio
@@ -383,14 +383,14 @@ class TestIBKRAllocation:
         db_session.add(txn)
         db_session.commit()
 
-        payload = {
-            "portfolio_fund_id": pf.id,
-            "shares": 10,
-        }
+        payload = {"allocations": [{"portfolio_id": portfolio.id, "percentage": 100.0}]}
 
         response = client.post(f"/api/ibkr/inbox/{txn.id}/allocate", json=payload)
 
         assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+        assert "created_transactions" in data
 
         # Verify allocation created
         allocations = IBKRTransactionAllocation.query.filter_by(ibkr_transaction_id=txn.id).all()
@@ -427,10 +427,6 @@ class TestIBKRAllocation:
         data = response.get_json()
         assert isinstance(data, list)
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 400 error. Requires investigation of route's validation "
-        "and business logic."
-    )
     def test_match_dividend(self, app_context, client, db_session):
         """Test POST /ibkr/inbox/<transaction_id>/match-dividend matches dividend."""
         # Create fund, portfolio, and dividend
@@ -450,7 +446,7 @@ class TestIBKRAllocation:
             ex_dividend_date=datetime.now().date() - timedelta(days=1),
             shares_owned=100,
             dividend_per_share=Decimal("0.50"),
-            total_amount=Decimal("50.00"),
+            total_amount=Decimal("0"),  # Will be set by matching
             reinvestment_status=ReinvestmentStatus.PENDING,
         )
         db_session.add(dividend)
@@ -461,10 +457,9 @@ class TestIBKRAllocation:
             ibkr_transaction_id=make_id(),
             transaction_date=datetime.now().date(),
             symbol=fund.symbol,
+            isin=fund.isin,
             description="Apple Inc - Dividend Reinvestment",
             transaction_type="dividend",
-            quantity=1,
-            price=float(Decimal("50.00")),
             total_amount=float(Decimal("50.00")),
             currency="USD",
             status="pending",
@@ -472,11 +467,14 @@ class TestIBKRAllocation:
         db_session.add(txn)
         db_session.commit()
 
-        payload = {"dividend_id": dividend.id}
+        payload = {"dividend_ids": [dividend.id]}
 
         response = client.post(f"/api/ibkr/inbox/{txn.id}/match-dividend", json=payload)
 
         assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
+        assert data["updated_dividends"] == 1
 
     @pytest.mark.skip(
         reason="Endpoint returns 500 error. Requires investigation of route's business "
@@ -579,70 +577,57 @@ class TestIBKRAllocation:
         assert isinstance(data, list)
         assert len(data) >= 1
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 400 error. Requires investigation of route's validation "
-        "and business logic."
-    )
     def test_update_transaction_allocations(self, app_context, client, db_session):
         """Test PUT /ibkr/inbox/<transaction_id>/allocations updates allocations."""
-        # Create fund, portfolio, and allocation
+        # Create 2 portfolios
         fund = create_fund("US", "AAPL", "Apple Inc")
-        portfolio = Portfolio(name="Test Portfolio")
-        db_session.add_all([fund, portfolio])
+        portfolio1 = Portfolio(name="Portfolio 1")
+        portfolio2 = Portfolio(name="Portfolio 2")
+        db_session.add_all([fund, portfolio1, portfolio2])
         db_session.commit()
 
-        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
-        db_session.add(pf)
-        db_session.commit()
-
-        # Create IBKR transaction
+        # First allocate the transaction
         txn = IBKRTransaction(
             ibkr_transaction_id=make_id(),
             transaction_date=datetime.now().date(),
             symbol=fund.symbol,
+            isin=fund.isin,
             description="Apple Inc",
             transaction_type="buy",
             quantity=10,
             price=float(Decimal("150.00")),
             total_amount=float(Decimal("1500.00")),
             currency="USD",
-            status="allocated",
+            status="pending",
         )
         db_session.add(txn)
         db_session.commit()
 
-        # Create allocation
-        allocation = IBKRTransactionAllocation(
-            ibkr_transaction_id=txn.id,
-            portfolio_id=portfolio.id,
-            allocation_percentage=100.0,
-            allocated_amount=float(Decimal("1500.00")),
-            allocated_shares=10.0,
-        )
-        db_session.add(allocation)
-        db_session.commit()
+        # Allocate to process it first (100% to portfolio1)
+        from app.services.ibkr_transaction_service import IBKRTransactionService
 
+        IBKRTransactionService.process_transaction_allocation(
+            txn.id, [{"portfolio_id": portfolio1.id, "percentage": 100.0}]
+        )
+
+        # Now modify to split 60/40 between two portfolios
         payload = {
             "allocations": [
-                {
-                    "portfolio_fund_id": pf.id,
-                    "shares": 8,  # Changed from 10
-                }
+                {"portfolio_id": portfolio1.id, "percentage": 60.0},
+                {"portfolio_id": portfolio2.id, "percentage": 40.0},
             ]
         }
 
         response = client.put(f"/api/ibkr/inbox/{txn.id}/allocations", json=payload)
 
         assert response.status_code == 200
+        data = response.get_json()
+        assert data["success"] is True
 
 
 class TestIBKRBulkOperations:
     """Test IBKR bulk operation endpoints."""
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 400 error. Requires investigation of route's validation "
-        "and business logic."
-    )
     def test_bulk_allocate(self, app_context, client, db_session):
         """Test POST /ibkr/inbox/bulk-allocate allocates multiple transactions."""
         # Create fund and portfolio
@@ -651,15 +636,12 @@ class TestIBKRBulkOperations:
         db_session.add_all([fund, portfolio])
         db_session.commit()
 
-        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
-        db_session.add(pf)
-        db_session.commit()
-
         # Create IBKR transactions
         txn1 = IBKRTransaction(
             ibkr_transaction_id=make_id(),
             transaction_date=datetime.now().date(),
             symbol=fund.symbol,
+            isin=fund.isin,
             description="Apple Inc",
             transaction_type="buy",
             quantity=10,
@@ -672,6 +654,7 @@ class TestIBKRBulkOperations:
             ibkr_transaction_id=make_id(),
             transaction_date=datetime.now().date(),
             symbol=fund.symbol,
+            isin=fund.isin,
             description="Apple Inc",
             transaction_type="buy",
             quantity=5,
@@ -683,10 +666,13 @@ class TestIBKRBulkOperations:
         db_session.add_all([txn1, txn2])
         db_session.commit()
 
-        payload = {"transaction_ids": [txn1.id, txn2.id]}
+        payload = {
+            "transaction_ids": [txn1.id, txn2.id],
+            "allocations": [{"portfolio_id": portfolio.id, "percentage": 100.0}],
+        }
 
         response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
 
         assert response.status_code == 200
         data = response.get_json()
-        assert "allocated" in data or "success" in data
+        assert data.get("success") is True or "results" in data
