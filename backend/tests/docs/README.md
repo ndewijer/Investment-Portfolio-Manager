@@ -9,7 +9,7 @@ This directory contains comprehensive documentation for all backend test suites,
 ```
 docs/
 ├── README.md           # This file - navigation index
-├── services/          # Service layer test documentation
+├── services/          # Service layer test documentation (Phase 3-4)
 │   ├── DEVELOPER_SERVICE_TESTS.md
 │   ├── DIVIDEND_SERVICE_TESTS.md
 │   ├── FUND_MATCHING_SERVICE_TESTS.md
@@ -22,6 +22,11 @@ docs/
 │   ├── PRICE_UPDATE_SERVICE_TESTS.md
 │   ├── SYMBOL_LOOKUP_SERVICE_TESTS.md
 │   └── TRANSACTION_SERVICE_TESTS.md
+├── routes/            # Route integration test documentation (Phase 5)
+│   ├── PORTFOLIO_ROUTES_TESTS.md
+│   ├── TRANSACTION_ROUTES_TESTS.md
+│   ├── DIVIDEND_ROUTES_TESTS.md
+│   └── FUND_ROUTES_TESTS.md
 ├── phases/            # Development phase documentation
 │   ├── BUG_FIXES_1.3.3.md
 │   ├── PHASE_3_SUMMARY.md
