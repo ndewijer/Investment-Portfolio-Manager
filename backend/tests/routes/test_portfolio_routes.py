@@ -40,7 +40,7 @@ def create_fund(
 class TestPortfolioListAndCreate:
     """Test portfolio listing and creation endpoints."""
 
-    def test_list_portfolios_empty(self, app_context, client):
+    def test_list_portfolios_empty(self, app_context, client, db_session):
         """Test GET /portfolios returns empty list when no portfolios exist."""
         response = client.get("/api/portfolios")
 

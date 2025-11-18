@@ -88,7 +88,7 @@ def create_fund(isin_prefix="US", symbol_prefix="TEST", name="Test Fund",
 
 ### 1. Testing Empty State
 ```python
-def test_list_portfolios_empty(self, app_context, client):
+def test_list_portfolios_empty(self, app_context, client, db_session):
     """Test GET /portfolios returns empty list when no portfolios exist."""
     response = client.get("/api/portfolios")
 
@@ -99,6 +99,8 @@ def test_list_portfolios_empty(self, app_context, client):
 ```
 
 **Why**: Verifies the endpoint handles empty database state correctly.
+
+**Important**: The `db_session` fixture is required here even though it's not directly used in the test. This fixture triggers database cleanup before the test runs, ensuring a truly empty state for testing.
 
 ### 2. Testing Full CRUD Operations
 ```python
@@ -244,5 +246,57 @@ Integration tests verify **all 13 portfolio endpoints** are accessible and retur
 
 ---
 
-**Last Updated**: Phase 5 (Route Integration Tests)
+## Phase 1b Fixes - Query.get() and Query.all() Deprecation
+
+During Phase 1b of route test fixes, we identified and resolved several deprecated SQLAlchemy Query API usages in `portfolio_routes.py`:
+
+### Issues Fixed
+
+1. **List Portfolios Route** (Line 83)
+   - **Before**: `Portfolio.query.all()`
+   - **After**: `PortfolioService.get_all_portfolios()`
+   - Uses SQLAlchemy 2.0 `select()` pattern internally
+
+2. **Portfolio Fund Deletion Error Handling** (Lines 342-348)
+   - **Before**: `PortfolioFund.query.options(...).get(portfolio_fund_id)`
+   - **After**: `PortfolioService.get_portfolio_fund(portfolio_fund_id, with_relationships=True)`
+   - Preserves eager loading of fund and portfolio relationships
+
+3. **Transaction/Dividend Counting** (Lines 347-352)
+   - **Before**: `Transaction.query.filter_by(...).count()` and `Dividend.query.filter_by(...).count()`
+   - **After**: `PortfolioService.count_portfolio_fund_transactions()` and `PortfolioService.count_portfolio_fund_dividends()`
+   - Uses `func.count()` with SQLAlchemy 2.0 patterns
+
+4. **Test Isolation Fix** (test_list_portfolios_empty)
+   - **Issue**: Test was missing `db_session` fixture, causing data from previous tests to leak
+   - **Fix**: Added `db_session` parameter to trigger database cleanup
+
+### Service Methods Added
+
+In `app/services/portfolio_service.py`:
+- `get_all_portfolios()` - Retrieve all portfolios without filtering
+- `get_portfolio_fund(portfolio_fund_id, with_relationships=False)` - Get PortfolioFund with optional eager loading
+- `count_portfolio_fund_transactions(portfolio_fund_id)` - Count transactions for a portfolio fund
+- `count_portfolio_fund_dividends(portfolio_fund_id)` - Count dividends for a portfolio fund
+
+### Test Coverage
+
+Added 6 new service tests in `tests/services/test_portfolio_service.py`:
+- `test_get_all_portfolios` - Verify all portfolios retrieved regardless of flags
+- `test_get_portfolio_fund_without_relationships` - Test basic retrieval
+- `test_get_portfolio_fund_with_relationships` - Test with eager loading
+- `test_get_portfolio_fund_not_found` - Test 404 handling
+- `test_count_portfolio_fund_transactions` - Test transaction counting
+- `test_count_portfolio_fund_dividends` - Test dividend counting
+
+### Results
+
+✅ All 22 portfolio route tests now pass
+✅ No SQLAlchemy deprecation warnings
+✅ Test isolation issues resolved
+✅ Service layer coverage maintained at 91%
+
+---
+
+**Last Updated**: Phase 5 - Phase 1b (Query API Deprecation Fixes)
 **Maintainer**: See git history

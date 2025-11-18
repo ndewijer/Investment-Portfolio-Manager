@@ -1057,6 +1057,40 @@ class PortfolioService:
         return portfolio
 
     @staticmethod
+    def get_portfolio(portfolio_id):
+        """
+        Retrieve a portfolio by ID.
+
+        Args:
+            portfolio_id (str): Portfolio identifier
+
+        Returns:
+            Portfolio: Portfolio object
+
+        Raises:
+            404: If portfolio not found
+        """
+        portfolio = db.session.get(Portfolio, portfolio_id)
+        if not portfolio:
+            from flask import abort
+
+            abort(404)
+        return portfolio
+
+    @staticmethod
+    def get_all_portfolios():
+        """
+        Retrieve all portfolios.
+
+        Returns:
+            list[Portfolio]: List of all portfolio objects
+        """
+        from sqlalchemy import select
+
+        stmt = select(Portfolio)
+        return db.session.execute(stmt).scalars().all()
+
+    @staticmethod
     def get_portfolios_list(include_excluded=False):
         """
         Get list of portfolios with optional filtering.
@@ -1067,13 +1101,78 @@ class PortfolioService:
         Returns:
             list[Portfolio]: List of portfolio objects
         """
-        from ..models import Portfolio
+        from sqlalchemy import select
 
-        query = Portfolio.query
+        stmt = select(Portfolio)
         if not include_excluded:
-            query = query.filter_by(exclude_from_overview=False)
+            stmt = stmt.where(~Portfolio.exclude_from_overview)
 
-        return query.all()
+        return db.session.execute(stmt).scalars().all()
+
+    @staticmethod
+    def get_portfolio_fund(portfolio_fund_id, with_relationships=False):
+        """
+        Retrieve a portfolio fund by ID.
+
+        Args:
+            portfolio_fund_id (str): PortfolioFund identifier
+            with_relationships (bool): If True, eagerly load fund and portfolio relationships
+
+        Returns:
+            PortfolioFund: PortfolioFund object or None if not found
+        """
+        if with_relationships:
+            from sqlalchemy import select
+            from sqlalchemy.orm import joinedload
+
+            stmt = (
+                select(PortfolioFund)
+                .options(joinedload(PortfolioFund.fund), joinedload(PortfolioFund.portfolio))
+                .where(PortfolioFund.id == portfolio_fund_id)
+            )
+            return db.session.execute(stmt).scalars().first()
+        else:
+            return db.session.get(PortfolioFund, portfolio_fund_id)
+
+    @staticmethod
+    def count_portfolio_fund_transactions(portfolio_fund_id):
+        """
+        Count transactions for a portfolio fund.
+
+        Args:
+            portfolio_fund_id (str): PortfolioFund identifier
+
+        Returns:
+            int: Number of transactions
+        """
+        from sqlalchemy import func, select
+
+        stmt = (
+            select(func.count())
+            .select_from(Transaction)
+            .where(Transaction.portfolio_fund_id == portfolio_fund_id)
+        )
+        return db.session.execute(stmt).scalar()
+
+    @staticmethod
+    def count_portfolio_fund_dividends(portfolio_fund_id):
+        """
+        Count dividends for a portfolio fund.
+
+        Args:
+            portfolio_fund_id (str): PortfolioFund identifier
+
+        Returns:
+            int: Number of dividends
+        """
+        from sqlalchemy import func, select
+
+        stmt = (
+            select(func.count())
+            .select_from(Dividend)
+            .where(Dividend.portfolio_fund_id == portfolio_fund_id)
+        )
+        return db.session.execute(stmt).scalar()
 
     @staticmethod
     def create_portfolio_fund(portfolio_id, fund_id):
