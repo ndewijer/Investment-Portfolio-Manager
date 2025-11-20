@@ -9,19 +9,15 @@ This module provides routes for:
 - Transaction imports
 """
 
-import json
 from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
 from ..models import (
     Fund,
-    Log,
     LogCategory,
     LogLevel,
     PortfolioFund,
-    SystemSetting,
-    SystemSettingKey,
     db,
 )
 from ..services.developer_service import DeveloperService
@@ -546,11 +542,9 @@ def get_logging_settings():
         JSON response containing logging enabled state and level
     """
     try:
-        settings = {
-            "enabled": SystemSetting.get_value(SystemSettingKey.LOGGING_ENABLED, "true").lower()
-            == "true",
-            "level": SystemSetting.get_value(SystemSettingKey.LOGGING_LEVEL, LogLevel.INFO.value),
-        }
+        from ..services.logging_service import LoggingService
+
+        settings = LoggingService.get_logging_settings()
         return jsonify(settings)
     except Exception as e:
         response, status = logger.log(
@@ -577,29 +571,13 @@ def update_logging_settings():
         JSON response containing updated logging settings
     """
     try:
+        from ..services.logging_service import LoggingService
+
         data = request.json
-        enabled_setting = SystemSetting.query.filter_by(
-            key=SystemSettingKey.LOGGING_ENABLED
-        ).first()
-        if not enabled_setting:
-            enabled_setting = SystemSetting(key=SystemSettingKey.LOGGING_ENABLED)
-        enabled_setting.value = str(data["enabled"]).lower()
-
-        level_setting = SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_LEVEL).first()
-        if not level_setting:
-            level_setting = SystemSetting(key=SystemSettingKey.LOGGING_LEVEL)
-        level_setting.value = data["level"]
-
-        db.session.add(enabled_setting)
-        db.session.add(level_setting)
-        db.session.commit()
-
-        return jsonify(
-            {
-                "enabled": enabled_setting.value.lower() == "true",
-                "level": level_setting.value,
-            }
+        result = LoggingService.update_logging_settings(
+            enabled=data["enabled"], level=data["level"]
         )
+        return jsonify(result)
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
@@ -632,72 +610,20 @@ def get_logs():
         JSON response containing paginated logs and metadata
     """
     try:
-        # Get filter parameters
-        levels = request.args.get("level")
-        categories = request.args.get("category")
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
-        source = request.args.get("source")
+        from ..services.logging_service import LoggingService
 
-        # Build query
-        query = Log.query
-
-        if levels:
-            levels_list = levels.split(",")
-            level_filters = [Log.level == LogLevel(lvl) for lvl in levels_list]
-            query = query.filter(db.or_(*level_filters))
-        if categories:
-            category_list = categories.split(",")
-            category_filters = [Log.category == LogCategory(cat) for cat in category_list]
-            query = query.filter(db.or_(*category_filters))
-        if start_date:
-            # Parse ISO timestamp string (already in UTC)
-            start_datetime = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
-            query = query.filter(Log.timestamp >= start_datetime)
-        if end_date:
-            # Parse ISO timestamp string (already in UTC)
-            end_datetime = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
-            query = query.filter(Log.timestamp <= end_datetime)
-        if source:
-            query = query.filter(Log.source.like(f"%{source}%"))
-
-        # Add sorting
-        sort_by = request.args.get("sort_by", "timestamp")
-        sort_dir = request.args.get("sort_dir", "desc")
-
-        if sort_dir == "desc":
-            query = query.order_by(getattr(Log, sort_by).desc())
-        else:
-            query = query.order_by(getattr(Log, sort_by).asc())
-
-        # Get paginated results
-        page = int(request.args.get("page", 1))
-        per_page = int(request.args.get("per_page", 50))
-        pagination = query.paginate(page=page, per_page=per_page)
-
-        return jsonify(
-            {
-                "logs": [
-                    {
-                        "id": log.id,
-                        "timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                        "level": log.level.value,
-                        "category": log.category.value,
-                        "message": log.message,
-                        "details": json.loads(log.details) if log.details else None,
-                        "source": log.source,
-                        "request_id": log.request_id,
-                        "http_status": log.http_status,
-                        "ip_address": log.ip_address,
-                        "user_agent": log.user_agent,
-                    }
-                    for log in pagination.items
-                ],
-                "total": pagination.total,
-                "pages": pagination.pages,
-                "current_page": pagination.page,
-            }
+        result = LoggingService.get_logs(
+            levels=request.args.get("level"),
+            categories=request.args.get("category"),
+            start_date=request.args.get("start_date"),
+            end_date=request.args.get("end_date"),
+            source=request.args.get("source"),
+            sort_by=request.args.get("sort_by", "timestamp"),
+            sort_dir=request.args.get("sort_dir", "desc"),
+            page=int(request.args.get("page", 1)),
+            per_page=int(request.args.get("per_page", 50)),
         )
+        return jsonify(result)
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
@@ -768,9 +694,9 @@ def clear_logs():
         JSON response confirming logs were cleared or error message
     """
     try:
-        # Delete all logs from the database
-        Log.query.delete()
-        db.session.commit()
+        from ..services.logging_service import LoggingService
+
+        LoggingService.clear_logs()
 
         response, status = logger.log(
             level=LogLevel.INFO,

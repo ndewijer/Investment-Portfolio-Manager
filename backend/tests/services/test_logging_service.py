@@ -499,3 +499,295 @@ class TestTrackRequestDecorator:
 
         # Request ID should still be set even if function raises
         assert hasattr(g, "request_id")
+
+
+class TestGetLoggingSettings:
+    """Tests for get_logging_settings static method."""
+
+    def test_get_logging_settings_with_existing_settings(self, app_context, db_session):
+        """Test retrieving existing logging settings."""
+        # Clear existing settings
+        db.session.query(SystemSetting).filter(
+            SystemSetting.key.in_(
+                [SystemSettingKey.LOGGING_ENABLED, SystemSettingKey.LOGGING_LEVEL]
+            )
+        ).delete()
+        db.session.commit()
+
+        # Create settings
+        settings = [
+            SystemSetting(id=make_id(), key=SystemSettingKey.LOGGING_ENABLED, value="false"),
+            SystemSetting(id=make_id(), key=SystemSettingKey.LOGGING_LEVEL, value="debug"),
+        ]
+        db.session.add_all(settings)
+        db.session.commit()
+
+        result = LoggingService.get_logging_settings()
+
+        assert result["enabled"] is False
+        assert result["level"] == "debug"
+
+    def test_get_logging_settings_with_defaults(self, app_context, db_session):
+        """Test getting logging settings when none exist (uses defaults)."""
+        # Clear existing settings
+        db.session.query(SystemSetting).filter(
+            SystemSetting.key.in_(
+                [SystemSettingKey.LOGGING_ENABLED, SystemSettingKey.LOGGING_LEVEL]
+            )
+        ).delete()
+        db.session.commit()
+
+        result = LoggingService.get_logging_settings()
+
+        assert result["enabled"] is True  # Default is true
+        assert result["level"] == "info"  # Default is INFO
+
+
+class TestUpdateLoggingSettings:
+    """Tests for update_logging_settings static method."""
+
+    def test_update_logging_settings_creates_new(self, app_context, db_session):
+        """Test creating new logging settings."""
+        # Clear existing settings
+        db.session.query(SystemSetting).filter(
+            SystemSetting.key.in_(
+                [SystemSettingKey.LOGGING_ENABLED, SystemSettingKey.LOGGING_LEVEL]
+            )
+        ).delete()
+        db.session.commit()
+
+        result = LoggingService.update_logging_settings(enabled=False, level="error")
+
+        assert result["enabled"] is False
+        assert result["level"] == "error"
+
+        # Verify database
+        enabled_setting = SystemSetting.query.filter_by(
+            key=SystemSettingKey.LOGGING_ENABLED
+        ).first()
+        level_setting = SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_LEVEL).first()
+
+        assert enabled_setting is not None
+        assert enabled_setting.value == "false"
+        assert level_setting is not None
+        assert level_setting.value == "error"
+
+    def test_update_logging_settings_updates_existing(self, app_context, db_session):
+        """Test updating existing logging settings."""
+        # Clear and create initial settings
+        db.session.query(SystemSetting).filter(
+            SystemSetting.key.in_(
+                [SystemSettingKey.LOGGING_ENABLED, SystemSettingKey.LOGGING_LEVEL]
+            )
+        ).delete()
+        db.session.commit()
+
+        settings = [
+            SystemSetting(id=make_id(), key=SystemSettingKey.LOGGING_ENABLED, value="true"),
+            SystemSetting(id=make_id(), key=SystemSettingKey.LOGGING_LEVEL, value="info"),
+        ]
+        db.session.add_all(settings)
+        db.session.commit()
+
+        result = LoggingService.update_logging_settings(enabled=False, level="debug")
+
+        assert result["enabled"] is False
+        assert result["level"] == "debug"
+
+        # Verify database was updated
+        enabled_setting = SystemSetting.query.filter_by(
+            key=SystemSettingKey.LOGGING_ENABLED
+        ).first()
+        assert enabled_setting.value == "false"
+
+
+class TestGetLogs:
+    """Tests for get_logs static method."""
+
+    def test_get_logs_basic(self, app_context, db_session):
+        """Test basic log retrieval."""
+        # Create test logs with unique source
+        unique_source = f"test_basic_{make_id()[:8]}"
+        logs = [
+            Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message="Test log 1",
+                source=unique_source,
+            ),
+            Log(
+                id=make_id(),
+                level=LogLevel.ERROR,
+                category=LogCategory.FUND,
+                message="Test log 2",
+                source=unique_source,
+            ),
+        ]
+        db.session.add_all(logs)
+        db.session.commit()
+
+        result = LoggingService.get_logs(source=unique_source)
+
+        assert "logs" in result
+        assert "total" in result
+        assert "pages" in result
+        assert "current_page" in result
+        assert len(result["logs"]) >= 2
+
+    def test_get_logs_with_level_filter(self, app_context, db_session):
+        """Test filtering logs by level."""
+        unique_source = f"test_level_{make_id()[:8]}"
+        logs = [
+            Log(
+                id=make_id(),
+                level=LogLevel.ERROR,
+                category=LogCategory.SYSTEM,
+                message="Error log",
+                source=unique_source,
+            ),
+            Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message="Info log",
+                source=unique_source,
+            ),
+        ]
+        db.session.add_all(logs)
+        db.session.commit()
+
+        result = LoggingService.get_logs(levels="error", source=unique_source)
+
+        # All returned logs should be ERROR level
+        our_logs = [log for log in result["logs"] if log["source"] == unique_source]
+        assert all(log["level"] == "error" for log in our_logs)
+
+    def test_get_logs_with_category_filter(self, app_context, db_session):
+        """Test filtering logs by category."""
+        unique_source = f"test_category_{make_id()[:8]}"
+        logs = [
+            Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.FUND,
+                message="Fund log",
+                source=unique_source,
+            ),
+            Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message="System log",
+                source=unique_source,
+            ),
+        ]
+        db.session.add_all(logs)
+        db.session.commit()
+
+        result = LoggingService.get_logs(categories="fund", source=unique_source)
+
+        # All returned logs should be FUND category
+        our_logs = [log for log in result["logs"] if log["source"] == unique_source]
+        assert all(log["category"] == "fund" for log in our_logs)
+
+    def test_get_logs_with_pagination(self, app_context, db_session):
+        """Test log pagination."""
+        unique_source = f"test_pagination_{make_id()[:8]}"
+        # Create 15 logs
+        logs = [
+            Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source=unique_source,
+            )
+            for i in range(15)
+        ]
+        db.session.add_all(logs)
+        db.session.commit()
+
+        # Get first page with 10 items
+        result = LoggingService.get_logs(source=unique_source, page=1, per_page=10)
+
+        assert result["current_page"] == 1
+        assert result["total"] >= 15
+        assert len(result["logs"]) <= 10
+
+    def test_get_logs_with_sorting(self, app_context, db_session):
+        """Test log sorting."""
+        unique_source = f"test_sorting_{make_id()[:8]}"
+        logs = [
+            Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source=unique_source,
+            )
+            for i in range(3)
+        ]
+        db.session.add_all(logs)
+        db.session.commit()
+
+        # Test descending sort (default)
+        result_desc = LoggingService.get_logs(
+            source=unique_source, sort_by="timestamp", sort_dir="desc"
+        )
+        # Test ascending sort
+        result_asc = LoggingService.get_logs(
+            source=unique_source, sort_by="timestamp", sort_dir="asc"
+        )
+
+        our_logs_desc = [log for log in result_desc["logs"] if log["source"] == unique_source]
+        our_logs_asc = [log for log in result_asc["logs"] if log["source"] == unique_source]
+
+        # Should return the same number of logs
+        assert len(our_logs_desc) == len(our_logs_asc)
+        assert len(our_logs_desc) >= 3
+        # Just verify that both queries return results successfully
+        assert "logs" in result_desc
+        assert "logs" in result_asc
+
+
+class TestClearLogs:
+    """Tests for clear_logs static method."""
+
+    def test_clear_logs_removes_all_logs(self, app_context, db_session):
+        """Test that clear_logs removes all log entries."""
+        # Create test logs
+        logs = [
+            Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source="test_clear",
+            )
+            for i in range(5)
+        ]
+        db.session.add_all(logs)
+        db.session.commit()
+
+        # Get initial count
+        initial_count = Log.query.filter_by(source="test_clear").count()
+        assert initial_count == 5
+
+        # Clear logs
+        LoggingService.clear_logs()
+
+        # Verify logs cleared
+        final_count = Log.query.filter_by(source="test_clear").count()
+        assert final_count == 0
+
+    def test_clear_logs_empty_database(self, app_context, db_session):
+        """Test clear_logs when no logs exist."""
+        # Clear any existing logs
+        LoggingService.clear_logs()
+
+        # Should not raise an error
+        LoggingService.clear_logs()
+
+        # Verify count is still 0
+        assert Log.query.count() == 0

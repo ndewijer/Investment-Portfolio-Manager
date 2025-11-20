@@ -12,14 +12,15 @@ Tests Developer API endpoints:
 - GET /api/system-settings/logging - Get logging settings ✅
 - PUT /api/system-settings/logging - Update logging settings ✅
 - GET /api/logs - Get logs ✅
+- GET /api/logs?level=ERROR - Get logs with filters ✅
 - GET /api/fund-price/<fund_id> - Get fund price ✅
 - POST /api/logs/clear - Clear logs ✅
 
-Test Summary: 5 passing, 8 skipped
+Test Summary: 11 passing, 2 skipped
 
 NOTE: Tests for CSV import endpoints are skipped as they require complex
-file upload handling and CSV parsing logic (2 tests).
-Tests with unresolved 500 errors require investigation of route business logic (6 tests).
+file upload handling and CSV parsing logic (2 tests). CSV logic is tested
+in service layer tests (test_developer_service.py).
 """
 
 from datetime import datetime
@@ -122,9 +123,6 @@ class TestFundPrice:
         assert price is not None
         assert price.price == 250.00
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route business logic."
-    )
     def test_get_fund_price(self, app_context, client, db_session):
         """Test GET /developer/fund-price/<fund_id> returns fund price."""
         fund = create_fund("US", "VOO", "Vanguard S&P 500 ETF")
@@ -140,36 +138,34 @@ class TestFundPrice:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
+        assert isinstance(data, dict)
+        assert "price" in data
+        assert data["price"] == 450.00
+        assert data["fund_id"] == fund.id
 
 
 class TestCSVTemplates:
     """Test CSV template endpoints."""
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route business logic."
-    )
     def test_get_csv_template(self, app_context, client):
         """Test GET /developer/csv-template returns CSV template."""
         response = client.get("/api/csv-template")
 
         assert response.status_code == 200
-        # Response should be CSV content
-        assert response.content_type == "text/csv; charset=utf-8"
-        assert b"date" in response.data or b"Date" in response.data
+        data = response.get_json()
+        assert isinstance(data, dict)
+        assert "headers" in data
+        assert "date" in data["headers"]
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route business logic."
-    )
     def test_get_fund_price_template(self, app_context, client):
         """Test GET /developer/fund-price-template returns fund price template."""
         response = client.get("/api/fund-price-template")
 
         assert response.status_code == 200
-        # Response should be CSV content
-        assert response.content_type == "text/csv; charset=utf-8"
-        assert b"date" in response.data or b"Date" in response.data
+        data = response.get_json()
+        assert isinstance(data, dict)
+        assert "headers" in data
+        assert "date" in data["headers"]
 
 
 class TestImports:
@@ -195,20 +191,17 @@ class TestImports:
 class TestLogging:
     """Test logging configuration and viewing endpoints."""
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route business logic."
-    )
     def test_get_logging_settings(self, app_context, client, db_session):
         """Test GET /developer/system-settings/logging returns logging settings."""
         # Create logging settings
         settings = [
             SystemSetting(
-                key=SystemSettingKey.LOG_LEVEL_DATABASE,
-                value="INFO",
+                key=SystemSettingKey.LOGGING_ENABLED,
+                value="true",
             ),
             SystemSetting(
-                key=SystemSettingKey.LOG_LEVEL_FILE,
-                value="WARNING",
+                key=SystemSettingKey.LOGGING_LEVEL,
+                value="INFO",
             ),
         ]
         db_session.add_all(settings)
@@ -218,27 +211,31 @@ class TestLogging:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert "database" in data
-        assert "file" in data
+        assert "enabled" in data
+        assert "level" in data
+        assert data["enabled"] is True
+        assert data["level"] == "INFO"
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route business logic."
-    )
     def test_update_logging_settings(self, app_context, client, db_session):
         """Test PUT /developer/system-settings/logging updates logging settings."""
         payload = {
-            "database": "DEBUG",
-            "file": "ERROR",
+            "enabled": False,
+            "level": "DEBUG",
         }
 
         response = client.put("/api/system-settings/logging", json=payload)
 
         assert response.status_code == 200
+        data = response.get_json()
+        assert data["enabled"] is False
+        assert data["level"] == "DEBUG"
 
         # Verify database
-        db_setting = SystemSetting.query.filter_by(key=SystemSettingKey.LOG_LEVEL_DATABASE).first()
-        assert db_setting is not None
-        assert db_setting.value == "DEBUG"
+        enabled_setting = SystemSetting.query.filter_by(
+            key=SystemSettingKey.LOGGING_ENABLED
+        ).first()
+        assert enabled_setting is not None
+        assert enabled_setting.value == "false"
 
     def test_get_logs(self, app_context, client, db_session):
         """Test GET /developer/logs returns logs."""
@@ -266,35 +263,39 @@ class TestLogging:
         assert "logs" in data
         assert len(data["logs"]) >= 2
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route business logic."
-    )
     def test_get_logs_with_filters(self, app_context, client, db_session):
         """Test GET /developer/logs with query filters."""
-        # Create log entries
+        # Create log entries with unique source
+        import uuid
+
+        unique_source = f"test_filters_{uuid.uuid4().hex[:8]}"
         log1 = Log(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM,
             message="Error log",
-            source="test_get_logs_with_filters",
+            source=unique_source,
         )
         log2 = Log(
             level=LogLevel.INFO,
             category=LogCategory.FUND,
             message="Info log",
-            source="test_get_logs_with_filters",
+            source=unique_source,
         )
         db_session.add_all([log1, log2])
         db_session.commit()
 
-        response = client.get("/api/logs?level=ERROR")
+        # Test filtering by level and source
+        response = client.get(f"/api/logs?level=error&source={unique_source}")
 
         assert response.status_code == 200
         data = response.get_json()
-        assert isinstance(data, list)
-        # Should filter to only ERROR logs
-        if len(data) > 0:
-            assert all(log.get("level") == "ERROR" for log in data)
+        assert isinstance(data, dict)
+        assert "logs" in data
+        # Should filter to only ERROR logs from our test
+        our_logs = [log for log in data["logs"] if log.get("source") == unique_source]
+        assert len(our_logs) >= 1
+        # All our logs should be ERROR level
+        assert all(log.get("level") == "error" for log in our_logs)
 
     def test_clear_logs(self, app_context, client, db_session):
         """Test POST /developer/logs/clear clears logs."""
