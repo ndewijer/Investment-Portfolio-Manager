@@ -95,17 +95,28 @@ def test_request_statement_success(self, app_context, ibkr_service):
 - Can test error conditions easily
 
 ### Encryption Key Management
-Tests use dynamically generated Fernet keys for proper encryption testing:
+Tests use a centrally generated Fernet key from `test_config.py`:
 ```python
+# In test_config.py
+from cryptography.fernet import Fernet
+
+TEST_ENCRYPTION_KEY = Fernet.generate_key().decode()
+
+TEST_CONFIG = {
+    "TESTING": True,
+    # ... other config ...
+    "IBKR_ENCRYPTION_KEY": TEST_ENCRYPTION_KEY,
+}
+
+# In test_ibkr_flex_service.py
 @pytest.fixture
 def ibkr_service(app_context):
-    from cryptography.fernet import Fernet
-    from flask import current_app
+    """
+    Create IBKRFlexService instance with test config.
 
-    # Generate valid Fernet key for testing
-    test_key = Fernet.generate_key().decode()
-    current_app.config['IBKR_ENCRYPTION_KEY'] = test_key
-
+    Note: IBKR_ENCRYPTION_KEY is already set in TEST_CONFIG
+    and applied during app creation.
+    """
     return IBKRFlexService()
 ```
 
@@ -113,6 +124,7 @@ def ibkr_service(app_context):
 - Tests actual encryption behavior, not mocked
 - Validates key format requirements
 - Ensures roundtrip encryption works correctly
+- Consistent encryption key across all tests in the session
 
 ### Test Isolation
 Each test uses unique identifiers to avoid conflicts:

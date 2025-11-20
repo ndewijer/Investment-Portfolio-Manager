@@ -12,11 +12,16 @@ import json
 import os
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
-from typing import ClassVar
 
 import requests
 from cryptography.fernet import Fernet
 
+from ..constants.ibkr_constants import (
+    FLEX_CACHE_DURATION_HOURS,
+    FLEX_ERROR_CODES,
+    FLEX_GET_STATEMENT_URL,
+    FLEX_SEND_REQUEST_URL,
+)
 from ..models import IBKRImportCache, IBKRTransaction, LogCategory, LogLevel, db
 from ..services.logging_service import logger
 
@@ -32,51 +37,6 @@ class IBKRFlexService:
     4. Caching results
     5. Transforming to internal format
     """
-
-    # IBKR Flex API endpoints (per official documentation)
-    # https://www.interactivebrokers.com/campus/ibkr-api-page/flex-web-service/
-    SEND_REQUEST_URL = (
-        "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/SendRequest"
-    )
-    GET_STATEMENT_URL = (
-        "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/GetStatement"
-    )
-
-    # Cache settings
-    CACHE_DURATION_HOURS = 1
-
-    # IBKR Flex API Error Codes
-    # Source: https://www.interactivebrokers.com/campus/ibkr-api-page/flex-web-service/#error-codes
-    ERROR_CODES: ClassVar[dict[str, str]] = {
-        "1001": "Statement could not be generated at this time. Please try again shortly.",
-        "1003": "Statement is not available.",
-        "1004": "Statement is incomplete at this time. Please try again shortly.",
-        "1005": "Settlement data is not ready at this time. Please try again shortly.",
-        "1006": "FIFO P/L data is not ready at this time. Please try again shortly.",
-        "1007": "MTM P/L data is not ready at this time. Please try again shortly.",
-        "1008": "MTM and FIFO P/L data is not ready at this time. Please try again shortly.",
-        "1009": (
-            "The server is under heavy load. Statement could not be generated "
-            "at this time. Please try again shortly."
-        ),
-        "1010": (
-            "Legacy Flex Queries are no longer supported. Please convert over to Activity Flex."
-        ),
-        "1011": "Service account is inactive.",
-        "1012": "Token has expired.",
-        "1013": "IP restriction.",
-        "1014": "Query is invalid.",
-        "1015": "Token is invalid.",
-        "1016": "Account is invalid.",
-        "1017": "Reference code is invalid.",
-        "1018": (
-            "Too many requests have been made from this token. Please try again shortly. "
-            "(Limited to one request per second, 10 requests per minute per token)"
-        ),
-        "1019": "Statement generation in progress. Please try again shortly.",
-        "1020": "Invalid request or unable to validate request.",
-        "1021": "Statement could not be retrieved at this time. Please try again shortly.",
-    }
 
     def __init__(self):
         """Initialize IBKR Flex Service."""
@@ -109,7 +69,7 @@ class IBKRFlexService:
         Returns:
             Verbose error message, or generic message if code unknown
         """
-        return self.ERROR_CODES.get(
+        return FLEX_ERROR_CODES.get(
             error_code, f"Unknown error (code: {error_code}). Please check IBKR documentation."
         )
 
@@ -197,7 +157,7 @@ class IBKRFlexService:
             cache_key: Cache key
             data: Data to cache
         """
-        expires_at = datetime.now() + timedelta(hours=self.CACHE_DURATION_HOURS)
+        expires_at = datetime.now() + timedelta(hours=FLEX_CACHE_DURATION_HOURS)
 
         cache_entry = IBKRImportCache(cache_key=cache_key, data=data, expires_at=expires_at)
         db.session.add(cache_entry)
@@ -302,7 +262,7 @@ class IBKRFlexService:
             )
 
             response = requests.get(
-                self.SEND_REQUEST_URL, params={"t": token, "q": query_id, "v": "3"}, timeout=30
+                FLEX_SEND_REQUEST_URL, params={"t": token, "q": query_id, "v": "3"}, timeout=30
             )
 
             if response.status_code != 200:
@@ -350,7 +310,7 @@ class IBKRFlexService:
 
             for attempt in range(max_retries):
                 statement_response = requests.get(
-                    self.GET_STATEMENT_URL,
+                    FLEX_GET_STATEMENT_URL,
                     params={"q": reference_code, "t": token, "v": "3"},
                     timeout=30,
                 )
