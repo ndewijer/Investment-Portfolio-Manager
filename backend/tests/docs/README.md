@@ -23,10 +23,11 @@ docs/
 │   ├── SYMBOL_LOOKUP_SERVICE_TESTS.md
 │   └── TRANSACTION_SERVICE_TESTS.md
 ├── routes/            # Route integration test documentation (Phase 5)
-│   ├── PORTFOLIO_ROUTES_TESTS.md
-│   ├── TRANSACTION_ROUTES_TESTS.md
 │   ├── DIVIDEND_ROUTES_TESTS.md
-│   └── FUND_ROUTES_TESTS.md
+│   ├── FUND_ROUTES_TESTS.md
+│   ├── IBKR_ROUTES_TESTS.md
+│   ├── PORTFOLIO_ROUTES_TESTS.md
+│   └── TRANSACTION_ROUTES_TESTS.md
 ├── phases/            # Development phase documentation
 │   ├── BUG_FIXES_1.3.3.md
 │   ├── PHASE_3_SUMMARY.md

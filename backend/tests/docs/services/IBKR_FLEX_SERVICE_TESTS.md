@@ -1,10 +1,12 @@
 # IBKRFlexService Test Suite Documentation
 
-**File**: `tests/test_ibkr_flex_service.py`\
+**File**: `tests/services/test_ibkr_flex_service.py`\
 **Service**: `app/services/ibkr_flex_service.py`\
+**Constants**: `app/constants/ibkr_constants.py`\
 **Tests**: 31 tests\
-**Coverage**: 77% (116/150 statements)\
-**Created**: Version 1.3.3 (Phase 4)
+**Coverage**: 77% (286 statements, 67 missed)\
+**Created**: Version 1.3.3 (Phase 4)\
+**Updated**: Phase 5 (Constant Extraction Refactoring)
 
 ## Overview
 
@@ -17,6 +19,84 @@ Comprehensive test suite for the IBKRFlexService class, which handles integratio
 - Multi-currency statement support
 
 The test suite achieves 77% coverage, testing all public methods, error handling paths, and integration points with the IBKR API.
+
+## Architecture - Constants Module (Phase 5 Refactoring)
+
+As of Phase 5, IBKR Flex API constants have been extracted from the service class to a dedicated constants module for improved maintainability and code organization.
+
+### Constants Location: `app/constants/ibkr_constants.py`
+
+All IBKR Flex Web Service constants are now centralized in a single module:
+
+```python
+# API Endpoints
+FLEX_SEND_REQUEST_URL = "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/SendRequest"
+FLEX_GET_STATEMENT_URL = "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/GetStatement"
+
+# Configuration
+FLEX_CACHE_DURATION_HOURS = 1
+
+# Error Codes (53 total)
+FLEX_ERROR_CODES = {
+    "1001": "Statement could not be generated...",
+    "1003": "Statement is not available.",
+    # ... 51 more error codes
+}
+```
+
+### Benefits of Extraction
+
+✅ **Improved Organization**: Constants separated from business logic\
+✅ **Better Maintainability**: Single source of truth for IBKR API configuration\
+✅ **Reusability**: Constants can be imported by other services if needed\
+✅ **Cleaner Service Code**: Reduced from 290 to 286 lines\
+✅ **Test Clarity**: Tests import constants directly, not via service class
+
+### Migration from Class Constants
+
+**Before (Phase 4)**:
+```python
+class IBKRFlexService:
+    SEND_REQUEST_URL = "https://..."
+    ERROR_CODES = {...}
+
+    def method(self):
+        url = self.SEND_REQUEST_URL
+        error_msg = self.ERROR_CODES.get(code)
+```
+
+**After (Phase 5)**:
+```python
+from ..constants.ibkr_constants import (
+    FLEX_SEND_REQUEST_URL,
+    FLEX_ERROR_CODES,
+)
+
+class IBKRFlexService:
+    def method(self):
+        url = FLEX_SEND_REQUEST_URL
+        error_msg = FLEX_ERROR_CODES.get(code)
+```
+
+### Test Updates
+
+Tests now import constants directly from the constants module:
+
+```python
+from app.constants.ibkr_constants import (
+    FLEX_GET_STATEMENT_URL,
+    FLEX_SEND_REQUEST_URL,
+)
+
+@responses.activate
+def test_fetch_statement(ibkr_service):
+    responses.add(
+        responses.GET,
+        FLEX_SEND_REQUEST_URL,  # ← Direct import, not IBKRFlexService.SEND_REQUEST_URL
+        body="...",
+        status=200
+    )
+```
 
 ## Test Structure
 
@@ -77,12 +157,13 @@ Tests error conditions and boundary cases:
 All HTTP requests to IBKR API are mocked using the `responses` library:
 ```python
 import responses
+from app.constants.ibkr_constants import FLEX_SEND_REQUEST_URL
 
 @responses.activate
 def test_request_statement_success(self, app_context, ibkr_service):
     responses.add(
         responses.GET,
-        "https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.SendRequest",
+        FLEX_SEND_REQUEST_URL,  # Imported from constants module
         body="<Status>Success</Status><ReferenceCode>1234567890</ReferenceCode>",
         status=200
     )
@@ -93,6 +174,7 @@ def test_request_statement_success(self, app_context, ibkr_service):
 - Predictable responses for all scenarios
 - Fast test execution
 - Can test error conditions easily
+- URL consistency via constants module
 
 ### Encryption Key Management
 Tests use a centrally generated Fernet key from `test_config.py`:
