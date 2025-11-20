@@ -692,7 +692,7 @@ const IBKRInbox = () => {
           <p>No pending transactions</p>
           <p className="empty-state-hint">
             Click &quot;Import Now&quot; to fetch transactions from IBKR, or they will be imported
-            automatically, Tuesday - Saturday at 05:05 if auto-import is enabled.
+            automatically, Tuesday - Saturday at 06:30 if auto-import is enabled.
           </p>
         </div>
       );
