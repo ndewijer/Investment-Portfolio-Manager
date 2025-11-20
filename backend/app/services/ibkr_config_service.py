@@ -24,6 +24,16 @@ class IBKRConfigService:
     """
 
     @staticmethod
+    def get_first_config():
+        """
+        Get the first (and only) IBKR configuration.
+
+        Returns:
+            IBKRConfig | None: The IBKR configuration object, or None if not configured
+        """
+        return IBKRConfig.query.first()
+
+    @staticmethod
     def get_config_status():
         """
         Get IBKR configuration status.
@@ -41,7 +51,7 @@ class IBKRConfigService:
             - created_at (str, optional): Configuration creation date
             - updated_at (str, optional): Last update date
         """
-        config = IBKRConfig.query.first()
+        config = IBKRConfigService.get_first_config()
 
         if not config:
             return {"configured": False}
@@ -98,7 +108,7 @@ class IBKRConfigService:
         encrypted_token = service._encrypt_token(flex_token)
 
         # Get or create config
-        config = IBKRConfig.query.first()
+        config = IBKRConfigService.get_first_config()
 
         if config:
             # Update existing
@@ -138,7 +148,7 @@ class IBKRConfigService:
         Raises:
             ValueError: If no configuration found
         """
-        config = IBKRConfig.query.first()
+        config = IBKRConfigService.get_first_config()
 
         if not config:
             raise ValueError("No configuration found")

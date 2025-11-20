@@ -2,10 +2,10 @@
 
 **File**: `tests/services/test_portfolio_service.py`\
 **Service**: `app/services/portfolio_service.py`\
-**Tests**: 43 tests\
-**Coverage**: 91%\
+**Tests**: 46 tests\
+**Coverage**: 90%\
 **Created**: Version 1.3.3 (Phase 3)\
-**Updated**: Phase 5 - Phase 1b (Query API Deprecation Fixes)
+**Updated**: Phase 5 - Phase 2b (Service Layer Refactoring)
 
 ## Overview
 
@@ -75,6 +75,12 @@ Tests internal helper methods and edge cases:
 - `test_process_transactions_sell_to_zero` - Transaction processing when all shares sold
 - `test_process_transactions_sell_below_zero` - Overselling scenario handling
 - `test_calculate_fund_metrics_historical_format` - Historical format calculations
+
+#### 7. TestGetActivePortfolios (3 tests)
+Tests `get_active_portfolios()` method for retrieving non-archived portfolios (Version 1.3.3 Phase 2b):
+- `test_get_active_portfolios` - Returns only non-archived portfolios
+- `test_get_active_portfolios_empty` - Returns empty list when all portfolios are archived
+- `test_get_active_portfolios_none_exist` - Returns empty list when no portfolios exist
 
 ## Testing Strategy
 

@@ -1110,6 +1110,19 @@ class PortfolioService:
         return db.session.execute(stmt).scalars().all()
 
     @staticmethod
+    def get_active_portfolios():
+        """
+        Get all active (non-archived) portfolios.
+
+        Returns:
+            list[Portfolio]: List of active portfolio objects
+        """
+        from sqlalchemy import select
+
+        stmt = select(Portfolio).where(Portfolio.is_archived == False)  # noqa: E712
+        return db.session.execute(stmt).scalars().all()
+
+    @staticmethod
     def get_portfolio_fund(portfolio_fund_id, with_relationships=False):
         """
         Retrieve a portfolio fund by ID.

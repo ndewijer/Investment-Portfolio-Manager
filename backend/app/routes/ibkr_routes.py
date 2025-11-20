@@ -13,7 +13,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask.views import MethodView
 
-from ..models import IBKRConfig, IBKRTransaction, LogCategory, LogLevel, Portfolio, db
+from ..models import IBKRTransaction, LogCategory, LogLevel, db
 from ..services.ibkr_config_service import IBKRConfigService
 from ..services.ibkr_flex_service import IBKRFlexService
 from ..services.ibkr_transaction_service import IBKRTransactionService
@@ -179,7 +179,7 @@ def trigger_import():
     Returns:
         JSON response with import results
     """
-    config = IBKRConfig.query.first()
+    config = IBKRConfigService.get_first_config()
 
     if not config:
         return jsonify({"error": "IBKR not configured"}), 400
@@ -248,41 +248,14 @@ def get_inbox():
     Returns:
         JSON array of pending transactions
     """
-    query = IBKRTransaction.query
-
-    # Apply filters
     status = request.args.get("status", "pending")
-    if status:
-        query = query.filter_by(status=status)
-
     transaction_type = request.args.get("transaction_type")
-    if transaction_type:
-        query = query.filter_by(transaction_type=transaction_type)
 
-    # Order by date descending
-    transactions = query.order_by(IBKRTransaction.transaction_date.desc()).all()
-
-    return jsonify(
-        [
-            {
-                "id": txn.id,
-                "ibkr_transaction_id": txn.ibkr_transaction_id,
-                "transaction_date": txn.transaction_date.isoformat(),
-                "symbol": txn.symbol,
-                "isin": txn.isin,
-                "description": txn.description,
-                "transaction_type": txn.transaction_type,
-                "quantity": txn.quantity,
-                "price": txn.price,
-                "total_amount": txn.total_amount,
-                "currency": txn.currency,
-                "fees": txn.fees,
-                "status": txn.status,
-                "imported_at": txn.imported_at.isoformat(),
-            }
-            for txn in transactions
-        ]
+    transactions = IBKRTransactionService.get_inbox(
+        status=status, transaction_type=transaction_type
     )
+
+    return jsonify(transactions)
 
 
 @ibkr.route("/ibkr/inbox/count", methods=["GET"])
@@ -298,7 +271,7 @@ def get_inbox_count():
     """
     try:
         status = request.args.get("status", "pending")
-        count = IBKRTransaction.query.filter_by(status=status).count()
+        count = IBKRTransactionService.get_inbox_count(status=status)
 
         logger.log(
             level=LogLevel.INFO,
@@ -402,7 +375,9 @@ def get_portfolios_for_allocation():
     Returns:
         JSON array of active portfolios
     """
-    portfolios = Portfolio.query.filter_by(is_archived=False).all()
+    from ..services.portfolio_service import PortfolioService
+
+    portfolios = PortfolioService.get_active_portfolios()
 
     return jsonify([{"id": p.id, "name": p.name, "description": p.description} for p in portfolios])
 
@@ -429,7 +404,9 @@ def get_eligible_portfolios(transaction_id):
 
     try:
         # Get the transaction
-        transaction = IBKRTransaction.query.get_or_404(transaction_id)
+        transaction = db.session.get(IBKRTransaction, transaction_id)
+        if not transaction:
+            return jsonify({"error": "Transaction not found"}), 404
 
         # Find eligible portfolios using the matching service
         result = FundMatchingService.get_eligible_portfolios_for_transaction(transaction)
@@ -565,72 +542,8 @@ def unallocate_transaction(transaction_id):
     Returns:
         JSON response with success status
     """
-    from ..models import IBKRTransactionAllocation
-
-    try:
-        ibkr_txn = IBKRTransaction.query.get_or_404(transaction_id)
-
-        if ibkr_txn.status != "processed":
-            return jsonify({"error": "Transaction is not processed"}), 400
-
-        # Get all allocations
-        allocations = IBKRTransactionAllocation.query.filter_by(
-            ibkr_transaction_id=transaction_id
-        ).all()
-
-        deleted_count = 0
-
-        # Delete all associated transactions - CASCADE will handle allocations
-        from ..models import Transaction
-
-        for allocation in allocations:
-            if allocation.transaction_id:
-                transaction = db.session.get(Transaction, allocation.transaction_id)
-                if transaction:
-                    # Delete transaction - CASCADE DELETE will automatically
-                    # delete the corresponding ibkr_transaction_allocation record
-                    db.session.delete(transaction)
-                    deleted_count += 1
-
-        # Revert IBKR transaction status
-        ibkr_txn.status = "pending"
-        ibkr_txn.processed_at = None
-
-        db.session.commit()
-
-        logger.log(
-            level=LogLevel.INFO,
-            category=LogCategory.IBKR,
-            message=f"Unallocated IBKR transaction: {ibkr_txn.ibkr_transaction_id}",
-            details={
-                "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
-                "deleted_transactions": deleted_count,
-            },
-        )
-
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "message": (
-                        f"Transaction unallocated successfully. "
-                        f"{deleted_count} portfolio transactions deleted."
-                    ),
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        db.session.rollback()
-        response, status = logger.log(
-            level=LogLevel.ERROR,
-            category=LogCategory.IBKR,
-            message="Failed to unallocate transaction",
-            details={"transaction_id": transaction_id, "error": str(e)},
-            http_status=500,
-        )
-        return jsonify(response), status
+    response, status = IBKRTransactionService.unallocate_transaction(transaction_id)
+    return jsonify(response), status
 
 
 @ibkr.route("/ibkr/inbox/<transaction_id>/allocations", methods=["GET"])
@@ -645,64 +558,8 @@ def get_transaction_allocations(transaction_id):
     Returns:
         JSON response containing allocation details
     """
-    from ..models import IBKRTransactionAllocation, Transaction
-
-    try:
-        ibkr_txn = IBKRTransaction.query.get_or_404(transaction_id)
-
-        # Get all allocations
-        allocations = IBKRTransactionAllocation.query.filter_by(
-            ibkr_transaction_id=transaction_id
-        ).all()
-
-        allocation_details = []
-        for allocation in allocations:
-            transaction = (
-                db.session.get(Transaction, allocation.transaction_id)
-                if allocation.transaction_id
-                else None
-            )
-
-            allocation_details.append(
-                {
-                    "id": allocation.id,
-                    "portfolio_id": allocation.portfolio_id,
-                    "portfolio_name": allocation.portfolio.name,
-                    "allocation_percentage": allocation.allocation_percentage,
-                    "allocated_amount": allocation.allocated_amount,
-                    "allocated_shares": allocation.allocated_shares,
-                    "transaction_id": allocation.transaction_id,
-                    "transaction_date": transaction.date.isoformat() if transaction else None,
-                }
-            )
-
-        logger.log(
-            level=LogLevel.INFO,
-            category=LogCategory.IBKR,
-            message=f"Retrieved allocations for IBKR transaction {transaction_id}",
-            details={"allocation_count": len(allocation_details)},
-        )
-
-        return (
-            jsonify(
-                {
-                    "ibkr_transaction_id": ibkr_txn.id,
-                    "status": ibkr_txn.status,
-                    "allocations": allocation_details,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        response, status = logger.log(
-            level=LogLevel.ERROR,
-            category=LogCategory.IBKR,
-            message="Failed to retrieve allocations",
-            details={"transaction_id": transaction_id, "error": str(e)},
-            http_status=500,
-        )
-        return jsonify(response), status
+    response, status = IBKRTransactionService.get_transaction_allocations(transaction_id)
+    return jsonify(response), status
 
 
 @ibkr.route("/ibkr/inbox/<transaction_id>/allocations", methods=["PUT"])

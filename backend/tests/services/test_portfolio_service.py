@@ -1397,3 +1397,43 @@ class TestPortfolioHelperMethods:
         assert set(result.keys()) == expected_keys
         assert result["fund_id"] == fund.id
         assert result["fund_name"] == "Test Fund"
+
+
+class TestGetActivePortfolios:
+    """Tests for get_active_portfolios() - Retrieve non-archived portfolios."""
+
+    def test_get_active_portfolios(self, app_context, db_session):
+        """Test get_active_portfolios returns only non-archived portfolios."""
+        # Create active portfolios
+        p1 = Portfolio(id=make_id(), name="Active Portfolio 1", is_archived=False)
+        p2 = Portfolio(id=make_id(), name="Active Portfolio 2", is_archived=False)
+        # Create archived portfolio
+        p3 = Portfolio(id=make_id(), name="Archived Portfolio", is_archived=True)
+        db_session.add_all([p1, p2, p3])
+        db_session.commit()
+
+        result = PortfolioService.get_active_portfolios()
+
+        assert len(result) == 2
+        portfolio_names = [p.name for p in result]
+        assert "Active Portfolio 1" in portfolio_names
+        assert "Active Portfolio 2" in portfolio_names
+        assert "Archived Portfolio" not in portfolio_names
+
+    def test_get_active_portfolios_empty(self, app_context, db_session):
+        """Test get_active_portfolios returns empty list when all portfolios archived."""
+        # Create only archived portfolios
+        p1 = Portfolio(id=make_id(), name="Archived 1", is_archived=True)
+        p2 = Portfolio(id=make_id(), name="Archived 2", is_archived=True)
+        db_session.add_all([p1, p2])
+        db_session.commit()
+
+        result = PortfolioService.get_active_portfolios()
+
+        assert result == []
+
+    def test_get_active_portfolios_none_exist(self, app_context, db_session):
+        """Test get_active_portfolios returns empty list when no portfolios exist."""
+        result = PortfolioService.get_active_portfolios()
+
+        assert result == []

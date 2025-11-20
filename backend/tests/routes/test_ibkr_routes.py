@@ -76,12 +76,16 @@ class TestIBKRConfig:
         assert "configured" in data
         # May be True or False depending on database state
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route's business "
-        "logic requirements."
-    )
     def test_save_config(self, app_context, client, db_session):
-        """Test POST /ibkr/config saves configuration."""
+        """
+        Test POST /ibkr/config saves configuration.
+
+        Validates:
+        - Configuration is saved to database
+        - Response indicates success
+        - Token is encrypted (not stored in plain text)
+        - Query ID is stored correctly
+        """
         payload = {
             "flex_token": "test_token_123",
             "flex_query_id": "query_456",
@@ -93,11 +97,15 @@ class TestIBKRConfig:
         assert response.status_code == 200
         data = response.get_json()
         assert data["success"] is True
+        assert "message" in data
 
         # Verify database
         config = IBKRConfig.query.first()
         assert config is not None
         assert config.flex_query_id == "query_456"
+        assert config.auto_import_enabled is False
+        # Token should be encrypted (not plain text)
+        assert config.flex_token != "test_token_123"
 
     def test_get_config_status_with_config(self, app_context, client, db_session):
         """Test GET /ibkr/config returns status with existing config."""
@@ -313,12 +321,15 @@ class TestIBKRAllocation:
         assert isinstance(data, list)
         assert len(data) >= 1
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route's business "
-        "logic requirements."
-    )
     def test_get_eligible_portfolios(self, app_context, client, db_session):
-        """Test GET /ibkr/inbox/<transaction_id>/eligible-portfolios returns eligible portfolios."""
+        """
+        Test GET /ibkr/inbox/<transaction_id>/eligible-portfolios returns eligible portfolios.
+
+        Validates:
+        - Endpoint returns portfolios that contain the fund matching the transaction
+        - Response includes match information (fund found, matched by ISIN/symbol)
+        - Response format is correct
+        """
         # Create fund and portfolio
         fund = create_fund("US", "AAPL", "Apple Inc")
         portfolio = Portfolio(name="Test Portfolio")
@@ -347,9 +358,15 @@ class TestIBKRAllocation:
 
         response = client.get(f"/api/ibkr/inbox/{txn.id}/eligible-portfolios")
 
+        if response.status_code != 200:
+            print(f"Status: {response.status_code}")
+            print(f"Response: {response.get_json()}")
+
         assert response.status_code == 200
         data = response.get_json()
-        assert isinstance(data, list)
+        assert isinstance(data, dict)
+        assert "portfolios" in data
+        assert "match_info" in data
 
     # @pytest.mark.skip(
     #     reason="Endpoint returns 400 error. Requires investigation of route's validation "
@@ -476,10 +493,6 @@ class TestIBKRAllocation:
         assert data["success"] is True
         assert data["updated_dividends"] == 1
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route's business "
-        "logic requirements."
-    )
     def test_unallocate_transaction(self, app_context, client, db_session):
         """Test POST /ibkr/inbox/<transaction_id>/unallocate removes allocations."""
         # Create fund, portfolio, and allocation
@@ -503,7 +516,7 @@ class TestIBKRAllocation:
             price=float(Decimal("150.00")),
             total_amount=float(Decimal("1500.00")),
             currency="USD",
-            status="allocated",
+            status="processed",
         )
         db_session.add(txn)
         db_session.commit()
@@ -527,10 +540,6 @@ class TestIBKRAllocation:
         allocations = IBKRTransactionAllocation.query.filter_by(ibkr_transaction_id=txn.id).all()
         assert len(allocations) == 0
 
-    @pytest.mark.skip(
-        reason="Endpoint returns 500 error. Requires investigation of route's business "
-        "logic requirements."
-    )
     def test_get_transaction_allocations(self, app_context, client, db_session):
         """Test GET /ibkr/inbox/<transaction_id>/allocations returns allocations."""
         # Create fund, portfolio, and allocation
@@ -554,7 +563,7 @@ class TestIBKRAllocation:
             price=float(Decimal("150.00")),
             total_amount=float(Decimal("1500.00")),
             currency="USD",
-            status="allocated",
+            status="processed",
         )
         db_session.add(txn)
         db_session.commit()
@@ -574,8 +583,9 @@ class TestIBKRAllocation:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
+        assert isinstance(data, dict)
+        assert "allocations" in data
+        assert len(data["allocations"]) >= 1
 
     def test_update_transaction_allocations(self, app_context, client, db_session):
         """Test PUT /ibkr/inbox/<transaction_id>/allocations updates allocations."""

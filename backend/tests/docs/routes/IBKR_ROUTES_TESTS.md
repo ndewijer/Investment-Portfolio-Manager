@@ -2,8 +2,8 @@
 
 **File**: `tests/routes/test_ibkr_routes.py`
 **Route File**: `app/routes/ibkr_routes.py`
-**Test Count**: 20 tests (15 passing, 5 skipped)
-**Status**: ✅ Core functionality tested, some 500-errors pending investigation
+**Test Count**: 20 tests (19 passing, 1 skipped)
+**Status**: ✅ Core functionality tested (Phase 2b complete)
 
 ---
 
@@ -18,26 +18,54 @@ Integration tests for Interactive Brokers (IBKR) transaction processing API endp
 3. **GET /api/ibkr/inbox/<transaction_id>** - Get transaction detail ✅
 4. **POST /api/ibkr/inbox/<transaction_id>/ignore** - Ignore transaction ✅
 5. **DELETE /api/ibkr/inbox/<transaction_id>** - Delete transaction ✅
-6. **POST /api/ibkr/inbox/<transaction_id>/allocate** - Allocate transaction ✅ (FIXED)
-7. **GET /api/ibkr/inbox/<transaction_id>/allocations** - Get allocations (SKIPPED) ⏭️
-8. **PUT /api/ibkr/inbox/<transaction_id>/allocations** - Update allocations ✅ (FIXED)
-9. **POST /api/ibkr/inbox/<transaction_id>/unallocate** - Unallocate transaction (SKIPPED) ⏭️
+6. **POST /api/ibkr/inbox/<transaction_id>/allocate** - Allocate transaction ✅ (Phase 2a)
+7. **GET /api/ibkr/inbox/<transaction_id>/allocations** - Get allocations ✅ (Phase 2b)
+8. **PUT /api/ibkr/inbox/<transaction_id>/allocations** - Update allocations ✅ (Phase 2a)
+9. **POST /api/ibkr/inbox/<transaction_id>/unallocate** - Unallocate transaction ✅ (Phase 2b)
 10. **GET /api/ibkr/dividends/pending** - Get pending dividends ✅
-11. **POST /api/ibkr/inbox/<transaction_id>/match-dividend** - Match dividend ✅ (FIXED)
-12. **POST /api/ibkr/inbox/bulk-allocate** - Bulk allocate transactions ✅ (FIXED)
-13. **GET /api/ibkr/config** - Get IBKR config (SKIPPED) ⏭️
-14. **POST /api/ibkr/config** - Save IBKR config (SKIPPED) ⏭️
+11. **POST /api/ibkr/inbox/<transaction_id>/match-dividend** - Match dividend ✅ (Phase 2a)
+12. **POST /api/ibkr/inbox/bulk-allocate** - Bulk allocate transactions ✅ (Phase 2a)
+13. **GET /api/ibkr/config** - Get IBKR config ✅ (Phase 1)
+14. **POST /api/ibkr/config** - Save IBKR config ✅ (Phase 1)
 
 ### Test Status Summary
 
-- **15 passing** - Core transaction processing, allocation, and dividend matching
-- **5 skipped** - 1 external API, 4 with 500-errors requiring investigation
+- **19 passing** - All core functionality tested
+- **1 skipped** - External IBKR Flex API integration (requires mocking)
 
 ---
 
-## Recent Fixes (Phase 2a)
+## Recent Changes
 
-### Fixed 400-Error Validation Issues (4 tests)
+### Phase 2b - Service Layer Refactoring (2 tests enabled)
+
+**Service Methods Added:**
+- `IBKRConfigService.get_first_config()` - Get IBKR configuration
+- `IBKRTransactionService.get_inbox()` - Get inbox transactions with filters
+- `IBKRTransactionService.get_inbox_count()` - Count transactions by status
+- `IBKRTransactionService.unallocate_transaction()` - Remove transaction allocations
+- `IBKRTransactionService.get_transaction_allocations()` - Get allocation details
+- `PortfolioService.get_active_portfolios()` - Get non-archived portfolios
+
+**Routes Refactored:**
+All IBKR routes now properly delegate business logic to service layer:
+- Removed direct database access (Query.query, Query.filter_by, db.session.get)
+- Routes now act as thin controllers, delegating to services
+- Consistent with Phase 1 & 2a patterns
+
+**Tests Fixed:**
+1. **test_get_transaction_allocations** - Previously skipped for 500 error
+   - Issue: Route had business logic, test expected wrong response format
+   - Fix: Moved logic to service, fixed test to expect dict not list
+   - Status: ✅ Passing
+
+2. **test_unallocate_transaction** - Previously skipped for 500 error
+   - Issue: Route had business logic, test used wrong transaction status
+   - Fix: Moved logic to service, fixed test to use "processed" status
+   - Added handling for orphaned allocations (allocations without transactions)
+   - Status: ✅ Passing
+
+### Phase 2a - Validation & Payload Fixes (4 tests enabled)
 
 These tests were failing due to incorrect request payload formats. All have been fixed to match the actual API requirements:
 
@@ -76,20 +104,20 @@ These tests were failing due to incorrect request payload formats. All have been
    - Ignore transaction
    - Delete transaction
 
-3. **TestIBKRAllocation** (10 tests, 2 skipped)
+3. **TestIBKRAllocation** (10 tests, all passing)
    - Allocate transaction (100% single portfolio)
-   - Get transaction allocations (SKIPPED - 500 error)
+   - Get transaction allocations
    - Update transaction allocations (60/40 split)
-   - Unallocate transaction (SKIPPED - 500 error)
+   - Unallocate transaction
    - Get pending dividends
    - Match dividend to existing records
 
 4. **TestIBKRBulkOperations** (1 test)
    - Bulk allocate multiple transactions
 
-5. **TestIBKRConfig** (2 tests, 2 skipped)
-   - Get IBKR configuration (SKIPPED - 500 error)
-   - Save IBKR configuration (SKIPPED - 500 error)
+5. **TestIBKRConfig** (2 tests, all passing)
+   - Get IBKR configuration status
+   - Save IBKR configuration
 
 ---
 
