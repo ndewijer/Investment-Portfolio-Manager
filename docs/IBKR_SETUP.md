@@ -186,7 +186,7 @@ See [docs/IBKR_TRANSACTION_LIFECYCLE.md](IBKR_TRANSACTION_LIFECYCLE.md) for tech
 ### Rate Limiting:
 - IBKR Flex API has rate limits
 - The application caches responses for 24 hours
-- Automated imports run tue - sat at 05:05
+- Automated imports run tue - sat at 06:30
 - Manual imports can be triggered anytime (uses cache if available)
 
 ## Troubleshooting
