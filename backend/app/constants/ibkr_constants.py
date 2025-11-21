@@ -19,7 +19,7 @@ FLEX_GET_STATEMENT_URL = (
 )
 
 # Cache settings
-FLEX_CACHE_DURATION_HOURS = 1
+FLEX_CACHE_DURATION_MINUTES = 15
 
 # IBKR Flex API Error Codes
 # Source: https://www.interactivebrokers.com/campus/ibkr-api-page/flex-web-service/#error-codes

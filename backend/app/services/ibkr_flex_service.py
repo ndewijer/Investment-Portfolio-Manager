@@ -17,7 +17,7 @@ import requests
 from cryptography.fernet import Fernet
 
 from ..constants.ibkr_constants import (
-    FLEX_CACHE_DURATION_HOURS,
+    FLEX_CACHE_DURATION_MINUTES,
     FLEX_ERROR_CODES,
     FLEX_GET_STATEMENT_URL,
     FLEX_SEND_REQUEST_URL,
@@ -157,7 +157,7 @@ class IBKRFlexService:
             cache_key: Cache key
             data: Data to cache
         """
-        expires_at = datetime.now() + timedelta(hours=FLEX_CACHE_DURATION_HOURS)
+        expires_at = datetime.now() + timedelta(minutes=FLEX_CACHE_DURATION_MINUTES)
 
         cache_entry = IBKRImportCache(cache_key=cache_key, data=data, expires_at=expires_at)
         db.session.add(cache_entry)
