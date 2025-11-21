@@ -7,6 +7,7 @@ ENV/
 # Environment variables
 .env
 .flaskenv
+local_files/
 
 # Testing & Coverage
 .coverage
