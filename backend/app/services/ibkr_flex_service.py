@@ -17,6 +17,9 @@ from typing import ClassVar
 import requests
 from cryptography.fernet import Fernet
 
+from ..constants.ibkr_constants import (
+    FLEX_CACHE_DURATION_MINUTES,
+)
 from ..models import IBKRImportCache, IBKRTransaction, LogCategory, LogLevel, db
 from ..services.logging_service import logger
 
@@ -197,7 +200,7 @@ class IBKRFlexService:
             cache_key: Cache key
             data: Data to cache
         """
-        expires_at = datetime.now() + timedelta(hours=self.CACHE_DURATION_HOURS)
+        expires_at = datetime.now() + timedelta(minutes=FLEX_CACHE_DURATION_MINUTES)
 
         cache_entry = IBKRImportCache(cache_key=cache_key, data=data, expires_at=expires_at)
         db.session.add(cache_entry)
