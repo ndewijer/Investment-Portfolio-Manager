@@ -41,7 +41,13 @@ class TestDividendCreate:
     """Test dividend creation."""
 
     def test_create_dividend(self, app_context, client, db_session):
-        """Test POST /dividends creates a dividend."""
+        """
+        Verify dividend creation with automatic share ownership calculation.
+
+        WHY: Users need accurate dividend records that automatically track how many shares
+        they owned at the record date. This prevents manual calculation errors and ensures
+        dividend income is correctly attributed to the portfolio position at that point in time.
+        """
         portfolio = Portfolio(name="Test Portfolio")
         fund = create_fund("US", "VTI", "Vanguard Total Stock Market ETF", dividend_type="CASH")
         db_session.add_all([portfolio, fund])
@@ -84,7 +90,13 @@ class TestDividendCreate:
         assert dividend.shares_owned == 100
 
     def test_create_dividend_calculates_total(self, app_context, client, db_session):
-        """Test POST /dividends calculates total_amount correctly."""
+        """
+        Verify automatic calculation of total dividend amount from shares and per-share rate.
+
+        WHY: Accurate total dividend calculation is critical for portfolio income tracking and
+        tax reporting. Automating this calculation (shares * rate) eliminates user input errors
+        and ensures consistency across dividend records for performance analysis.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "VYM", "Vanguard High Dividend Yield ETF")
         db_session.add_all([portfolio, fund])
@@ -125,7 +137,13 @@ class TestDividendRetrieve:
     """Test dividend retrieval endpoints."""
 
     def test_get_dividends_by_fund(self, app_context, client, db_session):
-        """Test GET /dividends/fund/<fund_id> returns dividends for fund."""
+        """
+        Verify retrieval of all dividend records for a specific fund across time.
+
+        WHY: Users need to view historical dividend payments to analyze a fund's dividend
+        consistency, growth trends, and income reliability. This supports investment decisions
+        and helps users identify changes in dividend policy or payout patterns.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "SCHD", "Schwab US Dividend Equity ETF")
         db_session.add_all([portfolio, fund])
@@ -166,7 +184,13 @@ class TestDividendRetrieve:
         assert all("id" in d for d in data)
 
     def test_get_dividends_by_fund_not_found(self, app_context, client):
-        """Test GET /dividends/fund/<fund_id> handles non-existent fund."""
+        """
+        Verify graceful handling when requesting dividends for non-existent fund.
+
+        WHY: Prevents application crashes when users access stale URLs or deleted funds.
+        Proper error handling ensures a stable user experience even when navigating to
+        invalid fund references from bookmarks or external links.
+        """
         fake_id = make_id()
         response = client.get(f"/api/dividends/fund/{fake_id}")
 
@@ -174,7 +198,13 @@ class TestDividendRetrieve:
         assert response.status_code in [200, 404]
 
     def test_get_dividends_by_portfolio(self, app_context, client, db_session):
-        """Test GET /dividends/portfolio/<portfolio_id> returns dividends for portfolio."""
+        """
+        Verify retrieval of all dividend records across multiple funds in a portfolio.
+
+        WHY: Users need consolidated portfolio-level dividend views to track total income,
+        plan cash flow for living expenses, and analyze portfolio income diversification.
+        This is essential for income-focused investment strategies and retirement planning.
+        """
         portfolio = Portfolio(name="Dividend Portfolio")
         fund1 = create_fund("US", "JEPI", "JPMorgan Equity Premium Income ETF")
         fund2 = create_fund("US", "DIVO", "Amplify CWP Enhanced Dividend Income ETF")
@@ -216,7 +246,13 @@ class TestDividendRetrieve:
         assert len(data) >= 2
 
     def test_get_dividends_by_portfolio_not_found(self, app_context, client):
-        """Test GET /dividends/portfolio/<portfolio_id> handles non-existent portfolio."""
+        """
+        Verify graceful handling when requesting dividends for non-existent portfolio.
+
+        WHY: Prevents application errors when portfolios are deleted or URLs are invalid.
+        Robust error handling maintains system stability and provides clear feedback when
+        users attempt to access deleted or moved portfolio data.
+        """
         fake_id = make_id()
         response = client.get(f"/api/dividends/portfolio/{fake_id}")
 
@@ -228,7 +264,13 @@ class TestDividendUpdateDelete:
     """Test dividend update and deletion."""
 
     def test_update_dividend(self, app_context, client, db_session):
-        """Test PUT /dividends/<dividend_id> updates dividend."""
+        """
+        Verify updating dividend records when companies adjust dividend amounts.
+
+        WHY: Fund companies occasionally correct dividend announcements or users may need to
+        fix data entry errors. Accurate updates ensure portfolio income calculations remain
+        correct for tax reporting and performance tracking without requiring delete/recreate.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "DGRO", "iShares Core Dividend Growth ETF")
         db_session.add_all([portfolio, fund])
@@ -281,7 +323,13 @@ class TestDividendUpdateDelete:
         assert float(div.dividend_per_share) == 0.42
 
     def test_update_dividend_not_found(self, app_context, client):
-        """Test PUT /dividends/<dividend_id> handles non-existent dividend."""
+        """
+        Verify proper error response when attempting to update a non-existent dividend.
+
+        WHY: Prevents silent failures or database corruption when users try to update deleted
+        dividends. Clear error responses help users understand that the dividend no longer
+        exists and prevent confusion about whether their update was applied.
+        """
         fake_id = make_id()
         payload = {
             "fund_id": make_id(),
@@ -297,7 +345,13 @@ class TestDividendUpdateDelete:
         assert response.status_code in [400, 404]
 
     def test_delete_dividend(self, app_context, client, db_session):
-        """Test DELETE /dividends/<dividend_id> removes dividend."""
+        """
+        Verify complete removal of dividend records from the database.
+
+        WHY: Users need to remove erroneous or duplicate dividend entries to maintain accurate
+        portfolio income records. Proper deletion ensures portfolio performance calculations
+        and tax reports reflect only actual dividend payments received.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "SDY", "SPDR S&P Dividend ETF")
         db_session.add_all([portfolio, fund])
@@ -329,7 +383,13 @@ class TestDividendUpdateDelete:
         assert deleted is None
 
     def test_delete_dividend_not_found(self, app_context, client):
-        """Test DELETE /dividends/<dividend_id> handles non-existent dividend."""
+        """
+        Verify appropriate error handling when deleting a non-existent dividend.
+
+        WHY: Prevents confusion when users attempt to delete already-removed dividends or
+        invalid IDs. Proper error responses distinguish between successful deletions and
+        failed attempts, avoiding duplicate delete operations and race conditions.
+        """
         fake_id = make_id()
         response = client.delete(f"/api/dividends/{fake_id}")
 
@@ -341,7 +401,13 @@ class TestDividendErrors:
     """Test error paths for dividend routes."""
 
     def test_create_dividend_service_error(self, client, db_session):
-        """Test POST /dividends handles service errors."""
+        """
+        Verify graceful error handling when dividend creation fails due to service errors.
+
+        WHY: Database connection issues or constraint violations during dividend creation
+        should return clear errors rather than crashes. This ensures users receive actionable
+        feedback and prevents partial data corruption during network or database failures.
+        """
         from unittest.mock import patch
 
         portfolio = Portfolio(name="Test")
@@ -371,7 +437,13 @@ class TestDividendErrors:
             assert "error" in data or "message" in data
 
     def test_get_fund_dividends_service_error(self, client):
-        """Test GET /dividends/fund/<fund_id> handles service errors."""
+        """
+        Verify proper error responses when database queries fail during fund dividend retrieval.
+
+        WHY: Database connection losses or query timeouts shouldn't crash the application.
+        Users need informative error messages to understand temporary service issues versus
+        data problems, enabling appropriate retry strategies or support contact.
+        """
         from unittest.mock import patch
 
         with patch("app.routes.dividend_routes.DividendService.get_fund_dividends") as mock_get:
@@ -385,7 +457,13 @@ class TestDividendErrors:
             assert "error" in data or "message" in data
 
     def test_get_portfolio_dividends_service_error(self, client):
-        """Test GET /dividends/portfolio/<portfolio_id> handles service errors."""
+        """
+        Verify proper error responses when database queries fail during portfolio dividend retrieval.
+
+        WHY: Portfolio dividend aggregation involves complex joins that may timeout or fail.
+        Proper error handling prevents blank screens and provides users with clear feedback
+        about service availability for their income tracking features.
+        """
         from unittest.mock import patch
 
         with patch(
@@ -401,7 +479,13 @@ class TestDividendErrors:
             assert "error" in data or "message" in data
 
     def test_update_dividend_value_error(self, client, db_session):
-        """Test PUT /dividends/<dividend_id> handles validation errors."""
+        """
+        Verify proper handling of validation errors during dividend updates.
+
+        WHY: Invalid data like negative dividend amounts or invalid dates must be rejected
+        with clear validation messages. This prevents data corruption and guides users to
+        correct their input, maintaining data integrity for financial calculations.
+        """
         from unittest.mock import patch
 
         portfolio = Portfolio(name="Test")
@@ -443,7 +527,13 @@ class TestDividendErrors:
             assert "error" in data or "message" in data
 
     def test_update_dividend_general_error(self, client, db_session):
-        """Test PUT /dividends/<dividend_id> handles unexpected errors."""
+        """
+        Verify proper handling of unexpected errors during dividend update operations.
+
+        WHY: Unforeseen errors like database constraint violations or connection failures
+        during updates must be caught and logged without exposing system internals. This
+        protects security while enabling debugging of production issues.
+        """
         from unittest.mock import patch
 
         portfolio = Portfolio(name="Test")
@@ -485,7 +575,13 @@ class TestDividendErrors:
             assert "error" in data or "message" in data
 
     def test_delete_dividend_value_error(self, client):
-        """Test DELETE /dividends/<dividend_id> handles ValueError."""
+        """
+        Verify proper error handling when dividend deletion encounters ValueError.
+
+        WHY: ValueErrors during deletion (like invalid dividend IDs) must return appropriate
+        400 status codes with clear messages. This distinguishes user errors from system
+        failures and provides actionable feedback for correcting the request.
+        """
         from unittest.mock import patch
 
         with patch("app.routes.dividend_routes.DividendService.get_dividend") as mock_get:
@@ -499,7 +595,13 @@ class TestDividendErrors:
             assert "error" in data or "message" in data
 
     def test_delete_dividend_general_error(self, client, db_session):
-        """Test DELETE /dividends/<dividend_id> handles unexpected errors."""
+        """
+        Verify proper handling of unexpected errors during dividend deletion.
+
+        WHY: Database constraint violations or foreign key conflicts during deletion must
+        be handled gracefully with 500 status codes. This prevents cascading failures and
+        provides operators with error information for investigating data integrity issues.
+        """
         from unittest.mock import patch
 
         portfolio = Portfolio(name="Test")

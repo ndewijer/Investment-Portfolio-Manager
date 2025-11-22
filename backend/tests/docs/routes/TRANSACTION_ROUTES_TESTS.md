@@ -8,271 +8,81 @@
 
 ---
 
+## Docstring Reference
+
+All test functions include detailed docstrings explaining their purpose. Refer to the source file for implementation details.
+
+---
+
 ## Overview
 
-Integration tests for all transaction management API endpoints. These tests verify transaction CRUD operations, filtering, and proper interaction with the transaction service layer.
+Integration tests for transaction management API endpoints. Tests verify transaction CRUD operations, filtering, and interaction with the transaction service layer.
 
-### Endpoints Tested
+**Endpoints Tested**:
+- GET /api/transactions - List/filter transactions
+- POST /api/transactions - Create transaction
+- GET /api/transactions/<id> - Get transaction detail
+- PUT /api/transactions/<id> - Update transaction
+- DELETE /api/transactions/<id> - Delete transaction
 
-1. **GET /api/transactions** - List all transactions (with optional filtering)
-2. **POST /api/transactions** - Create transaction
-3. **GET /api/transactions/<id>** - Get transaction detail
-4. **PUT /api/transactions/<id>** - Update transaction
-5. **DELETE /api/transactions/<id>** - Delete transaction
-
-### Transaction Types Supported
-- **buy** - Purchase of shares
-- **sell** - Sale of shares (triggers realized gain/loss calculation)
-- **dividend** - Dividend reinvestment
-- **fee** - Transaction fees/commissions
+**Transaction Types**: buy, sell, dividend, fee
 
 ---
 
 ## Test Organization
 
-### Test Classes
+### TestTransactionList (3 tests)
+- `test_list_transactions_empty` - Empty transaction list returns empty array
+- `test_list_all_transactions` - Returns all transactions across portfolios
+- `test_list_transactions_filtered_by_portfolio` - Filter by portfolio_id parameter
 
-1. **TestTransactionList** (3 tests)
-   - List transactions when empty
-   - List all transactions
-   - Filter transactions by portfolio_id
+### TestTransactionCreate (3 tests)
+- `test_create_buy_transaction` - Create buy transaction successfully
+- `test_create_sell_transaction` - Create sell with prior buy for shares
+- `test_create_dividend_transaction` - Create dividend transaction
 
-2. **TestTransactionCreate** (3 tests)
-   - Create buy transaction
-   - Create sell transaction (with prior buy for shares)
-   - Create dividend transaction
+### TestTransactionRetrieveUpdateDelete (6 tests)
+- `test_get_transaction` - Retrieve transaction detail
+- `test_get_nonexistent_transaction` - Returns 404 for missing transaction
+- `test_update_transaction` - Update transaction fields
+- `test_update_nonexistent_transaction` - Returns 404 for missing transaction
+- `test_delete_transaction` - Delete transaction successfully
+- `test_delete_nonexistent_transaction` - Returns 400 for missing transaction
 
-3. **TestTransactionRetrieveUpdateDelete** (6 tests)
-   - Get transaction detail
-   - Get non-existent transaction (404)
-   - Update transaction
-   - Update non-existent transaction (404)
-   - Delete transaction
-   - Delete non-existent transaction (400)
-
-4. **TestTransactionErrors** (6 tests)
-   - Create transaction service error
-   - Get fund transactions service error
-   - Get portfolio fund transactions service error
-   - Update transaction not found
-   - Update transaction general error
-   - Delete transaction service error
+### TestTransactionErrors (6 tests)
+- `test_create_transaction_service_error` - POST handles service exceptions (500)
+- `test_get_fund_transactions_service_error` - GET with fund_id handles errors
+- `test_get_portfolio_fund_transactions_service_error` - GET with portfolio_fund_id handles errors
+- `test_update_transaction_not_found` - PUT handles ValueError (404)
+- `test_update_transaction_general_error` - PUT handles general exceptions (500)
+- `test_delete_transaction_service_error` - DELETE handles service errors (500)
 
 ---
 
-## Helper Functions
+## Key Patterns
 
-### `create_fund()`
-```python
-def create_fund(isin_prefix="US", symbol_prefix="TEST", name="Test Fund",
-                currency="USD", exchange="NYSE"):
-    """Helper to create a Fund with all required fields."""
-    return Fund(
-        isin=make_isin(isin_prefix),
-        symbol=make_symbol(symbol_prefix),
-        name=name,
-        currency=currency,
-        exchange=exchange,
-    )
-```
+### Testing Approach
+- **Sell transactions**: Require prior buy transactions to establish share ownership
+- **Filtering**: Tests verify portfolio_id query parameter filtering
+- **Mutations**: Always verify both HTTP response and database state
+- **Error paths**: Use `unittest.mock.patch` to simulate service failures
 
-**Consistency**: Same helper used across all route tests for uniformity.
+### Helper Functions
+- `create_fund()` - Creates Fund with all required fields (consistent across route tests)
 
----
+### Error Handling
+- GET non-existent: Returns 404
+- DELETE non-existent: Returns 400 (documents actual API behavior)
+- Service errors: Return 500 with error message
 
-## Key Test Patterns
+### Business Logic Verification
+- **Realized Gain/Loss**: Sell transactions trigger automatic calculation (tested at service layer)
+- **Share Tracking**: Service validates share counts and prevents overselling
 
-### 1. Testing Sell Transactions
-
-Sell transactions require prior buy transactions to establish share ownership:
-
-```python
-def test_create_sell_transaction(self, app_context, client, db_session):
-    # ... create portfolio and fund ...
-
-    # First buy some shares
-    buy_txn = Transaction(
-        portfolio_fund_id=pf.id,
-        date=datetime.now().date() - timedelta(days=5),
-        type="buy",
-        shares=20,
-        cost_per_share=Decimal("200.00"),
-    )
-    db_session.add(buy_txn)
-    db_session.commit()
-
-    # Now sell some shares
-    payload = {
-        "portfolio_fund_id": pf.id,
-        "date": datetime.now().date().isoformat(),
-        "type": "sell",
-        "shares": 10,
-        "cost_per_share": 250.00,
-    }
-
-    response = client.post("/api/transactions", json=payload)
-    assert response.status_code == 200
-```
-
-**Why**: Cannot sell shares that don't exist. Service layer validates share ownership.
-
-### 2. Testing Transaction Filtering
-
-```python
-def test_list_transactions_filtered_by_portfolio(self, app_context, client, db_session):
-    # Create two portfolios with different transactions
-    p1 = Portfolio(name="Portfolio 1")
-    p2 = Portfolio(name="Portfolio 2")
-    # ... create portfolio funds and transactions ...
-
-    response = client.get(f"/api/transactions?portfolio_id={p1.id}")
-
-    assert response.status_code == 200
-    # Should only include transactions for portfolio 1
-```
-
-**Why**: Users need to filter transactions by portfolio for focused analysis.
-
-### 3. Testing Transaction Updates
-
-```python
-def test_update_transaction(self, app_context, client, db_session):
-    # ... create transaction ...
-
-    payload = {
-        "portfolio_fund_id": pf.id,
-        "date": datetime.now().date().isoformat(),
-        "type": "buy",
-        "shares": 35,  # Changed from 30
-        "cost_per_share": 47.00,  # Changed from 45.00
-    }
-
-    response = client.put(f"/api/transactions/{txn.id}", json=payload)
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["shares"] == 35
-
-    # Verify database
-    db_session.refresh(txn)
-    assert txn.shares == 35
-```
-
-**Pattern**: Always verify both HTTP response and database state after mutations.
-
----
-
-## Transaction Data Structure
-
-### Request Payload Format
-```json
-{
-    "portfolio_fund_id": "uuid-string",
-    "date": "2024-01-15",
-    "type": "buy",
-    "shares": 10.5,
-    "cost_per_share": 125.75
-}
-```
-
-### Response Format
-```json
-{
-    "id": "uuid-string",
-    "portfolio_fund_id": "uuid-string",
-    "date": "2024-01-15",
-    "type": "buy",
-    "shares": 10.5,
-    "cost_per_share": 125.75,
-    "created_at": "2024-01-15T10:30:00"
-}
-```
-
-**Note**: Sell transactions may include additional `realized_gain_loss` field.
-
----
-
-## Error Handling
-
-### 404 vs 400 Errors
-
-Different endpoints return different error codes:
-
-```python
-# GET non-existent transaction
-response = client.get(f"/api/transactions/{fake_id}")
-assert response.status_code == 404  # Not Found
-
-# DELETE non-existent transaction
-response = client.delete(f"/api/transactions/{fake_id}")
-assert response.status_code == 400  # Bad Request
-```
-
-**Why**: The API implementation uses different error handling patterns. Integration tests document the actual behavior rather than enforcing consistency.
-
----
-
-## Transaction Business Logic
-
-### Realized Gain/Loss Calculation
-
-When a sell transaction is created, the service layer automatically:
-1. Calculates average cost basis from prior buy transactions
-2. Computes realized gain/loss: `(sell_price - avg_cost) * shares_sold`
-3. Creates `RealizedGainLoss` record
-4. Includes gain/loss in transaction response
-
-**Tests verify**: Sell transactions return successfully and are created in database. Specific gain/loss calculations are tested at the service layer.
-
-### Share Tracking
-
-The service layer maintains accurate share counts by:
-1. Adding shares on buy transactions
-2. Subtracting shares on sell transactions
-3. Preventing overselling (selling more shares than owned)
-
-**Tests verify**: Transactions can be created with valid share counts. Validation logic is tested at the service layer.
-
----
-
-## Error Path Testing (Phase 4c)
-
-### TestTransactionErrors Class
-
-Added comprehensive error path tests to achieve 100% coverage on `transaction_routes.py`. This phase also converted all tests to use `unittest.mock.patch` instead of `monkeypatch` for consistency.
-
-**Tests Added**:
-1. **test_create_transaction_service_error** - Tests POST /transactions handles service exceptions
-2. **test_get_fund_transactions_service_error** - Tests GET /transactions?fund_id=<id> error handling
-3. **test_get_portfolio_fund_transactions_service_error** - Tests GET /transactions?portfolio_fund_id=<id> error handling
-4. **test_update_transaction_not_found** - Tests PUT /transactions/<id> handles ValueError
-5. **test_update_transaction_general_error** - Tests PUT /transactions/<id> handles general exceptions
-6. **test_delete_transaction_service_error** - Tests DELETE /transactions/<id> handles service errors
-
-**Coverage Improvement**: 81% → 100% (all exception handlers now tested)
-
-**Refactoring**: Converted from `monkeypatch` to `unittest.mock.patch` for consistency with other route tests.
-
-**Testing Pattern**:
-```python
-from unittest.mock import patch
-
-def test_create_transaction_service_error(self, client, db_session):
-    """Test POST /transactions handles service errors."""
-    # ... setup portfolio and fund ...
-
-    with patch("app.routes.transaction_routes.TransactionService.create_transaction") as mock_create:
-        mock_create.side_effect = Exception("Database error")
-
-        payload = {...}
-        response = client.post("/api/transactions", json=payload)
-
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-```
-
-**Why This Matters**: Error path tests ensure the API gracefully handles service layer failures, returning appropriate HTTP status codes and error messages to clients.
+### Phase 4c Error Path Testing
+- Converted all tests from `monkeypatch` to `unittest.mock.patch` for consistency
+- Added comprehensive error path tests covering all exception handlers
+- Coverage improvement: 81% → 100%
 
 ---
 
@@ -304,44 +114,10 @@ pytest tests/routes/test_transaction_routes.py -v --no-cov
 
 **All 18 tests passing** ✅
 
-### Test Execution Time
-- **Average**: ~0.31 seconds for full suite
-- **Fastest test**: ~0.02 seconds (empty list check)
-- **Slowest test**: ~0.05 seconds (sell transaction creation)
+**Execution Time**: ~0.31 seconds (full suite)
+**Coverage**: 100% (78/78 statements, 0 missing lines)
 
-### Coverage
-- **Route Coverage**: 100% (78/78 statements, 0 missing lines)
-- **Coverage Improvement**: 81% → 100% (Phase 4c error path testing)
-- Integration tests verify **all 5 transaction endpoints** work correctly with various transaction types and edge cases
-- Error tests verify **all exception handlers** return appropriate status codes
-
----
-
-## Common Patterns
-
-### Date Handling
-```python
-# Always use .isoformat() for dates in payloads
-"date": datetime.now().date().isoformat()  # "2024-01-15"
-
-# Transactions in the past
-"date": (datetime.now().date() - timedelta(days=5)).isoformat()
-```
-
-### Decimal Precision
-```python
-# Use Decimal for database (model)
-Transaction(
-    shares=10,
-    cost_per_share=Decimal("100.00")
-)
-
-# Use float for API payloads (JSON)
-payload = {
-    "shares": 10,
-    "cost_per_share": 100.00
-}
-```
+**Coverage History**: 81% → 100% (Phase 4c error path testing)
 
 ---
 
