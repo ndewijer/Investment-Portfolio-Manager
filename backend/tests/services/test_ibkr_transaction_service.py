@@ -2030,7 +2030,15 @@ class TestGroupedAllocations:
     def test_get_grouped_allocations_combines_stock_and_commission(
         self, app_context, db_session
     ):
-        """Test that get_grouped_allocations combines stock and fee for same portfolio."""
+        """
+        Verify that get_grouped_allocations combines stock and fee transactions per portfolio.
+
+        WHY: When an IBKR transaction is processed with commission, it creates TWO
+        IBKRTransactionAllocation records per portfolio (one for stock, one for fee).
+        The UI should show ONE card per portfolio with combined data, not two separate
+        cards. This method groups allocations by portfolio_id and sums amounts/shares,
+        separating commission into its own field for clear display.
+        """
         # Create test data
         portfolio = Portfolio(name="Test Portfolio")
         db_session.add(portfolio)

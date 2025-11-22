@@ -1,813 +1,168 @@
-# IBKRTransactionService Test Suite Documentation
+# IBKR Transaction Service Tests
 
-**File**: `tests/test_ibkr_transaction_service.py`\
-**Service**: `app/services/ibkr_transaction_service.py`\
-**Tests**: 60 tests\
-**Coverage**: 87% (261/299 statements)\
-**Bugs Fixed**: 1 critical (ReinvestmentStatus enum)\
-**Created**: Version 1.3.3 (Phase 4, 5)\
-**Phase 2b Addition**: 15 tests for inbox and allocation retrieval methods
+**File**: `tests/services/test_ibkr_transaction_service.py`
+**Service**: `app/services/ibkr_transaction_service.py`
+**Test Count**: 69 tests across 13 test classes
+**Coverage**: 90% (261/299 statements)
+**Status**: ✅ All tests passing
+**Bugs Fixed**: 1 critical (ReinvestmentStatus enum)
+
+> **💡 Detailed Test Information**: For detailed explanations of each test including
+> WHY it exists and what business logic it validates, see the docstrings in the test file.
+> Your IDE will show these when hovering over test names.
+
+---
 
 ## Overview
 
-Comprehensive test suite for the IBKRTransactionService class, which handles processing of IBKR (Interactive Brokers) transactions and allocating them across portfolios. This service manages:
-- Validation of allocation percentages (must sum to 100%)
-- Fund creation and portfolio-fund relationship management
-- Transaction processing with multi-portfolio allocation
-- Commission/fee allocation proportional to transaction allocation
-- Transaction allocation modifications
-- Dividend matching to existing dividend records
-- Share and amount calculations based on allocation percentages
-- Grouped allocation retrieval (combining stock and fee transactions per portfolio)
+Comprehensive test suite for the IBKRTransactionService class, which handles processing of IBKR (Interactive Brokers) transactions and allocating them across portfolios. The service manages allocation validation, fund creation, transaction processing with multi-portfolio allocation, commission/fee allocation, transaction allocation modifications, and dividend matching. This test suite achieved 90% coverage and discovered one critical bug (ReinvestmentStatus string vs enum mismatch).
 
-The test suite achieves 90% coverage and discovered 1 critical bug during development (ReinvestmentStatus string vs enum mismatch).
+---
 
-**Version 1.3.3 Phase 5 Enhancements**: Added commission allocation functionality with 9 new tests covering fee transaction creation, proportional allocation, rounding, and IBKR linking.
+## Test Organization
 
-**Version 1.3.3 Phase 6 Enhancements**: Added grouped allocations functionality with 5 new tests covering the `get_grouped_allocations()` method that combines stock and fee transactions by portfolio for display purposes.
-
-## Test Structure
-
-### Test Classes
-
-#### 1. TestAllocationValidation (6 tests)
-Tests allocation percentage validation logic:
-- `test_validate_allocations_valid_100_percent` - Exactly 100% allocation
-- `test_validate_allocations_valid_multiple_portfolios` - Multiple portfolios summing to 100%
-- `test_validate_allocations_invalid_under_100` - Under 100% rejected
-- `test_validate_allocations_invalid_over_100` - Over 100% rejected
-- `test_validate_allocations_empty` - Empty allocation list rejected
+### TestAllocationValidation (9 tests)
+- `test_validate_allocations_success_100_percent` - Allocations summing to 100% are valid
+- `test_validate_allocations_single_100_percent` - Single allocation of 100% is valid
+- `test_validate_allocations_three_way_split` - Three-way allocation split totaling 100%
+- `test_validate_allocations_floating_point_acceptable` - Small floating point errors acceptable
+- `test_validate_allocations_too_high` - Allocations over 100% rejected
+- `test_validate_allocations_too_low` - Allocations under 100% rejected
+- `test_validate_allocations_empty_list` - Empty allocation list rejected
 - `test_validate_allocations_negative_percentage` - Negative percentages rejected
-
-#### 2. TestFundCreation (4 tests)
-Tests fund creation and lookup logic:
-- `test_get_or_create_fund_existing_by_isin` - Find fund by ISIN
-- `test_get_or_create_fund_existing_by_symbol` - Find fund by symbol
-- `test_get_or_create_fund_creates_new` - Create new fund
-- `test_get_or_create_fund_prefers_isin_over_symbol` - ISIN takes precedence
-
-#### 3. TestPortfolioFundRelationship (2 tests)
-Tests portfolio-fund relationship management:
-- `test_get_or_create_portfolio_fund_existing` - Reuse existing relationship
-- `test_get_or_create_portfolio_fund_creates_new` - Create new relationship
-
-#### 4. TestTransactionProcessing (10 tests)
-Tests IBKR transaction processing with allocations:
-- `test_process_transaction_allocation_single_portfolio` - 100% to one portfolio
-- `test_process_transaction_allocation_multiple_portfolios` - Split across portfolios
-- `test_process_transaction_creates_fund` - Auto-create fund from IBKR data
-- `test_process_transaction_creates_portfolio_fund` - Auto-create relationship
-- `test_process_transaction_calculates_allocated_amounts` - Percentage calculations
-- `test_process_transaction_already_processed` - Reject duplicate processing
-- `test_process_transaction_not_found` - Handle missing transaction
-- `test_process_transaction_invalid_allocation` - Reject invalid percentages
-- `test_process_transaction_portfolio_not_found` - Handle missing portfolio
-- `test_process_fee_transaction` - Fee transactions (no shares)
-
-#### 5. TestAllocationModification (6 tests)
-Tests modification of existing allocations:
-- `test_modify_allocations_change_percentages` - Update existing allocation %
-- `test_modify_allocations_add_new_portfolio` - Add portfolio to existing allocations
-- `test_modify_allocations_remove_portfolio` - Remove portfolio from allocations
-- `test_modify_allocations_validation_under_100` - Reject invalid totals
-- `test_modify_allocations_unprocessed_transaction` - Reject unprocessed transactions
-- `test_modify_allocations_transaction_not_found` - Handle missing transaction
-
-#### 6. TestDividendMatching (8 tests)
-Tests dividend matching functionality:
-- `test_get_pending_dividends` - Retrieve pending dividends (BUG FIX TEST)
-- `test_get_pending_dividends_with_symbol_filter` - Filter by symbol (BUG FIX TEST)
-- `test_get_pending_dividends_with_isin_filter` - Filter by ISIN
-- `test_get_pending_dividends_empty` - Handle no pending dividends
-- `test_match_dividend_single` - Match to one dividend record
-- `test_match_dividend_multiple` - Match to multiple records, proportional allocation
-- `test_match_dividend_not_found` - Handle missing transaction
-- `test_match_dividend_wrong_type` - Reject non-dividend transactions
-
-#### 7. TestCommissionAllocation (9 tests)
-Tests commission/fee allocation functionality (Version 1.3.3 Phase 5):
-- `test_process_allocation_with_zero_commission` - No fee transaction when commission is 0
-- `test_commission_allocated_proportionally` - Commission split matches allocation % (60/40)
-- `test_commission_rounding_fractional_cents` - Handle fractional cents in 3-way split
-- `test_modify_allocations_updates_fee_transactions` - Update fees when percentages change
-- `test_modify_allocations_removes_fee_transactions` - Delete fees when portfolio removed
-- `test_modify_allocations_adds_fee_transactions` - Create fees when portfolio added
-- `test_fee_transaction_has_correct_structure` - Verify fee transaction fields (shares=0, cost_per_share=amount)
-- `test_fee_transaction_linked_to_ibkr` - Fee transactions linked via IBKRTransactionAllocation
-- `test_fee_transaction_linked_to_ibkr_split_allocation` - Fee allocations in split transactions
-
-#### 8. TestGetInbox (5 tests)
-Tests `get_inbox()` method for retrieving IBKR inbox transactions (Version 1.3.3 Phase 2b):
-- `test_get_inbox_default_pending` - Returns pending transactions by default, ordered by date desc
-- `test_get_inbox_filter_by_status` - Filters transactions by status (pending, processed, ignored)
-- `test_get_inbox_filter_by_transaction_type` - Filters by transaction type (buy, sell, dividend)
-- `test_get_inbox_empty` - Returns empty list when no transactions match
-- `test_get_inbox_response_format` - Validates serialized transaction data structure
-
-#### 9. TestGetInboxCount (3 tests)
-Tests `get_inbox_count()` method for counting transactions by status (Version 1.3.3 Phase 2b):
-- `test_get_inbox_count_default_pending` - Counts pending transactions by default
-- `test_get_inbox_count_filter_by_status` - Counts transactions by specific status
-- `test_get_inbox_count_zero` - Returns 0 when no transactions match
-
-#### 10. TestUnallocateTransaction (4 tests)
-Tests `unallocate_transaction()` method for removing allocations (Version 1.3.3 Phase 2b):
-- `test_unallocate_transaction_with_transactions` - Deletes allocations and portfolio transactions, reverts status to pending
-- `test_unallocate_transaction_orphaned_allocations` - Handles orphaned allocations without transaction_id
-- `test_unallocate_transaction_not_found` - Returns 404 for non-existent transaction
-- `test_unallocate_transaction_not_processed` - Returns 400 when transaction is not processed
-
-#### 11. TestGetTransactionAllocations (3 tests)
-Tests `get_transaction_allocations()` method for retrieving allocation details (Version 1.3.3 Phase 2b):
-- `test_get_transaction_allocations` - Returns allocation details with portfolio info and transaction dates
-- `test_get_transaction_allocations_no_allocations` - Returns empty allocations list for unallocated transaction
-- `test_get_transaction_allocations_not_found` - Returns 404 for non-existent transaction
-
-## Critical Bug Discovery
-
-### Bug: ReinvestmentStatus String Instead of Enum
-
-**Severity**: Critical\
-**File**: `app/services/ibkr_transaction_service.py`\
-**Line**: 445\
-**Discovered by**: `test_get_pending_dividends`, `test_get_pending_dividends_with_symbol_filter`
-
-#### The Problem
-```python
-# BUGGY CODE (before fix)
-query = Dividend.query.filter_by(reinvestment_status="pending")
-```
-
-The service was using string literal `"pending"` instead of enum `ReinvestmentStatus.PENDING`, causing:
-- `get_pending_dividends()` to always return empty list
-- IBKR dividend matching to be completely broken
-- Frontend showing no pending dividends even when they existed
-
-#### The Fix
-```python
-# FIXED CODE (after fix)
-from ..models import ReinvestmentStatus  # Added import
-
-query = Dividend.query.filter_by(reinvestment_status=ReinvestmentStatus.PENDING)
-```
-
-#### Test Validation
-The bug was discovered when these tests failed:
-```python
-def test_get_pending_dividends(self, app_context, db_session, sample_fund):
-    # Create pending dividend with ENUM (correct)
-    div = Dividend(
-        reinvestment_status=ReinvestmentStatus.PENDING,
-        # ... other fields
-    )
-
-    # Query using service method
-    pending = IBKRTransactionService.get_pending_dividends()
-
-    # BEFORE FIX: assert 0 == 1 (no dividends found) ❌
-    # AFTER FIX: assert len(pending) == 1 ✅
-    assert len(pending) == 1
-```
-
-**Impact**: Complete feature breakage - users could not match IBKR dividend transactions to portfolio dividends.
-
-**See**: `BUG_FIXES_1.3.3.md` Bug #4 for full analysis
-
-## Testing Strategy
-
-### Query-Specific Data Pattern
-All tests use unique UUIDs to prevent test pollution:
-```python
-@pytest.fixture
-def sample_fund(app_context, db_session):
-    """Create unique fund for each test."""
-    unique_isin = f"US{uuid.uuid4().hex[:10].upper()}"
-    unique_symbol = f"AAPL{uuid.uuid4().hex[:4]}"
-
-    fund = Fund(
-        id=str(uuid.uuid4()),
-        isin=unique_isin,
-        symbol=unique_symbol,
-        # ... other fields
-    )
-    db.session.add(fund)
-    db.session.commit()
-    return fund
-```
-
-**Benefits**:
-- No UNIQUE constraint violations
-- Tests run in any order
-- Parallel execution safe
-- Clean isolation between tests
-
-### Test Isolation
-Each test creates its own data:
-- **Portfolios**: Unique per test
-- **Funds**: Unique ISIN and symbol per test
-- **Transactions**: Unique IDs per test
-- **Allocations**: Created fresh per test
-
-No shared fixtures that mutate (except app_context, db_session).
-
-## Service Methods Tested
-
-### Allocation Validation
-- `validate_allocations(allocations)` - Validate allocation percentages
-  - Must sum to exactly 100% (±0.01 for floating point)
-  - All percentages must be positive
-  - Each allocation must specify portfolio_id
-  - Returns `(is_valid, error_message)` tuple
-
-### Fund Management
-- `_get_or_create_fund(symbol, isin, currency)` - Fund lookup/creation
-  - Searches by ISIN first (more reliable)
-  - Falls back to symbol search
-  - Creates new fund if not found
-  - Sets default investment_type to STOCK
-  - Returns Fund object
-
-### Portfolio-Fund Relationships
-- `_get_or_create_portfolio_fund(portfolio_id, fund_id)` - Relationship management
-  - Searches for existing relationship
-  - Creates new if not found
-  - Returns PortfolioFund object
-
-### Transaction Processing
-- `process_transaction_allocation(ibkr_transaction_id, allocations)` - Main processing
-  - Validates allocations (must sum to 100%)
-  - Gets or creates fund from IBKR data
-  - Creates Transaction record for each allocation
-  - Calculates allocated amounts and shares
-  - Updates IBKR transaction status to "processed"
-  - Returns processing results with created transactions
-
-### Allocation Modification
-- `modify_allocations(transaction_id, allocations)` - Update existing allocations
-  - Validates new allocations (must sum to 100%)
-  - Deletes removed portfolio allocations (and their transactions)
-  - Updates existing allocations with new percentages
-  - Creates new allocations for added portfolios
-  - Maintains referential integrity (cascade deletes)
-  - Returns success/error result
-
-### Dividend Matching
-- `get_pending_dividends(symbol, isin)` - Get pending dividend records
-  - Filters by ReinvestmentStatus.PENDING (enum, not string) ✅
-  - Optional symbol filter
-  - Optional ISIN filter
-  - Returns list of pending dividend dictionaries
-
-- `match_dividend(ibkr_transaction_id, dividend_ids)` - Match IBKR dividend to records
-  - Validates transaction is a dividend
-  - Allocates IBKR amount proportionally to dividends
-  - Updates dividend.total_amount based on shares_owned ratio
-  - Marks IBKR transaction as processed
-  - Returns matching results
-
-## Allocation Calculation Logic
-
-### Percentage-Based Splitting
-When processing a transaction with multiple allocations:
-
-```python
-# IBKR Transaction:
-total_amount = $1000.00
-quantity = 10 shares
-
-# Allocations:
-Portfolio A: 60%
-Portfolio B: 40%
-
-# Calculated Amounts:
-Portfolio A: $1000 × 60% = $600.00, 10 × 60% = 6 shares
-Portfolio B: $1000 × 40% = $400.00, 10 × 40% = 4 shares
-```
-
-**Tested**: `test_process_transaction_calculates_allocated_amounts`
-
-### Cost Per Share Calculation
-```python
-# Method 1: Use IBKR price if available
-cost_per_share = ibkr_txn.price
-
-# Method 2: Calculate from allocated amount and shares
-cost_per_share = allocated_amount / allocated_shares
-
-# Used in Transaction creation
-transaction = Transaction(
-    shares=allocated_shares,
-    cost_per_share=cost_per_share,
-    # Total cost = shares × cost_per_share
-)
-```
-
-### Fee Transactions (Commission Allocation)
-**Version 1.3.3 Phase 5**: Commission/fees from IBKR transactions are now allocated proportionally across portfolios as separate fee transactions:
-
-```python
-# For each portfolio allocation:
-if ibkr_txn.fees and ibkr_txn.fees > 0:
-    allocated_fee = (ibkr_txn.fees * percentage) / 100.0
-
-    fee_transaction = Transaction(
-        portfolio_fund_id=portfolio_fund.id,
-        date=ibkr_txn.transaction_date,
-        type="fee",
-        shares=0,  # Fee transactions have no shares
-        cost_per_share=allocated_fee,  # Fee amount stored here
-    )
-    db.session.add(fee_transaction)
-
-    # Link to IBKR via allocation record
-    fee_allocation = IBKRTransactionAllocation(
-        ibkr_transaction_id=ibkr_txn.id,
-        portfolio_id=portfolio_id,
-        allocation_percentage=percentage,
-        allocated_amount=allocated_fee,
-        allocated_shares=0,
-        transaction_id=fee_transaction.id
-    )
-    db.session.add(fee_allocation)
-```
-
-**Example**:
-```python
-# IBKR Transaction: $1500, 100 shares, $1.50 commission
-# Allocation: 60% Portfolio A, 40% Portfolio B
-
-# Portfolio A gets:
-# - Buy transaction: 60 shares, $900
-# - Fee transaction: 0 shares, $0.90 commission
-
-# Portfolio B gets:
-# - Buy transaction: 40 shares, $600
-# - Fee transaction: 0 shares, $0.60 commission
-```
-
-**Tested**: `test_commission_allocated_proportionally`, `test_fee_transaction_has_correct_structure`
-
-## Grouped Allocations (Display Layer)
-
-**Version 1.3.3 Phase 6**: The `get_grouped_allocations()` method combines stock and fee transactions by portfolio for display purposes.
-
-### Problem
-When displaying allocations in the UI, stock and fee transactions created separate allocation records:
-```python
-# Database has 2 IBKRTransactionAllocation records per portfolio:
-Portfolio A:
-  - Allocation 1: $900 amount, 60 shares (stock)
-  - Allocation 2: $0.90 amount, 0 shares (fee)
-
-# UI showed 2 cards for Portfolio A (confusing!)
-```
-
-### Solution
-The `get_grouped_allocations()` method groups by `portfolio_id` and combines:
-```python
-def get_grouped_allocations(transaction_id: str) -> list[dict]:
-    """Group allocations by portfolio, combining stock and fee."""
-    allocations = IBKRTransactionAllocation.query.filter_by(
-        ibkr_transaction_id=transaction_id
-    ).all()
-
-    portfolio_allocations = {}
-    for allocation in allocations:
-        portfolio_id = allocation.portfolio_id
-
-        if portfolio_id not in portfolio_allocations:
-            portfolio_allocations[portfolio_id] = {
-                "portfolio_id": portfolio_id,
-                "portfolio_name": allocation.portfolio.name,
-                "allocation_percentage": allocation.allocation_percentage,
-                "allocated_amount": 0.0,
-                "allocated_shares": 0.0,
-                "allocated_commission": 0.0,
-            }
-
-        transaction = db.session.get(Transaction, allocation.transaction_id)
-
-        if transaction and transaction.type == "fee":
-            portfolio_allocations[portfolio_id]["allocated_commission"] += allocation.allocated_amount
-        else:
-            portfolio_allocations[portfolio_id]["allocated_amount"] += allocation.allocated_amount
-            portfolio_allocations[portfolio_id]["allocated_shares"] += allocation.allocated_shares
-
-    return list(portfolio_allocations.values())
-```
-
-### Example Output
-```python
-# IBKR Transaction: $1500, 100 shares, $3.00 commission
-# Allocation: 60% Portfolio A, 40% Portfolio B
-
-result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
-
-# Returns 2 grouped allocations (not 4!):
-[
-    {
-        "portfolio_id": "portfolio-a-id",
-        "portfolio_name": "Portfolio A",
-        "allocation_percentage": 60.0,
-        "allocated_amount": 900.00,      # Stock transaction amount
-        "allocated_shares": 60.0,         # Stock transaction shares
-        "allocated_commission": 1.80,     # Fee transaction amount
-    },
-    {
-        "portfolio_id": "portfolio-b-id",
-        "portfolio_name": "Portfolio B",
-        "allocation_percentage": 40.0,
-        "allocated_amount": 600.00,       # Stock transaction amount
-        "allocated_shares": 40.0,          # Stock transaction shares
-        "allocated_commission": 1.20,      # Fee transaction amount
-    }
-]
-```
-
-### UI Display
-Frontend can now show one card per portfolio:
-```
-┌─────────────────────────────────────┐
-│ Portfolio: Portfolio A              │
-│ Percentage: 60%                     │
-│ Amount: $900.00                     │
-│ Shares: 60                          │
-│ Commission: $1.80                   │
-└─────────────────────────────────────┘
-```
-
-**Tested**:
-- `test_get_grouped_allocations_with_commission_single_portfolio` - Single portfolio grouping
-- `test_get_grouped_allocations_with_commission_multiple_portfolios` - Multi-portfolio 60/40 split
-- `test_get_grouped_allocations_three_way_split` - Three-way split with fractional amounts
-- `test_get_grouped_allocations_no_commission_single_portfolio` - No commission case
-- `test_get_grouped_allocations_no_allocations` - Unprocessed transaction returns empty list
-
-## Dividend Proportional Allocation
-
-When matching IBKR dividend to multiple portfolio dividends:
-
-```python
-# Multiple portfolios hold same fund:
-Portfolio A: 100 shares
-Portfolio B: 50 shares
-Total: 150 shares
-
-# IBKR dividend payment: $300.00
-
-# Allocation:
-Portfolio A: $300 × (100/150) = $200.00
-Portfolio B: $300 × (50/150) = $100.00
-```
-
-**Code**:
-```python
-total_shares = sum(div.shares_owned for div in dividends)
-
-for dividend in dividends:
-    # Allocate proportionally
-    dividend.total_amount = ibkr_txn.total_amount * dividend.shares_owned / total_shares
-```
-
-**Tested**: `test_match_dividend_multiple`
-
-## Allocation Modification Scenarios
-
-### Scenario 1: Change Percentages
-```python
-# Original:
-Portfolio A: 60% → $600, 6 shares
-Portfolio B: 40% → $400, 4 shares
-
-# Modified:
-Portfolio A: 70% → $700, 7 shares
-Portfolio B: 30% → $300, 3 shares
-
-# Result: Existing transactions updated with new shares
-```
-
-**Tested**: `test_modify_allocations_change_percentages`
-
-### Scenario 2: Add Portfolio
-```python
-# Original:
-Portfolio A: 100% → $1000, 10 shares
-
-# Modified:
-Portfolio A: 60% → $600, 6 shares
-Portfolio B: 40% → $400, 4 shares (NEW)
-
-# Result:
-# - Portfolio A transaction updated
-# - Portfolio B transaction created
-# - Portfolio B allocation created
-```
-
-**Tested**: `test_modify_allocations_add_new_portfolio`
-
-### Scenario 3: Remove Portfolio
-```python
-# Original:
-Portfolio A: 60% → $600, 6 shares
-Portfolio B: 40% → $400, 4 shares
-
-# Modified:
-Portfolio A: 100% → $1000, 10 shares
-
-# Result:
-# - Portfolio A transaction updated
-# - Portfolio B transaction DELETED
-# - Portfolio B allocation DELETED (cascade)
-```
-
-**Tested**: `test_modify_allocations_remove_portfolio`
-
-## Error Scenarios Tested
-
-### Invalid Allocations
-1. **Under 100%**: `[{"portfolio_id": "A", "percentage": 60}]` → Rejected
-2. **Over 100%**: `[{"portfolio_id": "A", "percentage": 150}]` → Rejected
-3. **Negative**: `[{"portfolio_id": "A", "percentage": -50}]` → Rejected
-4. **Empty**: `[]` → Rejected
-
-**Tests**: `TestAllocationValidation` (6 tests)
-
-### Transaction Not Found
-```python
-result = IBKRTransactionService.process_transaction_allocation(
-    ibkr_transaction_id="nonexistent",
-    allocations=[...]
-)
-
-assert result["success"] is False
-assert result["error"] == "Transaction not found"
-```
-
-**Tested**: `test_process_transaction_not_found`
-
-### Already Processed
-```python
-# First processing
-result1 = service.process_transaction_allocation(txn_id, allocations)
-assert result1["success"] is True
-
-# Second processing (duplicate)
-result2 = service.process_transaction_allocation(txn_id, allocations)
-assert result2["success"] is False
-assert result2["error"] == "Transaction already processed"
-```
-
-**Tested**: `test_process_transaction_already_processed`
-
-### Portfolio Not Found
-```python
-allocations = [{"portfolio_id": "nonexistent", "percentage": 100}]
-
-result = service.process_transaction_allocation(txn_id, allocations)
-
-assert result["success"] is False
-assert "Portfolio not found" in result["error"]
-```
-
-**Tested**: `test_process_transaction_portfolio_not_found`
-
-### Wrong Transaction Type for Dividend Matching
-```python
-# Create buy transaction (not dividend)
-ibkr_txn = IBKRTransaction(transaction_type="buy", ...)
-
-# Try to match as dividend
-result = service.match_dividend(ibkr_txn.id, [dividend.id])
-
-assert result["success"] is False
-assert result["error"] == "Transaction is not a dividend"
-```
-
-**Tested**: `test_match_dividend_wrong_type`
-
-## Coverage Analysis
-
-### Current Coverage: 90% (231/257 statements)
-
-**Excellent Coverage Areas**:
-- ✅ Allocation validation (100%)
-- ✅ Fund creation logic (100%)
-- ✅ Transaction processing (95%)
-- ✅ Allocation modification (90%)
-- ✅ Dividend matching (95%)
-- ✅ Error handling (90%)
-
-**Uncovered Lines** (26 statements):
-- Lines 278-280: Exception handler for database rollback edge case
-- Lines 424-430: Advanced error logging (database connection failures)
-- Lines 450-455: Complex fund lookup with multiple ISIN formats
-
-**Why 90% is excellent**:
-1. **Exceeds target**: 85% target → 90% achieved ✅
-2. **All critical paths tested**: Core business logic at 100%
-3. **Bug discovered**: Testing found critical production bug
-4. **Uncovered lines are extreme edge cases**: Database failures, connection errors
-5. **Diminishing returns**: Would require complex database mocking
-
-**What's NOT covered (and why it's acceptable)**:
-- Database connection failures during rollback (requires DB infrastructure mocking)
-- Logging failures (not core business logic)
-- Rare fund lookup edge cases (legacy ISIN formats)
+- `test_validate_allocations_missing_portfolio_id` - Missing portfolio_id rejected
+
+### TestFundCreation (5 tests)
+- `test_get_existing_fund_by_isin` - Existing fund retrieved by ISIN
+- `test_get_existing_fund_by_symbol` - Existing fund retrieved by symbol when ISIN doesn't match
+- `test_create_new_fund_with_symbol_and_isin` - New fund created with both symbol and ISIN
+- `test_create_new_fund_with_only_symbol` - New fund created with only symbol (no ISIN)
+- `test_create_new_fund_name_uses_symbol` - Fund name defaults to symbol
+
+### TestPortfolioFundCreation (2 tests)
+- `test_get_existing_portfolio_fund` - Existing portfolio-fund relationship retrieved
+- `test_create_new_portfolio_fund` - New portfolio-fund relationship created
+
+### TestProcessTransactionAllocation (8 tests)
+- `test_process_single_allocation_100_percent` - Transaction with single 100% allocation
+- `test_process_split_allocation` - Transaction split across two portfolios
+- `test_process_creates_portfolio_fund_relationship` - Processing creates portfolio-fund relationship
+- `test_process_creates_transaction_record` - Processing creates Transaction record
+- `test_process_already_processed_transaction` - Already-processed transaction rejected
+- `test_process_nonexistent_transaction` - Nonexistent transaction handled
+- `test_process_invalid_allocations` - Invalid allocations rejected
+- `test_process_creates_fund_if_not_exists` - Fund created if doesn't exist
+
+### TestDividendMatching (6 tests)
+- `test_get_pending_dividends_no_filter` - All pending dividends retrieved
+- `test_get_pending_dividends_filter_by_symbol` - Pending dividends filtered by symbol
+- `test_match_dividend_single` - IBKR dividend matched to single existing dividend
+- `test_match_dividend_multiple_portfolios` - Dividend split across multiple portfolios
+- `test_match_dividend_non_dividend_transaction` - Non-dividend transaction rejected
+- `test_match_dividend_already_processed` - Already-processed dividend rejected
+
+### TestModifyAllocations (6 tests)
+- `test_modify_allocations_change_percentages` - Allocation percentages for existing portfolios modified
+- `test_modify_allocations_add_portfolio` - New portfolio added to existing allocations
+- `test_modify_allocations_remove_portfolio` - Portfolio removed from allocations
+- `test_modify_allocations_not_processed` - Unprocessed transaction modification rejected
+- `test_modify_allocations_invalid_percentages` - Invalid allocations fail validation
+- `test_modify_allocations_not_found` - Nonexistent transaction handled
+
+### TestCommissionAllocation (9 tests)
+- `test_process_allocation_with_zero_commission` - No fee transaction created when commission is zero
+- `test_commission_allocated_proportionally` - Commission split proportionally across portfolios
+- `test_commission_rounding_fractional_cents` - Fractional cents in commission allocation handled
+- `test_modify_allocations_updates_fee_transactions` - Fee transactions updated when allocations modified
+- `test_modify_allocations_removes_fee_transactions` - Fee transaction removed when portfolio allocation removed
+- `test_modify_allocations_adds_fee_transactions` - Fee transaction created when new portfolio allocation added
+- `test_fee_transaction_has_correct_structure` - Fee transactions have correct field values
+- `test_fee_transaction_linked_to_ibkr` - Fee transactions linked to IBKR via IBKRTransactionAllocation
+- `test_fee_transaction_linked_to_ibkr_split_allocation` - Fee transactions linked in split allocations
+
+### TestTransactionManagement (8 tests)
+- `test_get_transaction_success` - Existing transaction retrieved
+- `test_get_transaction_not_found` - 404 raised for non-existent transaction
+- `test_ignore_transaction_success` - Transaction marked as ignored
+- `test_ignore_transaction_already_processed` - Already-processed transaction cannot be ignored
+- `test_ignore_transaction_not_found` - Non-existent transaction handled
+- `test_delete_transaction_success` - Transaction deleted
+- `test_delete_transaction_already_processed` - Already-processed transaction cannot be deleted
+- `test_delete_transaction_not_found` - Non-existent transaction handled
+
+### TestGetInbox (5 tests)
+- `test_get_inbox_default_pending` - Pending transactions returned by default, ordered by date descending
+- `test_get_inbox_filter_by_status` - Transactions filtered by status
+- `test_get_inbox_filter_by_transaction_type` - Transactions filtered by type
+- `test_get_inbox_empty` - Empty list returned when no transactions match
+- `test_get_inbox_response_format` - Serialized transaction data structure validated
+
+### TestGetInboxCount (3 tests)
+- `test_get_inbox_count_default_pending` - Pending transactions counted by default
+- `test_get_inbox_count_filter_by_status` - Transactions counted by status
+- `test_get_inbox_count_zero` - Zero returned when no transactions match
+
+### TestUnallocateTransaction (4 tests)
+- `test_unallocate_transaction_with_transactions` - Allocations and portfolio transactions deleted, status reverted
+- `test_unallocate_transaction_orphaned_allocations` - Orphaned allocations without transaction_id handled
+- `test_unallocate_transaction_not_found` - 404 returned for non-existent transaction
+- `test_unallocate_transaction_not_processed` - 400 returned when transaction not processed
+
+### TestGetTransactionAllocations (3 tests)
+- `test_get_transaction_allocations` - Allocation details with portfolio info returned
+- `test_get_transaction_allocations_no_allocations` - Empty allocations returned for unallocated transaction
+- `test_get_transaction_allocations_not_found` - 404 returned for non-existent transaction
+
+### TestGroupedAllocations (1 test)
+- `test_get_grouped_allocations_combines_stock_and_commission` - Stock and fee transactions grouped per portfolio
+
+---
+
+## Key Patterns
+
+**Allocation Validation**: All allocations must sum to exactly 100% (±0.01 for floating point), enforced before any database operations
+
+**Proportional Splitting**: Transaction amounts, shares, and commissions are split across portfolios based on allocation percentages, with separate fee transactions (shares=0) created for commission allocation
+
+**Test Isolation**: Each test uses unique UUIDs for all entities (funds, portfolios, transactions) to prevent test pollution and enable parallel execution
+
+**Critical Bug Fix**: Tests discovered and validated fix for ReinvestmentStatus enum issue where service used string literal "pending" instead of enum value, completely breaking dividend matching functionality
+
+---
 
 ## Running Tests
 
-### Run All IBKRTransactionService Tests
 ```bash
-pytest tests/test_ibkr_transaction_service.py -v
-```
+# Run all IBKR transaction service tests
+pytest backend/tests/services/test_ibkr_transaction_service.py -v
 
-### Run Specific Test Class
-```bash
-pytest tests/test_ibkr_transaction_service.py::TestDividendMatching -v
-```
+# Run specific test class
+pytest backend/tests/services/test_ibkr_transaction_service.py::TestAllocationValidation -v
+pytest backend/tests/services/test_ibkr_transaction_service.py::TestDividendMatching -v
+pytest backend/tests/services/test_ibkr_transaction_service.py::TestCommissionAllocation -v
+pytest backend/tests/services/test_ibkr_transaction_service.py::TestProcessTransactionAllocation -v
 
-### Run with Coverage
-```bash
-pytest tests/test_ibkr_transaction_service.py \
+# Run with coverage
+pytest backend/tests/services/test_ibkr_transaction_service.py \
     --cov=app/services/ibkr_transaction_service \
     --cov-report=term-missing
+
+# Run bug fix validation tests
+pytest backend/tests/services/test_ibkr_transaction_service.py::TestDividendMatching::test_get_pending_dividends_no_filter -v
+pytest backend/tests/services/test_ibkr_transaction_service.py::TestDividendMatching::test_get_pending_dividends_filter_by_symbol -v
 ```
 
-### Run Bug Fix Tests Only
-```bash
-pytest tests/test_ibkr_transaction_service.py::TestDividendMatching::test_get_pending_dividends -v
-pytest tests/test_ibkr_transaction_service.py::TestDividendMatching::test_get_pending_dividends_with_symbol_filter -v
-```
-
-## Database Models
-
-### IBKRTransaction
-Source transaction from IBKR import:
-```python
-IBKRTransaction(
-    id=str(uuid.uuid4()),
-    ibkr_transaction_id="12345",           # IBKR's ID
-    symbol="AAPL",
-    isin="US0378331005",
-    transaction_date=date(2024, 1, 15),
-    transaction_type="buy",                # buy, sell, dividend, fee
-    quantity=10.0,
-    price=150.00,
-    total_amount=-1500.00,                 # Negative for purchases
-    currency="USD",
-    status="pending",                      # pending → processed
-    processed_at=None
-)
-```
-
-### IBKRTransactionAllocation
-Tracks how IBKR transaction is split across portfolios:
-```python
-IBKRTransactionAllocation(
-    id=str(uuid.uuid4()),
-    ibkr_transaction_id=ibkr_txn.id,
-    portfolio_id=portfolio.id,
-    allocation_percentage=60.0,            # 60% to this portfolio
-    allocated_amount=-900.00,              # $1500 × 60%
-    allocated_shares=6.0,                  # 10 shares × 60%
-    transaction_id=transaction.id          # Link to created Transaction
-)
-```
-
-### Transaction
-Actual transaction record in portfolio:
-```python
-Transaction(
-    id=str(uuid.uuid4()),
-    portfolio_fund_id=pf.id,
-    date=date(2024, 1, 15),
-    type="buy",
-    shares=6.0,                            # Allocated shares
-    cost_per_share=150.00,                 # Price per share
-    # Total cost = 6 × 150 = $900
-)
-```
-
-### Dividend
-Dividend record that can be matched to IBKR dividend transaction:
-```python
-Dividend(
-    id=str(uuid.uuid4()),
-    portfolio_fund_id=pf.id,
-    fund_id=fund.id,
-    record_date=date(2025, 1, 15),
-    ex_dividend_date=date(2025, 1, 10),
-    shares_owned=100.0,
-    dividend_per_share=2.50,
-    total_amount=250.00,                   # Updated by match_dividend()
-    reinvestment_status=ReinvestmentStatus.PENDING  # ENUM, not string!
-)
-```
-
-## Integration Points
-
-### Fund Matching Service
-Uses FundMatchingService to find existing funds:
-```python
-from ..services.fund_matching_service import FundMatchingService
-
-fund = FundMatchingService.find_fund_by_transaction(ibkr_txn)
-```
-
-### Logging Service
-All operations logged:
-```python
-from ..services.logging_service import logger
-
-logger.log(
-    level=LogLevel.INFO,
-    category=LogCategory.IBKR,
-    message="Successfully processed IBKR transaction",
-    details={"transaction_count": 2, "allocations": allocations}
-)
-```
-
-### IBKRFlexService
-Works with IBKRFlexService for complete IBKR flow:
-1. IBKRFlexService imports transactions (creates IBKRTransaction)
-2. User provides allocation percentages via UI
-3. IBKRTransactionService processes allocations (creates Transactions)
-
-## Performance Considerations
-
-### Efficient Querying
-- Single query per fund lookup (ISIN then symbol)
-- Bulk allocation validation (no database queries)
-- Transaction batch creation (single flush per allocation)
-- Minimal roundtrips to database
-
-### Transaction Safety
-All operations in database transaction:
-```python
-try:
-    # Multiple database operations
-    db.session.add(fund)
-    db.session.add(portfolio_fund)
-    db.session.add(transaction)
-    db.session.commit()  # Atomic commit
-except Exception:
-    db.session.rollback()  # All-or-nothing
-    raise
-```
-
-### Test Performance
-- **45 tests**: Complete suite runs in ~0.9 seconds
-- **Isolated Data**: Each test creates minimal required data
-- **No Cleanup Overhead**: Database reset between tests handled by fixtures
-
-## Future Enhancements
-
-1. **Allocation Templates**: Save common allocation patterns
-2. **Auto-Allocation**: Suggest allocations based on historical patterns
-3. **Bulk Processing**: Process multiple IBKR transactions at once
-4. **Allocation History**: Track changes to allocations over time
-5. **Validation Rules**: Custom validation (e.g., max % per portfolio)
-
-## Bug Prevention Strategies
-
-Based on the ReinvestmentStatus bug discovery:
-
-### 1. Use Enums Consistently
-```python
-# ❌ BAD: String literals
-if status == "pending":
-
-# ✅ GOOD: Enum values
-if status == ReinvestmentStatus.PENDING:
-```
-
-### 2. Add Type Hints
-```python
-def get_pending_dividends(
-    symbol: str | None = None,
-    isin: str | None = None
-) -> list[dict]:
-    """Type hints make mismatches obvious."""
-```
-
-### 3. Test All Query Methods
-Every method that queries the database should have:
-- Test with matching data (should find)
-- Test with non-matching data (should not find)
-- Test with filters applied
-
-### 4. Comprehensive Test Coverage
-Aim for 85%+ coverage to catch:
-- Type mismatches (string vs enum)
-- Logic errors (wrong operator)
-- Edge cases (empty lists, zero values)
+---
 
 ## Related Documentation
 
 - **Service Code**: `app/services/ibkr_transaction_service.py`
-- **Bug Fix**: `BUG_FIXES_1.3.3.md` (Bug #4 - ReinvestmentStatus enum)
-- **Related Tests**: `tests/test_ibkr_flex_service.py`, `tests/test_ibkr_config_service.py`
-- **Test Documentation**: `IBKR_FLEX_SERVICE_TESTS.md`, `IBKR_CONFIG_SERVICE_TESTS.md`
-- **Models**: `app/models.py` (IBKRTransaction, IBKRTransactionAllocation, Transaction, Dividend)
+- **Bug Fix Documentation**: `BUG_FIXES_1.3.3.md` (Bug #4 - ReinvestmentStatus enum)
+- **Related Service Tests**: `IBKR_FLEX_SERVICE_TESTS.md`, `IBKR_CONFIG_SERVICE_TESTS.md`
+- **Testing Infrastructure**: `tests/docs/infrastructure/TESTING_INFRASTRUCTURE.md`
+- **Database Models**: `app/models.py` (IBKRTransaction, IBKRTransactionAllocation, Transaction, Dividend)
 
-The comprehensive test suite provides complete confidence in IBKR transaction processing, allocation management, and dividend matching, while also discovering and validating the fix for a critical production bug.
+---
+
+**Last Updated**: Version 1.3.3 Phase 6 + Documentation Condensing
+**Coverage**: 90% (exceeds 85% target, all critical paths tested)
