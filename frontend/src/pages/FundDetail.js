@@ -12,6 +12,21 @@ import { subMonths } from 'date-fns';
 import Toast from '../components/Toast';
 import ValueChart from '../components/ValueChart';
 
+/**
+ * Fund detail page with price history
+ *
+ * Displays fund/stock metadata and historical price data with chart visualization.
+ * Supports manual updates to backfill missing historical prices via Yahoo Finance.
+ *
+ * Key business logic:
+ * - Price table defaults to last 30 days (toggle to show all history)
+ * - Date range filter applies to both table and chart
+ * - Chart data: oldest to newest (reversed from table sort)
+ * - Update button fetches missing prices only (no duplicate updates)
+ * - Price data sorted newest first in table for quick access to recent prices
+ *
+ * @returns {JSX.Element} The fund detail page
+ */
 const FundDetail = () => {
   const { id } = useParams();
   const [fund, setFund] = useState(null);

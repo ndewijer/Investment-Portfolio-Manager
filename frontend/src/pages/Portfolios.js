@@ -12,6 +12,16 @@ import {
 } from '../components/shared';
 import './Portfolios.css';
 
+/**
+ * Portfolio management page
+ *
+ * Displays all portfolios in a grid layout with CRUD operations. Each portfolio
+ * card shows name, description, and action buttons for viewing, editing, deleting,
+ * and archiving. The "exclude_from_overview" flag controls whether a portfolio
+ * appears on the overview dashboard.
+ *
+ * @returns {JSX.Element} The portfolios management page
+ */
 const Portfolios = () => {
   const { data: portfolios, loading, error, execute: fetchPortfolios } = useApiState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);

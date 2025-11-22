@@ -7,6 +7,21 @@ import { useApiState, DataTable } from '../components/shared';
 import './Overview.css';
 import { useFormat } from '../context/FormatContext';
 
+/**
+ * Portfolio overview dashboard page
+ *
+ * Displays aggregated portfolio performance metrics across all non-excluded portfolios.
+ * Includes summary cards showing total value/cost/gain/performance, an interactive chart
+ * with multi-portfolio comparison, and a table of individual portfolio metrics.
+ *
+ * Key business logic:
+ * - Performance calculation: ((totalValue + totalSaleProceeds) / (totalCost + totalOriginalCost) - 1) * 100
+ * - Supports toggling between value/cost/gain metrics on the chart
+ * - Uses intelligent data loading via useChartData hook (loads 365 days by default)
+ * - Chart data format transforms backend portfolio array structure to flat daily metrics
+ *
+ * @returns {JSX.Element} The overview dashboard page
+ */
 const Overview = () => {
   const navigate = useNavigate();
   const { formatCurrency, formatPercentage } = useFormat();

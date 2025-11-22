@@ -9,6 +9,20 @@ import { useApp } from '../context/AppContext';
 import { API_BASE_URL } from '../config';
 import { useApiState } from '../components/shared';
 
+/**
+ * System configuration page with tabbed interface
+ *
+ * Centralized configuration hub for IBKR integration, system settings, user preferences,
+ * and power user tools. Uses tabbed navigation to organize different configuration domains.
+ *
+ * Tabs:
+ * - IBKR Setup: Configure Interactive Brokers Flex Web Service integration (if enabled)
+ * - System Settings: Manage logging levels and system-wide configurations
+ * - User Preferences: Number formatting (US/EU) and dark mode settings
+ * - Power User Tools: Manual data entry for exchange rates, fund prices, CSV imports
+ *
+ * @returns {JSX.Element} The configuration page
+ */
 const Config = () => {
   const [activeTab, setActiveTab] = useState('ibkr');
   const { features, refreshIBKRConfig } = useApp();
@@ -74,7 +88,23 @@ const Config = () => {
   );
 };
 
-// IBKR Configuration Tab
+/**
+ * IBKR configuration tab component
+ *
+ * Manages IBKR Flex Web Service credentials and settings. Stores encrypted token
+ * on backend, displays token expiration warnings, and validates connection before saving.
+ *
+ * Key workflows:
+ * - Test Connection: Validates token/query ID without saving
+ * - Token expiration: Shows warning 30 days before expiration
+ * - Enable/disable toggle: Controls IBKR feature visibility and auto-import
+ * - Auto-import schedule: Tuesday-Saturday at 06:30 (when enabled)
+ *
+ * @param {Object} props
+ * @param {Function} props.setMessage - Success message setter
+ * @param {Function} props.setError - Error message setter
+ * @param {Function} props.refreshIBKRConfig - Refresh IBKR config in AppContext
+ */
 const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
   const [config, setConfig] = useState({
     flex_token: '',
@@ -388,7 +418,16 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
   );
 };
 
-// System Settings Tab
+/**
+ * System settings tab component
+ *
+ * Controls application-wide system settings including logging configuration.
+ * Logging can be toggled on/off and minimum level adjusted (debug/info/warning/error/critical).
+ *
+ * @param {Object} props
+ * @param {Function} props.setMessage - Success message setter
+ * @param {Function} props.setError - Error message setter
+ */
 const SystemSettingsTab = ({ setMessage, setError }) => {
   const { data: loggingSettings, execute: fetchLoggingSettings } = useApiState({
     enabled: true,
@@ -473,7 +512,15 @@ const SystemSettingsTab = ({ setMessage, setError }) => {
   );
 };
 
-// User Preferences Tab
+/**
+ * User preferences tab component
+ *
+ * Manages user-specific settings stored in browser localStorage:
+ * - Number format: European (1.234,56) vs US (1,234.56)
+ * - Dark mode: Feature flag toggle and theme selection (light/dark)
+ *
+ * Changes persist across sessions via context providers (FormatContext, ThemeContext).
+ */
 const UserPreferencesTab = () => {
   const { isEuropeanFormat, setIsEuropeanFormat } = useFormat();
   const { darkModeEnabled, enableDarkModeFeature, theme, setThemePreference } = useTheme();
@@ -543,7 +590,22 @@ const UserPreferencesTab = () => {
   );
 };
 
-// Power User Tools Tab
+/**
+ * Power user tools tab component
+ *
+ * Advanced data management tools for manual data entry and bulk imports:
+ * - Exchange rates: Set custom currency conversion rates for specific dates
+ * - Fund prices: Manual price entry for funds/stocks
+ * - Transaction import: CSV upload for bulk transaction entry (portfolio-specific)
+ * - Fund price import: CSV upload for bulk historical price data
+ *
+ * Includes CSV format documentation via collapsible info sections. Transaction imports
+ * require portfolio selection, which filters available funds to prevent cross-portfolio mistakes.
+ *
+ * @param {Object} props
+ * @param {Function} props.setMessage - Success message setter
+ * @param {Function} props.setError - Error message setter
+ */
 const PowerUserTab = ({ setMessage, setError }) => {
   const [exchangeRate, setExchangeRate] = useState({
     from_currency: 'USD',
