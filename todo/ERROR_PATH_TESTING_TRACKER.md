@@ -1,7 +1,7 @@
 # Error Path Testing - Progress Tracker
 
 **Goal**: Achieve 90%+ coverage on all routes
-**Current**: 93.4% routes (809/866 stmts) ✅ | **Target**: 90%+
+**Current**: 94.4% routes (839/889 stmts) ✅ | **Target**: 90%+
 **Plan**: See ERROR_PATH_TESTING_PLAN.md for full details
 
 ---
@@ -11,7 +11,7 @@
 | File | Current | Target | Missing Lines | Priority | Status |
 |------|---------|--------|---------------|----------|--------|
 | developer_routes.py | 91% | 90% | 19 | 🔴 P1 | ✅ COMPLETE |
-| ibkr_routes.py | 86% | 90% | 31 | 🔴 P2 | ✅ COMPLETE |
+| ibkr_routes.py | 95% | 90% | 11 | 🔴 P2 | ✅ COMPLETE |
 | fund_routes.py | 96% | 90% | 7 | 🟡 P3 | ✅ COMPLETE |
 | portfolio_routes.py | 100% | 90% | 0 | 🟢 P4 | ✅ COMPLETE |
 | transaction_routes.py | 100% | 90% | 0 | 🟡 P5 | ✅ COMPLETE |
@@ -255,11 +255,39 @@ Test Classes Added:
 
 ---
 
+#### Phase 4e: IBKR Routes ✅ COMPLETE
+**File**: `test_ibkr_routes.py`
+**Final Coverage**: 95% (86% → 95%)
+
+Test Classes Added:
+- [x] `TestIBKRConnectionErrors` (2 additional tests)
+  - [x] Connection success
+  - [x] Connection failure
+- [x] `TestIBKRInboxErrors` (3 additional tests)
+  - [x] Get inbox count service error
+  - [x] Get eligible portfolios transaction not found
+  - [x] Get eligible portfolios service error
+- [x] `TestIBKRAllocationErrors` (3 additional tests)
+  - [x] Update allocations missing allocations
+  - [x] Update allocations value error
+  - [x] Update allocations general error
+- [x] `TestIBKRBulkOperationsErrors` (3 additional tests)
+  - [x] Bulk allocate empty allocations
+  - [x] Bulk allocate invalid percentage sum
+  - [x] Bulk allocate partial failure
+
+**Total**: 11 error path tests (51 existing tests + 11 new = 61 total, 60 passing, 1 skipped)
+**All Tests**: 60 passed, 1 skipped
+**Commit**: `Phase 4e: Add error path tests for IBKR routes (86% → 95%)`
+
+---
+
 **Phase 4 Summary**:
-- Total tests added: 23 error path tests across 4 route files
-- Files at 100% coverage: portfolio, system, transaction, dividend routes
+- Total tests added: 34 error path tests across 5 route files
+- Files at 100% coverage: portfolio, system, transaction, dividend routes (4 files)
+- Files at 95%+ coverage: ibkr routes (1 file)
 - All tests use unittest.mock.patch for consistency
-- Overall routes coverage: 93.4% (exceeds 90% target by 3.4%!)
+- Overall routes coverage: 94.4% (exceeds 90% target by 4.4%!)
 
 ---
 
@@ -378,24 +406,25 @@ pytest backend/tests/routes -k "Error" -v
 - [x] Phase 4b: System Routes (2 tests, 71% → 100%)
 - [x] Phase 4c: Transaction Routes (6 tests, 81% → 100%)
 - [x] Phase 4d: Dividend Routes (7 tests, 78% → 100%)
+- [x] Phase 4e: IBKR Routes (11 tests, 86% → 95%)
 - [x] Coverage check: All routes at 90%+ ✅
 - [x] Commit changes for each sub-phase
 - [x] Documentation updated
 
 ### Final Check: ✅ COMPLETE
-- [x] Overall routes coverage at 93.4% (exceeds 90% target!)
+- [x] Overall routes coverage at 94.4% (exceeds 90% target!)
 - [x] 4 route files at 100% coverage
 - [x] 3 route files at 90%+ coverage
-- [x] Only ibkr_routes.py at 86% (close to target)
+- [x] All 7 route files exceed 90% target! 🎉
 - [x] Documentation updated
 - [x] All commits completed
 
 ---
 
 **Last Updated**: 2025-11-22
-**Status**: Phase 1, 2, 3 & 4 Complete - 🎉 **93.4% ROUTES COVERAGE ACHIEVED!**
-**Next Action**: Optional - improve ibkr_routes.py from 86% → 90% (only 4% gap)
-**Overall Routes Coverage**: 93.4% (809/866 stmts) ✅ (exceeded 90% target!)
+**Status**: Phase 1, 2, 3 & 4 Complete - 🎉 **94.4% ROUTES COVERAGE ACHIEVED!**
+**Next Action**: All routes now exceed 90% target - testing complete!
+**Overall Routes Coverage**: 94.4% (839/889 stmts) ✅ (exceeded 90% target by 4.4%!)
 
 **Summary of All Completed Phases**:
 - Phase 1: developer_routes.py 49% → 91% (32 tests)
@@ -405,4 +434,5 @@ pytest backend/tests/routes -k "Error" -v
 - Phase 4b: system_routes.py 71% → 100% (2 tests)
 - Phase 4c: transaction_routes.py 81% → 100% (6 tests)
 - Phase 4d: dividend_routes.py 78% → 100% (7 tests)
-- **Total**: 105 error path tests added across 4 major phases
+- Phase 4e: ibkr_routes.py 86% → 95% (11 tests)
+- **Total**: 116 error path tests added across all phases

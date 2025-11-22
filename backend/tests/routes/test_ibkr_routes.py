@@ -22,7 +22,7 @@ Tests IBKR API endpoints:
 - PUT /ibkr/inbox/<transaction_id>/allocations - Update allocations ✅
 - POST /ibkr/inbox/bulk-allocate - Bulk allocate ✅
 
-Test Summary: 8 happy path tests, 22 error path tests
+Test Summary: 18 happy path tests, 33 error path tests, 51 total
 
 Error path testing covers:
 - Missing required fields
@@ -30,6 +30,9 @@ Error path testing covers:
 - Resource not found (404)
 - Service errors and exceptions
 - External API failures
+- Connection success/failure paths
+- Allocation validation errors
+- Bulk operation partial failures
 """
 
 from datetime import datetime, timedelta
@@ -819,6 +822,35 @@ class TestIBKRConnectionErrors:
 
         assert response.status_code == 400
 
+    def test_connection_success(self, client):
+        """Test POST /ibkr/config/test handles successful connection."""
+        with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
+            mock_instance = mock_service_class.return_value
+            mock_instance.test_connection.return_value = {"success": True, "message": "Connected"}
+
+            payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
+            response = client.post("/api/ibkr/config/test", json=payload)
+
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data["success"] is True
+
+    def test_connection_failure(self, client):
+        """Test POST /ibkr/config/test handles failed connection."""
+        with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
+            mock_instance = mock_service_class.return_value
+            mock_instance.test_connection.return_value = {
+                "success": False,
+                "error": "Invalid credentials",
+            }
+
+            payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
+            response = client.post("/api/ibkr/config/test", json=payload)
+
+            assert response.status_code == 400
+            data = response.get_json()
+            assert data["success"] is False
+
     def test_connection_api_failure(self, client):
         """Test POST /ibkr/config/test handles API failures."""
         with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
@@ -955,6 +987,54 @@ class TestIBKRInboxErrors:
 
         assert response.status_code == 500
 
+    def test_get_inbox_count_service_error(self, client):
+        """Test GET /ibkr/inbox/count handles service errors."""
+        with patch("app.routes.ibkr_routes.IBKRTransactionService.get_inbox_count") as mock_count:
+            mock_count.side_effect = Exception("Database query failed")
+
+            response = client.get("/api/ibkr/inbox/count")
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data
+
+    def test_get_eligible_portfolios_transaction_not_found(self, client):
+        """Test GET /ibkr/inbox/<id>/eligible-portfolios handles missing transaction."""
+        fake_id = make_id()
+        response = client.get(f"/api/ibkr/inbox/{fake_id}/eligible-portfolios")
+
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+
+    def test_get_eligible_portfolios_service_error(self, client, db_session):
+        """Test GET /ibkr/inbox/<id>/eligible-portfolios handles service errors."""
+        txn = IBKRTransaction(
+            ibkr_transaction_id=make_id(),
+            transaction_date=datetime.now().date(),
+            symbol="AAPL",
+            description="Test",
+            transaction_type="buy",
+            quantity=10,
+            price=100.0,
+            total_amount=1000.0,
+            currency="USD",
+            status="pending",
+        )
+        db_session.add(txn)
+        db_session.commit()
+
+        with patch(
+            "app.services.fund_matching_service.FundMatchingService.get_eligible_portfolios_for_transaction"
+        ) as mock_get:
+            mock_get.side_effect = Exception("Matching service error")
+
+            response = client.get(f"/api/ibkr/inbox/{txn.id}/eligible-portfolios")
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
 
 class TestIBKRAllocationErrors:
     """Test error paths for IBKR allocation endpoints."""
@@ -1033,6 +1113,88 @@ class TestIBKRAllocationErrors:
         # May return 400 for validation or 404 for not found
         assert response.status_code in [400, 404]
 
+    def test_update_allocations_missing_allocations(self, client, db_session):
+        """Test PUT /ibkr/inbox/<id>/allocations rejects missing allocations."""
+        txn = IBKRTransaction(
+            ibkr_transaction_id=make_id(),
+            transaction_date=datetime.now().date(),
+            symbol="AAPL",
+            description="Test",
+            transaction_type="buy",
+            quantity=10,
+            price=100.0,
+            total_amount=1000.0,
+            currency="USD",
+            status="processed",
+        )
+        db_session.add(txn)
+        db_session.commit()
+
+        payload = {}
+        response = client.put(f"/api/ibkr/inbox/{txn.id}/allocations", json=payload)
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
+    def test_update_allocations_value_error(self, client, db_session):
+        """Test PUT /ibkr/inbox/<id>/allocations handles ValueError."""
+        txn = IBKRTransaction(
+            ibkr_transaction_id=make_id(),
+            transaction_date=datetime.now().date(),
+            symbol="AAPL",
+            description="Test",
+            transaction_type="buy",
+            quantity=10,
+            price=100.0,
+            total_amount=1000.0,
+            currency="USD",
+            status="processed",
+        )
+        db_session.add(txn)
+        db_session.commit()
+
+        with patch(
+            "app.routes.ibkr_routes.IBKRTransactionService.modify_allocations"
+        ) as mock_modify:
+            mock_modify.side_effect = ValueError("Allocation validation failed")
+
+            payload = {"allocations": [{"portfolio_id": "test", "percentage": 100}]}
+            response = client.put(f"/api/ibkr/inbox/{txn.id}/allocations", json=payload)
+
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_update_allocations_general_error(self, client, db_session):
+        """Test PUT /ibkr/inbox/<id>/allocations handles general exceptions."""
+        txn = IBKRTransaction(
+            ibkr_transaction_id=make_id(),
+            transaction_date=datetime.now().date(),
+            symbol="AAPL",
+            description="Test",
+            transaction_type="buy",
+            quantity=10,
+            price=100.0,
+            total_amount=1000.0,
+            currency="USD",
+            status="processed",
+        )
+        db_session.add(txn)
+        db_session.commit()
+
+        with patch(
+            "app.routes.ibkr_routes.IBKRTransactionService.modify_allocations"
+        ) as mock_modify:
+            mock_modify.side_effect = Exception("Unexpected database error")
+
+            payload = {"allocations": [{"portfolio_id": "test", "percentage": 100}]}
+            response = client.put(f"/api/ibkr/inbox/{txn.id}/allocations", json=payload)
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
 
 class TestIBKRBulkOperationsErrors:
     """Test error paths for IBKR bulk operations."""
@@ -1060,3 +1222,103 @@ class TestIBKRBulkOperationsErrors:
         response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
 
         assert response.status_code in [400, 500]
+
+    def test_bulk_allocate_empty_allocations(self, client):
+        """Test POST /ibkr/inbox/bulk-allocate rejects empty allocations list."""
+        payload = {"transaction_ids": ["txn1", "txn2"], "allocations": []}
+        response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data
+
+    def test_bulk_allocate_invalid_percentage_sum(self, client):
+        """Test POST /ibkr/inbox/bulk-allocate rejects allocations not summing to 100%."""
+        payload = {
+            "transaction_ids": ["txn1"],
+            "allocations": [
+                {"portfolio_id": "test1", "percentage": 50},
+                {"portfolio_id": "test2", "percentage": 30},
+            ],
+        }
+        response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "100%" in data["error"] or "sum" in data["error"].lower()
+
+    def test_bulk_allocate_partial_failure(self, client, db_session):
+        """Test POST /ibkr/inbox/bulk-allocate handles individual transaction failures."""
+        fund = create_fund("US", "AAPL", "Apple Inc")
+        db_session.add(fund)
+        db_session.commit()
+
+        # Create two transactions
+        txn1 = IBKRTransaction(
+            ibkr_transaction_id=make_id(),
+            transaction_date=datetime.now().date(),
+            symbol=fund.symbol,
+            isin=fund.isin,
+            description="Test 1",
+            transaction_type="buy",
+            quantity=10,
+            price=100.0,
+            total_amount=1000.0,
+            currency="USD",
+            status="pending",
+        )
+        txn2 = IBKRTransaction(
+            ibkr_transaction_id=make_id(),
+            transaction_date=datetime.now().date(),
+            symbol=fund.symbol,
+            isin=fund.isin,
+            description="Test 2",
+            transaction_type="buy",
+            quantity=10,
+            price=100.0,
+            total_amount=1000.0,
+            currency="USD",
+            status="pending",
+        )
+        db_session.add_all([txn1, txn2])
+        db_session.commit()
+
+        # Mock process_transaction_allocation to fail for one transaction
+        with patch(
+            "app.routes.ibkr_routes.IBKRTransactionService.process_transaction_allocation"
+        ) as mock_process:
+            # First call succeeds, second call fails
+            mock_process.side_effect = [
+                {"success": True, "created_transactions": []},
+                Exception("Allocation failed for transaction 2"),
+            ]
+
+            payload = {
+                "transaction_ids": [txn1.id, txn2.id],
+                "allocations": [{"portfolio_id": "test", "percentage": 100}],
+            }
+            response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
+
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data["success"] is True
+            assert data["processed"] == 1
+            assert data["failed"] == 1
+            assert data["errors"] is not None
+            assert len(data["errors"]) == 1
+
+    def test_bulk_allocate_general_error(self, client):
+        """Test POST /ibkr/inbox/bulk-allocate handles general exceptions."""
+        with patch(
+            "app.routes.ibkr_routes.IBKRTransactionService.process_transaction_allocation"
+        ) as mock_process:
+            mock_process.side_effect = Exception("Critical database error")
+
+            payload = {
+                "transaction_ids": ["txn1"],
+                "allocations": [{"portfolio_id": "test", "percentage": 100}],
+            }
+            response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
+
+            assert response.status_code in [200, 500]
+            # May still return 200 with errors or 500 depending on when exception occurs

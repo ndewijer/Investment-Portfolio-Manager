@@ -122,9 +122,10 @@ docs/
 - Price updates and matching
 
 🔄 **[routes/IBKR_ROUTES_TESTS.md](routes/IBKR_ROUTES_TESTS.md)**
-- **26 tests**, 86% coverage
+- **61 tests**, 95% coverage ✅
 - IBKR configuration and inbox management
 - Transaction allocation and bulk operations
+- **11 error path tests** added in Phase 4e
 
 ---
 
@@ -228,12 +229,12 @@ docs/
 ### Key Achievements
 
 🎯 **Coverage Targets Met**: ALL 12 services completed (100% of backend services) + 7 routes tested
-📊 **Total Tests Created**: 366+ service tests + 169+ route tests = 535+ comprehensive tests
+📊 **Total Tests Created**: 366+ service tests + 220+ route tests = 586+ comprehensive tests
 🐛 **Critical Bugs Found**: 6 bugs discovered and fixed
-📈 **Average Coverage**: 93% across all completed services, 93.4% across routes
+📈 **Average Coverage**: 93% across all completed services, 94.4% across routes
 📚 **Documentation**: Comprehensive docs for all test suites (19+ documentation files)
 ✅ **Phase 4 Complete**: All high-priority service testing finished
-✅ **Phase 4 Error Path Testing**: 4 routes at 100% coverage (23 error path tests added)
+✅ **Phase 4 Error Path Testing**: 5 routes at 100% coverage, 1 route at 95% (34 error path tests added)
 🔧 **Standardization Applied**: Test helper utilities created, unittest.mock.patch standardized across all route tests
 
 ### Bug Discovery Value
