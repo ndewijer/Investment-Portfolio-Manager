@@ -660,3 +660,69 @@ class IBKRTransactionService:
                 details={"ibkr_transaction_id": ibkr_transaction_id, "error": str(e)},
             )
             return {"success": False, "error": f"Matching failed: {e!s}"}
+
+    @staticmethod
+    def get_grouped_allocations(transaction_id: str) -> list[dict]:
+        """
+        Get allocation details grouped by portfolio.
+
+        Groups stock and fee transactions for the same portfolio into a single record.
+        Each portfolio gets one allocation with:
+        - allocated_amount: Stock transaction amount
+        - allocated_shares: Number of shares
+        - allocated_commission: Fee transaction amount (0 if no commission)
+
+        Args:
+            transaction_id: IBKR Transaction ID
+
+        Returns:
+            List of allocation dictionaries grouped by portfolio
+
+        Raises:
+            ValueError: If transaction not found
+        """
+        # Get all allocations for this transaction
+        allocations = IBKRTransactionAllocation.query.filter_by(
+            ibkr_transaction_id=transaction_id
+        ).all()
+
+        # Group allocations by portfolio
+        portfolio_allocations = {}
+        for allocation in allocations:
+            portfolio_id = allocation.portfolio_id
+
+            # Initialize portfolio entry if not exists
+            if portfolio_id not in portfolio_allocations:
+                portfolio_allocations[portfolio_id] = {
+                    "portfolio_id": portfolio_id,
+                    "portfolio_name": allocation.portfolio.name,
+                    "allocation_percentage": allocation.allocation_percentage,
+                    "allocated_amount": 0.0,
+                    "allocated_shares": 0.0,
+                    "allocated_commission": 0.0,
+                }
+
+            # Get the linked transaction to check its type
+            transaction = (
+                db.session.get(Transaction, allocation.transaction_id)
+                if allocation.transaction_id
+                else None
+            )
+
+            # Separate fee transactions from stock transactions
+            if transaction and transaction.type == "fee":
+                # This is a commission/fee allocation
+                portfolio_allocations[portfolio_id]["allocated_commission"] += (
+                    allocation.allocated_amount
+                )
+            else:
+                # This is a stock/buy/sell/dividend allocation
+                portfolio_allocations[portfolio_id]["allocated_amount"] += (
+                    allocation.allocated_amount
+                )
+                portfolio_allocations[portfolio_id]["allocated_shares"] += (
+                    allocation.allocated_shares
+                )
+
+        # Convert to list and return
+        return list(portfolio_allocations.values())

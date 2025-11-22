@@ -691,10 +691,6 @@ def get_transaction_allocations(transaction_id):
     Get allocation details for a processed IBKR transaction.
 
     Groups allocations by portfolio to combine stock and fee transactions.
-    Each portfolio gets one allocation record with:
-    - allocated_amount: Stock transaction amount
-    - allocated_shares: Number of shares
-    - allocated_commission: Fee transaction amount (0 if no commission)
 
     Args:
         transaction_id: IBKR Transaction ID
@@ -702,56 +698,11 @@ def get_transaction_allocations(transaction_id):
     Returns:
         JSON response containing allocation details grouped by portfolio
     """
-    from ..models import IBKRTransactionAllocation, Transaction
-
     try:
         ibkr_txn = IBKRTransaction.query.get_or_404(transaction_id)
 
-        # Get all allocations
-        allocations = IBKRTransactionAllocation.query.filter_by(
-            ibkr_transaction_id=transaction_id
-        ).all()
-
-        # Group allocations by portfolio
-        portfolio_allocations = {}
-        for allocation in allocations:
-            portfolio_id = allocation.portfolio_id
-
-            # Initialize portfolio entry if not exists
-            if portfolio_id not in portfolio_allocations:
-                portfolio_allocations[portfolio_id] = {
-                    "portfolio_id": portfolio_id,
-                    "portfolio_name": allocation.portfolio.name,
-                    "allocation_percentage": allocation.allocation_percentage,
-                    "allocated_amount": 0.0,
-                    "allocated_shares": 0.0,
-                    "allocated_commission": 0.0,
-                }
-
-            # Get the linked transaction to check its type
-            transaction = (
-                db.session.get(Transaction, allocation.transaction_id)
-                if allocation.transaction_id
-                else None
-            )
-
-            # Separate fee transactions from stock transactions
-            if transaction and transaction.type == "fee":
-                # This is a commission/fee allocation
-                portfolio_allocations[portfolio_id]["allocated_commission"] += (
-                    allocation.allocated_amount
-                )
-            else:
-                # This is a stock/buy/sell/dividend allocation
-                portfolio_allocations[portfolio_id]["allocated_amount"] += (
-                    allocation.allocated_amount
-                )
-                portfolio_allocations[portfolio_id]["allocated_shares"] += (
-                    allocation.allocated_shares
-                )
-
-        # Convert to list
-        allocation_details = list(portfolio_allocations.values())
+        # Get grouped allocations from service
+        allocation_details = IBKRTransactionService.get_grouped_allocations(transaction_id)
 
         logger.log(
             level=LogLevel.INFO,

@@ -997,7 +997,8 @@ const IBKRInbox = () => {
                       <div className="allocation-detail-item">
                         <span className="label">Commission:</span>
                         <span className="value">
-                          {allocation.allocated_commission.toFixed(2)} {selectedTransaction.currency}
+                          {allocation.allocated_commission.toFixed(2)}{' '}
+                          {selectedTransaction.currency}
                         </span>
                       </div>
                     )}
