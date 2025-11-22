@@ -640,3 +640,83 @@ class TestConnectionTest:
 
         assert result["success"] is False
         assert "message" in result
+
+
+class TestTriggerManualImport:
+    """Tests for trigger_manual_import method."""
+
+    @responses.activate
+    def test_trigger_manual_import_success(self, app_context, db_session, ibkr_service):
+        """Test successful manual import."""
+        from app.models import IBKRConfig
+
+        # Create IBKR config
+        config = IBKRConfig(
+            flex_token=ibkr_service._encrypt_token("test_token"),
+            flex_query_id="123456",
+            enabled=True,
+        )
+        db.session.add(config)
+        db.session.commit()
+
+        # Mock API responses
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
+
+        # Trigger import
+        result, status = ibkr_service.trigger_manual_import(config)
+
+        assert status == 200
+        assert result["success"] is True
+        assert "imported" in result
+        assert "skipped" in result
+        assert "errors" in result
+        assert config.last_import_date is not None
+
+    @responses.activate
+    def test_trigger_manual_import_fetch_failure(self, app_context, db_session, ibkr_service):
+        """Test manual import with fetch statement failure."""
+        from app.models import IBKRConfig
+
+        # Create IBKR config
+        config = IBKRConfig(
+            flex_token=ibkr_service._encrypt_token("test_token"),
+            flex_query_id="123456",
+            enabled=True,
+        )
+        db.session.add(config)
+        db.session.commit()
+
+        # Mock API error
+        responses.add(responses.GET, FLEX_SEND_REQUEST_URL, status=500)
+
+        # Trigger import
+        result, status = ibkr_service.trigger_manual_import(config)
+
+        assert status == 500
+        assert "error" in result
+
+    @responses.activate
+    def test_trigger_manual_import_exception_handling(self, app_context, db_session, ibkr_service):
+        """Test manual import handles exceptions gracefully."""
+        from app.models import IBKRConfig
+
+        # Create IBKR config with invalid encrypted token to trigger error
+        config = IBKRConfig(
+            flex_token="invalid_encrypted_token",
+            flex_query_id="123456",
+            enabled=True,
+        )
+        db.session.add(config)
+        db.session.commit()
+
+        # Trigger import - should handle decryption error
+        result, status = ibkr_service.trigger_manual_import(config)
+
+        assert status == 500
+        assert "error" in result

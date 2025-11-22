@@ -2129,3 +2129,154 @@ class TestGroupedAllocations:
         assert alloc["allocated_amount"] == 15000.0  # Stock amount
         assert alloc["allocated_shares"] == 100.0  # Stock shares
         assert alloc["allocated_commission"] == 3.00  # Fee amount
+
+
+class TestGetTransactionDetail:
+    """Tests for get_transaction_detail method."""
+
+    def test_get_transaction_detail_success(self, app_context, db_session, sample_ibkr_transaction):
+        """Test getting transaction detail for existing transaction."""
+        result = IBKRTransactionService.get_transaction_detail(sample_ibkr_transaction.id)
+
+        assert result["id"] == sample_ibkr_transaction.id
+        assert result["ibkr_transaction_id"] == sample_ibkr_transaction.ibkr_transaction_id
+        assert result["symbol"] == sample_ibkr_transaction.symbol
+        assert result["isin"] == sample_ibkr_transaction.isin
+        assert result["transaction_type"] == sample_ibkr_transaction.transaction_type
+        assert result["quantity"] == sample_ibkr_transaction.quantity
+        assert result["price"] == sample_ibkr_transaction.price
+        assert result["total_amount"] == sample_ibkr_transaction.total_amount
+        assert result["currency"] == sample_ibkr_transaction.currency
+        assert result["fees"] == sample_ibkr_transaction.fees
+        assert result["status"] == sample_ibkr_transaction.status
+        assert "allocations" in result
+        assert isinstance(result["allocations"], list)
+
+    def test_get_transaction_detail_not_found(self, app_context, db_session):
+        """Test getting transaction detail for non-existent transaction."""
+        from flask import abort
+
+        with pytest.raises(Exception):  # Should call abort(404)
+            IBKRTransactionService.get_transaction_detail("nonexistent_id")
+
+
+class TestBulkAllocateTransactions:
+    """Tests for bulk_allocate_transactions method."""
+
+    def test_bulk_allocate_success(
+        self, app_context, db_session, sample_portfolio, sample_fund, second_portfolio
+    ):
+        """Test successful bulk allocation of multiple transactions."""
+        # Create two IBKR transactions
+        ibkr_txn1 = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol=sample_fund.symbol,
+            isin=sample_fund.isin,
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=1.00,
+            status="pending",
+            raw_data="{}",
+        )
+        ibkr_txn2 = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_txn_id(),
+            transaction_date=date(2025, 1, 16),
+            symbol=sample_fund.symbol,
+            isin=sample_fund.isin,
+            transaction_type="buy",
+            quantity=50,
+            price=155.00,
+            total_amount=7750.00,
+            currency="USD",
+            fees=1.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add_all([ibkr_txn1, ibkr_txn2])
+        db.session.commit()
+
+        # Define allocations
+        allocations = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 60.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 40.0},
+        ]
+
+        # Bulk allocate
+        result = IBKRTransactionService.bulk_allocate_transactions(
+            [ibkr_txn1.id, ibkr_txn2.id], allocations
+        )
+
+        assert result["success"] is True
+        assert result["processed"] == 2
+        assert result["failed"] == 0
+        assert result["errors"] is None or len(result["errors"]) == 0
+
+    def test_bulk_allocate_invalid_allocations(self, app_context, db_session):
+        """Test bulk allocation with invalid allocations."""
+        allocations = [
+            {"portfolio_id": "p1", "percentage": 60.0},
+            {"portfolio_id": "p2", "percentage": 30.0},  # Only 90%
+        ]
+
+        result = IBKRTransactionService.bulk_allocate_transactions(["txn1"], allocations)
+
+        assert result["success"] is False
+        assert "100%" in result["error"]
+
+    def test_bulk_allocate_no_transactions(self, app_context, db_session):
+        """Test bulk allocation with no transactions."""
+        allocations = [{"portfolio_id": "p1", "percentage": 100.0}]
+
+        result = IBKRTransactionService.bulk_allocate_transactions([], allocations)
+
+        assert result["success"] is False
+        assert "No transactions selected" in result["error"]
+
+    def test_bulk_allocate_no_allocations(self, app_context, db_session):
+        """Test bulk allocation with no allocations."""
+        result = IBKRTransactionService.bulk_allocate_transactions(["txn1"], [])
+
+        assert result["success"] is False
+        assert "No allocations provided" in result["error"]
+
+    def test_bulk_allocate_partial_failure(
+        self, app_context, db_session, sample_portfolio, sample_fund
+    ):
+        """Test bulk allocation with some transactions failing."""
+        # Create one valid transaction
+        ibkr_txn1 = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol=sample_fund.symbol,
+            isin=sample_fund.isin,
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=1.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn1)
+        db.session.commit()
+
+        # Define allocations
+        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+
+        # Bulk allocate with one valid and one invalid transaction ID
+        result = IBKRTransactionService.bulk_allocate_transactions(
+            [ibkr_txn1.id, "invalid_id"], allocations
+        )
+
+        assert result["success"] is True
+        assert result["processed"] == 1
+        assert result["failed"] == 1
+        assert len(result["errors"]) == 1
