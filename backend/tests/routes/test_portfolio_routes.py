@@ -19,6 +19,7 @@ Tests all Portfolio API endpoints:
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from app.models import Fund, FundPrice, Portfolio, PortfolioFund, Transaction, db
 from tests.test_helpers import make_id, make_isin, make_symbol
@@ -714,9 +715,7 @@ class TestPortfolioErrors:
         data = response.get_json()
         assert "error" in data or "message" in data
 
-    def test_delete_portfolio_fund_database_error(
-        self, app_context, client, db_session, monkeypatch
-    ):
+    def test_delete_portfolio_fund_database_error(self, app_context, client, db_session):
         """
         Verify DELETE /portfolio-funds/<id> handles unexpected database errors gracefully.
 
@@ -737,16 +736,15 @@ class TestPortfolioErrors:
         def mock_delete_pf(portfolio_fund_id, confirmed=False):
             raise Exception("Database connection failed")
 
-        monkeypatch.setattr(
+        with patch(
             "app.routes.portfolio_routes.PortfolioService.delete_portfolio_fund",
             mock_delete_pf,
-        )
+        ):
+            response = client.delete(f"/api/portfolio-funds/{pf.id}?confirm=true")
 
-        response = client.delete(f"/api/portfolio-funds/{pf.id}?confirm=true")
-
-        assert response.status_code == 400
-        data = response.get_json()
-        assert "error" in data or "message" in data
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
     def test_get_portfolios_with_include_excluded(self, app_context, client, db_session):
         """

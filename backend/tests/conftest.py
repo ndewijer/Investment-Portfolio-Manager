@@ -240,7 +240,7 @@ def db_session(app_context):
 
 
 @pytest.fixture(scope="function")
-def mock_yfinance(monkeypatch):
+def mock_yfinance():
     """
     Mock yfinance API calls for testing.
 
