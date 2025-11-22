@@ -2,7 +2,8 @@
 
 **File**: `tests/routes/test_portfolio_routes.py`
 **Route File**: `app/routes/portfolio_routes.py`
-**Test Count**: 22 tests
+**Test Count**: 30 tests (22 integration + 8 error path)
+**Coverage**: 100% (110/110 statements)
 **Status**: ✅ All tests passing
 
 ---
@@ -61,6 +62,16 @@ Integration tests for all portfolio management API endpoints. These tests verify
    - Delete portfolio fund without transactions
    - Delete portfolio fund with transactions (requires confirmation)
    - Get fund-specific historical data
+
+6. **TestPortfolioErrors** (8 tests)
+   - Create portfolio service error
+   - Get portfolio not found
+   - Update portfolio service error
+   - Delete portfolio service error
+   - Archive portfolio not found
+   - Unarchive portfolio not found
+   - Create portfolio fund duplicate error
+   - Delete portfolio fund requires confirmation
 
 ---
 
@@ -195,6 +206,45 @@ They do NOT rigidly enforce:
 
 ---
 
+## Error Path Testing (Phase 4a)
+
+### TestPortfolioErrors Class
+
+Added comprehensive error path tests to achieve 100% coverage on `portfolio_routes.py`. This phase also included removing dead code (duplicate route registration at lines 394-400).
+
+**Tests Added**:
+1. **test_create_portfolio_service_error** - Tests POST /portfolios handles service exceptions
+2. **test_get_portfolio_not_found** - Tests GET /portfolios/<id> handles missing portfolios
+3. **test_update_portfolio_service_error** - Tests PUT /portfolios/<id> handles service errors
+4. **test_delete_portfolio_service_error** - Tests DELETE /portfolios/<id> handles service errors
+5. **test_archive_portfolio_not_found** - Tests POST /portfolios/<id>/archive error handling
+6. **test_unarchive_portfolio_not_found** - Tests POST /portfolios/<id>/unarchive error handling
+7. **test_create_portfolio_fund_duplicate_error** - Tests POST /portfolio-funds handles duplicates
+8. **test_delete_portfolio_fund_requires_confirmation** - Tests DELETE /portfolio-funds/<id> confirmation flow
+
+**Coverage Improvement**: 89% → 100% (all exception handlers + dead code removal)
+
+**Testing Pattern**:
+```python
+from unittest.mock import patch
+
+def test_create_portfolio_service_error(self, client):
+    """Test POST /portfolios handles service errors."""
+    with patch("app.routes.portfolio_routes.PortfolioService.create_portfolio") as mock_create:
+        mock_create.side_effect = Exception("Database error")
+
+        payload = {"name": "Test Portfolio"}
+        response = client.post("/api/portfolios", json=payload)
+
+        assert response.status_code == 500
+        data = response.get_json()
+        assert "error" in data or "message" in data
+```
+
+**Why This Matters**: Error path tests ensure the API gracefully handles service layer failures, database errors, and invalid operations, returning appropriate HTTP status codes and error messages to clients.
+
+---
+
 ## Running Tests
 
 ### Run all portfolio route tests:
@@ -226,14 +276,17 @@ pytest tests/routes/test_portfolio_routes.py -v -W ignore::sqlalchemy.exc.Legacy
 
 ## Test Results
 
-**All 22 tests passing** ✅
+**All 30 tests passing** ✅
 
 ### Test Execution Time
-- **Average**: ~0.30 seconds for full suite
+- **Average**: ~0.32 seconds for full suite
 - **Pattern**: Tests are fast because they use in-memory SQLite database
 
 ### Coverage
-Integration tests verify **all 13 portfolio endpoints** are accessible and return appropriate responses.
+- **Route Coverage**: 100% (110/110 statements, 0 missing lines)
+- **Coverage Improvement**: 89% → 100% (Phase 4a error path testing + dead code removal)
+- Integration tests verify **all 13 portfolio endpoints** are accessible and return appropriate responses
+- Error tests verify **all exception handlers** return appropriate status codes
 
 ---
 
@@ -298,5 +351,5 @@ Added 6 new service tests in `tests/services/test_portfolio_service.py`:
 
 ---
 
-**Last Updated**: Phase 5 - Phase 1b (Query API Deprecation Fixes)
+**Last Updated**: Phase 5 - Phase 1b (Query API Deprecation Fixes) + Phase 4a (Error Path Testing)
 **Maintainer**: See git history

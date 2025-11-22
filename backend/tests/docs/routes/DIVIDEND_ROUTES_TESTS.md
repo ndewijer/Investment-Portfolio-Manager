@@ -2,7 +2,8 @@
 
 **File**: `tests/routes/test_dividend_routes.py`
 **Route File**: `app/routes/dividend_routes.py`
-**Test Count**: 10 tests
+**Test Count**: 17 tests (10 integration + 7 error path)
+**Coverage**: 100% (65/65 statements)
 **Status**: ✅ All tests passing
 
 ---
@@ -40,6 +41,15 @@ Integration tests for all dividend management API endpoints. These tests verify 
    - Update non-existent dividend (404)
    - Delete dividend
    - Delete non-existent dividend (404/500)
+
+4. **TestDividendErrors** (7 tests)
+   - Create dividend service error
+   - Get fund dividends service error
+   - Get portfolio dividends service error
+   - Update dividend value error
+   - Update dividend general error
+   - Delete dividend value error
+   - Delete dividend general error
 
 ---
 
@@ -308,6 +318,46 @@ assert response.status_code in [404, 500]  # Either is acceptable
 
 ---
 
+## Error Path Testing (Phase 4d)
+
+### TestDividendErrors Class
+
+Added comprehensive error path tests to achieve 100% coverage on `dividend_routes.py`.
+
+**Tests Added**:
+1. **test_create_dividend_service_error** - Tests POST /dividends handles service exceptions
+2. **test_get_fund_dividends_service_error** - Tests GET /dividends/fund/<fund_id> error handling
+3. **test_get_portfolio_dividends_service_error** - Tests GET /dividends/portfolio/<portfolio_id> error handling
+4. **test_update_dividend_value_error** - Tests PUT /dividends/<dividend_id> handles ValueError
+5. **test_update_dividend_general_error** - Tests PUT /dividends/<dividend_id> handles general exceptions
+6. **test_delete_dividend_value_error** - Tests DELETE /dividends/<dividend_id> handles ValueError
+7. **test_delete_dividend_general_error** - Tests DELETE /dividends/<dividend_id> handles general exceptions
+
+**Coverage Improvement**: 78% → 100% (all exception handlers now tested)
+
+**Testing Pattern**:
+```python
+from unittest.mock import patch
+
+def test_create_dividend_service_error(self, client, db_session):
+    """Test POST /dividends handles service errors."""
+    # ... setup portfolio and fund ...
+
+    with patch("app.routes.dividend_routes.DividendService.create_dividend") as mock_create:
+        mock_create.side_effect = Exception("Database error")
+
+        payload = {...}
+        response = client.post("/api/dividends", json=payload)
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data or "message" in data
+```
+
+**Why This Matters**: Error path tests ensure the API gracefully handles service layer failures, returning appropriate HTTP status codes and error messages to clients.
+
+---
+
 ## Running Tests
 
 ### Run all dividend route tests:
@@ -334,14 +384,17 @@ pytest tests/routes/test_dividend_routes.py -v --no-cov
 
 ## Test Results
 
-**All 10 tests passing** ✅
+**All 17 tests passing** ✅
 
 ### Test Execution Time
-- **Average**: ~0.33 seconds for full suite
+- **Average**: ~0.35 seconds for full suite
 - **Pattern**: Slightly slower than transaction tests due to dividend calculation complexity
 
 ### Coverage
-Integration tests verify **all 5 dividend endpoints** handle dividends correctly with proper calculation and filtering.
+- **Route Coverage**: 100% (65/65 statements, 0 missing lines)
+- **Coverage Improvement**: 78% → 100% (Phase 4d error path testing)
+- Integration tests verify **all 5 dividend endpoints** handle dividends correctly with proper calculation and filtering
+- Error tests verify **all exception handlers** return appropriate status codes
 
 ---
 
@@ -366,5 +419,5 @@ These bugs are now prevented by comprehensive service layer tests, and these int
 
 ---
 
-**Last Updated**: Phase 5 (Route Integration Tests)
+**Last Updated**: Phase 5 (Route Integration Tests) + Phase 4d (Error Path Testing)
 **Maintainer**: See git history

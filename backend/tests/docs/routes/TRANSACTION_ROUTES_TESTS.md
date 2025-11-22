@@ -2,7 +2,8 @@
 
 **File**: `tests/routes/test_transaction_routes.py`
 **Route File**: `app/routes/transaction_routes.py`
-**Test Count**: 12 tests
+**Test Count**: 18 tests (12 integration + 6 error path)
+**Coverage**: 100% (78/78 statements)
 **Status**: ✅ All tests passing
 
 ---
@@ -48,6 +49,14 @@ Integration tests for all transaction management API endpoints. These tests veri
    - Update non-existent transaction (404)
    - Delete transaction
    - Delete non-existent transaction (400)
+
+4. **TestTransactionErrors** (6 tests)
+   - Create transaction service error
+   - Get fund transactions service error
+   - Get portfolio fund transactions service error
+   - Update transaction not found
+   - Update transaction general error
+   - Delete transaction service error
 
 ---
 
@@ -226,6 +235,47 @@ The service layer maintains accurate share counts by:
 
 ---
 
+## Error Path Testing (Phase 4c)
+
+### TestTransactionErrors Class
+
+Added comprehensive error path tests to achieve 100% coverage on `transaction_routes.py`. This phase also converted all tests to use `unittest.mock.patch` instead of `monkeypatch` for consistency.
+
+**Tests Added**:
+1. **test_create_transaction_service_error** - Tests POST /transactions handles service exceptions
+2. **test_get_fund_transactions_service_error** - Tests GET /transactions?fund_id=<id> error handling
+3. **test_get_portfolio_fund_transactions_service_error** - Tests GET /transactions?portfolio_fund_id=<id> error handling
+4. **test_update_transaction_not_found** - Tests PUT /transactions/<id> handles ValueError
+5. **test_update_transaction_general_error** - Tests PUT /transactions/<id> handles general exceptions
+6. **test_delete_transaction_service_error** - Tests DELETE /transactions/<id> handles service errors
+
+**Coverage Improvement**: 81% → 100% (all exception handlers now tested)
+
+**Refactoring**: Converted from `monkeypatch` to `unittest.mock.patch` for consistency with other route tests.
+
+**Testing Pattern**:
+```python
+from unittest.mock import patch
+
+def test_create_transaction_service_error(self, client, db_session):
+    """Test POST /transactions handles service errors."""
+    # ... setup portfolio and fund ...
+
+    with patch("app.routes.transaction_routes.TransactionService.create_transaction") as mock_create:
+        mock_create.side_effect = Exception("Database error")
+
+        payload = {...}
+        response = client.post("/api/transactions", json=payload)
+
+        assert response.status_code == 500
+        data = response.get_json()
+        assert "error" in data or "message" in data
+```
+
+**Why This Matters**: Error path tests ensure the API gracefully handles service layer failures, returning appropriate HTTP status codes and error messages to clients.
+
+---
+
 ## Running Tests
 
 ### Run all transaction route tests:
@@ -252,15 +302,18 @@ pytest tests/routes/test_transaction_routes.py -v --no-cov
 
 ## Test Results
 
-**All 12 tests passing** ✅
+**All 18 tests passing** ✅
 
 ### Test Execution Time
-- **Average**: ~0.29 seconds for full suite
+- **Average**: ~0.31 seconds for full suite
 - **Fastest test**: ~0.02 seconds (empty list check)
 - **Slowest test**: ~0.05 seconds (sell transaction creation)
 
 ### Coverage
-Integration tests verify **all 5 transaction endpoints** work correctly with various transaction types and edge cases.
+- **Route Coverage**: 100% (78/78 statements, 0 missing lines)
+- **Coverage Improvement**: 81% → 100% (Phase 4c error path testing)
+- Integration tests verify **all 5 transaction endpoints** work correctly with various transaction types and edge cases
+- Error tests verify **all exception handlers** return appropriate status codes
 
 ---
 
@@ -301,5 +354,5 @@ payload = {
 
 ---
 
-**Last Updated**: Phase 5 (Route Integration Tests)
+**Last Updated**: Phase 5 (Route Integration Tests) + Phase 4c (Error Path Testing)
 **Maintainer**: See git history

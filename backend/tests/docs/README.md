@@ -22,11 +22,13 @@ docs/
 │   ├── PRICE_UPDATE_SERVICE_TESTS.md
 │   ├── SYMBOL_LOOKUP_SERVICE_TESTS.md
 │   └── TRANSACTION_SERVICE_TESTS.md
-├── routes/            # Route integration test documentation (Phase 5)
+├── routes/            # Route integration test documentation (Phase 5 + Error Path Testing)
+│   ├── DEVELOPER_ROUTES_TESTS.md
 │   ├── DIVIDEND_ROUTES_TESTS.md
 │   ├── FUND_ROUTES_TESTS.md
 │   ├── IBKR_ROUTES_TESTS.md
 │   ├── PORTFOLIO_ROUTES_TESTS.md
+│   ├── SYSTEM_ROUTES_TESTS.md
 │   └── TRANSACTION_ROUTES_TESTS.md
 ├── phases/            # Development phase documentation
 │   ├── BUG_FIXES_1.3.3.md
@@ -76,6 +78,55 @@ docs/
 - Complete summary of Phase 4 testing completion
 - All 9 high-priority services completed
 - Testing infrastructure improvements
+
+### 🌐 Route Integration Tests
+
+**Comprehensive test documentation for all API routes**
+
+#### Routes with 100% Coverage
+
+📋 **[routes/PORTFOLIO_ROUTES_TESTS.md](routes/PORTFOLIO_ROUTES_TESTS.md)**
+- **30 tests**, 100% coverage ✅
+- Portfolio CRUD operations and archiving
+- Portfolio-fund relationships and confirmation flows
+- **8 error path tests** added in Phase 4a
+
+💰 **[routes/DIVIDEND_ROUTES_TESTS.md](routes/DIVIDEND_ROUTES_TESTS.md)**
+- **17 tests**, 100% coverage ✅
+- Dividend CRUD and filtering by fund/portfolio
+- Shares owned calculation from transactions
+- **7 error path tests** added in Phase 4d
+
+💸 **[routes/TRANSACTION_ROUTES_TESTS.md](routes/TRANSACTION_ROUTES_TESTS.md)**
+- **18 tests**, 100% coverage ✅
+- Transaction CRUD for all types (buy, sell, dividend, fee)
+- Portfolio filtering and transaction history
+- **6 error path tests** added in Phase 4c
+
+🔧 **[routes/SYSTEM_ROUTES_TESTS.md](routes/SYSTEM_ROUTES_TESTS.md)**
+- **4 tests**, 100% coverage ✅
+- Version information and health checks
+- Database connection monitoring
+- **2 error path tests** added in Phase 4b
+
+#### Routes with 90%+ Coverage
+
+🏷️ **[routes/DEVELOPER_ROUTES_TESTS.md](routes/DEVELOPER_ROUTES_TESTS.md)**
+- **32 tests**, 91% coverage ✅
+- Developer utilities and CSV imports
+- Exchange rates and fund prices
+
+📊 **[routes/FUND_ROUTES_TESTS.md](routes/FUND_ROUTES_TESTS.md)**
+- **42 tests**, 96% coverage ✅
+- Fund CRUD and symbol lookups
+- Price updates and matching
+
+🔄 **[routes/IBKR_ROUTES_TESTS.md](routes/IBKR_ROUTES_TESTS.md)**
+- **26 tests**, 86% coverage
+- IBKR configuration and inbox management
+- Transaction allocation and bulk operations
+
+---
 
 ### 🔬 Service Layer Tests
 
@@ -176,13 +227,14 @@ docs/
 
 ### Key Achievements
 
-🎯 **Coverage Targets Met**: ALL 12 services completed (100% of backend services)
-📊 **Total Tests Created**: 325+ comprehensive tests across all services
+🎯 **Coverage Targets Met**: ALL 12 services completed (100% of backend services) + 7 routes tested
+📊 **Total Tests Created**: 366+ service tests + 169+ route tests = 535+ comprehensive tests
 🐛 **Critical Bugs Found**: 6 bugs discovered and fixed
-📈 **Average Coverage**: 93% across all completed services
-📚 **Documentation**: Comprehensive docs for all test suites
+📈 **Average Coverage**: 93% across all completed services, 93.4% across routes
+📚 **Documentation**: Comprehensive docs for all test suites (19+ documentation files)
 ✅ **Phase 4 Complete**: All high-priority service testing finished
-🔧 **Standardization Applied**: Test helper utilities created, 3 files standardized
+✅ **Phase 4 Error Path Testing**: 4 routes at 100% coverage (23 error path tests added)
+🔧 **Standardization Applied**: Test helper utilities created, unittest.mock.patch standardized across all route tests
 
 ### Bug Discovery Value
 
@@ -208,10 +260,12 @@ The comprehensive testing approach has proven invaluable:
 ### 🔍 Finding Specific Information
 
 **By Service**:
-- Dividend handling → [services/DIVIDEND_SERVICE_TESTS.md](services/DIVIDEND_SERVICE_TESTS.md)
-- Transaction processing → [services/TRANSACTION_SERVICE_TESTS.md](services/TRANSACTION_SERVICE_TESTS.md)
-- IBKR integration → [services/IBKR_FLEX_SERVICE_TESTS.md](services/IBKR_FLEX_SERVICE_TESTS.md) or [services/IBKR_TRANSACTION_SERVICE_TESTS.md](services/IBKR_TRANSACTION_SERVICE_TESTS.md)
-- Symbol/price data → [services/SYMBOL_LOOKUP_SERVICE_TESTS.md](services/SYMBOL_LOOKUP_SERVICE_TESTS.md) or [services/PRICE_UPDATE_SERVICE_TESTS.md](services/PRICE_UPDATE_SERVICE_TESTS.md)
+- Dividend handling → [services/DIVIDEND_SERVICE_TESTS.md](services/DIVIDEND_SERVICE_TESTS.md) or [routes/DIVIDEND_ROUTES_TESTS.md](routes/DIVIDEND_ROUTES_TESTS.md)
+- Transaction processing → [services/TRANSACTION_SERVICE_TESTS.md](services/TRANSACTION_SERVICE_TESTS.md) or [routes/TRANSACTION_ROUTES_TESTS.md](routes/TRANSACTION_ROUTES_TESTS.md)
+- Portfolio management → [services/PORTFOLIO_SERVICE_TESTS.md](services/PORTFOLIO_SERVICE_TESTS.md) or [routes/PORTFOLIO_ROUTES_TESTS.md](routes/PORTFOLIO_ROUTES_TESTS.md)
+- System health/version → [services/SYSTEM_SERVICE_TESTS.md](services/SYSTEM_SERVICE_TESTS.md) or [routes/SYSTEM_ROUTES_TESTS.md](routes/SYSTEM_ROUTES_TESTS.md)
+- IBKR integration → [services/IBKR_FLEX_SERVICE_TESTS.md](services/IBKR_FLEX_SERVICE_TESTS.md) or [services/IBKR_TRANSACTION_SERVICE_TESTS.md](services/IBKR_TRANSACTION_SERVICE_TESTS.md) or [routes/IBKR_ROUTES_TESTS.md](routes/IBKR_ROUTES_TESTS.md)
+- Symbol/price data → [services/SYMBOL_LOOKUP_SERVICE_TESTS.md](services/SYMBOL_LOOKUP_SERVICE_TESTS.md) or [services/PRICE_UPDATE_SERVICE_TESTS.md](services/PRICE_UPDATE_SERVICE_TESTS.md) or [routes/FUND_ROUTES_TESTS.md](routes/FUND_ROUTES_TESTS.md)
 
 **By Topic**:
 - Bug fixes → [phases/BUG_FIXES_1.3.3.md](phases/BUG_FIXES_1.3.3.md)
