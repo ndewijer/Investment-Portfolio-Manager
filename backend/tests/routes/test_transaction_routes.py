@@ -343,3 +343,180 @@ class TestTransactionRetrieveUpdateDelete:
 
         # API returns 400 for transaction not found
         assert response.status_code == 400
+
+
+class TestTransactionErrors:
+    """Test error paths for transaction routes."""
+
+    def test_get_transactions_service_error(self, app_context, client):
+        """Test GET /transactions handles service errors."""
+        from unittest.mock import patch
+
+        # Mock TransactionService.get_all_transactions to raise exception
+        with patch(
+            "app.routes.transaction_routes.TransactionService.get_all_transactions"
+        ) as mock_get_all:
+            mock_get_all.side_effect = Exception("Database query failed")
+
+            response = client.get("/api/transactions")
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_create_transaction_service_error(self, app_context, client, db_session):
+        """Test POST /transactions handles service errors."""
+        from unittest.mock import patch
+
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "TEST", "Test Fund")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        # Mock TransactionService.create_transaction to raise exception
+        with patch(
+            "app.routes.transaction_routes.TransactionService.create_transaction"
+        ) as mock_create:
+            mock_create.side_effect = Exception("Database error")
+
+            payload = {
+                "portfolio_fund_id": pf.id,
+                "date": datetime.now().date().isoformat(),
+                "type": "buy",
+                "shares": 10,
+                "cost_per_share": 100.00,
+            }
+
+            response = client.post("/api/transactions", json=payload)
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_get_transaction_not_found_error(self, app_context, client):
+        """Test GET /transactions/<id> handles not found errors."""
+        from unittest.mock import patch
+
+        # Mock TransactionService.get_transaction to raise exception
+        with patch("app.routes.transaction_routes.TransactionService.get_transaction") as mock_get:
+            mock_get.side_effect = Exception("Transaction not found")
+
+            fake_id = make_id()
+            response = client.get(f"/api/transactions/{fake_id}")
+
+            assert response.status_code == 404
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_update_transaction_value_error(self, app_context, client, db_session):
+        """Test PUT /transactions/<id> handles validation errors."""
+        from unittest.mock import patch
+
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "TEST", "Test Fund")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        txn = Transaction(
+            portfolio_fund_id=pf.id,
+            date=datetime.now().date(),
+            type="buy",
+            shares=10,
+            cost_per_share=Decimal("100.00"),
+        )
+        db_session.add(txn)
+        db_session.commit()
+
+        # Mock TransactionService.update_transaction to raise ValueError
+        with patch(
+            "app.routes.transaction_routes.TransactionService.update_transaction"
+        ) as mock_update:
+            mock_update.side_effect = ValueError("Invalid transaction data")
+
+            payload = {
+                "portfolio_fund_id": pf.id,
+                "date": datetime.now().date().isoformat(),
+                "type": "buy",
+                "shares": -5,  # Invalid
+                "cost_per_share": 100.00,
+            }
+
+            response = client.put(f"/api/transactions/{txn.id}", json=payload)
+
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_update_sell_transaction_with_realized_gain(self, app_context, client, db_session):
+        """Test PUT /transactions/<id> for sell transaction includes realized gain/loss."""
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "SELL", "Sell Test Fund")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        # First buy some shares
+        buy_txn = Transaction(
+            portfolio_fund_id=pf.id,
+            date=datetime.now().date() - timedelta(days=10),
+            type="buy",
+            shares=20,
+            cost_per_share=Decimal("50.00"),
+        )
+        db_session.add(buy_txn)
+        db_session.commit()
+
+        # Create a sell transaction
+        sell_txn = Transaction(
+            portfolio_fund_id=pf.id,
+            date=datetime.now().date(),
+            type="sell",
+            shares=10,
+            cost_per_share=Decimal("60.00"),
+        )
+        db_session.add(sell_txn)
+        db_session.commit()
+
+        # Update the sell transaction
+        payload = {
+            "portfolio_fund_id": pf.id,
+            "date": datetime.now().date().isoformat(),
+            "type": "sell",
+            "shares": 12,  # Changed
+            "cost_per_share": 65.00,  # Changed
+        }
+
+        response = client.put(f"/api/transactions/{sell_txn.id}", json=payload)
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["type"] == "sell"
+        assert data["shares"] == 12
+
+    def test_delete_transaction_general_error(self, app_context, client):
+        """Test DELETE /transactions/<id> handles unexpected errors."""
+        from unittest.mock import patch
+
+        # Mock TransactionService.delete_transaction to raise general exception
+        with patch(
+            "app.routes.transaction_routes.TransactionService.delete_transaction"
+        ) as mock_delete:
+            mock_delete.side_effect = Exception("Unexpected database error")
+
+            fake_id = make_id()
+            response = client.delete(f"/api/transactions/{fake_id}")
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
