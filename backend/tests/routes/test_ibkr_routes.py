@@ -333,7 +333,8 @@ class TestIBKRInbox:
         """
         Test DELETE /ibkr/inbox/<transaction_id> removes transaction.
 
-        WHY: Users need to permanently remove erroneous or duplicate transactions imported from IBKR.
+        WHY:
+        Users need to permanently remove erroneous or duplicate transactions imported from IBKR.
         Provides cleanup capability for data quality issues.
         """
         txn = IBKRTransaction(
@@ -432,7 +433,8 @@ class TestIBKRAllocation:
         """
         Test POST /ibkr/inbox/<transaction_id>/allocate allocates transaction.
 
-        WHY: Core business function that converts imported IBKR transactions into portfolio holdings.
+        WHY:
+        Core business function that converts imported IBKR transactions into portfolio holdings.
         Users must allocate transactions to track which portfolios contain which investments.
         """
         # Create fund and portfolio
@@ -478,7 +480,8 @@ class TestIBKRAllocation:
         """
         Test GET /ibkr/dividends/pending returns pending dividends.
 
-        WHY: Users need to see which dividend records await matching with IBKR dividend transactions.
+        WHY:
+        Users need to see which dividend records await matching with IBKR dividend transactions.
         Supports the workflow of tracking expected vs. actual dividend payments.
         """
         # Create fund, portfolio, and dividend
@@ -672,7 +675,8 @@ class TestIBKRAllocation:
         """
         Test PUT /ibkr/inbox/<transaction_id>/allocations updates allocations.
 
-        WHY: Users need to modify allocation percentages without fully unallocating and reallocating.
+        WHY:
+        Users need to modify allocation percentages without fully unallocating and reallocating.
         Supports adjusting portfolio splits (e.g., changing 100% portfolio A to 60% A / 40% B).
         """
         # Create 2 portfolios

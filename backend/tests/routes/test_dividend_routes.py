@@ -463,7 +463,7 @@ class TestDividendErrors:
         WHY: Portfolio dividend aggregation involves complex joins that may timeout or fail.
         Proper error handling prevents blank screens and provides users with clear feedback
         about service availability for their income tracking features.
-        """
+        """  # noqa: E501
         from unittest.mock import patch
 
         with patch(

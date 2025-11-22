@@ -2027,9 +2027,7 @@ class TestGetTransactionAllocations:
 class TestGroupedAllocations:
     """Tests for grouped allocation logic (combining stock and fee transactions)."""
 
-    def test_get_grouped_allocations_combines_stock_and_commission(
-        self, app_context, db_session
-    ):
+    def test_get_grouped_allocations_combines_stock_and_commission(self, app_context, db_session):
         """
         Verify that get_grouped_allocations combines stock and fee transactions per portfolio.
 
