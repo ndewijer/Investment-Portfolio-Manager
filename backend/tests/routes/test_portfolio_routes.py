@@ -60,7 +60,7 @@ class TestPortfolioListAndCreate:
 
         WHY: Users need complete visibility of all their portfolios to manage their investments
         effectively. This prevents data from being hidden and ensures the API returns consistent results.
-        """
+        """  # noqa: E501
         # Create 3 portfolios (2 active, 1 archived)
         p1 = Portfolio(name="Active Portfolio 1", description="First active")
         p2 = Portfolio(name="Active Portfolio 2", description="Second active")
@@ -755,7 +755,7 @@ class TestPortfolioErrors:
         WHY: Users need the ability to view all portfolios including those excluded from overview
         calculations for comprehensive portfolio management. This query parameter supports advanced
         filtering without requiring separate API endpoints.
-        """
+        """  # noqa: E501
         p1 = Portfolio(name="Normal", exclude_from_overview=False)
         p2 = Portfolio(name="Excluded", exclude_from_overview=True)
         db_session.add_all([p1, p2])
