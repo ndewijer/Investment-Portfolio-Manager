@@ -903,9 +903,74 @@ class IBKRTransactionService:
             return response, status
 
     @staticmethod
+    def get_grouped_allocations(transaction_id: str) -> list[dict]:
+        """
+        Get allocation details grouped by portfolio.
+
+        Groups stock and fee transactions for the same portfolio into a single record.
+        Each portfolio gets one allocation with:
+        - allocated_amount: Stock transaction amount
+        - allocated_shares: Number of shares
+        - allocated_commission: Fee transaction amount (0 if no commission)
+
+        Args:
+            transaction_id: IBKR Transaction ID
+
+        Returns:
+            List of allocation dictionaries grouped by portfolio
+        """
+        # Get all allocations for this transaction
+        allocations = IBKRTransactionAllocation.query.filter_by(
+            ibkr_transaction_id=transaction_id
+        ).all()
+
+        # Group allocations by portfolio
+        portfolio_allocations = {}
+        for allocation in allocations:
+            portfolio_id = allocation.portfolio_id
+
+            # Initialize portfolio entry if not exists
+            if portfolio_id not in portfolio_allocations:
+                portfolio_allocations[portfolio_id] = {
+                    "portfolio_id": portfolio_id,
+                    "portfolio_name": allocation.portfolio.name,
+                    "allocation_percentage": allocation.allocation_percentage,
+                    "allocated_amount": 0.0,
+                    "allocated_shares": 0.0,
+                    "allocated_commission": 0.0,
+                }
+
+            # Get the linked transaction to check its type
+            transaction = (
+                db.session.get(Transaction, allocation.transaction_id)
+                if allocation.transaction_id
+                else None
+            )
+
+            # Separate fee transactions from stock transactions
+            if transaction and transaction.type == "fee":
+                # This is a commission/fee allocation
+                portfolio_allocations[portfolio_id]["allocated_commission"] += (
+                    allocation.allocated_amount
+                )
+            else:
+                # This is a stock/buy/sell/dividend allocation
+                portfolio_allocations[portfolio_id]["allocated_amount"] += (
+                    allocation.allocated_amount
+                )
+                portfolio_allocations[portfolio_id]["allocated_shares"] += (
+                    allocation.allocated_shares
+                )
+
+        # Convert to list and return
+        return list(portfolio_allocations.values())
+
+    @staticmethod
     def get_transaction_allocations(transaction_id: str) -> tuple[dict, int]:
         """
         Get allocation details for a processed IBKR transaction.
+
+        Groups allocations by portfolio to combine stock and fee transactions.
 
         Args:
             transaction_id: IBKR Transaction ID
@@ -918,37 +983,14 @@ class IBKRTransactionService:
             if not ibkr_txn:
                 return {"error": "Transaction not found"}, 404
 
-            # Get all allocations
-            allocations = IBKRTransactionAllocation.query.filter_by(
-                ibkr_transaction_id=transaction_id
-            ).all()
-
-            allocation_details = []
-            for allocation in allocations:
-                transaction = (
-                    db.session.get(Transaction, allocation.transaction_id)
-                    if allocation.transaction_id
-                    else None
-                )
-
-                allocation_details.append(
-                    {
-                        "id": allocation.id,
-                        "portfolio_id": allocation.portfolio_id,
-                        "portfolio_name": allocation.portfolio.name,
-                        "allocation_percentage": allocation.allocation_percentage,
-                        "allocated_amount": allocation.allocated_amount,
-                        "allocated_shares": allocation.allocated_shares,
-                        "transaction_id": allocation.transaction_id,
-                        "transaction_date": transaction.date.isoformat() if transaction else None,
-                    }
-                )
+            # Get grouped allocations (combines stock and fee transactions per portfolio)
+            allocation_details = IBKRTransactionService.get_grouped_allocations(transaction_id)
 
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
                 message=f"Retrieved allocations for IBKR transaction {transaction_id}",
-                details={"allocation_count": len(allocation_details)},
+                details={"portfolio_count": len(allocation_details)},
             )
 
             return (
