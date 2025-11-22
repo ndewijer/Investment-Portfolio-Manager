@@ -33,7 +33,13 @@ class TestTransactionList:
     """Test transaction listing endpoints."""
 
     def test_list_transactions_empty(self, app_context, client):
-        """Test GET /transactions returns empty list when no transactions exist."""
+        """
+        Verify that transaction list endpoint returns empty array for new portfolios.
+
+        WHY: Users need to see an empty state rather than an error when they first create
+        a portfolio before adding transactions. Prevents confusion with 404 errors and
+        provides a consistent API contract that clients can rely on.
+        """
         response = client.get("/api/transactions")
 
         assert response.status_code == 200
@@ -42,7 +48,13 @@ class TestTransactionList:
         assert len(data) == 0
 
     def test_list_transactions_returns_all(self, app_context, client, db_session):
-        """Test GET /transactions returns all transactions."""
+        """
+        Verify that transaction list endpoint returns all transactions across portfolios.
+
+        WHY: Users need to view their complete transaction history to track all buy/sell
+        activity and calculate portfolio performance. This is critical for financial
+        record-keeping, tax reporting, and auditing investment decisions.
+        """
         # Create portfolio with fund and transactions
         portfolio = Portfolio(name="Test Portfolio")
         fund = create_fund("US", "AAPL", "Apple Inc")
@@ -81,7 +93,13 @@ class TestTransactionList:
         assert all("type" in t for t in data)
 
     def test_list_transactions_filtered_by_portfolio(self, app_context, client, db_session):
-        """Test GET /transactions?portfolio_id=<id> filters by portfolio."""
+        """
+        Verify that portfolio_id query parameter correctly filters transactions by portfolio.
+
+        WHY: Users with multiple portfolios need to isolate transactions by portfolio to
+        analyze individual portfolio performance without noise from other portfolios.
+        Prevents data leakage between portfolios and enables focused financial analysis.
+        """
         # Create two portfolios with different transactions
         p1 = Portfolio(name="Portfolio 1")
         p2 = Portfolio(name="Portfolio 2")
@@ -117,7 +135,13 @@ class TestTransactionCreate:
     """Test transaction creation."""
 
     def test_create_buy_transaction(self, app_context, client, db_session):
-        """Test POST /transactions creates a buy transaction."""
+        """
+        Verify that buy transactions can be created with required fields.
+
+        WHY: Buy transactions are the foundation of portfolio tracking. Users must be able
+        to record purchases to establish cost basis for tax calculations, performance metrics,
+        and compliance with investment tracking regulations.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "GOOGL", "Google")
         db_session.add_all([portfolio, fund])
@@ -149,7 +173,13 @@ class TestTransactionCreate:
         assert transaction.type == "buy"
 
     def test_create_sell_transaction(self, app_context, client, db_session):
-        """Test POST /transactions creates a sell transaction."""
+        """
+        Verify that sell transactions can be created and recorded properly.
+
+        WHY: Sell transactions trigger realized gain/loss calculations essential for tax
+        reporting and portfolio performance analysis. Accurate recording prevents tax
+        calculation errors that could cost users money or cause compliance issues.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "TSLA", "Tesla")
         db_session.add_all([portfolio, fund])
@@ -187,7 +217,13 @@ class TestTransactionCreate:
         assert data["shares"] == 10
 
     def test_create_dividend_transaction(self, app_context, client, db_session):
-        """Test POST /transactions creates a dividend transaction."""
+        """
+        Verify that dividend transactions can be recorded for income tracking.
+
+        WHY: Dividend income must be tracked separately for accurate tax reporting and
+        total return calculations. Missing dividend records would understate portfolio
+        performance and create tax reporting gaps.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "NVDA", "NVIDIA")
         db_session.add_all([portfolio, fund])
@@ -216,7 +252,13 @@ class TestTransactionRetrieveUpdateDelete:
     """Test individual transaction operations."""
 
     def test_get_transaction_detail(self, app_context, client, db_session):
-        """Test GET /transactions/<id> returns transaction details."""
+        """
+        Verify that individual transaction details can be retrieved by ID.
+
+        WHY: Users need to view individual transaction details to verify accuracy of data
+        entry and audit their financial records. Critical for catching data entry errors
+        before they propagate into tax calculations or performance reports.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "AMD", "AMD")
         db_session.add_all([portfolio, fund])
@@ -245,14 +287,26 @@ class TestTransactionRetrieveUpdateDelete:
         assert data["shares"] == 25
 
     def test_get_transaction_not_found(self, app_context, client):
-        """Test GET /transactions/<id> returns 404 for non-existent transaction."""
+        """
+        Verify that requesting a non-existent transaction returns 404 status.
+
+        WHY: Prevents system crashes when users request non-existent transactions (e.g.,
+        after deletion or with invalid/stale links). Provides clear error feedback instead
+        of confusing 500 errors, improving user experience and debugging.
+        """
         fake_id = make_id()
         response = client.get(f"/api/transactions/{fake_id}")
 
         assert response.status_code == 404
 
     def test_update_transaction(self, app_context, client, db_session):
-        """Test PUT /transactions/<id> updates transaction."""
+        """
+        Verify that existing transactions can be updated with new values.
+
+        WHY: Users need to correct data entry errors in transactions without deleting and
+        recreating them, which would break transaction history and audit trails. Essential
+        for maintaining data integrity while allowing error correction.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "INTC", "Intel")
         db_session.add_all([portfolio, fund])
@@ -292,7 +346,13 @@ class TestTransactionRetrieveUpdateDelete:
         assert txn.shares == 35
 
     def test_update_transaction_not_found(self, app_context, client):
-        """Test PUT /transactions/<id> returns 404 for non-existent transaction."""
+        """
+        Verify that updating a non-existent transaction returns 404 status.
+
+        WHY: Handles race conditions where a transaction is deleted while a user is trying
+        to update it. Provides clear error messaging rather than silent failures or
+        confusing application states.
+        """
         fake_id = make_id()
         payload = {
             "portfolio_fund_id": make_id(),
@@ -307,7 +367,13 @@ class TestTransactionRetrieveUpdateDelete:
         assert response.status_code == 404
 
     def test_delete_transaction(self, app_context, client, db_session):
-        """Test DELETE /transactions/<id> removes transaction."""
+        """
+        Verify that transactions can be permanently deleted from the system.
+
+        WHY: Users need to remove erroneous transactions to maintain accurate portfolio
+        records and prevent incorrect tax calculations. Essential for correcting mistakes
+        without corrupting historical data or portfolio state.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "META", "Meta")
         db_session.add_all([portfolio, fund])
@@ -337,7 +403,13 @@ class TestTransactionRetrieveUpdateDelete:
         assert deleted is None
 
     def test_delete_transaction_not_found(self, app_context, client):
-        """Test DELETE /transactions/<id> returns error for non-existent transaction."""
+        """
+        Verify that deleting a non-existent transaction returns 400 error.
+
+        WHY: Handles race conditions where multiple deletion requests occur or a user tries
+        to delete an already-deleted transaction. Prevents confusing error states and
+        provides clear feedback about the operation failure.
+        """
         fake_id = make_id()
         response = client.delete(f"/api/transactions/{fake_id}")
 
@@ -349,7 +421,13 @@ class TestTransactionErrors:
     """Test error paths for transaction routes."""
 
     def test_get_transactions_service_error(self, app_context, client):
-        """Test GET /transactions handles service errors."""
+        """
+        Verify that database errors during transaction listing return 500 with error message.
+
+        WHY: Database failures shouldn't crash the application or expose internal details.
+        Users need clear error messages when backend systems fail so they know the issue
+        isn't with their data, enabling proper troubleshooting and support.
+        """
         from unittest.mock import patch
 
         # Mock TransactionService.get_all_transactions to raise exception
@@ -365,7 +443,13 @@ class TestTransactionErrors:
             assert "error" in data or "message" in data
 
     def test_create_transaction_service_error(self, app_context, client, db_session):
-        """Test POST /transactions handles service errors."""
+        """
+        Verify that database errors during transaction creation return 500 with error message.
+
+        WHY: Database errors during transaction creation must be caught to prevent partial
+        writes that corrupt portfolio state. Users need to know when a transaction failed
+        to save so they can retry or seek support.
+        """
         from unittest.mock import patch
 
         portfolio = Portfolio(name="Test")
@@ -398,7 +482,13 @@ class TestTransactionErrors:
             assert "error" in data or "message" in data
 
     def test_get_transaction_not_found_error(self, app_context, client):
-        """Test GET /transactions/<id> handles not found errors."""
+        """
+        Verify that service exceptions when fetching transactions return 404 status.
+
+        WHY: Service-level exceptions when fetching transactions must return 404 rather
+        than 500 to distinguish between missing data vs system failures. This helps users
+        and support teams quickly identify whether data is missing or systems are down.
+        """
         from unittest.mock import patch
 
         # Mock TransactionService.get_transaction to raise exception
@@ -413,7 +503,13 @@ class TestTransactionErrors:
             assert "error" in data or "message" in data
 
     def test_update_transaction_value_error(self, app_context, client, db_session):
-        """Test PUT /transactions/<id> handles validation errors."""
+        """
+        Verify that validation errors during transaction update return 400 with error message.
+
+        WHY: Invalid data (like negative shares) must be rejected before database writes
+        to prevent data integrity violations. Protects against both user errors and
+        malicious inputs that could corrupt financial records.
+        """
         from unittest.mock import patch
 
         portfolio = Portfolio(name="Test")
@@ -456,7 +552,13 @@ class TestTransactionErrors:
             assert "error" in data or "message" in data
 
     def test_update_sell_transaction_with_realized_gain(self, app_context, client, db_session):
-        """Test PUT /transactions/<id> for sell transaction includes realized gain/loss."""
+        """
+        Verify that updating sell transactions correctly recalculates realized gains/losses.
+
+        WHY: Sell transactions must correctly calculate and store realized gains/losses
+        for accurate tax reporting. Incorrect calculations could lead to tax filing errors,
+        penalties, or audit issues. Updates must trigger recalculation.
+        """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "SELL", "Sell Test Fund")
         db_session.add_all([portfolio, fund])
@@ -505,7 +607,13 @@ class TestTransactionErrors:
         assert data["shares"] == 12
 
     def test_delete_transaction_general_error(self, app_context, client):
-        """Test DELETE /transactions/<id> handles unexpected errors."""
+        """
+        Verify that unexpected errors during deletion return 500 with error message.
+
+        WHY: Unexpected errors during deletion must be caught and reported properly to
+        prevent silent failures where users think a transaction was deleted but it remains
+        in the database, leading to incorrect portfolio calculations.
+        """
         from unittest.mock import patch
 
         # Mock TransactionService.delete_transaction to raise general exception
