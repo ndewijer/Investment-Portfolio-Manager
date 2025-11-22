@@ -32,3 +32,42 @@ class TestSystemRoutes:
         assert "database" in data
         # Database should be connected in test environment
         assert data["database"] == "connected"
+
+
+class TestSystemErrors:
+    """Test error paths for system routes."""
+
+    def test_get_version_info_service_error(self, app_context, client, monkeypatch):
+        """Test GET /system/version handles service errors."""
+
+        # Mock SystemService.get_version_info to raise exception
+        def mock_get_version():
+            raise Exception("Version file not found")
+
+        monkeypatch.setattr(
+            "app.routes.system_routes.SystemService.get_version_info",
+            mock_get_version,
+        )
+
+        response = client.get("/api/system/version")
+
+        assert response.status_code == 500
+        data = response.get_json()
+        assert "error" in data
+        assert "details" in data
+
+    def test_health_check_database_error(self, app_context, client):
+        """Test GET /system/health handles database connection errors."""
+        from unittest.mock import patch
+
+        # Mock db.session.execute to raise exception
+        with patch("app.routes.system_routes.db.session.execute") as mock_execute:
+            mock_execute.side_effect = Exception("Database connection failed")
+
+            response = client.get("/api/system/health")
+
+            assert response.status_code == 503
+            data = response.get_json()
+            assert data["status"] == "unhealthy"
+            assert data["database"] == "disconnected"
+            assert "error" in data
