@@ -412,13 +412,13 @@ def seed_database():
         level=LogLevel.INFO,
         category=LogCategory.SYSTEM,
         message="Database seeding completed",
-        details=f"{
+        details=str(
             {
-                'portfolios': {len(portfolios)},
-                'funds': {len(funds)},
-                'portfolio_funds': {len(portfolio_funds)},
+                "portfolios": len(portfolios),
+                "funds": len(funds),
+                "portfolio_funds": len(portfolio_funds),
             }
-        }",
+        ),
         source="seed_database",
         http_status=None,
     )
