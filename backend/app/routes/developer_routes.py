@@ -73,7 +73,7 @@ def get_exchange_rate():
             details={
                 "from_currency": from_currency,
                 "to_currency": to_currency,
-                "date": date.isoformat() if date else None,
+                "date": date.isoformat() if date and hasattr(date, "isoformat") else date,
                 "error": str(e),
             },
             http_status=500,
@@ -676,7 +676,7 @@ def get_fund_price(fund_id):
             message=f"Error retrieving fund price: {e!s}",
             details={
                 "fund_id": fund_id,
-                "date": date.isoformat() if date else None,
+                "date": date.isoformat() if date and hasattr(date, "isoformat") else date,
                 "error": str(e),
             },
             http_status=500,
