@@ -40,6 +40,109 @@ class IBKRTransactionService:
     """
 
     @staticmethod
+    def get_transaction(transaction_id: str) -> IBKRTransaction:
+        """
+        Retrieve an IBKR transaction by ID.
+
+        Args:
+            transaction_id: Transaction ID
+
+        Returns:
+            IBKRTransaction: The transaction object
+
+        Raises:
+            404: If transaction not found
+        """
+        txn = db.session.get(IBKRTransaction, transaction_id)
+        if not txn:
+            from flask import abort
+
+            abort(404)
+        return txn
+
+    @staticmethod
+    def ignore_transaction(transaction_id: str) -> tuple[dict, int]:
+        """
+        Mark an IBKR transaction as ignored.
+
+        Args:
+            transaction_id: Transaction ID
+
+        Returns:
+            tuple: (response dict, status code)
+        """
+        txn = IBKRTransactionService.get_transaction(transaction_id)
+
+        if txn.status == "processed":
+            return {"error": "Cannot ignore processed transaction"}, 400
+
+        try:
+            txn.status = "ignored"
+            txn.processed_at = datetime.now()
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Transaction marked as ignored: {txn.ibkr_transaction_id}",
+                details={"transaction_id": transaction_id},
+            )
+
+            return {"success": True, "message": "Transaction marked as ignored"}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to ignore transaction",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": "Failed to ignore transaction", "details": str(e)}, 500
+
+    @staticmethod
+    def delete_transaction(transaction_id: str) -> tuple[dict, int]:
+        """
+        Delete an IBKR transaction (only if not processed).
+
+        Args:
+            transaction_id: Transaction ID
+
+        Returns:
+            tuple: (response dict, status code)
+        """
+        txn = IBKRTransactionService.get_transaction(transaction_id)
+
+        if txn.status == "processed":
+            return {"error": "Cannot delete processed transaction"}, 400
+
+        try:
+            # Store transaction ID before deletion for logging
+            ibkr_transaction_id = txn.ibkr_transaction_id
+
+            db.session.delete(txn)
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Transaction deleted: {ibkr_transaction_id}",
+                details={"transaction_id": transaction_id},
+            )
+
+            return {"success": True, "message": "Transaction deleted"}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to delete transaction",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": "Failed to delete transaction", "details": str(e)}, 500
+
+    @staticmethod
     def validate_allocations(allocations: list[dict]) -> tuple[bool, str]:
         """
         Validate that allocations sum to 100%.
@@ -662,67 +765,207 @@ class IBKRTransactionService:
             return {"success": False, "error": f"Matching failed: {e!s}"}
 
     @staticmethod
-    def get_grouped_allocations(transaction_id: str) -> list[dict]:
+    def get_inbox(status: str = "pending", transaction_type: str | None = None) -> list[dict]:
         """
-        Get allocation details grouped by portfolio.
+        Get IBKR inbox transactions with optional filtering.
 
-        Groups stock and fee transactions for the same portfolio into a single record.
-        Each portfolio gets one allocation with:
-        - allocated_amount: Stock transaction amount
-        - allocated_shares: Number of shares
-        - allocated_commission: Fee transaction amount (0 if no commission)
+        Args:
+            status: Filter by status (default: "pending")
+            transaction_type: Filter by transaction type (optional)
+
+        Returns:
+            list[dict]: List of transaction dictionaries with serialized data
+        """
+        query = IBKRTransaction.query
+
+        # Apply status filter
+        if status:
+            query = query.filter_by(status=status)
+
+        # Apply transaction type filter
+        if transaction_type:
+            query = query.filter_by(transaction_type=transaction_type)
+
+        # Order by date descending
+        transactions = query.order_by(IBKRTransaction.transaction_date.desc()).all()
+
+        return [
+            {
+                "id": txn.id,
+                "ibkr_transaction_id": txn.ibkr_transaction_id,
+                "transaction_date": txn.transaction_date.isoformat(),
+                "symbol": txn.symbol,
+                "isin": txn.isin,
+                "description": txn.description,
+                "transaction_type": txn.transaction_type,
+                "quantity": txn.quantity,
+                "price": txn.price,
+                "total_amount": txn.total_amount,
+                "currency": txn.currency,
+                "fees": txn.fees,
+                "status": txn.status,
+                "imported_at": txn.imported_at.isoformat(),
+            }
+            for txn in transactions
+        ]
+
+    @staticmethod
+    def get_inbox_count(status: str = "pending") -> int:
+        """
+        Get count of IBKR transactions by status.
+
+        Args:
+            status: Filter by status (default: "pending")
+
+        Returns:
+            int: Count of transactions matching the status
+        """
+        return IBKRTransaction.query.filter_by(status=status).count()
+
+    @staticmethod
+    def unallocate_transaction(transaction_id: str) -> tuple[dict, int]:
+        """
+        Unallocate a processed IBKR transaction.
+
+        This deletes all portfolio transactions and allocations,
+        reverting the IBKR transaction status to pending.
 
         Args:
             transaction_id: IBKR Transaction ID
 
         Returns:
-            List of allocation dictionaries grouped by portfolio
-
-        Raises:
-            ValueError: If transaction not found
+            tuple: (response dict, status code)
         """
-        # Get all allocations for this transaction
-        allocations = IBKRTransactionAllocation.query.filter_by(
-            ibkr_transaction_id=transaction_id
-        ).all()
+        try:
+            ibkr_txn = db.session.get(IBKRTransaction, transaction_id)
+            if not ibkr_txn:
+                return {"error": "Transaction not found"}, 404
 
-        # Group allocations by portfolio
-        portfolio_allocations = {}
-        for allocation in allocations:
-            portfolio_id = allocation.portfolio_id
+            if ibkr_txn.status != "processed":
+                return {"error": "Transaction is not processed"}, 400
 
-            # Initialize portfolio entry if not exists
-            if portfolio_id not in portfolio_allocations:
-                portfolio_allocations[portfolio_id] = {
-                    "portfolio_id": portfolio_id,
-                    "portfolio_name": allocation.portfolio.name,
-                    "allocation_percentage": allocation.allocation_percentage,
-                    "allocated_amount": 0.0,
-                    "allocated_shares": 0.0,
-                    "allocated_commission": 0.0,
-                }
+            # Get all allocations
+            allocations = IBKRTransactionAllocation.query.filter_by(
+                ibkr_transaction_id=transaction_id
+            ).all()
 
-            # Get the linked transaction to check its type
-            transaction = (
-                db.session.get(Transaction, allocation.transaction_id)
-                if allocation.transaction_id
-                else None
+            deleted_count = 0
+
+            # Delete all associated transactions - CASCADE will handle allocations
+            for allocation in allocations:
+                if allocation.transaction_id:
+                    transaction = db.session.get(Transaction, allocation.transaction_id)
+                    if transaction:
+                        # Delete transaction - CASCADE DELETE will automatically
+                        # delete the corresponding ibkr_transaction_allocation record
+                        db.session.delete(transaction)
+                        deleted_count += 1
+                else:
+                    # Delete orphaned allocations (allocations without transactions)
+                    db.session.delete(allocation)
+
+            # Revert IBKR transaction status
+            ibkr_txn.status = "pending"
+            ibkr_txn.processed_at = None
+
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Unallocated IBKR transaction: {ibkr_txn.ibkr_transaction_id}",
+                details={
+                    "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
+                    "deleted_transactions": deleted_count,
+                },
             )
 
-            # Separate fee transactions from stock transactions
-            if transaction and transaction.type == "fee":
-                # This is a commission/fee allocation
-                portfolio_allocations[portfolio_id]["allocated_commission"] += (
-                    allocation.allocated_amount
-                )
-            else:
-                # This is a stock/buy/sell/dividend allocation
-                portfolio_allocations[portfolio_id]["allocated_amount"] += (
-                    allocation.allocated_amount
-                )
-                portfolio_allocations[portfolio_id]["allocated_shares"] += (
-                    allocation.allocated_shares
+            return (
+                {
+                    "success": True,
+                    "message": (
+                        f"Transaction unallocated successfully. "
+                        f"{deleted_count} portfolio transactions deleted."
+                    ),
+                },
+                200,
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            response, status = logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to unallocate transaction",
+                details={"transaction_id": transaction_id, "error": str(e)},
+                http_status=500,
+            )
+            return response, status
+
+    @staticmethod
+    def get_transaction_allocations(transaction_id: str) -> tuple[dict, int]:
+        """
+        Get allocation details for a processed IBKR transaction.
+
+        Args:
+            transaction_id: IBKR Transaction ID
+
+        Returns:
+            tuple: (response dict with allocation details, status code)
+        """
+        try:
+            ibkr_txn = db.session.get(IBKRTransaction, transaction_id)
+            if not ibkr_txn:
+                return {"error": "Transaction not found"}, 404
+
+            # Get all allocations
+            allocations = IBKRTransactionAllocation.query.filter_by(
+                ibkr_transaction_id=transaction_id
+            ).all()
+
+            allocation_details = []
+            for allocation in allocations:
+                transaction = (
+                    db.session.get(Transaction, allocation.transaction_id)
+                    if allocation.transaction_id
+                    else None
                 )
 
-        # Convert to list and return
-        return list(portfolio_allocations.values())
+                allocation_details.append(
+                    {
+                        "id": allocation.id,
+                        "portfolio_id": allocation.portfolio_id,
+                        "portfolio_name": allocation.portfolio.name,
+                        "allocation_percentage": allocation.allocation_percentage,
+                        "allocated_amount": allocation.allocated_amount,
+                        "allocated_shares": allocation.allocated_shares,
+                        "transaction_id": allocation.transaction_id,
+                        "transaction_date": transaction.date.isoformat() if transaction else None,
+                    }
+                )
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Retrieved allocations for IBKR transaction {transaction_id}",
+                details={"allocation_count": len(allocation_details)},
+            )
+
+            return (
+                {
+                    "ibkr_transaction_id": ibkr_txn.id,
+                    "status": ibkr_txn.status,
+                    "allocations": allocation_details,
+                },
+                200,
+            )
+
+        except Exception as e:
+            response, status = logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to retrieve allocations",
+                details={"transaction_id": transaction_id, "error": str(e)},
+                http_status=500,
+            )
+            return response, status

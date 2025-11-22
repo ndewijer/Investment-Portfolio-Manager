@@ -2,10 +2,11 @@
 
 **File**: `tests/test_ibkr_transaction_service.py`\
 **Service**: `app/services/ibkr_transaction_service.py`\
-**Tests**: 50 tests\
-**Coverage**: 90% (199/222 statements)\
+**Tests**: 60 tests\
+**Coverage**: 87% (261/299 statements)\
 **Bugs Fixed**: 1 critical (ReinvestmentStatus enum)\
-**Created**: Version 1.3.3 (Phase 4, 5, 6)
+**Created**: Version 1.3.3 (Phase 4, 5)\
+**Phase 2b Addition**: 15 tests for inbox and allocation retrieval methods
 
 ## Overview
 
@@ -95,13 +96,32 @@ Tests commission/fee allocation functionality (Version 1.3.3 Phase 5):
 - `test_fee_transaction_linked_to_ibkr` - Fee transactions linked via IBKRTransactionAllocation
 - `test_fee_transaction_linked_to_ibkr_split_allocation` - Fee allocations in split transactions
 
-#### 8. TestGroupedAllocations (5 tests)
-Tests grouped allocation retrieval functionality (Version 1.3.3 Phase 6):
-- `test_get_grouped_allocations_no_commission_single_portfolio` - Single portfolio without commission
-- `test_get_grouped_allocations_with_commission_single_portfolio` - Single portfolio with commission (combines stock + fee)
-- `test_get_grouped_allocations_with_commission_multiple_portfolios` - Multiple portfolios with commission (60/40 split)
-- `test_get_grouped_allocations_no_allocations` - Empty list for unprocessed transaction
-- `test_get_grouped_allocations_three_way_split` - Three-way split with fractional amounts and rounding
+#### 8. TestGetInbox (5 tests)
+Tests `get_inbox()` method for retrieving IBKR inbox transactions (Version 1.3.3 Phase 2b):
+- `test_get_inbox_default_pending` - Returns pending transactions by default, ordered by date desc
+- `test_get_inbox_filter_by_status` - Filters transactions by status (pending, processed, ignored)
+- `test_get_inbox_filter_by_transaction_type` - Filters by transaction type (buy, sell, dividend)
+- `test_get_inbox_empty` - Returns empty list when no transactions match
+- `test_get_inbox_response_format` - Validates serialized transaction data structure
+
+#### 9. TestGetInboxCount (3 tests)
+Tests `get_inbox_count()` method for counting transactions by status (Version 1.3.3 Phase 2b):
+- `test_get_inbox_count_default_pending` - Counts pending transactions by default
+- `test_get_inbox_count_filter_by_status` - Counts transactions by specific status
+- `test_get_inbox_count_zero` - Returns 0 when no transactions match
+
+#### 10. TestUnallocateTransaction (4 tests)
+Tests `unallocate_transaction()` method for removing allocations (Version 1.3.3 Phase 2b):
+- `test_unallocate_transaction_with_transactions` - Deletes allocations and portfolio transactions, reverts status to pending
+- `test_unallocate_transaction_orphaned_allocations` - Handles orphaned allocations without transaction_id
+- `test_unallocate_transaction_not_found` - Returns 404 for non-existent transaction
+- `test_unallocate_transaction_not_processed` - Returns 400 when transaction is not processed
+
+#### 11. TestGetTransactionAllocations (3 tests)
+Tests `get_transaction_allocations()` method for retrieving allocation details (Version 1.3.3 Phase 2b):
+- `test_get_transaction_allocations` - Returns allocation details with portfolio info and transaction dates
+- `test_get_transaction_allocations_no_allocations` - Returns empty allocations list for unallocated transaction
+- `test_get_transaction_allocations_not_found` - Returns 404 for non-existent transaction
 
 ## Critical Bug Discovery
 

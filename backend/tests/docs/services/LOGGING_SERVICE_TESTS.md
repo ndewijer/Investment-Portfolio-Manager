@@ -2,14 +2,15 @@
 
 **Service**: `app/services/logging_service.py` \
 **Test File**: `tests/services/test_logging_service.py` \
-**Coverage**: 98% (26 tests) \
-**Status**: ✅ Complete
+**Coverage**: 98% (37 tests) \
+**Status**: ✅ Complete \
+**Updated**: Phase 2c - Service Layer Refactoring
 
 ---
 
 ## Overview
 
-The **LoggingService** provides comprehensive logging functionality with both database and file logging, system settings integration, and request tracking capabilities.
+The **LoggingService** provides comprehensive logging functionality with both database and file logging, system settings integration, request tracking, and log management capabilities.
 
 ### What This Service Does
 
@@ -18,6 +19,7 @@ The **LoggingService** provides comprehensive logging functionality with both da
 3. **Request Tracking**: Context-aware logging with request IDs, IP addresses, and user agents
 4. **Error Handling**: Graceful fallback to file logging when database is unavailable
 5. **Automatic Stack Traces**: Automatic stack trace capture for ERROR and CRITICAL levels
+6. **Log Management**: Retrieve, filter, paginate, and clear system logs via service methods
 
 ### Test Suite Scope
 
@@ -28,6 +30,9 @@ The **LoggingService** provides comprehensive logging functionality with both da
 - Helper methods and level conversion (1 test)
 - Singleton logger instance behavior (2 tests)
 - Request tracking decorator functionality (5 tests)
+- **[Phase 2c]** Logging settings management (4 tests)
+- **[Phase 2c]** Log retrieval with filtering and pagination (6 tests)
+- **[Phase 2c]** Log clearing functionality (2 tests)
 
 **Critical Bug Found**: CRITICAL level was returning HTTP 200 instead of 500 (discovered and fixed).
 
@@ -44,6 +49,10 @@ class TestLogMethod:                  # 11 tests - Core logging functionality
 class TestGetLoggingLevel:            # 1 test - Level conversion utility
 class TestSingletonLogger:            # 2 tests - Singleton behavior
 class TestTrackRequestDecorator:      # 5 tests - Request tracking decorator
+class TestGetLoggingSettings:         # 2 tests - [Phase 2c] Get logging configuration
+class TestUpdateLoggingSettings:      # 2 tests - [Phase 2c] Update logging configuration
+class TestGetLogs:                    # 6 tests - [Phase 2c] Retrieve and filter logs
+class TestClearLogs:                  # 2 tests - [Phase 2c] Clear log database
 ```
 
 ### Testing Approach
@@ -320,6 +329,96 @@ Request tracking decorator functionality.
 **Expected**: Exception propagates normally, request ID still set \
 **Why**: Request tracking should work even when functions fail
 
+### TestGetLoggingSettings (2 tests) - Phase 2c
+
+Logging configuration retrieval.
+
+#### Test 27: `test_get_logging_settings_with_existing_settings`
+**Purpose**: Verify retrieval of existing logging settings \
+**Test Data**:
+- LOGGING_ENABLED="false"
+- LOGGING_LEVEL="debug"
+**Expected**: Returns dict with enabled=False, level="debug" \
+**Why**: Confirms settings retrieval from database
+
+#### Test 28: `test_get_logging_settings_with_defaults`
+**Purpose**: Verify default settings when none exist \
+**Test Data**: No SystemSetting records \
+**Expected**: Returns dict with enabled=True (default), level="info" (default) \
+**Why**: Tests sensible defaults for new installations
+
+### TestUpdateLoggingSettings (2 tests) - Phase 2c
+
+Logging configuration updates.
+
+#### Test 29: `test_update_logging_settings_creates_new`
+**Purpose**: Verify creating new logging settings \
+**Test Data**: enabled=False, level="error" \
+**Expected**: Creates new SystemSetting records, returns updated config \
+**Why**: Tests initial configuration setup
+
+#### Test 30: `test_update_logging_settings_updates_existing`
+**Purpose**: Verify updating existing logging settings \
+**Test Data**: Change existing settings from true/info to false/debug \
+**Expected**: Database records updated with new values \
+**Why**: Confirms settings updates persist correctly
+
+### TestGetLogs (6 tests) - Phase 2c
+
+Log retrieval with filtering, sorting, and pagination.
+
+#### Test 31: `test_get_logs_basic`
+**Purpose**: Verify basic log retrieval \
+**Test Data**: 2 logs with unique source \
+**Expected**: Returns dict with logs, total, pages, current_page keys \
+**Why**: Tests core log retrieval functionality
+
+#### Test 32: `test_get_logs_with_level_filter`
+**Purpose**: Verify filtering logs by level \
+**Test Data**: ERROR and INFO logs \
+**Expected**: When filtering by "error", only ERROR logs returned \
+**Why**: Tests level-based filtering (case-insensitive)
+
+#### Test 33: `test_get_logs_with_category_filter`
+**Purpose**: Verify filtering logs by category \
+**Test Data**: FUND and SYSTEM category logs \
+**Expected**: When filtering by "fund", only FUND logs returned \
+**Why**: Tests category-based filtering (case-insensitive)
+
+#### Test 34: `test_get_logs_with_pagination`
+**Purpose**: Verify log pagination \
+**Test Data**: 15 logs with page=1, per_page=10 \
+**Expected**: Returns first page with max 10 items, correct pagination metadata \
+**Why**: Tests SQLAlchemy 2.0 pagination integration
+
+#### Test 35: `test_get_logs_with_sorting`
+**Purpose**: Verify log sorting \
+**Test Data**: 3 logs sorted by timestamp asc/desc \
+**Expected**: Both sort directions return results successfully \
+**Why**: Tests SQLAlchemy 2.0 ordering functionality
+
+#### Test 36: `test_get_logs_with_filters` (Integration Test)
+**Purpose**: Verify combined filtering by level and source \
+**Test Data**: ERROR and INFO logs with unique source \
+**Expected**: Filtering by level="error" and source returns only matching logs \
+**Why**: Tests filter combination and unique source isolation
+
+### TestClearLogs (2 tests) - Phase 2c
+
+Log database clearing.
+
+#### Test 37: `test_clear_logs_removes_all_logs`
+**Purpose**: Verify all logs are deleted \
+**Test Data**: 5 logs with source="test_clear" \
+**Expected**: After clear_logs(), count for test_clear is 0 \
+**Why**: Tests SQLAlchemy 2.0 delete() statement
+
+#### Test 38: `test_clear_logs_empty_database`
+**Purpose**: Verify clear_logs when database is empty \
+**Test Data**: Empty log table \
+**Expected**: No error raised, count remains 0 \
+**Why**: Tests edge case of clearing empty database
+
 ---
 
 ## Coverage Analysis
@@ -468,8 +567,9 @@ pytest tests/services/test_logging_service.py::TestLogMethod::test_log_handles_d
 
 ---
 
-**Last Updated**: v1.3.3 (Phase 4) \
-**Test Count**: 26 tests \
+**Last Updated**: v1.3.3 (Phase 2c - Service Layer Refactoring) \
+**Test Count**: 37 tests (26 original + 11 Phase 2c) \
 **Coverage**: 98% \
 **Status**: Complete ✅ \
-**Critical Bug Fixed**: 1 (CRITICAL level HTTP status)
+**Critical Bug Fixed**: 1 (CRITICAL level HTTP status) \
+**Phase 2c Additions**: 4 new service methods (get_logging_settings, update_logging_settings, get_logs, clear_logs)

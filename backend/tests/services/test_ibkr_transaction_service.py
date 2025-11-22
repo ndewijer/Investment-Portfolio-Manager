@@ -1414,228 +1414,610 @@ class TestCommissionAllocation:
         assert portfolio_b_fee_txn.cost_per_share == 1.20  # 40% of $3.00
 
 
-class TestGroupedAllocations:
-    """Tests for get_grouped_allocations method."""
+class TestTransactionManagement:
+    """Tests for transaction management methods (get, ignore, delete)."""
 
-    def test_get_grouped_allocations_no_commission_single_portfolio(
-        self, app_context, db_session, sample_portfolio
+    def test_get_transaction_success(self, app_context, db_session, sample_ibkr_transaction):
+        """Test get_transaction retrieves existing transaction."""
+        txn = IBKRTransactionService.get_transaction(sample_ibkr_transaction.id)
+
+        assert txn is not None
+        assert txn.id == sample_ibkr_transaction.id
+        assert txn.symbol == sample_ibkr_transaction.symbol
+
+    def test_get_transaction_not_found(self, app_context, db_session):
+        """Test get_transaction raises 404 for non-existent transaction."""
+        fake_id = make_id()
+
+        # Flask abort() raises werkzeug HTTPException
+        from werkzeug.exceptions import NotFound
+
+        with pytest.raises(NotFound):
+            IBKRTransactionService.get_transaction(fake_id)
+
+    def test_ignore_transaction_success(self, app_context, db_session, sample_ibkr_transaction):
+        """Test ignore_transaction marks transaction as ignored."""
+        response, status = IBKRTransactionService.ignore_transaction(sample_ibkr_transaction.id)
+
+        assert status == 200
+        assert response["success"] is True
+        assert "ignored" in response["message"]
+
+        # Verify transaction status updated
+        db_session.refresh(sample_ibkr_transaction)
+        assert sample_ibkr_transaction.status == "ignored"
+        assert sample_ibkr_transaction.processed_at is not None
+
+    def test_ignore_transaction_already_processed(
+        self, app_context, db_session, sample_ibkr_transaction
     ):
-        """Test grouped allocations with no commission allocated to single portfolio."""
-        # Create transaction with zero fees
-        ibkr_txn = IBKRTransaction(
-            id=make_id(),
+        """Test ignore_transaction rejects already-processed transaction."""
+        # Mark as processed
+        sample_ibkr_transaction.status = "processed"
+        db_session.commit()
+
+        response, status = IBKRTransactionService.ignore_transaction(sample_ibkr_transaction.id)
+
+        assert status == 400
+        assert "error" in response
+        assert "processed" in response["error"]
+
+        # Status should remain processed
+        db_session.refresh(sample_ibkr_transaction)
+        assert sample_ibkr_transaction.status == "processed"
+
+    def test_ignore_transaction_not_found(self, app_context, db_session):
+        """Test ignore_transaction handles non-existent transaction."""
+        fake_id = make_id()
+
+        from werkzeug.exceptions import NotFound
+
+        with pytest.raises(NotFound):
+            IBKRTransactionService.ignore_transaction(fake_id)
+
+    def test_delete_transaction_success(self, app_context, db_session, sample_ibkr_transaction):
+        """Test delete_transaction removes transaction."""
+        transaction_id = sample_ibkr_transaction.id
+
+        response, status = IBKRTransactionService.delete_transaction(transaction_id)
+
+        assert status == 200
+        assert response["success"] is True
+        assert "deleted" in response["message"]
+
+        # Verify transaction deleted
+        deleted = db.session.get(IBKRTransaction, transaction_id)
+        assert deleted is None
+
+    def test_delete_transaction_already_processed(
+        self, app_context, db_session, sample_ibkr_transaction
+    ):
+        """Test delete_transaction rejects already-processed transaction."""
+        # Mark as processed
+        sample_ibkr_transaction.status = "processed"
+        db_session.commit()
+
+        response, status = IBKRTransactionService.delete_transaction(sample_ibkr_transaction.id)
+
+        assert status == 400
+        assert "error" in response
+        assert "processed" in response["error"]
+
+        # Transaction should still exist
+        txn = db.session.get(IBKRTransaction, sample_ibkr_transaction.id)
+        assert txn is not None
+
+    def test_delete_transaction_not_found(self, app_context, db_session):
+        """Test delete_transaction handles non-existent transaction."""
+        fake_id = make_id()
+
+        from werkzeug.exceptions import NotFound
+
+        with pytest.raises(NotFound):
+            IBKRTransactionService.delete_transaction(fake_id)
+
+
+class TestGetInbox:
+    """Tests for get_inbox() - Retrieve IBKR inbox transactions with filtering."""
+
+    def test_get_inbox_default_pending(self, app_context, db_session):
+        """Test get_inbox returns pending transactions by default."""
+        # Create transactions with different statuses
+        txn1 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
-            transaction_date=date(2025, 1, 15),
+            transaction_date=date(2024, 1, 1),
             symbol="AAPL",
-            isin="US0378331005",
+            description="Apple Inc",
             transaction_type="buy",
-            quantity=100,
-            price=150.00,
-            total_amount=15000.00,
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
             currency="USD",
-            fees=0,
             status="pending",
-            raw_data="{}",
         )
-        db.session.add(ibkr_txn)
+        txn2 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 2),
+            symbol="GOOGL",
+            description="Google",
+            transaction_type="buy",
+            quantity=5,
+            price=2000.0,
+            total_amount=10000.0,
+            currency="USD",
+            status="processed",
+        )
+        txn3 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 3),
+            symbol="MSFT",
+            description="Microsoft",
+            transaction_type="buy",
+            quantity=20,
+            price=300.0,
+            total_amount=6000.0,
+            currency="USD",
+            status="pending",
+        )
+        db.session.add_all([txn1, txn2, txn3])
         db.session.commit()
 
-        # Process allocation
-        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
-        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+        result = IBKRTransactionService.get_inbox()
 
-        # Get grouped allocations
-        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
-
-        # Should return 1 grouped allocation
-        assert len(result) == 1
-
-        # Verify the allocation details
-        alloc = result[0]
-        assert alloc["portfolio_id"] == sample_portfolio.id
-        assert alloc["portfolio_name"] == "Test Portfolio"
-        assert alloc["allocation_percentage"] == 100.0
-        assert alloc["allocated_amount"] == 15000.00
-        assert alloc["allocated_shares"] == 100.0
-        assert alloc["allocated_commission"] == 0.0
-
-    def test_get_grouped_allocations_with_commission_single_portfolio(
-        self, app_context, db_session, sample_portfolio
-    ):
-        """Test grouped allocations combines stock and fee for single portfolio."""
-        # Create transaction with commission
-        ibkr_txn = IBKRTransaction(
-            id=make_id(),
-            ibkr_transaction_id=make_ibkr_txn_id(),
-            transaction_date=date(2025, 1, 15),
-            symbol="AAPL",
-            isin="US0378331005",
-            transaction_type="buy",
-            quantity=100,
-            price=150.00,
-            total_amount=15000.00,
-            currency="USD",
-            fees=1.50,
-            status="pending",
-            raw_data="{}",
-        )
-        db.session.add(ibkr_txn)
-        db.session.commit()
-
-        # Process allocation
-        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
-        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
-
-        # Get grouped allocations
-        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
-
-        # Should return 1 grouped allocation (stock + fee combined)
-        assert len(result) == 1
-
-        # Verify the allocation combines stock and fee
-        alloc = result[0]
-        assert alloc["portfolio_id"] == sample_portfolio.id
-        assert alloc["portfolio_name"] == "Test Portfolio"
-        assert alloc["allocation_percentage"] == 100.0
-        assert alloc["allocated_amount"] == 15000.00  # Stock amount
-        assert alloc["allocated_shares"] == 100.0  # Stock shares
-        assert alloc["allocated_commission"] == 1.50  # Fee amount
-
-    def test_get_grouped_allocations_with_commission_multiple_portfolios(
-        self, app_context, db_session, sample_portfolio, second_portfolio
-    ):
-        """Test grouped allocations combines stock and fee for multiple portfolios."""
-        # Create transaction with commission
-        ibkr_txn = IBKRTransaction(
-            id=make_id(),
-            ibkr_transaction_id=make_ibkr_txn_id(),
-            transaction_date=date(2025, 1, 15),
-            symbol="AAPL",
-            isin="US0378331005",
-            transaction_type="buy",
-            quantity=100,
-            price=150.00,
-            total_amount=15000.00,
-            currency="USD",
-            fees=3.00,
-            status="pending",
-            raw_data="{}",
-        )
-        db.session.add(ibkr_txn)
-        db.session.commit()
-
-        # Process 60/40 split
-        allocations = [
-            {"portfolio_id": sample_portfolio.id, "percentage": 60.0},
-            {"portfolio_id": second_portfolio.id, "percentage": 40.0},
-        ]
-        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
-
-        # Get grouped allocations
-        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
-
-        # Should return 2 grouped allocations (one per portfolio)
         assert len(result) == 2
+        assert all(txn["status"] == "pending" for txn in result)
+        # Should be ordered by transaction_date descending
+        assert result[0]["symbol"] == "MSFT"  # Jan 3
+        assert result[1]["symbol"] == "AAPL"  # Jan 1
 
-        # Find allocations by portfolio
-        alloc_a = next(a for a in result if a["portfolio_id"] == sample_portfolio.id)
-        alloc_b = next(a for a in result if a["portfolio_id"] == second_portfolio.id)
-
-        # Verify first portfolio (60%)
-        assert alloc_a["portfolio_name"] == "Test Portfolio"
-        assert alloc_a["allocation_percentage"] == 60.0
-        assert alloc_a["allocated_amount"] == 9000.00  # 60% of $15,000
-        assert alloc_a["allocated_shares"] == 60.0  # 60% of 100 shares
-        assert alloc_a["allocated_commission"] == 1.80  # 60% of $3.00
-
-        # Verify second portfolio (40%)
-        assert alloc_b["portfolio_name"] == "Second Portfolio"
-        assert alloc_b["allocation_percentage"] == 40.0
-        assert alloc_b["allocated_amount"] == 6000.00  # 40% of $15,000
-        assert alloc_b["allocated_shares"] == 40.0  # 40% of 100 shares
-        assert alloc_b["allocated_commission"] == 1.20  # 40% of $3.00
-
-    def test_get_grouped_allocations_no_allocations(self, app_context, db_session):
-        """Test grouped allocations returns empty list for unprocessed transaction."""
-        # Create unprocessed transaction
-        ibkr_txn = IBKRTransaction(
-            id=make_id(),
+    def test_get_inbox_filter_by_status(self, app_context, db_session):
+        """Test get_inbox filters by status."""
+        txn1 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
-            transaction_date=date(2025, 1, 15),
+            transaction_date=date(2024, 1, 1),
             symbol="AAPL",
-            isin="US0378331005",
+            description="Apple Inc",
             transaction_type="buy",
-            quantity=100,
-            price=150.00,
-            total_amount=15000.00,
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
             currency="USD",
-            fees=1.50,
-            status="pending",
-            raw_data="{}",
+            status="ignored",
         )
-        db.session.add(ibkr_txn)
+        txn2 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 2),
+            symbol="GOOGL",
+            description="Google",
+            transaction_type="buy",
+            quantity=5,
+            price=2000.0,
+            total_amount=10000.0,
+            currency="USD",
+            status="pending",
+        )
+        db.session.add_all([txn1, txn2])
         db.session.commit()
 
-        # Get grouped allocations without processing
-        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+        result = IBKRTransactionService.get_inbox(status="ignored")
 
-        # Should return empty list
-        assert len(result) == 0
+        assert len(result) == 1
+        assert result[0]["symbol"] == "AAPL"
+        assert result[0]["status"] == "ignored"
 
-    def test_get_grouped_allocations_three_way_split(
-        self, app_context, db_session, sample_portfolio, second_portfolio
+    def test_get_inbox_filter_by_transaction_type(self, app_context, db_session):
+        """Test get_inbox filters by transaction type."""
+        txn1 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 1),
+            symbol="AAPL",
+            description="Apple Inc",
+            transaction_type="buy",
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
+            currency="USD",
+            status="pending",
+        )
+        txn2 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 2),
+            symbol="AAPL",
+            description="Apple Dividend",
+            transaction_type="dividend",
+            quantity=0,
+            price=0.0,
+            total_amount=50.0,
+            currency="USD",
+            status="pending",
+        )
+        db.session.add_all([txn1, txn2])
+        db.session.commit()
+
+        result = IBKRTransactionService.get_inbox(transaction_type="dividend")
+
+        assert len(result) == 1
+        assert result[0]["transaction_type"] == "dividend"
+
+    def test_get_inbox_empty(self, app_context, db_session):
+        """Test get_inbox returns empty list when no transactions match."""
+        result = IBKRTransactionService.get_inbox(status="pending")
+
+        assert result == []
+
+    def test_get_inbox_response_format(self, app_context, db_session):
+        """Test get_inbox returns correctly formatted transaction data."""
+        txn = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            description="Apple Inc",
+            transaction_type="buy",
+            quantity=10,
+            price=150.50,
+            total_amount=1505.0,
+            currency="USD",
+            fees=5.0,
+            status="pending",
+        )
+        db.session.add(txn)
+        db.session.commit()
+
+        result = IBKRTransactionService.get_inbox()
+
+        assert len(result) == 1
+        txn_data = result[0]
+        assert txn_data["id"] == txn.id
+        assert txn_data["ibkr_transaction_id"] == txn.ibkr_transaction_id
+        assert txn_data["transaction_date"] == "2024-01-15"
+        assert txn_data["symbol"] == "AAPL"
+        assert txn_data["isin"] == "US0378331005"
+        assert txn_data["description"] == "Apple Inc"
+        assert txn_data["transaction_type"] == "buy"
+        assert txn_data["quantity"] == 10
+        assert txn_data["price"] == 150.50
+        assert txn_data["total_amount"] == 1505.0
+        assert txn_data["currency"] == "USD"
+        assert txn_data["fees"] == 5.0
+        assert txn_data["status"] == "pending"
+        assert "imported_at" in txn_data
+
+
+class TestGetInboxCount:
+    """Tests for get_inbox_count() - Count IBKR transactions by status."""
+
+    def test_get_inbox_count_default_pending(self, app_context, db_session):
+        """Test get_inbox_count counts pending transactions by default."""
+        txn1 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 1),
+            symbol="AAPL",
+            description="Apple Inc",
+            transaction_type="buy",
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
+            currency="USD",
+            status="pending",
+        )
+        txn2 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 2),
+            symbol="GOOGL",
+            description="Google",
+            transaction_type="buy",
+            quantity=5,
+            price=2000.0,
+            total_amount=10000.0,
+            currency="USD",
+            status="processed",
+        )
+        txn3 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 3),
+            symbol="MSFT",
+            description="Microsoft",
+            transaction_type="buy",
+            quantity=20,
+            price=300.0,
+            total_amount=6000.0,
+            currency="USD",
+            status="pending",
+        )
+        db.session.add_all([txn1, txn2, txn3])
+        db.session.commit()
+
+        count = IBKRTransactionService.get_inbox_count()
+
+        assert count == 2
+
+    def test_get_inbox_count_filter_by_status(self, app_context, db_session):
+        """Test get_inbox_count filters by status."""
+        txn1 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 1),
+            symbol="AAPL",
+            description="Apple Inc",
+            transaction_type="buy",
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
+            currency="USD",
+            status="ignored",
+        )
+        txn2 = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 2),
+            symbol="GOOGL",
+            description="Google",
+            transaction_type="buy",
+            quantity=5,
+            price=2000.0,
+            total_amount=10000.0,
+            currency="USD",
+            status="pending",
+        )
+        db.session.add_all([txn1, txn2])
+        db.session.commit()
+
+        count = IBKRTransactionService.get_inbox_count(status="ignored")
+
+        assert count == 1
+
+    def test_get_inbox_count_zero(self, app_context, db_session):
+        """Test get_inbox_count returns 0 when no transactions match."""
+        count = IBKRTransactionService.get_inbox_count(status="pending")
+
+        assert count == 0
+
+
+class TestUnallocateTransaction:
+    """Tests for unallocate_transaction() - Remove allocations and revert to pending."""
+
+    def test_unallocate_transaction_with_transactions(
+        self, app_context, db_session, sample_fund, sample_portfolio
     ):
-        """Test grouped allocations with three-way split and fractional amounts."""
-        # Create third portfolio
-        third_portfolio = Portfolio(id=make_id(), name="Third Portfolio")
-        db.session.add(third_portfolio)
-        db.session.commit()
-
-        # Create transaction with commission
+        """Test unallocate_transaction removes allocations and transactions."""
+        # Create IBKR transaction
         ibkr_txn = IBKRTransaction(
-            id=make_id(),
             ibkr_transaction_id=make_ibkr_txn_id(),
-            transaction_date=date(2025, 1, 15),
-            symbol="AAPL",
-            isin="US0378331005",
+            transaction_date=date(2024, 1, 15),
+            symbol=sample_fund.symbol,
+            description="Test Transaction",
             transaction_type="buy",
-            quantity=100,
-            price=150.00,
-            total_amount=15000.00,
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
             currency="USD",
-            fees=3.00,
-            status="pending",
-            raw_data="{}",
+            status="processed",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
 
-        # Process 33.33/33.33/33.34 split
-        allocations = [
-            {"portfolio_id": sample_portfolio.id, "percentage": 33.33},
-            {"portfolio_id": second_portfolio.id, "percentage": 33.33},
-            {"portfolio_id": third_portfolio.id, "percentage": 33.34},
-        ]
-        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+        # Create portfolio fund
+        pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=sample_fund.id)
+        db.session.add(pf)
+        db.session.commit()
 
-        # Get grouped allocations
-        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+        # Create transaction
+        txn = Transaction(
+            portfolio_fund_id=pf.id,
+            date=date(2024, 1, 15),
+            type="buy",
+            shares=10.0,
+            cost_per_share=150.0,
+        )
+        db.session.add(txn)
+        db.session.commit()
 
-        # Should return 3 grouped allocations
-        assert len(result) == 3
+        # Create allocation
+        allocation = IBKRTransactionAllocation(
+            ibkr_transaction_id=ibkr_txn.id,
+            portfolio_id=sample_portfolio.id,
+            allocation_percentage=100.0,
+            allocated_amount=1500.0,
+            allocated_shares=10.0,
+            transaction_id=txn.id,
+        )
+        db.session.add(allocation)
+        db.session.commit()
 
-        # Verify all portfolios are represented
-        portfolio_ids = {a["portfolio_id"] for a in result}
-        assert sample_portfolio.id in portfolio_ids
-        assert second_portfolio.id in portfolio_ids
-        assert third_portfolio.id in portfolio_ids
+        response, status = IBKRTransactionService.unallocate_transaction(ibkr_txn.id)
 
-        # Verify total amounts add up correctly
-        total_amount = sum(a["allocated_amount"] for a in result)
-        total_shares = sum(a["allocated_shares"] for a in result)
-        total_commission = sum(a["allocated_commission"] for a in result)
+        assert status == 200
+        assert response["success"] is True
+        assert "1 portfolio transactions deleted" in response["message"]
 
-        # Allow for floating point rounding
-        assert abs(total_amount - 15000.00) < 0.01
-        assert abs(total_shares - 100.0) < 0.01
-        assert abs(total_commission - 3.00) < 0.01
+        # Verify IBKR transaction reverted to pending
+        ibkr_txn = db.session.get(IBKRTransaction, ibkr_txn.id)
+        assert ibkr_txn.status == "pending"
+        assert ibkr_txn.processed_at is None
+
+        # Verify allocations deleted
+        allocations = IBKRTransactionAllocation.query.filter_by(
+            ibkr_transaction_id=ibkr_txn.id
+        ).all()
+        assert len(allocations) == 0
+
+        # Verify transaction deleted
+        txn = db.session.get(Transaction, txn.id)
+        assert txn is None
+
+    def test_unallocate_transaction_orphaned_allocations(
+        self, app_context, db_session, sample_fund, sample_portfolio
+    ):
+        """Test unallocate_transaction handles orphaned allocations without transactions."""
+        # Create IBKR transaction
+        ibkr_txn = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 15),
+            symbol=sample_fund.symbol,
+            description="Test Transaction",
+            transaction_type="buy",
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
+            currency="USD",
+            status="processed",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Create allocation WITHOUT transaction_id (orphaned)
+        allocation = IBKRTransactionAllocation(
+            ibkr_transaction_id=ibkr_txn.id,
+            portfolio_id=sample_portfolio.id,
+            allocation_percentage=100.0,
+            allocated_amount=1500.0,
+            allocated_shares=10.0,
+            transaction_id=None,  # Orphaned
+        )
+        db.session.add(allocation)
+        db.session.commit()
+
+        response, status = IBKRTransactionService.unallocate_transaction(ibkr_txn.id)
+
+        assert status == 200
+        assert response["success"] is True
+
+        # Verify IBKR transaction reverted to pending
+        ibkr_txn = db.session.get(IBKRTransaction, ibkr_txn.id)
+        assert ibkr_txn.status == "pending"
+
+        # Verify orphaned allocation deleted
+        allocations = IBKRTransactionAllocation.query.filter_by(
+            ibkr_transaction_id=ibkr_txn.id
+        ).all()
+        assert len(allocations) == 0
+
+    def test_unallocate_transaction_not_found(self, app_context, db_session):
+        """Test unallocate_transaction handles non-existent transaction."""
+        fake_id = make_id()
+
+        response, status = IBKRTransactionService.unallocate_transaction(fake_id)
+
+        assert status == 404
+        assert "error" in response
+
+    def test_unallocate_transaction_not_processed(self, app_context, db_session):
+        """Test unallocate_transaction rejects non-processed transactions."""
+        ibkr_txn = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 15),
+            symbol="AAPL",
+            description="Test Transaction",
+            transaction_type="buy",
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
+            currency="USD",
+            status="pending",  # Not processed
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        response, status = IBKRTransactionService.unallocate_transaction(ibkr_txn.id)
+
+        assert status == 400
+        assert "error" in response
+        assert "not processed" in response["error"]
+
+
+class TestGetTransactionAllocations:
+    """Tests for get_transaction_allocations() - Retrieve allocation details."""
+
+    def test_get_transaction_allocations(
+        self, app_context, db_session, sample_fund, sample_portfolio
+    ):
+        """Test get_transaction_allocations returns allocation details."""
+        # Create IBKR transaction
+        ibkr_txn = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 15),
+            symbol=sample_fund.symbol,
+            description="Test Transaction",
+            transaction_type="buy",
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
+            currency="USD",
+            status="processed",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Create portfolio fund
+        pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=sample_fund.id)
+        db.session.add(pf)
+        db.session.commit()
+
+        # Create transaction
+        txn = Transaction(
+            portfolio_fund_id=pf.id,
+            date=date(2024, 1, 15),
+            type="buy",
+            shares=10.0,
+            cost_per_share=150.0,
+        )
+        db.session.add(txn)
+        db.session.commit()
+
+        # Create allocation
+        allocation = IBKRTransactionAllocation(
+            ibkr_transaction_id=ibkr_txn.id,
+            portfolio_id=sample_portfolio.id,
+            allocation_percentage=100.0,
+            allocated_amount=1500.0,
+            allocated_shares=10.0,
+            transaction_id=txn.id,
+        )
+        db.session.add(allocation)
+        db.session.commit()
+
+        response, status = IBKRTransactionService.get_transaction_allocations(ibkr_txn.id)
+
+        assert status == 200
+        assert response["ibkr_transaction_id"] == ibkr_txn.id
+        assert response["status"] == "processed"
+        assert len(response["allocations"]) == 1
+
+        alloc_data = response["allocations"][0]
+        assert alloc_data["portfolio_id"] == sample_portfolio.id
+        assert alloc_data["portfolio_name"] == sample_portfolio.name
+        assert alloc_data["allocation_percentage"] == 100.0
+        assert alloc_data["allocated_amount"] == 1500.0
+        assert alloc_data["allocated_shares"] == 10.0
+        assert alloc_data["transaction_id"] == txn.id
+        assert alloc_data["transaction_date"] == "2024-01-15"
+
+    def test_get_transaction_allocations_no_allocations(self, app_context, db_session):
+        """Test get_transaction_allocations returns empty list when no allocations."""
+        ibkr_txn = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 15),
+            symbol="AAPL",
+            description="Test Transaction",
+            transaction_type="buy",
+            quantity=10,
+            price=150.0,
+            total_amount=1500.0,
+            currency="USD",
+            status="pending",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        response, status = IBKRTransactionService.get_transaction_allocations(ibkr_txn.id)
+
+        assert status == 200
+        assert response["allocations"] == []
+
+    def test_get_transaction_allocations_not_found(self, app_context, db_session):
+        """Test get_transaction_allocations handles non-existent transaction."""
+        fake_id = make_id()
+
+        response, status = IBKRTransactionService.get_transaction_allocations(fake_id)
+
+        assert status == 404
+        assert "error" in response

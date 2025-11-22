@@ -10,8 +10,9 @@ This module provides routes for:
 
 from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import HTTPException
 
-from ..models import Fund, FundPrice, LogCategory, LogLevel, db
+from ..models import Fund, LogCategory, LogLevel, db
 from ..services.fund_service import FundService
 from ..services.logging_service import logger, track_request
 from ..services.price_update_service import HistoricalPriceService, TodayPriceService
@@ -171,15 +172,10 @@ def get_fund(fund_id):
         - Dividend history (if requested)
     """
     try:
-        fund = Fund.query.get_or_404(fund_id)
+        fund = FundService.get_fund(fund_id)
 
         # Get last known price from database
-        latest_price = None
-        price_record = (
-            FundPrice.query.filter_by(fund_id=fund_id).order_by(FundPrice.date.desc()).first()
-        )
-        if price_record:
-            latest_price = price_record.price
+        latest_price = FundService.get_latest_fund_price(fund_id)
 
         response = {
             "id": fund.id,
@@ -202,6 +198,9 @@ def get_fund(fund_id):
 
         return jsonify(response)
 
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404 from service layer)
+        raise
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
@@ -447,10 +446,10 @@ def get_fund_prices(fund_id):
     """
     try:
         # Get the fund to ensure it exists
-        fund = Fund.query.get_or_404(fund_id)
+        fund = FundService.get_fund(fund_id)
 
         # Get all prices for this fund, ordered by date
-        prices = FundPrice.query.filter_by(fund_id=fund_id).order_by(FundPrice.date.desc()).all()
+        prices = FundService.get_fund_price_history(fund_id)
 
         logger.log(
             level=LogLevel.INFO,
@@ -466,6 +465,9 @@ def get_fund_prices(fund_id):
             ]
         )
 
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 404 from service layer)
+        raise
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,

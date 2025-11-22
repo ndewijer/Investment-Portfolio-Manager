@@ -18,7 +18,6 @@ from ..models import (
     Fund,
     LogCategory,
     LogLevel,
-    Portfolio,
     db,
 )
 from ..services.logging_service import logger, track_request
@@ -80,10 +79,10 @@ class PortfolioAPI(MethodView):
             JSON response containing portfolio details or list of portfolios
         """
         if portfolio_id is None:
-            portfolios = Portfolio.query.all()
+            portfolios = PortfolioService.get_all_portfolios()
             return jsonify([self._format_portfolio_list_item(p) for p in portfolios])
 
-        portfolio = Portfolio.query.get_or_404(portfolio_id)
+        portfolio = PortfolioService.get_portfolio(portfolio_id)
         if portfolio.is_archived:
             return jsonify({"error": "Portfolio is archived"}), 404
 
@@ -337,19 +336,15 @@ def delete_portfolio_fund(portfolio_fund_id):
         # Check if this is a confirmation-required error
         if "Confirmation required" in error_message:
             # Extract counts from error message or query again
-            from ..models import Dividend, PortfolioFund, Transaction
-
-            portfolio_fund = PortfolioFund.query.options(
-                db.joinedload(PortfolioFund.fund), db.joinedload(PortfolioFund.portfolio)
-            ).get(portfolio_fund_id)
+            portfolio_fund = PortfolioService.get_portfolio_fund(
+                portfolio_fund_id, with_relationships=True
+            )
 
             if portfolio_fund:
-                transaction_count = Transaction.query.filter_by(
-                    portfolio_fund_id=portfolio_fund_id
-                ).count()
-                dividend_count = Dividend.query.filter_by(
-                    portfolio_fund_id=portfolio_fund_id
-                ).count()
+                transaction_count = PortfolioService.count_portfolio_fund_transactions(
+                    portfolio_fund_id
+                )
+                dividend_count = PortfolioService.count_portfolio_fund_dividends(portfolio_fund_id)
 
                 response, status = logger.log(
                     level=LogLevel.INFO,
@@ -394,12 +389,3 @@ def delete_portfolio_fund(portfolio_fund_id):
             http_status=400,
         )
         return jsonify(response), status
-
-
-@portfolios.route("/portfolios", methods=["GET"])
-def get_portfolios():
-    """Get all portfolios."""
-    include_excluded = request.args.get("include_excluded", "false").lower() == "true"
-
-    portfolios_list = PortfolioService.get_portfolios_list(include_excluded=include_excluded)
-    return jsonify([PortfolioAPI._format_portfolio_list_item(p) for p in portfolios_list])
