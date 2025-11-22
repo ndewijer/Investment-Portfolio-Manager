@@ -1982,14 +1982,15 @@ class TestGetTransactionAllocations:
         assert response["status"] == "processed"
         assert len(response["allocations"]) == 1
 
+        # Grouped allocations don't include transaction_id/transaction_date
+        # They combine stock and fee transactions per portfolio
         alloc_data = response["allocations"][0]
         assert alloc_data["portfolio_id"] == sample_portfolio.id
         assert alloc_data["portfolio_name"] == sample_portfolio.name
         assert alloc_data["allocation_percentage"] == 100.0
         assert alloc_data["allocated_amount"] == 1500.0
         assert alloc_data["allocated_shares"] == 10.0
-        assert alloc_data["transaction_id"] == txn.id
-        assert alloc_data["transaction_date"] == "2024-01-15"
+        assert alloc_data["allocated_commission"] == 0.0  # No commission in this test
 
     def test_get_transaction_allocations_no_allocations(self, app_context, db_session):
         """Test get_transaction_allocations returns empty list when no allocations."""

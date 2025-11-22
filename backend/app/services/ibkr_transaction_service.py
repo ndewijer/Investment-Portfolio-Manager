@@ -907,6 +907,8 @@ class IBKRTransactionService:
         """
         Get allocation details for a processed IBKR transaction.
 
+        Groups allocations by portfolio to combine stock and fee transactions.
+
         Args:
             transaction_id: IBKR Transaction ID
 
@@ -918,37 +920,14 @@ class IBKRTransactionService:
             if not ibkr_txn:
                 return {"error": "Transaction not found"}, 404
 
-            # Get all allocations
-            allocations = IBKRTransactionAllocation.query.filter_by(
-                ibkr_transaction_id=transaction_id
-            ).all()
-
-            allocation_details = []
-            for allocation in allocations:
-                transaction = (
-                    db.session.get(Transaction, allocation.transaction_id)
-                    if allocation.transaction_id
-                    else None
-                )
-
-                allocation_details.append(
-                    {
-                        "id": allocation.id,
-                        "portfolio_id": allocation.portfolio_id,
-                        "portfolio_name": allocation.portfolio.name,
-                        "allocation_percentage": allocation.allocation_percentage,
-                        "allocated_amount": allocation.allocated_amount,
-                        "allocated_shares": allocation.allocated_shares,
-                        "transaction_id": allocation.transaction_id,
-                        "transaction_date": transaction.date.isoformat() if transaction else None,
-                    }
-                )
+            # Get grouped allocations (combines stock and fee transactions per portfolio)
+            allocation_details = IBKRTransactionService.get_grouped_allocations(transaction_id)
 
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
                 message=f"Retrieved allocations for IBKR transaction {transaction_id}",
-                details={"allocation_count": len(allocation_details)},
+                details={"portfolio_count": len(allocation_details)},
             )
 
             return (
