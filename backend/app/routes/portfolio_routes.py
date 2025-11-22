@@ -389,12 +389,3 @@ def delete_portfolio_fund(portfolio_fund_id):
             http_status=400,
         )
         return jsonify(response), status
-
-
-@portfolios.route("/portfolios", methods=["GET"])
-def get_portfolios():
-    """Get all portfolios."""
-    include_excluded = request.args.get("include_excluded", "false").lower() == "true"
-
-    portfolios_list = PortfolioService.get_portfolios_list(include_excluded=include_excluded)
-    return jsonify([PortfolioAPI._format_portfolio_list_item(p) for p in portfolios_list])
