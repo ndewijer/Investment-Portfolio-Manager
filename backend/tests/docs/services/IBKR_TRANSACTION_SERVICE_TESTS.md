@@ -2,10 +2,10 @@
 
 **File**: `tests/test_ibkr_transaction_service.py`\
 **Service**: `app/services/ibkr_transaction_service.py`\
-**Tests**: 45 tests\
-**Coverage**: 90% (231/257 statements)\
+**Tests**: 50 tests\
+**Coverage**: 90% (199/222 statements)\
 **Bugs Fixed**: 1 critical (ReinvestmentStatus enum)\
-**Created**: Version 1.3.3 (Phase 4, 5)
+**Created**: Version 1.3.3 (Phase 4, 5, 6)
 
 ## Overview
 
@@ -17,10 +17,13 @@ Comprehensive test suite for the IBKRTransactionService class, which handles pro
 - Transaction allocation modifications
 - Dividend matching to existing dividend records
 - Share and amount calculations based on allocation percentages
+- Grouped allocation retrieval (combining stock and fee transactions per portfolio)
 
 The test suite achieves 90% coverage and discovered 1 critical bug during development (ReinvestmentStatus string vs enum mismatch).
 
 **Version 1.3.3 Phase 5 Enhancements**: Added commission allocation functionality with 9 new tests covering fee transaction creation, proportional allocation, rounding, and IBKR linking.
+
+**Version 1.3.3 Phase 6 Enhancements**: Added grouped allocations functionality with 5 new tests covering the `get_grouped_allocations()` method that combines stock and fee transactions by portfolio for display purposes.
 
 ## Test Structure
 
@@ -91,6 +94,14 @@ Tests commission/fee allocation functionality (Version 1.3.3 Phase 5):
 - `test_fee_transaction_has_correct_structure` - Verify fee transaction fields (shares=0, cost_per_share=amount)
 - `test_fee_transaction_linked_to_ibkr` - Fee transactions linked via IBKRTransactionAllocation
 - `test_fee_transaction_linked_to_ibkr_split_allocation` - Fee allocations in split transactions
+
+#### 8. TestGroupedAllocations (5 tests)
+Tests grouped allocation retrieval functionality (Version 1.3.3 Phase 6):
+- `test_get_grouped_allocations_no_commission_single_portfolio` - Single portfolio without commission
+- `test_get_grouped_allocations_with_commission_single_portfolio` - Single portfolio with commission (combines stock + fee)
+- `test_get_grouped_allocations_with_commission_multiple_portfolios` - Multiple portfolios with commission (60/40 split)
+- `test_get_grouped_allocations_no_allocations` - Empty list for unprocessed transaction
+- `test_get_grouped_allocations_three_way_split` - Three-way split with fractional amounts and rounding
 
 ## Critical Bug Discovery
 
@@ -315,6 +326,102 @@ if ibkr_txn.fees and ibkr_txn.fees > 0:
 ```
 
 **Tested**: `test_commission_allocated_proportionally`, `test_fee_transaction_has_correct_structure`
+
+## Grouped Allocations (Display Layer)
+
+**Version 1.3.3 Phase 6**: The `get_grouped_allocations()` method combines stock and fee transactions by portfolio for display purposes.
+
+### Problem
+When displaying allocations in the UI, stock and fee transactions created separate allocation records:
+```python
+# Database has 2 IBKRTransactionAllocation records per portfolio:
+Portfolio A:
+  - Allocation 1: $900 amount, 60 shares (stock)
+  - Allocation 2: $0.90 amount, 0 shares (fee)
+
+# UI showed 2 cards for Portfolio A (confusing!)
+```
+
+### Solution
+The `get_grouped_allocations()` method groups by `portfolio_id` and combines:
+```python
+def get_grouped_allocations(transaction_id: str) -> list[dict]:
+    """Group allocations by portfolio, combining stock and fee."""
+    allocations = IBKRTransactionAllocation.query.filter_by(
+        ibkr_transaction_id=transaction_id
+    ).all()
+
+    portfolio_allocations = {}
+    for allocation in allocations:
+        portfolio_id = allocation.portfolio_id
+
+        if portfolio_id not in portfolio_allocations:
+            portfolio_allocations[portfolio_id] = {
+                "portfolio_id": portfolio_id,
+                "portfolio_name": allocation.portfolio.name,
+                "allocation_percentage": allocation.allocation_percentage,
+                "allocated_amount": 0.0,
+                "allocated_shares": 0.0,
+                "allocated_commission": 0.0,
+            }
+
+        transaction = db.session.get(Transaction, allocation.transaction_id)
+
+        if transaction and transaction.type == "fee":
+            portfolio_allocations[portfolio_id]["allocated_commission"] += allocation.allocated_amount
+        else:
+            portfolio_allocations[portfolio_id]["allocated_amount"] += allocation.allocated_amount
+            portfolio_allocations[portfolio_id]["allocated_shares"] += allocation.allocated_shares
+
+    return list(portfolio_allocations.values())
+```
+
+### Example Output
+```python
+# IBKR Transaction: $1500, 100 shares, $3.00 commission
+# Allocation: 60% Portfolio A, 40% Portfolio B
+
+result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+
+# Returns 2 grouped allocations (not 4!):
+[
+    {
+        "portfolio_id": "portfolio-a-id",
+        "portfolio_name": "Portfolio A",
+        "allocation_percentage": 60.0,
+        "allocated_amount": 900.00,      # Stock transaction amount
+        "allocated_shares": 60.0,         # Stock transaction shares
+        "allocated_commission": 1.80,     # Fee transaction amount
+    },
+    {
+        "portfolio_id": "portfolio-b-id",
+        "portfolio_name": "Portfolio B",
+        "allocation_percentage": 40.0,
+        "allocated_amount": 600.00,       # Stock transaction amount
+        "allocated_shares": 40.0,          # Stock transaction shares
+        "allocated_commission": 1.20,      # Fee transaction amount
+    }
+]
+```
+
+### UI Display
+Frontend can now show one card per portfolio:
+```
+┌─────────────────────────────────────┐
+│ Portfolio: Portfolio A              │
+│ Percentage: 60%                     │
+│ Amount: $900.00                     │
+│ Shares: 60                          │
+│ Commission: $1.80                   │
+└─────────────────────────────────────┘
+```
+
+**Tested**:
+- `test_get_grouped_allocations_with_commission_single_portfolio` - Single portfolio grouping
+- `test_get_grouped_allocations_with_commission_multiple_portfolios` - Multi-portfolio 60/40 split
+- `test_get_grouped_allocations_three_way_split` - Three-way split with fractional amounts
+- `test_get_grouped_allocations_no_commission_single_portfolio` - No commission case
+- `test_get_grouped_allocations_no_allocations` - Unprocessed transaction returns empty list
 
 ## Dividend Proportional Allocation
 

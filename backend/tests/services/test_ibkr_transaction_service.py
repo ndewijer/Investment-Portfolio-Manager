@@ -1412,3 +1412,230 @@ class TestCommissionAllocation:
         )
         assert portfolio_b_fee_txn is not None
         assert portfolio_b_fee_txn.cost_per_share == 1.20  # 40% of $3.00
+
+
+class TestGroupedAllocations:
+    """Tests for get_grouped_allocations method."""
+
+    def test_get_grouped_allocations_no_commission_single_portfolio(
+        self, app_context, db_session, sample_portfolio
+    ):
+        """Test grouped allocations with no commission allocated to single portfolio."""
+        # Create transaction with zero fees
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=0,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Process allocation
+        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        # Get grouped allocations
+        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+
+        # Should return 1 grouped allocation
+        assert len(result) == 1
+
+        # Verify the allocation details
+        alloc = result[0]
+        assert alloc["portfolio_id"] == sample_portfolio.id
+        assert alloc["portfolio_name"] == "Test Portfolio"
+        assert alloc["allocation_percentage"] == 100.0
+        assert alloc["allocated_amount"] == 15000.00
+        assert alloc["allocated_shares"] == 100.0
+        assert alloc["allocated_commission"] == 0.0
+
+    def test_get_grouped_allocations_with_commission_single_portfolio(
+        self, app_context, db_session, sample_portfolio
+    ):
+        """Test grouped allocations combines stock and fee for single portfolio."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=1.50,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Process allocation
+        allocations = [{"portfolio_id": sample_portfolio.id, "percentage": 100.0}]
+        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        # Get grouped allocations
+        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+
+        # Should return 1 grouped allocation (stock + fee combined)
+        assert len(result) == 1
+
+        # Verify the allocation combines stock and fee
+        alloc = result[0]
+        assert alloc["portfolio_id"] == sample_portfolio.id
+        assert alloc["portfolio_name"] == "Test Portfolio"
+        assert alloc["allocation_percentage"] == 100.0
+        assert alloc["allocated_amount"] == 15000.00  # Stock amount
+        assert alloc["allocated_shares"] == 100.0  # Stock shares
+        assert alloc["allocated_commission"] == 1.50  # Fee amount
+
+    def test_get_grouped_allocations_with_commission_multiple_portfolios(
+        self, app_context, db_session, sample_portfolio, second_portfolio
+    ):
+        """Test grouped allocations combines stock and fee for multiple portfolios."""
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=3.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Process 60/40 split
+        allocations = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 60.0},
+            {"portfolio_id": second_portfolio.id, "percentage": 40.0},
+        ]
+        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        # Get grouped allocations
+        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+
+        # Should return 2 grouped allocations (one per portfolio)
+        assert len(result) == 2
+
+        # Find allocations by portfolio
+        alloc_a = next(a for a in result if a["portfolio_id"] == sample_portfolio.id)
+        alloc_b = next(a for a in result if a["portfolio_id"] == second_portfolio.id)
+
+        # Verify first portfolio (60%)
+        assert alloc_a["portfolio_name"] == "Test Portfolio"
+        assert alloc_a["allocation_percentage"] == 60.0
+        assert alloc_a["allocated_amount"] == 9000.00  # 60% of $15,000
+        assert alloc_a["allocated_shares"] == 60.0  # 60% of 100 shares
+        assert alloc_a["allocated_commission"] == 1.80  # 60% of $3.00
+
+        # Verify second portfolio (40%)
+        assert alloc_b["portfolio_name"] == "Second Portfolio"
+        assert alloc_b["allocation_percentage"] == 40.0
+        assert alloc_b["allocated_amount"] == 6000.00  # 40% of $15,000
+        assert alloc_b["allocated_shares"] == 40.0  # 40% of 100 shares
+        assert alloc_b["allocated_commission"] == 1.20  # 40% of $3.00
+
+    def test_get_grouped_allocations_no_allocations(self, app_context, db_session):
+        """Test grouped allocations returns empty list for unprocessed transaction."""
+        # Create unprocessed transaction
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=1.50,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Get grouped allocations without processing
+        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+
+        # Should return empty list
+        assert len(result) == 0
+
+    def test_get_grouped_allocations_three_way_split(
+        self, app_context, db_session, sample_portfolio, second_portfolio
+    ):
+        """Test grouped allocations with three-way split and fractional amounts."""
+        # Create third portfolio
+        third_portfolio = Portfolio(id=make_id(), name="Third Portfolio")
+        db.session.add(third_portfolio)
+        db.session.commit()
+
+        # Create transaction with commission
+        ibkr_txn = IBKRTransaction(
+            id=make_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2025, 1, 15),
+            symbol="AAPL",
+            isin="US0378331005",
+            transaction_type="buy",
+            quantity=100,
+            price=150.00,
+            total_amount=15000.00,
+            currency="USD",
+            fees=3.00,
+            status="pending",
+            raw_data="{}",
+        )
+        db.session.add(ibkr_txn)
+        db.session.commit()
+
+        # Process 33.33/33.33/33.34 split
+        allocations = [
+            {"portfolio_id": sample_portfolio.id, "percentage": 33.33},
+            {"portfolio_id": second_portfolio.id, "percentage": 33.33},
+            {"portfolio_id": third_portfolio.id, "percentage": 33.34},
+        ]
+        IBKRTransactionService.process_transaction_allocation(ibkr_txn.id, allocations)
+
+        # Get grouped allocations
+        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+
+        # Should return 3 grouped allocations
+        assert len(result) == 3
+
+        # Verify all portfolios are represented
+        portfolio_ids = {a["portfolio_id"] for a in result}
+        assert sample_portfolio.id in portfolio_ids
+        assert second_portfolio.id in portfolio_ids
+        assert third_portfolio.id in portfolio_ids
+
+        # Verify total amounts add up correctly
+        total_amount = sum(a["allocated_amount"] for a in result)
+        total_shares = sum(a["allocated_shares"] for a in result)
+        total_commission = sum(a["allocated_commission"] for a in result)
+
+        # Allow for floating point rounding
+        assert abs(total_amount - 15000.00) < 0.01
+        assert abs(total_shares - 100.0) < 0.01
+        assert abs(total_commission - 3.00) < 0.01
