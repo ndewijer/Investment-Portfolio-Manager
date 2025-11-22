@@ -326,6 +326,8 @@ def get_eligible_portfolios(transaction_id):
         - portfolios: List of eligible portfolios with this fund
         - warning: Optional warning message if no match or no portfolios
     """
+    from werkzeug.exceptions import HTTPException
+
     from ..services.fund_matching_service import FundMatchingService
 
     try:
@@ -348,6 +350,9 @@ def get_eligible_portfolios(transaction_id):
 
         return jsonify(result), 200
 
+    except HTTPException:
+        # Let Flask handle HTTP exceptions (like 404)
+        raise
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,

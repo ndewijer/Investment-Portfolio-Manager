@@ -2170,7 +2170,7 @@ class TestBulkAllocateTransactions:
         # Create two IBKR transactions
         ibkr_txn1 = IBKRTransaction(
             id=make_id(),
-            ibkr_transaction_id=make_txn_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
             transaction_date=date(2025, 1, 15),
             symbol=sample_fund.symbol,
             isin=sample_fund.isin,
@@ -2185,7 +2185,7 @@ class TestBulkAllocateTransactions:
         )
         ibkr_txn2 = IBKRTransaction(
             id=make_id(),
-            ibkr_transaction_id=make_txn_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
             transaction_date=date(2025, 1, 16),
             symbol=sample_fund.symbol,
             isin=sample_fund.isin,
@@ -2252,7 +2252,7 @@ class TestBulkAllocateTransactions:
         # Create one valid transaction
         ibkr_txn1 = IBKRTransaction(
             id=make_id(),
-            ibkr_transaction_id=make_txn_id(),
+            ibkr_transaction_id=make_ibkr_txn_id(),
             transaction_date=date(2025, 1, 15),
             symbol=sample_fund.symbol,
             isin=sample_fund.isin,

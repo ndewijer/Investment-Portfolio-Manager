@@ -835,9 +835,9 @@ class TestFundCRUDErrors:
         """
         from unittest.mock import patch
 
-        # Mock Fund.query.all to raise exception
-        with patch("app.routes.fund_routes.Fund.query") as mock_query:
-            mock_query.all.side_effect = Exception("Database query failed")
+        # Mock FundService.get_all_funds_formatted to raise exception
+        with patch("app.routes.fund_routes.FundService.get_all_funds_formatted") as mock_get:
+            mock_get.side_effect = Exception("Database query failed")
 
             response = client.get("/api/funds")
 
@@ -1116,9 +1116,9 @@ class TestPriceUpdateErrors:
         current_hour = datetime.now(UTC).strftime("%Y-%m-%d-%H")
         time_token = hashlib.sha256(f"{api_key}{current_hour}".encode()).hexdigest()
 
-        # Mock Fund.query.filter to raise exception
-        with patch("app.routes.fund_routes.Fund.query") as mock_query:
-            mock_query.filter.return_value.all.side_effect = Exception("Database connection failed")
+        # Mock FundService.update_all_fund_prices to raise exception
+        with patch("app.routes.fund_routes.FundService.update_all_fund_prices") as mock_update:
+            mock_update.side_effect = Exception("Database connection failed")
 
             headers = {"X-API-Key": api_key, "X-Time-Token": time_token}
 
