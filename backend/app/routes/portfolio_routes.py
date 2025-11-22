@@ -15,7 +15,6 @@ from flask import Blueprint, jsonify, request
 from flask.views import MethodView
 
 from ..models import (
-    Fund,
     LogCategory,
     LogLevel,
     db,
@@ -39,35 +38,6 @@ class PortfolioAPI(MethodView):
     All methods include proper error handling and logging.
     """
 
-    @staticmethod
-    def _format_portfolio_list_item(portfolio):
-        """Format a portfolio for list responses."""
-        return {
-            "id": portfolio.id,
-            "name": portfolio.name,
-            "description": portfolio.description,
-            "is_archived": portfolio.is_archived,
-            "exclude_from_overview": portfolio.exclude_from_overview,
-        }
-
-    @staticmethod
-    def _format_portfolio_detail(portfolio, portfolio_funds_data):
-        """Format a portfolio with detailed metrics."""
-        return {
-            "id": portfolio.id,
-            "name": portfolio.name,
-            "description": portfolio.description,
-            "is_archived": portfolio.is_archived,
-            "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
-            "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
-            "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
-            "totalUnrealizedGainLoss": sum(
-                pf["unrealized_gain_loss"] for pf in portfolio_funds_data
-            ),
-            "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
-            "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
-        }
-
     def get(self, portfolio_id=None):
         """
         Retrieve portfolio(s).
@@ -80,7 +50,7 @@ class PortfolioAPI(MethodView):
         """
         if portfolio_id is None:
             portfolios = PortfolioService.get_all_portfolios()
-            return jsonify([self._format_portfolio_list_item(p) for p in portfolios])
+            return jsonify([PortfolioService.format_portfolio_list_item(p) for p in portfolios])
 
         portfolio = PortfolioService.get_portfolio(portfolio_id)
         if portfolio.is_archived:
@@ -88,7 +58,7 @@ class PortfolioAPI(MethodView):
 
         portfolio_funds_data = PortfolioService.calculate_portfolio_fund_values(portfolio.funds)
 
-        return jsonify(self._format_portfolio_detail(portfolio, portfolio_funds_data))
+        return jsonify(PortfolioService.format_portfolio_detail(portfolio, portfolio_funds_data))
 
     def post(self):
         """
@@ -106,7 +76,7 @@ class PortfolioAPI(MethodView):
             name=data["name"], description=data.get("description", "")
         )
 
-        return jsonify(self._format_portfolio_list_item(portfolio))
+        return jsonify(PortfolioService.format_portfolio_list_item(portfolio))
 
     def put(self, portfolio_id):
         """
@@ -131,7 +101,7 @@ class PortfolioAPI(MethodView):
                 description=data.get("description", ""),
                 exclude_from_overview=data.get("exclude_from_overview", False),
             )
-            return jsonify(self._format_portfolio_list_item(portfolio))
+            return jsonify(PortfolioService.format_portfolio_list_item(portfolio))
         except ValueError as e:
             return jsonify({"error": str(e)}), 404
 
@@ -165,7 +135,7 @@ def _update_portfolio_archive_status(portfolio_id, is_archived):
     """
     try:
         portfolio = PortfolioService.update_archive_status(portfolio_id, is_archived)
-        return jsonify(PortfolioAPI._format_portfolio_list_item(portfolio))
+        return jsonify(PortfolioService.format_portfolio_list_item(portfolio))
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
 
@@ -252,13 +222,6 @@ def handle_portfolio_funds():
             portfolio_funds = PortfolioService.get_portfolio_funds(portfolio_id)
         else:
             portfolio_funds = PortfolioService.get_all_portfolio_funds()
-
-        # Add dividend_type to each portfolio fund
-        for pf in portfolio_funds:
-            if "fund_id" in pf:  # Only for detailed fund data
-                fund = db.session.get(Fund, pf["fund_id"])
-                if fund:
-                    pf["dividend_type"] = fund.dividend_type.value
 
         return jsonify(portfolio_funds)
 

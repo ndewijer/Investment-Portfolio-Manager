@@ -649,10 +649,10 @@ class PortfolioService:
     @staticmethod
     def get_all_portfolio_funds():
         """
-        Get all portfolio funds.
+        Get all portfolio funds with dividend type information.
 
         Returns:
-            list: List of dictionaries containing portfolio fund details
+            list: List of dictionaries containing portfolio fund details including dividend_type
         """
         portfolio_funds = PortfolioFund.query.all()
         return [
@@ -662,6 +662,7 @@ class PortfolioService:
                 "fund_id": pf.fund_id,
                 "portfolio_name": pf.portfolio.name,
                 "fund_name": pf.fund.name,
+                "dividend_type": pf.fund.dividend_type.value,
             }
             for pf in portfolio_funds
         ]
@@ -1076,6 +1077,52 @@ class PortfolioService:
 
             abort(404)
         return portfolio
+
+    @staticmethod
+    def format_portfolio_list_item(portfolio):
+        """
+        Format a portfolio for list responses.
+
+        Args:
+            portfolio: Portfolio object
+
+        Returns:
+            dict: Formatted portfolio data
+        """
+        return {
+            "id": portfolio.id,
+            "name": portfolio.name,
+            "description": portfolio.description,
+            "is_archived": portfolio.is_archived,
+            "exclude_from_overview": portfolio.exclude_from_overview,
+        }
+
+    @staticmethod
+    def format_portfolio_detail(portfolio, portfolio_funds_data):
+        """
+        Format a portfolio with detailed metrics.
+
+        Args:
+            portfolio: Portfolio object
+            portfolio_funds_data: List of portfolio fund dictionaries with metrics
+
+        Returns:
+            dict: Formatted portfolio data with calculated totals
+        """
+        return {
+            "id": portfolio.id,
+            "name": portfolio.name,
+            "description": portfolio.description,
+            "is_archived": portfolio.is_archived,
+            "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
+            "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
+            "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
+            "totalUnrealizedGainLoss": sum(
+                pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+            ),
+            "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
+            "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
+        }
 
     @staticmethod
     def get_all_portfolios():

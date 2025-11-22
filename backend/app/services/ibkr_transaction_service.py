@@ -61,6 +61,51 @@ class IBKRTransactionService:
         return txn
 
     @staticmethod
+    def get_transaction_detail(transaction_id: str) -> dict:
+        """
+        Retrieve an IBKR transaction with all details including allocations.
+
+        Args:
+            transaction_id: Transaction ID
+
+        Returns:
+            dict: Formatted transaction with allocations
+
+        Raises:
+            404: If transaction not found
+        """
+        txn = IBKRTransactionService.get_transaction(transaction_id)
+
+        return {
+            "id": txn.id,
+            "ibkr_transaction_id": txn.ibkr_transaction_id,
+            "transaction_date": txn.transaction_date.isoformat(),
+            "symbol": txn.symbol,
+            "isin": txn.isin,
+            "description": txn.description,
+            "transaction_type": txn.transaction_type,
+            "quantity": txn.quantity,
+            "price": txn.price,
+            "total_amount": txn.total_amount,
+            "currency": txn.currency,
+            "fees": txn.fees,
+            "status": txn.status,
+            "imported_at": txn.imported_at.isoformat(),
+            "processed_at": txn.processed_at.isoformat() if txn.processed_at else None,
+            "allocations": [
+                {
+                    "id": alloc.id,
+                    "portfolio_id": alloc.portfolio_id,
+                    "allocation_percentage": alloc.allocation_percentage,
+                    "allocated_amount": alloc.allocated_amount,
+                    "allocated_shares": alloc.allocated_shares,
+                    "transaction_id": alloc.transaction_id,
+                }
+                for alloc in txn.allocations
+            ],
+        }
+
+    @staticmethod
     def ignore_transaction(transaction_id: str) -> tuple[dict, int]:
         """
         Mark an IBKR transaction as ignored.
@@ -1011,3 +1056,110 @@ class IBKRTransactionService:
                 http_status=500,
             )
             return response, status
+
+    @staticmethod
+    def bulk_allocate_transactions(transaction_ids: list[str], allocations: list[dict]) -> dict:
+        """
+        Process multiple IBKR transactions with the same allocations.
+
+        Args:
+            transaction_ids: List of IBKR transaction IDs
+            allocations: List of allocation dictionaries with:
+                - portfolio_id: Portfolio ID
+                - percentage: Allocation percentage
+
+        Returns:
+            dict: Bulk processing results with success/failure counts
+        """
+        # Validate inputs
+        if not transaction_ids or len(transaction_ids) == 0:
+            return {
+                "success": False,
+                "error": "No transactions selected",
+                "processed": 0,
+                "failed": 0,
+            }
+
+        if not allocations or len(allocations) == 0:
+            return {
+                "success": False,
+                "error": "No allocations provided",
+                "processed": 0,
+                "failed": 0,
+            }
+
+        # Validate allocations sum to 100%
+        total_percentage = sum(a.get("percentage", 0) for a in allocations)
+        if abs(total_percentage - 100) > 0.01:
+            return {
+                "success": False,
+                "error": "Allocations must sum to exactly 100%",
+                "processed": 0,
+                "failed": 0,
+            }
+
+        processed_count = 0
+        failed_count = 0
+        errors = []
+
+        try:
+            for transaction_id in transaction_ids:
+                try:
+                    result = IBKRTransactionService.process_transaction_allocation(
+                        transaction_id, allocations
+                    )
+
+                    if result["success"]:
+                        processed_count += 1
+                    else:
+                        failed_count += 1
+                        errors.append(
+                            {
+                                "transaction_id": transaction_id,
+                                "error": result.get("error", "Unknown error"),
+                            }
+                        )
+
+                except Exception as e:
+                    failed_count += 1
+                    errors.append({"transaction_id": transaction_id, "error": str(e)})
+                    logger.log(
+                        level=LogLevel.ERROR,
+                        category=LogCategory.IBKR,
+                        message=f"Error processing transaction {transaction_id} in bulk operation",
+                        details={"transaction_id": transaction_id, "error": str(e)},
+                    )
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=(
+                    f"Bulk allocation completed: {processed_count} processed, {failed_count} failed"
+                ),
+                details={
+                    "processed": processed_count,
+                    "failed": failed_count,
+                    "total": len(transaction_ids),
+                },
+            )
+
+            return {
+                "success": True,
+                "processed": processed_count,
+                "failed": failed_count,
+                "errors": errors if errors else None,
+            }
+
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to process bulk allocation",
+                details={"error": str(e), "transaction_count": len(transaction_ids)},
+            )
+            return {
+                "success": False,
+                "error": str(e),
+                "processed": processed_count,
+                "failed": failed_count,
+            }

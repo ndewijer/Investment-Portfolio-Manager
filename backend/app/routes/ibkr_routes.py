@@ -13,7 +13,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask.views import MethodView
 
-from ..models import IBKRTransaction, LogCategory, LogLevel, db
+from ..models import LogCategory, LogLevel, db
 from ..services.ibkr_config_service import IBKRConfigService
 from ..services.ibkr_flex_service import IBKRFlexService
 from ..services.ibkr_transaction_service import IBKRTransactionService
@@ -187,53 +187,9 @@ def trigger_import():
     if not config.enabled:
         return jsonify({"error": "IBKR integration is disabled"}), 403
 
-    try:
-        service = IBKRFlexService()
-
-        # Decrypt token
-        token = service._decrypt_token(config.flex_token)
-
-        # Fetch statement
-        xml_data = service.fetch_statement(token, config.flex_query_id, use_cache=True)
-
-        if not xml_data:
-            return jsonify({"error": "Failed to fetch statement from IBKR"}), 500
-
-        # Parse transactions
-        transactions = service.parse_flex_statement(xml_data)
-
-        # Import transactions
-        results = service.import_transactions(transactions)
-
-        # Update last import date
-        config.last_import_date = datetime.now()
-        db.session.commit()
-
-        logger.log(
-            level=LogLevel.INFO,
-            category=LogCategory.IBKR,
-            message="Manual IBKR import completed",
-            details=results,
-        )
-
-        return jsonify(
-            {
-                "success": True,
-                "message": "Import completed",
-                "imported": results["imported"],
-                "skipped": results["skipped"],
-                "errors": results["errors"],
-            }
-        ), 200
-
-    except Exception as e:
-        logger.log(
-            level=LogLevel.ERROR,
-            category=LogCategory.IBKR,
-            message="Error during IBKR import",
-            details={"error": str(e)},
-        )
-        return jsonify({"error": "Import failed", "details": str(e)}), 500
+    service = IBKRFlexService()
+    response, status = service.trigger_manual_import(config)
+    return jsonify(response), status
 
 
 @ibkr.route("/ibkr/inbox", methods=["GET"])
@@ -303,38 +259,8 @@ def get_inbox_transaction(transaction_id):
     Returns:
         JSON object with transaction details
     """
-    txn = IBKRTransactionService.get_transaction(transaction_id)
-
-    return jsonify(
-        {
-            "id": txn.id,
-            "ibkr_transaction_id": txn.ibkr_transaction_id,
-            "transaction_date": txn.transaction_date.isoformat(),
-            "symbol": txn.symbol,
-            "isin": txn.isin,
-            "description": txn.description,
-            "transaction_type": txn.transaction_type,
-            "quantity": txn.quantity,
-            "price": txn.price,
-            "total_amount": txn.total_amount,
-            "currency": txn.currency,
-            "fees": txn.fees,
-            "status": txn.status,
-            "imported_at": txn.imported_at.isoformat(),
-            "processed_at": txn.processed_at.isoformat() if txn.processed_at else None,
-            "allocations": [
-                {
-                    "id": alloc.id,
-                    "portfolio_id": alloc.portfolio_id,
-                    "allocation_percentage": alloc.allocation_percentage,
-                    "allocated_amount": alloc.allocated_amount,
-                    "allocated_shares": alloc.allocated_shares,
-                    "transaction_id": alloc.transaction_id,
-                }
-                for alloc in txn.allocations
-            ],
-        }
-    )
+    transaction_detail = IBKRTransactionService.get_transaction_detail(transaction_id)
+    return jsonify(transaction_detail)
 
 
 @ibkr.route("/ibkr/inbox/<transaction_id>/ignore", methods=["POST"])
@@ -403,10 +329,8 @@ def get_eligible_portfolios(transaction_id):
     from ..services.fund_matching_service import FundMatchingService
 
     try:
-        # Get the transaction
-        transaction = db.session.get(IBKRTransaction, transaction_id)
-        if not transaction:
-            return jsonify({"error": "Transaction not found"}), 404
+        # Get the transaction using the service
+        transaction = IBKRTransactionService.get_transaction(transaction_id)
 
         # Find eligible portfolios using the matching service
         result = FundMatchingService.get_eligible_portfolios_for_transaction(transaction)
@@ -637,8 +561,6 @@ def bulk_allocate_transactions():
     Returns:
         JSON response with bulk processing results
     """
-    from ..services.ibkr_transaction_service import IBKRTransactionService
-
     data = request.get_json()
 
     if not data or "transaction_ids" not in data or "allocations" not in data:
@@ -647,83 +569,13 @@ def bulk_allocate_transactions():
     transaction_ids = data["transaction_ids"]
     allocations = data["allocations"]
 
-    if not transaction_ids or len(transaction_ids) == 0:
-        return jsonify({"error": "No transactions selected"}), 400
+    result = IBKRTransactionService.bulk_allocate_transactions(transaction_ids, allocations)
 
-    if not allocations or len(allocations) == 0:
-        return jsonify({"error": "No allocations provided"}), 400
-
-    # Validate allocations sum to 100%
-    total_percentage = sum(a.get("percentage", 0) for a in allocations)
-    if abs(total_percentage - 100) > 0.01:
-        return jsonify({"error": "Allocations must sum to exactly 100%"}), 400
-
-    processed_count = 0
-    failed_count = 0
-    errors = []
-
-    try:
-        for transaction_id in transaction_ids:
-            try:
-                result = IBKRTransactionService.process_transaction_allocation(
-                    transaction_id, allocations
-                )
-
-                if result["success"]:
-                    processed_count += 1
-                else:
-                    failed_count += 1
-                    errors.append(
-                        {
-                            "transaction_id": transaction_id,
-                            "error": result.get("error", "Unknown error"),
-                        }
-                    )
-
-            except Exception as e:
-                failed_count += 1
-                errors.append({"transaction_id": transaction_id, "error": str(e)})
-                logger.log(
-                    level=LogLevel.ERROR,
-                    category=LogCategory.IBKR,
-                    message=f"Error processing transaction {transaction_id} in bulk operation",
-                    details={"transaction_id": transaction_id, "error": str(e)},
-                )
-
-        logger.log(
-            level=LogLevel.INFO,
-            category=LogCategory.IBKR,
-            message=(
-                f"Bulk allocation completed: {processed_count} processed, {failed_count} failed"
-            ),
-            details={
-                "processed": processed_count,
-                "failed": failed_count,
-                "total": len(transaction_ids),
-            },
-        )
-
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "processed": processed_count,
-                    "failed": failed_count,
-                    "errors": errors if errors else None,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        response, status = logger.log(
-            level=LogLevel.ERROR,
-            category=LogCategory.IBKR,
-            message="Failed to process bulk allocation",
-            details={"error": str(e), "transaction_count": len(transaction_ids)},
-            http_status=500,
-        )
-        return jsonify(response), status
+    if result["success"]:
+        return jsonify(result), 200
+    else:
+        # If validation failed, return 400
+        return jsonify(result), 400
 
 
 # Register view class

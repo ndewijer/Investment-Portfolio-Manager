@@ -22,6 +22,28 @@ class FundService:
     """
 
     @staticmethod
+    def format_fund(fund):
+        """
+        Format a fund object for API response.
+
+        Args:
+            fund: Fund object
+
+        Returns:
+            dict: Formatted fund data
+        """
+        return {
+            "id": fund.id,
+            "name": fund.name,
+            "isin": fund.isin,
+            "symbol": fund.symbol,
+            "currency": fund.currency,
+            "exchange": fund.exchange,
+            "dividend_type": fund.dividend_type.value,
+            "investment_type": fund.investment_type.value,
+        }
+
+    @staticmethod
     def get_all_funds():
         """
         Retrieve all funds from the database.
@@ -30,6 +52,17 @@ class FundService:
             list: List of Fund objects
         """
         return Fund.query.all()
+
+    @staticmethod
+    def get_all_funds_formatted():
+        """
+        Retrieve all funds with formatting for API response.
+
+        Returns:
+            list: List of formatted fund dictionaries
+        """
+        funds = Fund.query.all()
+        return [FundService.format_fund(f) for f in funds]
 
     @staticmethod
     def get_fund(fund_id):
@@ -265,3 +298,59 @@ class FundService:
         db.session.commit()
 
         return fund_details
+
+    @staticmethod
+    def update_all_fund_prices():
+        """
+        Update prices for all funds with symbols.
+
+        Returns:
+            dict: Results with updated_funds and errors lists
+        """
+        from ..services.price_update_service import HistoricalPriceService
+
+        # Get all funds with symbols
+        funds_with_symbols = Fund.query.filter(Fund.symbol.isnot(None), Fund.symbol != "").all()
+
+        updated_funds = []
+        errors = []
+
+        for fund in funds_with_symbols:
+            try:
+                result, status = HistoricalPriceService.update_historical_prices(fund.id)
+
+                if status == 200:
+                    updated_funds.append(
+                        {
+                            "fund_id": fund.id,
+                            "name": fund.name,
+                            "symbol": fund.symbol,
+                            "prices_added": result.get("prices_added", 0),
+                        }
+                    )
+                else:
+                    errors.append(
+                        {
+                            "fund_id": fund.id,
+                            "name": fund.name,
+                            "symbol": fund.symbol,
+                            "error": result.get("message", "Unknown error"),
+                        }
+                    )
+            except Exception as e:
+                errors.append(
+                    {
+                        "fund_id": fund.id,
+                        "name": fund.name,
+                        "symbol": fund.symbol,
+                        "error": str(e),
+                    }
+                )
+
+        return {
+            "success": True,
+            "updated_funds": updated_funds,
+            "errors": errors,
+            "total_updated": len(updated_funds),
+            "total_errors": len(errors),
+        }
