@@ -9,7 +9,7 @@ This module provides routes for:
 
 from flask import Blueprint, jsonify, request
 
-from ..models import Dividend, LogCategory, LogLevel
+from ..models import LogCategory, LogLevel
 from ..services.dividend_service import DividendService
 from ..services.logging_service import logger, track_request
 
@@ -220,7 +220,7 @@ def delete_dividend(dividend_id):
     """
     try:
         # Store dividend details before deletion for logging
-        dividend = Dividend.query.get_or_404(dividend_id)
+        dividend = DividendService.get_dividend(dividend_id)
         dividend_details = {
             "fund_name": dividend.fund.name,
             "total_amount": dividend.total_amount,

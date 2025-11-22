@@ -7,6 +7,7 @@ ENV/
 # Environment variables
 .env
 .flaskenv
+local_files/
 
 # Testing & Coverage
 .coverage
@@ -32,4 +33,6 @@ frontend.zip
 portfolio_manager.db
 app.log
 .ibkr_encryption_key
+
 .claudememory
+.kiro

@@ -7,6 +7,7 @@ This folder contains planning documents and task lists for the Investment Portfo
 - **[API_DOCUMENTATION_GENERATION_PLAN.md](./API_DOCUMENTATION_GENERATION_PLAN.md)** - Plan for automated API documentation generation
 - **[CURRENCY_CONVERSION_PLAN.md](./CURRENCY_CONVERSION_PLAN.md)** - Plan for multi-currency support implementation
 - **[PERFORMANCE_OPTIMIZATION_PLAN.md](./PERFORMANCE_OPTIMIZATION_PLAN.md)** - Performance investigation and 3-phase optimization roadmap
+- **[ROUTE_REFACTORING_REMEDIATION_PLAN.md](./ROUTE_REFACTORING_REMEDIATION_PLAN.md)** - Route business logic refactoring plan (24 violations, 4 phases)
 - **[TESTING_PLAN_1.3.3.md](./TESTING_PLAN_1.3.3.md)** - Comprehensive testing strategy for v1.3.3 (80%+ coverage goal)
 
 ---
@@ -93,12 +94,30 @@ This folder contains planning documents and task lists for the Investment Portfo
 - [ ] Enhance test fixtures
 
 #### Phase 2: Refactoring - Move Business Logic to Services (Days 4-10)
-- [ ] DividendService refactoring (dividend update logic)
-- [ ] IBKRTransactionService refactoring (allocation modification logic)
-- [ ] TransactionService refactoring (delete with cleanup)
-- [ ] PortfolioService refactoring (multiple methods)
-- [ ] FundService refactoring (create, usage, delete)
-- [ ] IBKRConfigService creation (config save logic)
+**Plan**: See [ROUTE_REFACTORING_REMEDIATION_PLAN.md](./ROUTE_REFACTORING_REMEDIATION_PLAN.md) for detailed analysis and implementation steps
+**Violations Found**: 24 violations across 7 route files (3 critical, 3 high, 11 medium, 7 low)
+
+**Critical Refactorings** (must be done first):
+- [ ] IBKR Import Orchestration (ibkr_routes.py:174-237) - 64 lines
+- [ ] Portfolio Fund Deletion (portfolio_routes.py:320-396) - 77 lines
+- [ ] IBKR Transaction Unallocation (ibkr_routes.py:621-684) - 64 lines
+
+**High Priority**:
+- [ ] Bulk IBKR Transaction Allocation (ibkr_routes.py:813-918) - 106 lines
+- [ ] Bulk Fund Price Update (fund_routes.py:528-575) - 48 lines
+- [ ] Log Filtering & Pagination (developer_routes.py:634-700) - 67 lines
+
+**Medium Priority** (code quality):
+- [ ] CSV File Handling Utilities (developer_routes.py:184-507) - DRY violations
+- [ ] Transaction Realized Gain/Loss Queries (transaction_routes.py:98-209) - duplicate logic
+- [ ] Portfolio Funds Data Enrichment (portfolio_routes.py:249-264)
+- [ ] Portfolio Totals Calculation (portfolio_routes.py:62-70)
+
+**Low Priority** (optional polish):
+- [ ] IBKR Transaction Status Updates (ibkr_routes.py:378-405, 419-445)
+- [ ] Fund Service Enhancements (fund_routes.py:177-261)
+- [ ] System Service Additions (system_routes.py, developer_routes.py)
+- [ ] IBKR Allocation Operations (ibkr_routes.py:701-746, 761-809)
 
 #### Phase 3: Service Layer Unit Tests (Days 11-20)
 - [ ] DividendService tests (90%+ coverage target)

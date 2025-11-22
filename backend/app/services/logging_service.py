@@ -181,6 +181,177 @@ class LoggingService:
             LogLevel.CRITICAL: logging.CRITICAL,
         }[level]
 
+    @staticmethod
+    def get_logging_settings() -> dict:
+        """
+        Get current logging configuration settings.
+
+        Returns:
+            dict: Dictionary containing 'enabled' (bool) and 'level' (str)
+
+        Raises:
+            Exception: If unable to retrieve settings
+        """
+        settings = {
+            "enabled": SystemSetting.get_value(SystemSettingKey.LOGGING_ENABLED, "true").lower()
+            == "true",
+            "level": SystemSetting.get_value(SystemSettingKey.LOGGING_LEVEL, LogLevel.INFO.value),
+        }
+        return settings
+
+    @staticmethod
+    def update_logging_settings(enabled: bool, level: str) -> dict:
+        """
+        Update logging configuration settings.
+
+        Args:
+            enabled: Enable/disable logging
+            level: Logging level value
+
+        Returns:
+            dict: Dictionary containing updated 'enabled' (bool) and 'level' (str)
+
+        Raises:
+            Exception: If unable to update settings
+        """
+        from sqlalchemy import select
+
+        # Get or create enabled setting
+        stmt = select(SystemSetting).where(SystemSetting.key == SystemSettingKey.LOGGING_ENABLED)
+        enabled_setting = db.session.execute(stmt).scalar_one_or_none()
+
+        if not enabled_setting:
+            enabled_setting = SystemSetting(key=SystemSettingKey.LOGGING_ENABLED)
+        enabled_setting.value = str(enabled).lower()
+
+        # Get or create level setting
+        stmt = select(SystemSetting).where(SystemSetting.key == SystemSettingKey.LOGGING_LEVEL)
+        level_setting = db.session.execute(stmt).scalar_one_or_none()
+
+        if not level_setting:
+            level_setting = SystemSetting(key=SystemSettingKey.LOGGING_LEVEL)
+        level_setting.value = level
+
+        db.session.add(enabled_setting)
+        db.session.add(level_setting)
+        db.session.commit()
+
+        return {
+            "enabled": enabled_setting.value.lower() == "true",
+            "level": level_setting.value,
+        }
+
+    @staticmethod
+    def get_logs(
+        levels: str | None = None,
+        categories: str | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        source: str | None = None,
+        sort_by: str = "timestamp",
+        sort_dir: str = "desc",
+        page: int = 1,
+        per_page: int = 50,
+    ) -> dict:
+        """
+        Retrieve filtered, sorted, and paginated system logs.
+
+        Args:
+            levels: Comma-separated list of log levels to filter
+            categories: Comma-separated list of log categories to filter
+            start_date: Start date in ISO format
+            end_date: End date in ISO format
+            source: Source filter (partial match)
+            sort_by: Field to sort by (default: timestamp)
+            sort_dir: Sort direction ('asc' or 'desc', default: desc)
+            page: Page number (default: 1)
+            per_page: Items per page (default: 50)
+
+        Returns:
+            dict: Dictionary containing 'logs' list, 'total', 'pages', and 'current_page'
+
+        Raises:
+            Exception: If unable to retrieve logs
+        """
+        from datetime import datetime
+
+        from sqlalchemy import or_, select
+
+        # Build base query
+        stmt = select(Log)
+
+        # Apply filters
+        if levels:
+            levels_list = levels.split(",")
+            level_filters = [Log.level == LogLevel(lvl.lower()) for lvl in levels_list]
+            stmt = stmt.where(or_(*level_filters))
+
+        if categories:
+            category_list = categories.split(",")
+            category_filters = [Log.category == LogCategory(cat.lower()) for cat in category_list]
+            stmt = stmt.where(or_(*category_filters))
+
+        if start_date:
+            # Parse ISO timestamp string (already in UTC)
+            start_datetime = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+            stmt = stmt.where(Log.timestamp >= start_datetime)
+
+        if end_date:
+            # Parse ISO timestamp string (already in UTC)
+            end_datetime = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+            stmt = stmt.where(Log.timestamp <= end_datetime)
+
+        if source:
+            stmt = stmt.where(Log.source.like(f"%{source}%"))
+
+        # Apply sorting
+        if sort_dir == "desc":
+            stmt = stmt.order_by(getattr(Log, sort_by).desc())
+        else:
+            stmt = stmt.order_by(getattr(Log, sort_by).asc())
+
+        # Get paginated results
+        pagination = db.paginate(stmt, page=page, per_page=per_page)
+
+        return {
+            "logs": [
+                {
+                    "id": log.id,
+                    "timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f"),
+                    "level": log.level.value,
+                    "category": log.category.value,
+                    "message": log.message,
+                    "details": json.loads(log.details) if log.details else None,
+                    "source": log.source,
+                    "request_id": log.request_id,
+                    "http_status": log.http_status,
+                    "ip_address": log.ip_address,
+                    "user_agent": log.user_agent,
+                }
+                for log in pagination.items
+            ],
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "current_page": pagination.page,
+        }
+
+    @staticmethod
+    def clear_logs() -> None:
+        """
+        Clear all system logs from the database.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: If unable to clear logs
+        """
+        from sqlalchemy import delete
+
+        stmt = delete(Log)
+        db.session.execute(stmt)
+        db.session.commit()
+
 
 # Create singleton instance
 logger = LoggingService()

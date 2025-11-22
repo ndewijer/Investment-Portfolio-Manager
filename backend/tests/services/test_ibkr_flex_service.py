@@ -16,101 +16,28 @@ from unittest.mock import patch
 
 import pytest
 import responses
+from app.constants.ibkr_constants import FLEX_GET_STATEMENT_URL, FLEX_SEND_REQUEST_URL
 from app.models import ExchangeRate, IBKRImportCache, IBKRTransaction, db
 from app.services.ibkr_flex_service import IBKRFlexService
+from tests.fixtures.ibkr_fixtures import (
+    SAMPLE_FLEX_STATEMENT,
+    SAMPLE_SEND_REQUEST_ERROR_1012,
+    SAMPLE_SEND_REQUEST_ERROR_1015,
+    SAMPLE_SEND_REQUEST_SUCCESS,
+    SAMPLE_STATEMENT_IN_PROGRESS,
+    SAMPLE_STATEMENT_NO_CURRENCY,
+)
 from tests.test_helpers import make_custom_string
-
-# Sample XML fixtures
-SAMPLE_SEND_REQUEST_SUCCESS = """<?xml version="1.0" encoding="UTF-8"?>
-<FlexStatementResponse timestamp="01 January, 2025 01:00 AM EST">
-  <Status>Success</Status>
-  <ReferenceCode>1234567890</ReferenceCode>
-  <Url>https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService/GetStatement</Url>
-</FlexStatementResponse>"""
-
-SAMPLE_SEND_REQUEST_ERROR_1012 = """<?xml version="1.0" encoding="UTF-8"?>
-<FlexStatementResponse timestamp="01 January, 2025 01:00 AM EST">
-  <Status>Fail</Status>
-  <ErrorCode>1012</ErrorCode>
-  <ErrorMessage>Token has expired.</ErrorMessage>
-</FlexStatementResponse>"""
-
-SAMPLE_SEND_REQUEST_ERROR_1015 = """<?xml version="1.0" encoding="UTF-8"?>
-<FlexStatementResponse timestamp="01 January, 2025 01:00 AM EST">
-  <Status>Fail</Status>
-  <ErrorCode>1015</ErrorCode>
-  <ErrorMessage>Token is invalid.</ErrorMessage>
-</FlexStatementResponse>"""
-
-SAMPLE_STATEMENT_IN_PROGRESS = """<?xml version="1.0" encoding="UTF-8"?>
-<FlexStatementResponse timestamp="01 January, 2025 01:00 AM EST">
-  <Status>Warn</Status>
-  <ErrorCode>1019</ErrorCode>
-  <ErrorMessage>Statement generation in progress. Please try again shortly.</ErrorMessage>
-</FlexStatementResponse>"""
-
-SAMPLE_FLEX_STATEMENT = """<?xml version="1.0" encoding="UTF-8"?>
-<FlexQueryResponse queryName="Test" type="AF">
-  <FlexStatements count="1">
-    <FlexStatement accountId="U1234567" fromDate="2025-01-01" toDate="2025-01-31">
-      <Trades>
-        <Trade accountId="U1234567" symbol="AAPL" isin="US0378331005" description="APPLE INC"
-               tradeDate="20250115" quantity="10" tradePrice="150.00" netCash="-1500.00"
-               currency="USD" ibCommission="-1.00" transactionID="12345" ibOrderID="67890"/>
-        <Trade accountId="U1234567" symbol="MSFT" isin="US5949181045" description="MICROSOFT CORP"
-               tradeDate="20250116" quantity="-5" tradePrice="380.00" netCash="1900.00"
-               currency="USD" ibCommission="-1.00" transactionID="12346" ibOrderID="67891"/>
-      </Trades>
-      <CashTransactions>
-        <CashTransaction accountId="U1234567" symbol="AAPL" isin="US0378331005"
-                         type="Dividends" dateTime="20250110" amount="25.50" currency="USD"
-                         transactionID="12347"
-                         description="AAPL(US0378331005) Cash Dividend USD 2.55 per Share"
-                         code="DIV" exDate="20250105"/>
-        <CashTransaction accountId="U1234567" symbol="AAPL" isin="US0378331005"
-                         type="Commission" dateTime="20250115" amount="-2.50"
-                         currency="USD" transactionID="12348" description="Commission Charged"
-                         code="FEE"/>
-      </CashTransactions>
-      <ConversionRates>
-        <ConversionRate reportDate="20250115" fromCurrency="EUR" toCurrency="USD" rate="1.10"/>
-        <ConversionRate reportDate="20250115" fromCurrency="GBP" toCurrency="USD" rate="1.27"/>
-      </ConversionRates>
-    </FlexStatement>
-  </FlexStatements>
-</FlexQueryResponse>"""
-
-# XML with missing currency field (tests fallback to USD)
-SAMPLE_STATEMENT_NO_CURRENCY = """<?xml version="1.0" encoding="UTF-8"?>
-<FlexQueryResponse queryName="Test" type="AF">
-  <FlexStatements count="1">
-    <FlexStatement accountId="U1234567" fromDate="2025-01-01" toDate="2025-01-31">
-      <Trades>
-        <Trade accountId="U1234567" symbol="AAPL" isin="US0378331005" description="APPLE INC"
-               tradeDate="20250115" quantity="10" tradePrice="150.00" netCash="-1500.00"
-               ibCommission="-1.00" transactionID="12345" ibOrderID="67890"/>
-      </Trades>
-      <CashTransactions>
-        <CashTransaction accountId="U1234567" symbol="AAPL" isin="US0378331005"
-                         type="Dividends" dateTime="20250110" amount="25.50"
-                         transactionID="12347" description="Cash Dividend"
-                         code="DIV"/>
-      </CashTransactions>
-    </FlexStatement>
-  </FlexStatements>
-</FlexQueryResponse>"""
 
 
 @pytest.fixture
 def ibkr_service(app_context):
-    """Create IBKRFlexService instance with test config."""
-    from cryptography.fernet import Fernet
-    from flask import current_app
+    """
+    Create IBKRFlexService instance with test config.
 
-    # Generate a valid Fernet key for testing
-    test_key = Fernet.generate_key().decode()
-    current_app.config["IBKR_ENCRYPTION_KEY"] = test_key
-
+    Note: IBKR_ENCRYPTION_KEY is already set in TEST_CONFIG (test_config.py)
+    and applied during app creation, so no need to set it here.
+    """
     return IBKRFlexService()
 
 
@@ -265,7 +192,7 @@ class TestErrorHandling:
         # Mock SendRequest to return token expired error
         responses.add(
             responses.GET,
-            IBKRFlexService.SEND_REQUEST_URL,
+            FLEX_SEND_REQUEST_URL,
             body=SAMPLE_SEND_REQUEST_ERROR_1012,
             status=200,
         )
@@ -279,7 +206,7 @@ class TestErrorHandling:
         # Mock SendRequest to return invalid token error
         responses.add(
             responses.GET,
-            IBKRFlexService.SEND_REQUEST_URL,
+            FLEX_SEND_REQUEST_URL,
             body=SAMPLE_SEND_REQUEST_ERROR_1015,
             status=200,
         )
@@ -291,7 +218,7 @@ class TestErrorHandling:
     def test_fetch_statement_http_error(self, ibkr_service, test_token, test_query_id):
         """Test handling of HTTP errors."""
         # Mock HTTP 500 error
-        responses.add(responses.GET, IBKRFlexService.SEND_REQUEST_URL, status=500)
+        responses.add(responses.GET, FLEX_SEND_REQUEST_URL, status=500)
 
         result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
         assert result is None
@@ -308,15 +235,13 @@ class TestFetchStatement:
         # Mock SendRequest
         responses.add(
             responses.GET,
-            IBKRFlexService.SEND_REQUEST_URL,
+            FLEX_SEND_REQUEST_URL,
             body=SAMPLE_SEND_REQUEST_SUCCESS,
             status=200,
         )
 
         # Mock GetStatement
-        responses.add(
-            responses.GET, IBKRFlexService.GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200
-        )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
 
         result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
 
@@ -332,7 +257,7 @@ class TestFetchStatement:
         # Mock SendRequest
         responses.add(
             responses.GET,
-            IBKRFlexService.SEND_REQUEST_URL,
+            FLEX_SEND_REQUEST_URL,
             body=SAMPLE_SEND_REQUEST_SUCCESS,
             status=200,
         )
@@ -340,19 +265,17 @@ class TestFetchStatement:
         # Mock GetStatement - first two requests return "in progress", third succeeds
         responses.add(
             responses.GET,
-            IBKRFlexService.GET_STATEMENT_URL,
+            FLEX_GET_STATEMENT_URL,
             body=SAMPLE_STATEMENT_IN_PROGRESS,
             status=200,
         )
         responses.add(
             responses.GET,
-            IBKRFlexService.GET_STATEMENT_URL,
+            FLEX_GET_STATEMENT_URL,
             body=SAMPLE_STATEMENT_IN_PROGRESS,
             status=200,
         )
-        responses.add(
-            responses.GET, IBKRFlexService.GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200
-        )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
 
         with patch("time.sleep"):  # Skip actual sleep delays
             result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
@@ -390,13 +313,11 @@ class TestFetchStatement:
         # Mock fresh API call
         responses.add(
             responses.GET,
-            IBKRFlexService.SEND_REQUEST_URL,
+            FLEX_SEND_REQUEST_URL,
             body=SAMPLE_SEND_REQUEST_SUCCESS,
             status=200,
         )
-        responses.add(
-            responses.GET, IBKRFlexService.GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200
-        )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
 
         # Should bypass cache and fetch fresh data
         result = ibkr_service.fetch_statement(test_token, unique_query_id, use_cache=False)
@@ -413,7 +334,7 @@ class TestFetchStatement:
         # Mock network error
         responses.add(
             responses.GET,
-            IBKRFlexService.SEND_REQUEST_URL,
+            FLEX_SEND_REQUEST_URL,
             body=requests.RequestException("Network error"),
         )
 
@@ -697,13 +618,11 @@ class TestConnectionTest:
         # Mock API responses
         responses.add(
             responses.GET,
-            IBKRFlexService.SEND_REQUEST_URL,
+            FLEX_SEND_REQUEST_URL,
             body=SAMPLE_SEND_REQUEST_SUCCESS,
             status=200,
         )
-        responses.add(
-            responses.GET, IBKRFlexService.GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200
-        )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
 
         result = ibkr_service.test_connection(test_token, test_query_id)
 
@@ -715,7 +634,7 @@ class TestConnectionTest:
     def test_connection_failure(self, ibkr_service, test_token, test_query_id):
         """Test connection test with API failure."""
         # Mock API error
-        responses.add(responses.GET, IBKRFlexService.SEND_REQUEST_URL, status=500)
+        responses.add(responses.GET, FLEX_SEND_REQUEST_URL, status=500)
 
         result = ibkr_service.test_connection(test_token, test_query_id)
 

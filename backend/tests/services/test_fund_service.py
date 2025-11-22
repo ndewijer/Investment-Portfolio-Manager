@@ -87,6 +87,91 @@ class TestFundRetrieval:
         with pytest.raises(NotFound):
             FundService.get_fund(fake_id)
 
+    def test_get_latest_fund_price(self, app_context, db_session):
+        """Test get_latest_fund_price returns most recent price."""
+        fund = Fund(
+            isin=make_isin("US"),
+            symbol="VTI",
+            name="Vanguard Total Stock Market ETF",
+            currency="USD",
+            exchange="NASDAQ",
+        )
+        db_session.add(fund)
+        db_session.commit()
+
+        # Add multiple prices
+        from datetime import date
+
+        price1 = FundPrice(fund_id=fund.id, date=date(2024, 1, 1), price=200.00)
+        price2 = FundPrice(fund_id=fund.id, date=date(2024, 1, 15), price=250.00)
+        db_session.add_all([price1, price2])
+        db_session.commit()
+
+        latest_price = FundService.get_latest_fund_price(fund.id)
+
+        assert latest_price == 250.00
+
+    def test_get_latest_fund_price_no_prices(self, app_context, db_session):
+        """Test get_latest_fund_price returns None when no prices exist."""
+        fund = Fund(
+            isin=make_isin("US"),
+            symbol="VTI",
+            name="Vanguard Total Stock Market ETF",
+            currency="USD",
+            exchange="NASDAQ",
+        )
+        db_session.add(fund)
+        db_session.commit()
+
+        latest_price = FundService.get_latest_fund_price(fund.id)
+
+        assert latest_price is None
+
+    def test_get_fund_price_history(self, app_context, db_session):
+        """Test get_fund_price_history returns all prices ordered by date."""
+        fund = Fund(
+            isin=make_isin("US"),
+            symbol="VTI",
+            name="Vanguard Total Stock Market ETF",
+            currency="USD",
+            exchange="NASDAQ",
+        )
+        db_session.add(fund)
+        db_session.commit()
+
+        # Add multiple prices
+        from datetime import date
+
+        price1 = FundPrice(fund_id=fund.id, date=date(2024, 1, 1), price=200.00)
+        price2 = FundPrice(fund_id=fund.id, date=date(2024, 1, 15), price=250.00)
+        price3 = FundPrice(fund_id=fund.id, date=date(2024, 1, 10), price=225.00)
+        db_session.add_all([price1, price2, price3])
+        db_session.commit()
+
+        prices = FundService.get_fund_price_history(fund.id)
+
+        assert len(prices) == 3
+        # Should be ordered by date descending (newest first)
+        assert prices[0].price == 250.00
+        assert prices[1].price == 225.00
+        assert prices[2].price == 200.00
+
+    def test_get_fund_price_history_empty(self, app_context, db_session):
+        """Test get_fund_price_history returns empty list when no prices exist."""
+        fund = Fund(
+            isin=make_isin("US"),
+            symbol="VTI",
+            name="Vanguard Total Stock Market ETF",
+            currency="USD",
+            exchange="NASDAQ",
+        )
+        db_session.add(fund)
+        db_session.commit()
+
+        prices = FundService.get_fund_price_history(fund.id)
+
+        assert prices == []
+
 
 class TestFundCreation:
     """Tests for fund creation operations."""

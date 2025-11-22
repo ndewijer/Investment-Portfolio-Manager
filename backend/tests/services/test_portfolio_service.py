@@ -181,6 +181,47 @@ class TestPortfolioCRUD:
         assert "Normal Portfolio" in portfolio_names
         assert "Excluded Portfolio" in portfolio_names
 
+    def test_get_all_portfolios(self, app_context, db_session):
+        """Test getting all portfolios without filtering."""
+        # Create portfolios with different flags
+        p1 = Portfolio(id=make_id(), name="Portfolio 1", exclude_from_overview=False)
+        p2 = Portfolio(id=make_id(), name="Portfolio 2", exclude_from_overview=True)
+        p3 = Portfolio(id=make_id(), name="Portfolio 3", is_archived=True)
+        db_session.add_all([p1, p2, p3])
+        db_session.commit()
+
+        # Get all portfolios
+        portfolios = PortfolioService.get_all_portfolios()
+
+        # Should include all portfolios regardless of flags
+        portfolio_ids = {p.id for p in portfolios}
+        assert p1.id in portfolio_ids
+        assert p2.id in portfolio_ids
+        assert p3.id in portfolio_ids
+        assert len(portfolios) == 3
+
+    def test_get_portfolio(self, app_context, db_session):
+        """Test retrieving a single portfolio by ID."""
+        # Create portfolio
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        db_session.add(portfolio)
+        db_session.commit()
+
+        # Retrieve portfolio
+        retrieved = PortfolioService.get_portfolio(portfolio.id)
+        assert retrieved is not None
+        assert retrieved.id == portfolio.id
+        assert retrieved.name == "Test Portfolio"
+
+    def test_get_portfolio_not_found(self, app_context, db_session):
+        """Test retrieving a portfolio that doesn't exist."""
+        from werkzeug.exceptions import NotFound
+
+        fake_id = make_id()
+
+        with pytest.raises(NotFound):
+            PortfolioService.get_portfolio(fake_id)
+
 
 class TestPortfolioFundManagement:
     """Tests for portfolio-fund relationship management."""
@@ -420,6 +461,153 @@ class TestPortfolioFundManagement:
         assert db.session.get(PortfolioFund, pf_id) is None
         assert Transaction.query.filter_by(portfolio_fund_id=pf_id).count() == 0
         assert Dividend.query.filter_by(portfolio_fund_id=pf_id).count() == 0
+
+    def test_get_portfolio_fund_without_relationships(self, app_context, db_session):
+        """Test retrieving a portfolio fund without loading relationships."""
+        # Create data
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, pf])
+        db_session.commit()
+
+        # Retrieve without relationships
+        retrieved = PortfolioService.get_portfolio_fund(pf.id, with_relationships=False)
+        assert retrieved is not None
+        assert retrieved.id == pf.id
+        assert retrieved.portfolio_id == portfolio.id
+        assert retrieved.fund_id == fund.id
+
+    def test_get_portfolio_fund_with_relationships(self, app_context, db_session):
+        """Test retrieving a portfolio fund with eagerly loaded relationships."""
+        # Create data
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, pf])
+        db_session.commit()
+
+        # Retrieve with relationships
+        retrieved = PortfolioService.get_portfolio_fund(pf.id, with_relationships=True)
+        assert retrieved is not None
+        assert retrieved.id == pf.id
+        # Relationships should be loaded
+        assert retrieved.portfolio.name == "Test Portfolio"
+        assert retrieved.fund.name == "Test Fund"
+
+    def test_get_portfolio_fund_not_found(self, app_context, db_session):
+        """Test retrieving a portfolio fund that doesn't exist."""
+        fake_id = make_id()
+
+        # Without relationships
+        result = PortfolioService.get_portfolio_fund(fake_id, with_relationships=False)
+        assert result is None
+
+        # With relationships
+        result = PortfolioService.get_portfolio_fund(fake_id, with_relationships=True)
+        assert result is None
+
+    def test_count_portfolio_fund_transactions(self, app_context, db_session):
+        """Test counting transactions for a portfolio fund."""
+        # Create data
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, pf])
+        db_session.commit()
+
+        # Initially should be 0
+        count = PortfolioService.count_portfolio_fund_transactions(pf.id)
+        assert count == 0
+
+        # Add transactions
+        txn1 = Transaction(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            date=date(2024, 1, 1),
+            type="buy",
+            shares=100,
+            cost_per_share=10.0,
+        )
+        txn2 = Transaction(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            date=date(2024, 2, 1),
+            type="buy",
+            shares=50,
+            cost_per_share=11.0,
+        )
+        db_session.add_all([txn1, txn2])
+        db_session.commit()
+
+        # Count should be 2
+        count = PortfolioService.count_portfolio_fund_transactions(pf.id)
+        assert count == 2
+
+    def test_count_portfolio_fund_dividends(self, app_context, db_session):
+        """Test counting dividends for a portfolio fund."""
+        # Create data
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, pf])
+        db_session.commit()
+
+        # Initially should be 0
+        count = PortfolioService.count_portfolio_fund_dividends(pf.id)
+        assert count == 0
+
+        # Add dividends
+        div1 = Dividend(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            fund_id=fund.id,
+            record_date=date(2024, 1, 10),
+            ex_dividend_date=date(2024, 1, 15),
+            shares_owned=100,
+            dividend_per_share=0.5,
+            total_amount=50.0,
+        )
+        div2 = Dividend(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            fund_id=fund.id,
+            record_date=date(2024, 4, 10),
+            ex_dividend_date=date(2024, 4, 15),
+            shares_owned=100,
+            dividend_per_share=0.6,
+            total_amount=60.0,
+        )
+        db_session.add_all([div1, div2])
+        db_session.commit()
+
+        # Count should be 2
+        count = PortfolioService.count_portfolio_fund_dividends(pf.id)
+        assert count == 2
 
 
 class TestPortfolioCalculations:
@@ -1209,3 +1397,43 @@ class TestPortfolioHelperMethods:
         assert set(result.keys()) == expected_keys
         assert result["fund_id"] == fund.id
         assert result["fund_name"] == "Test Fund"
+
+
+class TestGetActivePortfolios:
+    """Tests for get_active_portfolios() - Retrieve non-archived portfolios."""
+
+    def test_get_active_portfolios(self, app_context, db_session):
+        """Test get_active_portfolios returns only non-archived portfolios."""
+        # Create active portfolios
+        p1 = Portfolio(id=make_id(), name="Active Portfolio 1", is_archived=False)
+        p2 = Portfolio(id=make_id(), name="Active Portfolio 2", is_archived=False)
+        # Create archived portfolio
+        p3 = Portfolio(id=make_id(), name="Archived Portfolio", is_archived=True)
+        db_session.add_all([p1, p2, p3])
+        db_session.commit()
+
+        result = PortfolioService.get_active_portfolios()
+
+        assert len(result) == 2
+        portfolio_names = [p.name for p in result]
+        assert "Active Portfolio 1" in portfolio_names
+        assert "Active Portfolio 2" in portfolio_names
+        assert "Archived Portfolio" not in portfolio_names
+
+    def test_get_active_portfolios_empty(self, app_context, db_session):
+        """Test get_active_portfolios returns empty list when all portfolios archived."""
+        # Create only archived portfolios
+        p1 = Portfolio(id=make_id(), name="Archived 1", is_archived=True)
+        p2 = Portfolio(id=make_id(), name="Archived 2", is_archived=True)
+        db_session.add_all([p1, p2])
+        db_session.commit()
+
+        result = PortfolioService.get_active_portfolios()
+
+        assert result == []
+
+    def test_get_active_portfolios_none_exist(self, app_context, db_session):
+        """Test get_active_portfolios returns empty list when no portfolios exist."""
+        result = PortfolioService.get_active_portfolios()
+
+        assert result == []

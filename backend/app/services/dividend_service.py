@@ -35,6 +35,27 @@ class DividendService:
     """
 
     @staticmethod
+    def get_dividend(dividend_id):
+        """
+        Retrieve a dividend by ID.
+
+        Args:
+            dividend_id (str): Dividend identifier
+
+        Returns:
+            Dividend: Dividend object
+
+        Raises:
+            404: If dividend not found
+        """
+        dividend = db.session.get(Dividend, dividend_id)
+        if not dividend:
+            from flask import abort
+
+            abort(404)
+        return dividend
+
+    @staticmethod
     def calculate_shares_owned(portfolio_fund_id, record_date):
         """
         Calculate shares owned on record date.

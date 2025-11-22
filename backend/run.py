@@ -225,8 +225,9 @@ def create_app(config=None):
     # Initialize IBKR encryption key (skip in test mode - tests don't need IBKR)
     if not app.config.get("TESTING", False):
         app.config["IBKR_ENCRYPTION_KEY"] = get_or_create_ibkr_encryption_key()
-    else:
-        # Use a dummy key for tests
+    elif "IBKR_ENCRYPTION_KEY" not in app.config:
+        # Use a dummy key for tests that don't provide one
+        # (Tests that need encryption should provide a valid Fernet key in TEST_CONFIG)
         app.config["IBKR_ENCRYPTION_KEY"] = "test-key-not-for-production"
 
     # Get hostname from environment variable
@@ -337,7 +338,8 @@ def create_app(config=None):
         replace_existing=True,
     )
 
-    # Schedule the IBRK Import task to run between 06:30 and 08:30 local time every weekday
+    # Schedule the IBKR Import task to run between 06:30 and 08:30 local time Tue-Sat
+    # (fetches previous business day's close-of-business report)
     scheduler.add_job(
         func=run_ibkr_import,
         trigger=CronTrigger(hour="6-8", minute=30, day_of_week="tue-sat"),

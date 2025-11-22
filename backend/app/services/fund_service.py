@@ -53,6 +53,43 @@ class FundService:
         return fund
 
     @staticmethod
+    def get_latest_fund_price(fund_id):
+        """
+        Retrieve the latest price for a specific fund.
+
+        Args:
+            fund_id (str): Fund identifier
+
+        Returns:
+            float: Latest price, or None if no price exists
+        """
+        price_record = (
+            db.session.query(FundPrice)
+            .filter_by(fund_id=fund_id)
+            .order_by(FundPrice.date.desc())
+            .first()
+        )
+        return price_record.price if price_record else None
+
+    @staticmethod
+    def get_fund_price_history(fund_id):
+        """
+        Retrieve all historical prices for a specific fund.
+
+        Args:
+            fund_id (str): Fund identifier
+
+        Returns:
+            list[FundPrice]: List of fund price records, ordered by date (newest first)
+        """
+        return (
+            db.session.query(FundPrice)
+            .filter_by(fund_id=fund_id)
+            .order_by(FundPrice.date.desc())
+            .all()
+        )
+
+    @staticmethod
     def create_fund(data, symbol_info=None):
         """
         Create a new fund with optional symbol lookup integration.

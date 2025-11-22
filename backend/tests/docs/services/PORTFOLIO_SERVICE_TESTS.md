@@ -1,10 +1,11 @@
 # PortfolioService Test Suite Documentation
 
-**File**: `tests/test_portfolio_service.py`\
+**File**: `tests/services/test_portfolio_service.py`\
 **Service**: `app/services/portfolio_service.py`\
-**Tests**: 35 tests\
-**Coverage**: 91% (380 statements, 34 missed)\
-**Created**: Version 1.3.3 (Phase 3)
+**Tests**: 46 tests\
+**Coverage**: 90%\
+**Created**: Version 1.3.3 (Phase 3)\
+**Updated**: Phase 5 - Phase 2b (Service Layer Refactoring)
 
 ## Overview
 
@@ -14,7 +15,7 @@ Comprehensive test suite for the PortfolioService class, covering all CRUD opera
 
 ### Test Classes
 
-#### 1. TestPortfolioCRUD (9 tests)
+#### 1. TestPortfolioCRUD (13 tests)
 Tests basic portfolio operations:
 - `test_create_portfolio` - Create portfolio with name and description
 - `test_create_portfolio_minimal` - Create portfolio with name only
@@ -25,8 +26,11 @@ Tests basic portfolio operations:
 - `test_update_archive_status` - Archive/unarchive portfolios
 - `test_get_portfolios_list_default` - Get portfolios excluding excluded ones
 - `test_get_portfolios_list_include_excluded` - Get all portfolios including excluded
+- **[Phase 1b]** `test_get_all_portfolios` - Get all portfolios without filtering
+- **[Phase 1b]** `test_get_portfolio` - Retrieve single portfolio by ID
+- **[Phase 1b]** `test_get_portfolio_not_found` - 404 handling for missing portfolio
 
-#### 2. TestPortfolioFundManagement (7 tests)
+#### 2. TestPortfolioFundManagement (11 tests)
 Tests portfolio-fund relationship operations:
 - `test_create_portfolio_fund` - Create fund relationship
 - `test_create_portfolio_fund_invalid_portfolio` - Error handling for invalid portfolio
@@ -35,6 +39,11 @@ Tests portfolio-fund relationship operations:
 - `test_delete_portfolio_fund_no_transactions` - Delete relationship without transactions
 - `test_delete_portfolio_fund_with_transactions_no_confirmation` - Require confirmation for deletion with transactions
 - `test_delete_portfolio_fund_with_transactions_confirmed` - Delete relationship with cascade
+- **[Phase 1b]** `test_get_portfolio_fund_without_relationships` - Basic PortfolioFund retrieval
+- **[Phase 1b]** `test_get_portfolio_fund_with_relationships` - PortfolioFund with eager loading
+- **[Phase 1b]** `test_get_portfolio_fund_not_found` - Handle missing PortfolioFund
+- **[Phase 1b]** `test_count_portfolio_fund_transactions` - Count transactions for a portfolio fund
+- **[Phase 1b]** `test_count_portfolio_fund_dividends` - Count dividends for a portfolio fund
 
 #### 3. TestPortfolioCalculations (5 tests)
 Tests portfolio value and performance calculations:
@@ -66,6 +75,12 @@ Tests internal helper methods and edge cases:
 - `test_process_transactions_sell_to_zero` - Transaction processing when all shares sold
 - `test_process_transactions_sell_below_zero` - Overselling scenario handling
 - `test_calculate_fund_metrics_historical_format` - Historical format calculations
+
+#### 7. TestGetActivePortfolios (3 tests)
+Tests `get_active_portfolios()` method for retrieving non-archived portfolios (Version 1.3.3 Phase 2b):
+- `test_get_active_portfolios` - Returns only non-archived portfolios
+- `test_get_active_portfolios_empty` - Returns empty list when all portfolios are archived
+- `test_get_active_portfolios_none_exist` - Returns empty list when no portfolios exist
 
 ## Testing Strategy
 

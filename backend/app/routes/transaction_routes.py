@@ -13,7 +13,6 @@ from ..models import (
     LogCategory,
     LogLevel,
     RealizedGainLoss,
-    Transaction,
 )
 from ..services.logging_service import logger, track_request
 from ..services.transaction_service import TransactionService
@@ -145,7 +144,7 @@ def get_transaction(transaction_id):
         JSON response containing transaction details
     """
     try:
-        transaction = Transaction.query.get_or_404(transaction_id)
+        transaction = TransactionService.get_transaction(transaction_id)
         service = TransactionService()
 
         logger.log(

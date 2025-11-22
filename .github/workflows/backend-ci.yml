@@ -29,7 +29,7 @@ jobs:
         pip install -r dev-requirements.txt
     - name: Run tests with coverage
       run: |
-        pytest tests/services --cov=app/services --cov-fail-under=90 --tb=short -q --maxfail=5
+        pytest tests/routes tests/services --cov=app/routes --cov=app/services --cov-fail-under=90 --tb=short -q
     - name: Run linting
       run: |
         ruff check .
