@@ -5,6 +5,21 @@ import './LogViewer.css';
 import FilterPopup from '../components/FilterPopup';
 import Select from 'react-select';
 
+/**
+ * System logs viewer page
+ *
+ * Provides filterable, sortable, paginated view of application logs with level,
+ * category, message, and timestamp filters. Supports clearing all logs via admin action.
+ *
+ * Key business logic:
+ * - Multi-select filters (level, category) use temporary state pattern: changes apply only on popup close
+ * - Text filters (message, source) update immediately
+ * - Date filters convert to UTC ISO format for backend compatibility
+ * - Default sort: newest logs first (timestamp desc)
+ * - Pagination: 50 logs per page
+ *
+ * @returns {JSX.Element} The log viewer page
+ */
 const LogViewer = () => {
   const {
     data: logsData,

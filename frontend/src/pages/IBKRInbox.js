@@ -7,6 +7,34 @@ import { useApp } from '../context/AppContext';
 import { useFormat } from '../context/FormatContext';
 import './IBKRInbox.css';
 
+/**
+ * IBKR transaction inbox page
+ *
+ * Manages imported IBKR Flex Web Service transactions through their lifecycle:
+ * pending → allocated → processed. Supports individual and bulk allocation workflows
+ * with smart fund matching (ISIN/symbol) and portfolio eligibility filtering.
+ *
+ * Key workflows:
+ * - Import Now: Manually trigger IBKR Flex API import (also runs automated daily)
+ * - Single Allocation: Allocate one transaction to portfolio(s) with split percentages
+ * - Bulk Allocation: Apply allocation preset to multiple transactions at once
+ * - View/Edit: Review or modify existing allocations for processed transactions
+ * - Unallocate: Revert processed transaction back to pending status
+ *
+ * Business rules:
+ * - Fund matching: ISIN (primary) or symbol (fallback) determines eligible portfolios
+ * - Allocation validation: Total percentage must equal 100%, at least one portfolio required
+ * - Status filter: Toggle between pending, processed, or all transactions
+ * - Transaction lifecycle: Deleting portfolio transaction auto-reverts IBKR status to pending
+ *
+ * Modal modes:
+ * - create: Allocate pending transaction for first time
+ * - view: Read-only display of processed transaction allocations
+ * - edit: Modify existing allocations (unallocates, then re-allocates)
+ * - bulk: Multi-transaction allocation with preset selection
+ *
+ * @returns {JSX.Element} The IBKR inbox page
+ */
 const IBKRInbox = () => {
   const { features, refreshIBKRTransactionCount } = useApp();
   const { formatCurrencyWithCode, formatNumber } = useFormat();

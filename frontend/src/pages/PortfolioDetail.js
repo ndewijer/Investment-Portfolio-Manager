@@ -17,6 +17,17 @@ import {
 import api from '../utils/api';
 import './PortfolioDetail.css';
 
+/**
+ * Portfolio detail page
+ *
+ * Comprehensive view of a single portfolio including summary metrics, value chart,
+ * fund holdings, transactions, and dividends. Orchestrates three custom hooks
+ * (usePortfolioData, useTransactionManagement, useDividendManagement) to manage
+ * separate data domains. Displays dividend table only if portfolio contains funds
+ * with dividend_type !== 'none'.
+ *
+ * @returns {JSX.Element} The portfolio detail page
+ */
 const PortfolioDetail = () => {
   const { id } = useParams();
 

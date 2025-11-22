@@ -15,6 +15,21 @@ import './Funds.css';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
 
+/**
+ * Fund and stock management page
+ *
+ * Manages investment funds and stocks with CRUD operations. Supports symbol lookup
+ * via Yahoo Finance API to auto-populate name, currency, and exchange fields.
+ *
+ * Key business logic:
+ * - Funds require ISIN, stocks require symbol (ISIN optional for stocks)
+ * - Investment type (fund/stock) is immutable after creation
+ * - Symbol lookup provides validation and optional auto-fill of metadata
+ * - Delete protection: funds with transactions cannot be deleted
+ * - Dividend type (none/cash/stock) tracks dividend distribution method
+ *
+ * @returns {JSX.Element} The funds and stocks management page
+ */
 const Funds = () => {
   const { data: funds, loading, error, execute: fetchFunds } = useApiState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
