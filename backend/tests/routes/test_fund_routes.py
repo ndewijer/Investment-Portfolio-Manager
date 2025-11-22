@@ -21,8 +21,11 @@ issues in the test environment. These endpoints are documented in
 todo/ROUTE_REFACTORING_REMEDIATION_PLAN.md and will be fixed during route refactoring.
 """
 
-from datetime import datetime
+import hashlib
+import os
+from datetime import UTC, datetime
 from decimal import Decimal
+from unittest.mock import patch
 
 from app.models import Fund, FundPrice, Portfolio, PortfolioFund, Transaction, db
 from tests.test_helpers import make_id, make_isin, make_symbol
@@ -375,7 +378,7 @@ class TestFundUsage:
 class TestSymbolLookup:
     """Test symbol lookup endpoint."""
 
-    def test_lookup_symbol_info_mock(self, app_context, client, monkeypatch):
+    def test_lookup_symbol_info_mock(self, app_context, client):
         """
         Verify GET /lookup-symbol-info/<symbol> returns symbol metadata from lookup service.
 
@@ -397,20 +400,19 @@ class TestSymbolLookup:
 
         from app.services import symbol_lookup_service
 
-        monkeypatch.setattr(
+        with patch.object(
             symbol_lookup_service.SymbolLookupService,
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
-        )
+        ):
+            response = client.get("/api/lookup-symbol-info/VTI")
 
-        response = client.get("/api/lookup-symbol-info/VTI")
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data["symbol"] == "VTI"
+            assert "name" in data
 
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["symbol"] == "VTI"
-        assert "name" in data
-
-    def test_lookup_symbol_not_found(self, app_context, client, monkeypatch):
+    def test_lookup_symbol_not_found(self, app_context, client):
         """
         Verify GET /lookup-symbol-info/<symbol> returns 404 for invalid symbols.
 
@@ -425,15 +427,14 @@ class TestSymbolLookup:
 
         from app.services import symbol_lookup_service
 
-        monkeypatch.setattr(
+        with patch.object(
             symbol_lookup_service.SymbolLookupService,
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
-        )
+        ):
+            response = client.get("/api/lookup-symbol-info/INVALID")
 
-        response = client.get("/api/lookup-symbol-info/INVALID")
-
-        assert response.status_code == 404
+            assert response.status_code == 404
 
 
 class TestFundPrices:
@@ -474,7 +475,7 @@ class TestFundPrices:
         assert all("date" in p for p in data)
         assert all("price" in p for p in data)
 
-    def test_update_todays_price(self, app_context, client, db_session, monkeypatch):
+    def test_update_todays_price(self, app_context, client, db_session):
         """
         Verify POST /fund-prices/<fund_id>/update?type=today fetches current price.
 
@@ -492,19 +493,18 @@ class TestFundPrices:
 
         from app.services import price_update_service
 
-        monkeypatch.setattr(
+        with patch.object(
             price_update_service.TodayPriceService,
             "update_todays_price",
             staticmethod(mock_update_todays_price),
-        )
+        ):
+            response = client.post(f"/api/fund-prices/{fund.id}/update?type=today")
 
-        response = client.post(f"/api/fund-prices/{fund.id}/update?type=today")
+            assert response.status_code == 200
+            data = response.get_json()
+            assert "message" in data
 
-        assert response.status_code == 200
-        data = response.get_json()
-        assert "message" in data
-
-    def test_update_historical_prices(self, app_context, client, db_session, monkeypatch):
+    def test_update_historical_prices(self, app_context, client, db_session):
         """
         Verify POST /fund-prices/<fund_id>/update?type=historical backfills price history.
 
@@ -522,23 +522,22 @@ class TestFundPrices:
 
         from app.services import price_update_service
 
-        monkeypatch.setattr(
+        with patch.object(
             price_update_service.HistoricalPriceService,
             "update_historical_prices",
             staticmethod(mock_update_historical_prices),
-        )
+        ):
+            response = client.post(f"/api/fund-prices/{fund.id}/update?type=historical")
 
-        response = client.post(f"/api/fund-prices/{fund.id}/update?type=historical")
-
-        assert response.status_code == 200
-        data = response.get_json()
-        assert "message" in data
+            assert response.status_code == 200
+            data = response.get_json()
+            assert "message" in data
 
 
 class TestUpdateAllPrices:
     """Test update all fund prices endpoint."""
 
-    def test_update_all_fund_prices(self, app_context, client, db_session, monkeypatch):
+    def test_update_all_fund_prices(self, app_context, client, db_session):
         """
         Verify POST /funds/update-all-prices bulk updates all funds via cron job.
 
@@ -546,8 +545,7 @@ class TestUpdateAllPrices:
         manual intervention. This scheduled job is critical for maintaining accurate
         daily portfolio values across all users and funds.
         """
-        import hashlib
-        from datetime import UTC, datetime
+        from datetime import datetime
 
         # Create funds with symbols
         fund1 = create_fund("US", "VTI", "Vanguard Total Stock Market ETF")
@@ -561,15 +559,8 @@ class TestUpdateAllPrices:
 
         from app.services import price_update_service
 
-        monkeypatch.setattr(
-            price_update_service.HistoricalPriceService,
-            "update_historical_prices",
-            staticmethod(mock_update_historical_prices),
-        )
-
         # Set up API key authentication
         api_key = "test_api_key_12345"
-        monkeypatch.setenv("INTERNAL_API_KEY", api_key)
 
         # Generate time-based token (same logic as decorator)
         current_hour = datetime.now(UTC).strftime("%Y-%m-%d-%H")
@@ -578,13 +569,21 @@ class TestUpdateAllPrices:
         # Make request with authentication headers
         headers = {"X-API-Key": api_key, "X-Time-Token": time_token}
 
-        response = client.post("/api/funds/update-all-prices", headers=headers)
+        with (
+            patch.object(
+                price_update_service.HistoricalPriceService,
+                "update_historical_prices",
+                staticmethod(mock_update_historical_prices),
+            ),
+            patch.dict(os.environ, {"INTERNAL_API_KEY": api_key}),
+        ):
+            response = client.post("/api/funds/update-all-prices", headers=headers)
 
-        assert response.status_code == 200
-        data = response.get_json()
-        assert "updated_funds" in data
-        assert "errors" in data
-        assert data["success"] is True
+            assert response.status_code == 200
+            data = response.get_json()
+            assert "updated_funds" in data
+            assert "errors" in data
+            assert data["success"] is True
 
 
 class TestFundCRUDErrors:
@@ -647,7 +646,7 @@ class TestFundCRUDErrors:
 
         assert response.status_code in [400, 500]
 
-    def test_create_fund_database_error(self, app_context, client, monkeypatch):
+    def test_create_fund_database_error(self, app_context, client):
         """
         Verify POST /funds returns 500 with error message on database failures.
 
@@ -660,21 +659,20 @@ class TestFundCRUDErrors:
         def mock_create_fund(data, symbol_info=None):
             raise Exception("Database connection failed")
 
-        monkeypatch.setattr("app.routes.fund_routes.FundService.create_fund", mock_create_fund)
+        with patch("app.routes.fund_routes.FundService.create_fund", mock_create_fund):
+            payload = {
+                "name": "Test Fund",
+                "isin": make_isin("US"),
+                "symbol": "TEST",
+                "currency": "USD",
+                "exchange": "NYSE",
+            }
 
-        payload = {
-            "name": "Test Fund",
-            "isin": make_isin("US"),
-            "symbol": "TEST",
-            "currency": "USD",
-            "exchange": "NYSE",
-        }
+            response = client.post("/api/funds", json=payload)
 
-        response = client.post("/api/funds", json=payload)
-
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
     def test_update_fund_missing_isin(self, app_context, client, db_session):
         """
@@ -698,7 +696,7 @@ class TestFundCRUDErrors:
 
         assert response.status_code in [400, 500]
 
-    def test_update_fund_database_error(self, app_context, client, db_session, monkeypatch):
+    def test_update_fund_database_error(self, app_context, client, db_session):
         """
         Verify PUT /funds/<fund_id> returns 400 with error message on database failures.
 
@@ -714,20 +712,19 @@ class TestFundCRUDErrors:
         def mock_update_fund(fund_id, data):
             raise Exception("Database error")
 
-        monkeypatch.setattr("app.routes.fund_routes.FundService.update_fund", mock_update_fund)
+        with patch("app.routes.fund_routes.FundService.update_fund", mock_update_fund):
+            payload = {
+                "name": "Updated Name",
+                "isin": make_isin("US"),
+                "currency": "USD",
+                "exchange": "NYSE",
+            }
 
-        payload = {
-            "name": "Updated Name",
-            "isin": make_isin("US"),
-            "currency": "USD",
-            "exchange": "NYSE",
-        }
+            response = client.put(f"/api/funds/{fund.id}", json=payload)
 
-        response = client.put(f"/api/funds/{fund.id}", json=payload)
-
-        assert response.status_code == 400
-        data = response.get_json()
-        assert "error" in data or "message" in data
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
     def test_delete_fund_not_found(self, app_context, client):
         """
@@ -744,7 +741,7 @@ class TestFundCRUDErrors:
         data = response.get_json()
         assert "error" in data
 
-    def test_delete_fund_database_error(self, app_context, client, db_session, monkeypatch):
+    def test_delete_fund_database_error(self, app_context, client, db_session):
         """
         Verify DELETE /funds/<fund_id> returns 500 on database failures.
 
@@ -760,15 +757,14 @@ class TestFundCRUDErrors:
         def mock_delete_fund(fund_id):
             raise Exception("Database error")
 
-        monkeypatch.setattr("app.routes.fund_routes.FundService.delete_fund", mock_delete_fund)
+        with patch("app.routes.fund_routes.FundService.delete_fund", mock_delete_fund):
+            response = client.delete(f"/api/funds/{fund.id}")
 
-        response = client.delete(f"/api/funds/{fund.id}")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_check_fund_usage_fund_not_found(self, app_context, client, monkeypatch):
+    def test_check_fund_usage_fund_not_found(self, app_context, client):
         """
         Verify GET /funds/<fund_id>/check-usage handles non-existent funds.
 
@@ -781,14 +777,13 @@ class TestFundCRUDErrors:
         def mock_check_usage(fund_id):
             raise ValueError("Fund not found")
 
-        monkeypatch.setattr("app.routes.fund_routes.FundService.check_fund_usage", mock_check_usage)
+        with patch("app.routes.fund_routes.FundService.check_fund_usage", mock_check_usage):
+            fake_id = make_id()
+            response = client.get(f"/api/funds/{fake_id}/check-usage")
 
-        fake_id = make_id()
-        response = client.get(f"/api/funds/{fake_id}/check-usage")
+            assert response.status_code == 500  # Routes wraps ValueError in 500
 
-        assert response.status_code == 500  # Routes wraps ValueError in 500
-
-    def test_check_fund_usage_database_error(self, app_context, client, monkeypatch):
+    def test_check_fund_usage_database_error(self, app_context, client):
         """
         Verify GET /funds/<fund_id>/check-usage returns 500 on database failures.
 
@@ -801,16 +796,15 @@ class TestFundCRUDErrors:
         def mock_check_usage(fund_id):
             raise Exception("Database error")
 
-        monkeypatch.setattr("app.routes.fund_routes.FundService.check_fund_usage", mock_check_usage)
+        with patch("app.routes.fund_routes.FundService.check_fund_usage", mock_check_usage):
+            fake_id = make_id()
+            response = client.get(f"/api/funds/{fake_id}/check-usage")
 
-        fake_id = make_id()
-        response = client.get(f"/api/funds/{fake_id}/check-usage")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_get_fund_database_error(self, app_context, client, monkeypatch):
+    def test_get_fund_database_error(self, app_context, client):
         """
         Verify GET /funds/<fund_id> returns 500 with error message on database failures.
 
@@ -823,14 +817,13 @@ class TestFundCRUDErrors:
         def mock_get_fund(fund_id):
             raise Exception("Database connection failed")
 
-        monkeypatch.setattr("app.routes.fund_routes.FundService.get_fund", mock_get_fund)
+        with patch("app.routes.fund_routes.FundService.get_fund", mock_get_fund):
+            fake_id = make_id()
+            response = client.get(f"/api/funds/{fake_id}")
 
-        fake_id = make_id()
-        response = client.get(f"/api/funds/{fake_id}")
-
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
     def test_get_funds_database_error(self, app_context, client):
         """
@@ -856,7 +849,7 @@ class TestFundCRUDErrors:
 class TestSymbolLookupErrors:
     """Test error paths for symbol lookup endpoint."""
 
-    def test_lookup_symbol_external_api_failure(self, app_context, client, monkeypatch):
+    def test_lookup_symbol_external_api_failure(self, app_context, client):
         """
         Verify GET /lookup-symbol-info/<symbol> returns 500 on external API failures.
 
@@ -871,19 +864,18 @@ class TestSymbolLookupErrors:
 
         from app.services import symbol_lookup_service
 
-        monkeypatch.setattr(
+        with patch.object(
             symbol_lookup_service.SymbolLookupService,
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
-        )
+        ):
+            response = client.get("/api/lookup-symbol-info/VTI")
 
-        response = client.get("/api/lookup-symbol-info/VTI")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_lookup_symbol_force_refresh_failure(self, app_context, client, monkeypatch):
+    def test_lookup_symbol_force_refresh_failure(self, app_context, client):
         """
         Verify GET /lookup-symbol-info with force_refresh handles API failures.
 
@@ -900,19 +892,18 @@ class TestSymbolLookupErrors:
 
         from app.services import symbol_lookup_service
 
-        monkeypatch.setattr(
+        with patch.object(
             symbol_lookup_service.SymbolLookupService,
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
-        )
+        ):
+            response = client.get("/api/lookup-symbol-info/VTI?force_refresh=true")
 
-        response = client.get("/api/lookup-symbol-info/VTI?force_refresh=true")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_lookup_symbol_empty_symbol(self, app_context, client, monkeypatch):
+    def test_lookup_symbol_empty_symbol(self, app_context, client):
         """
         Verify GET /lookup-symbol-info handles empty/missing symbol parameter.
 
@@ -929,18 +920,17 @@ class TestSymbolLookupErrors:
 
         from app.services import symbol_lookup_service
 
-        monkeypatch.setattr(
+        with patch.object(
             symbol_lookup_service.SymbolLookupService,
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
-        )
+        ):
+            response = client.get("/api/lookup-symbol-info/")
 
-        response = client.get("/api/lookup-symbol-info/")
+            # May get 404 from Flask routing or 404 from our handler
+            assert response.status_code in [404, 308]  # 308 is redirect
 
-        # May get 404 from Flask routing or 404 from our handler
-        assert response.status_code in [404, 308]  # 308 is redirect
-
-    def test_lookup_symbol_cache_error(self, app_context, client, monkeypatch):
+    def test_lookup_symbol_cache_error(self, app_context, client):
         """
         Verify GET /lookup-symbol-info returns 500 on cache read/write failures.
 
@@ -955,23 +945,22 @@ class TestSymbolLookupErrors:
 
         from app.services import symbol_lookup_service
 
-        monkeypatch.setattr(
+        with patch.object(
             symbol_lookup_service.SymbolLookupService,
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
-        )
+        ):
+            response = client.get("/api/lookup-symbol-info/AAPL")
 
-        response = client.get("/api/lookup-symbol-info/AAPL")
-
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
 
 class TestPriceUpdateErrors:
     """Test error paths for fund price update endpoints."""
 
-    def test_get_fund_prices_fund_not_found(self, app_context, client, monkeypatch):
+    def test_get_fund_prices_fund_not_found(self, app_context, client):
         """
         Verify GET /fund-prices/<fund_id> returns 404 for non-existent funds.
 
@@ -985,14 +974,13 @@ class TestPriceUpdateErrors:
         def mock_get_fund(fund_id):
             raise NotFound("Fund not found")
 
-        monkeypatch.setattr("app.routes.fund_routes.FundService.get_fund", mock_get_fund)
+        with patch("app.routes.fund_routes.FundService.get_fund", mock_get_fund):
+            fake_id = make_id()
+            response = client.get(f"/api/fund-prices/{fake_id}")
 
-        fake_id = make_id()
-        response = client.get(f"/api/fund-prices/{fake_id}")
+            assert response.status_code == 404
 
-        assert response.status_code == 404
-
-    def test_get_fund_prices_database_error(self, app_context, client, db_session, monkeypatch):
+    def test_get_fund_prices_database_error(self, app_context, client, db_session):
         """
         Verify GET /fund-prices/<fund_id> returns 500 on database query failures.
 
@@ -1008,20 +996,17 @@ class TestPriceUpdateErrors:
         def mock_get_price_history(fund_id):
             raise Exception("Database query failed")
 
-        monkeypatch.setattr(
+        with patch(
             "app.routes.fund_routes.FundService.get_fund_price_history",
             mock_get_price_history,
-        )
+        ):
+            response = client.get(f"/api/fund-prices/{fund.id}")
 
-        response = client.get(f"/api/fund-prices/{fund.id}")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_update_fund_prices_api_failure_today(
-        self, app_context, client, db_session, monkeypatch
-    ):
+    def test_update_fund_prices_api_failure_today(self, app_context, client, db_session):
         """
         Verify POST /fund-prices/<fund_id>/update?type=today returns 500 on API failures.
 
@@ -1039,21 +1024,18 @@ class TestPriceUpdateErrors:
 
         from app.services import price_update_service
 
-        monkeypatch.setattr(
+        with patch.object(
             price_update_service.TodayPriceService,
             "update_todays_price",
             staticmethod(mock_update_todays_price),
-        )
+        ):
+            response = client.post(f"/api/fund-prices/{fund.id}/update?type=today")
 
-        response = client.post(f"/api/fund-prices/{fund.id}/update?type=today")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_update_fund_prices_api_failure_historical(
-        self, app_context, client, db_session, monkeypatch
-    ):
+    def test_update_fund_prices_api_failure_historical(self, app_context, client, db_session):
         """
         Verify POST /fund-prices update?type=historical returns 500 on API failures.
 
@@ -1071,19 +1053,18 @@ class TestPriceUpdateErrors:
 
         from app.services import price_update_service
 
-        monkeypatch.setattr(
+        with patch.object(
             price_update_service.HistoricalPriceService,
             "update_historical_prices",
             staticmethod(mock_update_historical_prices),
-        )
+        ):
+            response = client.post(f"/api/fund-prices/{fund.id}/update?type=historical")
 
-        response = client.post(f"/api/fund-prices/{fund.id}/update?type=historical")
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_update_all_prices_missing_api_key(self, app_context, client, monkeypatch):
+    def test_update_all_prices_missing_api_key(self, app_context, client):
         """
         Verify POST /funds/update-all-prices requires valid API key authentication.
 
@@ -1092,16 +1073,15 @@ class TestPriceUpdateErrors:
         access and protects against DoS attacks on external price APIs.
         """
         # Ensure INTERNAL_API_KEY is set
-        monkeypatch.setenv("INTERNAL_API_KEY", "test_key")
+        with patch.dict(os.environ, {"INTERNAL_API_KEY": "test_key"}):
+            # Make request without authentication headers
+            response = client.post("/api/funds/update-all-prices")
 
-        # Make request without authentication headers
-        response = client.post("/api/funds/update-all-prices")
+            assert response.status_code == 401
+            data = response.get_json()
+            assert "error" in data or "message" in data
 
-        assert response.status_code == 401
-        data = response.get_json()
-        assert "error" in data or "message" in data
-
-    def test_update_all_prices_invalid_time_token(self, app_context, client, monkeypatch):
+    def test_update_all_prices_invalid_time_token(self, app_context, client):
         """
         Verify POST /funds/update-all-prices validates time-based token freshness.
 
@@ -1110,16 +1090,16 @@ class TestPriceUpdateErrors:
         only be used within a limited time window.
         """
         api_key = "test_api_key_12345"
-        monkeypatch.setenv("INTERNAL_API_KEY", api_key)
 
         # Make request with API key but invalid time token
         headers = {"X-API-Key": api_key, "X-Time-Token": "invalid_token"}
 
-        response = client.post("/api/funds/update-all-prices", headers=headers)
+        with patch.dict(os.environ, {"INTERNAL_API_KEY": api_key}):
+            response = client.post("/api/funds/update-all-prices", headers=headers)
 
-        assert response.status_code == 401
+            assert response.status_code == 401
 
-    def test_update_all_prices_database_error(self, app_context, client, monkeypatch):
+    def test_update_all_prices_database_error(self, app_context, client):
         """
         Verify POST /funds/update-all-prices returns 500 on database failures.
 
@@ -1127,13 +1107,10 @@ class TestPriceUpdateErrors:
         avoid silent failures in scheduled tasks. Clear error responses enable
         monitoring and alerting when nightly price updates fail.
         """
-        import hashlib
-        from datetime import UTC, datetime
-        from unittest.mock import patch
+        from datetime import datetime
 
         # Set up API key authentication
         api_key = "test_api_key_12345"
-        monkeypatch.setenv("INTERNAL_API_KEY", api_key)
 
         # Generate time-based token
         current_hour = datetime.now(UTC).strftime("%Y-%m-%d-%H")
@@ -1145,9 +1122,10 @@ class TestPriceUpdateErrors:
 
             headers = {"X-API-Key": api_key, "X-Time-Token": time_token}
 
-            response = client.post("/api/funds/update-all-prices", headers=headers)
+            with patch.dict(os.environ, {"INTERNAL_API_KEY": api_key}):
+                response = client.post("/api/funds/update-all-prices", headers=headers)
 
-            assert response.status_code == 500
-            data = response.get_json()
-            assert "error" in data
-            assert data["success"] is False
+                assert response.status_code == 500
+                data = response.get_json()
+                assert "error" in data
+                assert data["success"] is False

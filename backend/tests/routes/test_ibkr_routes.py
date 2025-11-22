@@ -865,60 +865,69 @@ class TestIBKRConfigErrors:
         data = response.get_json()
         assert "Invalid token_expires_at format" in data["error"]
 
-    def test_save_config_service_error(self, client, monkeypatch):
+    def test_save_config_service_error(self, client):
         """
         Test POST /ibkr/config handles service errors.
 
         WHY: Database errors must return 500 status with user-friendly messages rather than
         exposing internal exceptions. Critical for production error handling.
         """
-        monkeypatch.setattr(
+
+        def mock_save_config(*args, **kwargs):
+            raise Exception("Database error")
+
+        with patch(
             "app.routes.ibkr_routes.IBKRConfigService.save_config",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Database error")),
-        )
+            mock_save_config,
+        ):
+            payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
+            response = client.post("/api/ibkr/config", json=payload)
 
-        payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
-        response = client.post("/api/ibkr/config", json=payload)
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "Failed to save configuration" in data["error"]
 
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "Failed to save configuration" in data["error"]
-
-    def test_delete_config_not_found(self, client, monkeypatch):
+    def test_delete_config_not_found(self, client):
         """
         Test DELETE /ibkr/config handles config not found.
 
         WHY: Users attempting to delete non-existent configuration should receive clear 404
         errors, not generic failures. Supports proper REST semantics.
         """
-        monkeypatch.setattr(
+
+        def mock_delete_config():
+            raise ValueError("No configuration found")
+
+        with patch(
             "app.routes.ibkr_routes.IBKRConfigService.delete_config",
-            lambda: (_ for _ in ()).throw(ValueError("No configuration found")),
-        )
+            mock_delete_config,
+        ):
+            response = client.delete("/api/ibkr/config")
 
-        response = client.delete("/api/ibkr/config")
+            assert response.status_code == 404
+            data = response.get_json()
+            assert "error" in data
 
-        assert response.status_code == 404
-        data = response.get_json()
-        assert "error" in data
-
-    def test_delete_config_service_error(self, client, monkeypatch):
+    def test_delete_config_service_error(self, client):
         """
         Test DELETE /ibkr/config handles service errors.
 
         WHY: Database failures during deletion must be communicated clearly to users without
         leaving configuration in inconsistent state. Ensures graceful error recovery.
         """
-        monkeypatch.setattr(
+
+        def mock_delete_config():
+            raise Exception("Database error")
+
+        with patch(
             "app.routes.ibkr_routes.IBKRConfigService.delete_config",
-            lambda: (_ for _ in ()).throw(Exception("Database error")),
-        )
+            mock_delete_config,
+        ):
+            response = client.delete("/api/ibkr/config")
 
-        response = client.delete("/api/ibkr/config")
-
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "Failed to delete configuration" in data["error"]
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "Failed to delete configuration" in data["error"]
 
 
 class TestIBKRConnectionErrors:
@@ -1154,7 +1163,7 @@ class TestIBKRInboxErrors:
 
         assert response.status_code == 404
 
-    def test_delete_transaction_service_error(self, client, db_session, monkeypatch):
+    def test_delete_transaction_service_error(self, client, db_session):
         """
         Test DELETE /ibkr/inbox/<id> handles service errors.
 
@@ -1176,14 +1185,13 @@ class TestIBKRInboxErrors:
         db_session.add(txn)
         db_session.commit()
 
-        monkeypatch.setattr(
-            "app.routes.ibkr_routes.db.session.commit",
-            lambda: (_ for _ in ()).throw(Exception("Database error")),
-        )
+        def mock_commit():
+            raise Exception("Database error")
 
-        response = client.delete(f"/api/ibkr/inbox/{txn.id}")
+        with patch("app.routes.ibkr_routes.db.session.commit", mock_commit):
+            response = client.delete(f"/api/ibkr/inbox/{txn.id}")
 
-        assert response.status_code == 500
+            assert response.status_code == 500
 
     def test_get_inbox_count_service_error(self, client):
         """

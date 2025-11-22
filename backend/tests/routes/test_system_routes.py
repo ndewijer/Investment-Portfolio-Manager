@@ -8,6 +8,8 @@ Tests System API endpoints:
 Test Summary: 4 tests (2 integration + 2 error paths)
 """
 
+from unittest.mock import patch
+
 
 class TestSystemRoutes:
     """Test system information endpoints."""
@@ -49,7 +51,7 @@ class TestSystemRoutes:
 class TestSystemErrors:
     """Test error paths for system routes."""
 
-    def test_get_version_info_service_error(self, app_context, client, monkeypatch):
+    def test_get_version_info_service_error(self, app_context, client):
         """
         Verify version endpoint handles service failures gracefully.
 
@@ -62,17 +64,16 @@ class TestSystemErrors:
         def mock_get_version():
             raise Exception("Version file not found")
 
-        monkeypatch.setattr(
+        with patch(
             "app.routes.system_routes.SystemService.get_version_info",
             mock_get_version,
-        )
+        ):
+            response = client.get("/api/system/version")
 
-        response = client.get("/api/system/version")
-
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data
-        assert "details" in data
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data
+            assert "details" in data
 
     def test_health_check_database_error(self, app_context, client):
         """
@@ -82,8 +83,6 @@ class TestSystemErrors:
         and infrastructure failures (503) to route traffic appropriately. When
         the database is down, health check must return 503 Service Unavailable.
         """
-        from unittest.mock import patch
-
         # Mock db.session.execute to raise exception
         with patch("app.routes.system_routes.db.session.execute") as mock_execute:
             mock_execute.side_effect = Exception("Database connection failed")
