@@ -281,52 +281,35 @@ The comprehensive testing approach has proven invaluable:
 
 ## Documentation Standards
 
+> **💡 Detailed Test Information**: Test documentation files are condensed reference guides.
+> For detailed explanations of each test including WHY it exists and what business logic
+> it validates, see the docstrings in the test files. Your IDE will show these when hovering
+> over test names.
+
 ### Structure
-Each service test document follows this template:
-1. **Overview** - What the service does and test scope
-2. **Test Organization** - Test classes and grouping
-3. **Test Suite Walkthrough** - Every test explained
-4. **Coverage Analysis** - What's covered and what's not
+Each test document follows this template:
+1. **Header** - File info, test count, coverage, status
+2. **Overview** - Brief description of what's tested
+3. **Test Organization** - Test classes with one-line descriptions
+4. **Key Patterns** - Brief notes on important testing approaches
 5. **Running Commands** - How to run these specific tests
 6. **Related Documentation** - Cross-references
 
 ### Maintenance Rules
 - **Tests and docs updated together** - Never commit one without the other
 - **Coverage percentages kept current** - Update with every test change
-- **Bugs documented when found** - Add to BUG_FIXES_1.3.3.md
-- **Examples include actual values** - Show what tests use and why
+- **Docstrings explain WHY** - Business context, not implementation details
+- **Markdown stays condensed** - Structure over details
 
 ---
 
-## Usage Guidelines
+## For New Contributors
 
-### For Developers
-**Before modifying tests**:
-1. Read the service's test documentation
-2. Understand the testing patterns used
-3. Follow established conventions
-4. Update documentation with changes
-
-**When adding new tests**:
-1. Follow the service-specific patterns
-2. Document why the test exists
-3. Update coverage statistics
-4. Add to bug fixes doc if applicable
-
-### For Code Reviewers
-**Checklist**:
-- [ ] Test documentation exists for new tests
-- [ ] Documentation explains test purpose and data
-- [ ] Coverage percentages are accurate
-- [ ] Bugs documented if discovered
-- [ ] Tests and docs committed together
-
-### For New Contributors
 **Recommended Reading Order**:
 1. [infrastructure/TESTING_INFRASTRUCTURE.md](infrastructure/TESTING_INFRASTRUCTURE.md) - Learn the foundation
-2. [services/DIVIDEND_SERVICE_TESTS.md](services/DIVIDEND_SERVICE_TESTS.md) - See comprehensive examples
-3. [phases/BUG_FIXES_1.3.3.md](phases/BUG_FIXES_1.3.3.md) - Understand bug discovery process
-4. Pick a service document relevant to your work
+2. Pick a service or route document relevant to your work
+3. Read the test file docstrings for detailed context
+4. [phases/BUG_FIXES_1.3.3.md](phases/BUG_FIXES_1.3.3.md) - Understand bug discovery process
 
 ---
 
@@ -339,26 +322,9 @@ Each service test document follows this template:
 
 ### Project Documentation
 - `/docs/TESTING.md` - High-level testing overview
-- `.claudememory/testing_documentation.md` - Development guidelines
-- `.claudememory/development_workflow.md` - Development process
 
 ---
 
-## Contributing
-
-### Improving Documentation
-- **Add examples** where unclear
-- **Fix outdated information** when found
-- **Cross-reference** related sections
-- **Add diagrams** for complex concepts
-
-### Reporting Issues
-- **Found a bug in tests?** → Check if it's in [phases/BUG_FIXES_1.3.3.md](phases/BUG_FIXES_1.3.3.md)
-- **Documentation out of sync?** → Submit PR with both test and doc fixes
-- **Missing test cases?** → Follow the established patterns to add them
-
----
-
-**Last Updated**: Phase 4 (v1.3.3+)
-**Total Documentation**: 6,000+ lines across 12 comprehensive documents
-**Maintainer**: See git history for contributors
+**Test Count**: 586+ tests (366+ service tests, 220+ route tests)
+**Average Coverage**: 93% across services, 94% across routes
+**Documentation**: Condensed reference guides + comprehensive docstrings
