@@ -177,27 +177,31 @@ class TestCSVTemplates:
         assert "headers" in data
         assert "date" in data["headers"]
 
-    def test_get_csv_template_service_error(self, client, monkeypatch):
+    def test_get_csv_template_service_error(self, client):
         """Test GET /csv-template handles service errors."""
-        monkeypatch.setattr(
-            "app.routes.developer_routes.DeveloperService.get_csv_template",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        from unittest.mock import patch
 
-        response = client.get("/api/csv-template")
+        with patch(
+            "app.routes.developer_routes.DeveloperService.get_csv_template"
+        ) as mock_template:
+            mock_template.side_effect = Exception("Service error")
 
-        assert response.status_code == 500
+            response = client.get("/api/csv-template")
 
-    def test_get_fund_price_template_service_error(self, client, monkeypatch):
+            assert response.status_code == 500
+
+    def test_get_fund_price_template_service_error(self, client):
         """Test GET /fund-price-template handles service errors."""
-        monkeypatch.setattr(
-            "app.routes.developer_routes.DeveloperService.get_fund_price_csv_template",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        from unittest.mock import patch
 
-        response = client.get("/api/fund-price-template")
+        with patch(
+            "app.routes.developer_routes.DeveloperService.get_fund_price_csv_template"
+        ) as mock_template:
+            mock_template.side_effect = Exception("Service error")
 
-        assert response.status_code == 500
+            response = client.get("/api/fund-price-template")
+
+            assert response.status_code == 500
 
 
 class TestImports:
@@ -276,21 +280,17 @@ class TestExchangeRateErrors:
 
         assert response.status_code == 400
 
-    def test_set_exchange_rate_database_error(self, client, monkeypatch):
+    def test_set_exchange_rate_database_error(self, client):
         """Test POST /exchange-rate handles database errors."""
+        from unittest.mock import patch
 
-        def mock_commit():
-            raise Exception("Database error")
+        with patch("app.routes.developer_routes.DeveloperService.set_exchange_rate") as mock_set:
+            mock_set.side_effect = Exception("Database error")
 
-        monkeypatch.setattr(
-            "app.routes.developer_routes.DeveloperService.set_exchange_rate",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Database error")),
-        )
+            payload = {"from_currency": "USD", "to_currency": "EUR", "rate": 0.85}
+            response = client.post("/api/exchange-rate", json=payload)
 
-        payload = {"from_currency": "USD", "to_currency": "EUR", "rate": 0.85}
-        response = client.post("/api/exchange-rate", json=payload)
-
-        assert response.status_code == 400
+            assert response.status_code == 400
 
     def test_get_exchange_rate_invalid_date_format(self, client):
         """Test GET /exchange-rate rejects invalid date format."""
@@ -300,16 +300,16 @@ class TestExchangeRateErrors:
 
         assert response.status_code == 500
 
-    def test_get_exchange_rate_service_error(self, client, monkeypatch):
+    def test_get_exchange_rate_service_error(self, client):
         """Test GET /exchange-rate handles service errors."""
-        monkeypatch.setattr(
-            "app.routes.developer_routes.DeveloperService.get_exchange_rate",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        from unittest.mock import patch
 
-        response = client.get("/api/exchange-rate?from_currency=USD&to_currency=EUR")
+        with patch("app.routes.developer_routes.DeveloperService.get_exchange_rate") as mock_get:
+            mock_get.side_effect = Exception("Service error")
 
-        assert response.status_code == 500
+            response = client.get("/api/exchange-rate?from_currency=USD&to_currency=EUR")
+
+            assert response.status_code == 500
 
 
 class TestFundPriceErrors:
@@ -365,21 +365,21 @@ class TestFundPriceErrors:
 
         assert response.status_code == 400
 
-    def test_set_fund_price_service_error(self, client, db_session, monkeypatch):
+    def test_set_fund_price_service_error(self, client, db_session):
         """Test POST /fund-price handles service errors."""
+        from unittest.mock import patch
+
         fund = create_fund()
         db_session.add(fund)
         db_session.commit()
 
-        monkeypatch.setattr(
-            "app.routes.developer_routes.DeveloperService.set_fund_price",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        with patch("app.routes.developer_routes.DeveloperService.set_fund_price") as mock_set:
+            mock_set.side_effect = Exception("Service error")
 
-        payload = {"fund_id": fund.id, "price": 100.00}
-        response = client.post("/api/fund-price", json=payload)
+            payload = {"fund_id": fund.id, "price": 100.00}
+            response = client.post("/api/fund-price", json=payload)
 
-        assert response.status_code == 400
+            assert response.status_code == 400
 
     def test_get_fund_price_not_found(self, client, db_session):
         """Test GET /fund-price/<fund_id> returns 404 when not found."""
@@ -404,20 +404,20 @@ class TestFundPriceErrors:
 
         assert response.status_code == 500
 
-    def test_get_fund_price_service_error(self, client, db_session, monkeypatch):
+    def test_get_fund_price_service_error(self, client, db_session):
         """Test GET /fund-price/<fund_id> handles service errors."""
+        from unittest.mock import patch
+
         fund = create_fund()
         db_session.add(fund)
         db_session.commit()
 
-        monkeypatch.setattr(
-            "app.routes.developer_routes.DeveloperService.get_fund_price",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        with patch("app.routes.developer_routes.DeveloperService.get_fund_price") as mock_get:
+            mock_get.side_effect = Exception("Service error")
 
-        response = client.get(f"/api/fund-price/{fund.id}")
+            response = client.get(f"/api/fund-price/{fund.id}")
 
-        assert response.status_code == 500
+            assert response.status_code == 500
 
 
 class TestCSVImportErrors:
@@ -590,50 +590,52 @@ class TestLoggingErrors:
 
         assert response.status_code == 500  # KeyError causes general exception
 
-    def test_get_logging_settings_service_error(self, client, monkeypatch):
+    def test_get_logging_settings_service_error(self, client):
         """Test GET /system-settings/logging handles service errors."""
-        monkeypatch.setattr(
-            "app.services.logging_service.LoggingService.get_logging_settings",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        from unittest.mock import patch
 
-        response = client.get("/api/system-settings/logging")
+        with patch("app.services.logging_service.LoggingService.get_logging_settings") as mock_get:
+            mock_get.side_effect = Exception("Service error")
 
-        assert response.status_code == 500
+            response = client.get("/api/system-settings/logging")
 
-    def test_update_logging_settings_service_error(self, client, monkeypatch):
+            assert response.status_code == 500
+
+    def test_update_logging_settings_service_error(self, client):
         """Test PUT /system-settings/logging handles service errors."""
-        monkeypatch.setattr(
-            "app.services.logging_service.LoggingService.update_logging_settings",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        from unittest.mock import patch
 
-        payload = {"enabled": True, "level": "DEBUG"}
-        response = client.put("/api/system-settings/logging", json=payload)
+        with patch(
+            "app.services.logging_service.LoggingService.update_logging_settings"
+        ) as mock_update:
+            mock_update.side_effect = Exception("Service error")
 
-        assert response.status_code == 500
+            payload = {"enabled": True, "level": "DEBUG"}
+            response = client.put("/api/system-settings/logging", json=payload)
 
-    def test_get_logs_service_error(self, client, monkeypatch):
+            assert response.status_code == 500
+
+    def test_get_logs_service_error(self, client):
         """Test GET /logs handles service errors."""
-        monkeypatch.setattr(
-            "app.services.logging_service.LoggingService.get_logs",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        from unittest.mock import patch
 
-        response = client.get("/api/logs")
+        with patch("app.services.logging_service.LoggingService.get_logs") as mock_get:
+            mock_get.side_effect = Exception("Service error")
 
-        assert response.status_code == 500
+            response = client.get("/api/logs")
 
-    def test_clear_logs_service_error(self, client, monkeypatch):
+            assert response.status_code == 500
+
+    def test_clear_logs_service_error(self, client):
         """Test POST /logs/clear handles service errors."""
-        monkeypatch.setattr(
-            "app.services.logging_service.LoggingService.clear_logs",
-            lambda *args, **kwargs: (_ for _ in ()).throw(Exception("Service error")),
-        )
+        from unittest.mock import patch
 
-        response = client.post("/api/logs/clear")
+        with patch("app.services.logging_service.LoggingService.clear_logs") as mock_clear:
+            mock_clear.side_effect = Exception("Service error")
 
-        assert response.status_code == 500
+            response = client.post("/api/logs/clear")
+
+            assert response.status_code == 500
 
 
 class TestLogging:
