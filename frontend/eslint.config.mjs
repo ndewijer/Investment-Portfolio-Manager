@@ -1,6 +1,7 @@
 import { fixupConfigRules, fixupPluginRules } from "@eslint/compat";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsdoc from "eslint-plugin-jsdoc";
 import globals from "globals";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,6 +25,7 @@ export default [...fixupConfigRules(compat.extends(
     plugins: {
         react: fixupPluginRules(react),
         "react-hooks": fixupPluginRules(reactHooks),
+        jsdoc,
     },
 
     languageOptions: {
@@ -45,5 +47,28 @@ export default [...fixupConfigRules(compat.extends(
     rules: {
         "react/prop-types": "off",
         "react/react-in-jsx-scope": "off",
+
+        // JSDoc rules for documentation coverage
+        "jsdoc/require-jsdoc": ["warn", {
+            require: {
+                FunctionDeclaration: true,
+                MethodDefinition: false,
+                ClassDeclaration: true,
+                ArrowFunctionExpression: false,
+                FunctionExpression: false
+            },
+            contexts: [
+                // Require JSDoc for exported arrow functions (React components)
+                "ExportNamedDeclaration > VariableDeclaration > VariableDeclarator > ArrowFunctionExpression",
+                "ExportDefaultDeclaration > ArrowFunctionExpression",
+                // Require JSDoc for const arrow functions at module level (React components)
+                "Program > VariableDeclaration > VariableDeclarator[id.name=/^[A-Z]/] > ArrowFunctionExpression"
+            ]
+        }],
+        "jsdoc/require-description": "warn",
+        "jsdoc/require-param-description": "warn",
+        "jsdoc/require-returns-description": "warn",
+        "jsdoc/check-alignment": "warn",
+        "jsdoc/check-indentation": "off", // Can be strict, disable if too noisy
     },
 }];
