@@ -6,14 +6,39 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 /**
- * Dividends table component
- * @param {Array} dividends - Dividends data
- * @param {boolean} loading - Loading state
- * @param {Object} error - Error state
- * @param {Function} onRetry - Retry function
- * @param {Function} onEditDividend - Edit dividend callback
- * @param {Function} onDeleteDividend - Delete dividend callback
- * @returns {JSX.Element} - Dividends table component
+ * DividendsTable component - Dividend history and status tracking
+ *
+ * Displays portfolio dividend history with type indicators and status:
+ * - Columns: Record Date, Ex-Dividend Date, Fund, Type (Cash/Stock icon),
+ *   Shares Owned, Dividend per Share, Total Amount, Status, Actions
+ * - Status types:
+ *   - PAID OUT: Cash dividends (automatically paid)
+ *   - REINVESTED: Stock dividends that have been reinvested
+ *   - PENDING: Stock dividends not yet reinvested
+ * - Actions: Edit, Delete
+ * - Mobile: Custom card layout with color-coded status badges
+ *
+ * Stock dividends show chart icon, cash dividends show money icon.
+ * Uses DataTable component for sorting and responsive design.
+ *
+ * @param {Object} props
+ * @param {Array} props.dividends - Array of dividend objects
+ * @param {boolean} props.loading - Loading state for DataTable
+ * @param {Object} props.error - Error object if fetch failed
+ * @param {Function} props.onRetry - Retry callback for error state
+ * @param {Function} props.onEditDividend - Callback when editing a dividend
+ * @param {Function} props.onDeleteDividend - Callback when deleting a dividend
+ * @returns {JSX.Element} Dividends table with type and status indicators
+ *
+ * @example
+ * <DividendsTable
+ *   dividends={dividends}
+ *   loading={loading}
+ *   error={error}
+ *   onRetry={fetchDividends}
+ *   onEditDividend={handleEdit}
+ *   onDeleteDividend={handleDelete}
+ * />
  */
 const DividendsTable = ({
   dividends,

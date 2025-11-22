@@ -5,7 +5,42 @@
 /**
  * Validate transaction form data
  * @param {Object} transaction - Transaction data
+ * @param {number} transaction.portfolio_fund_id - Fund ID
+ * @param {string} transaction.date - Transaction date
+ * @param {string} transaction.type - Transaction type (e.g., 'buy', 'sell')
+ * @param {number} transaction.shares - Number of shares
+ * @param {number} transaction.cost_per_share - Cost per share
  * @returns {Object} - Validation result with isValid and errors
+ * @returns {boolean} returns.isValid - Whether the transaction is valid
+ * @returns {Array<string>} returns.errors - Array of error messages
+ *
+ * @example
+ * validateTransaction({
+ *   portfolio_fund_id: 1,
+ *   date: '2024-01-15',
+ *   type: 'buy',
+ *   shares: 10,
+ *   cost_per_share: 100
+ * });
+ * // Returns: { isValid: true, errors: [] }
+ *
+ * @example
+ * validateTransaction({
+ *   portfolio_fund_id: null,
+ *   date: '',
+ *   type: 'buy',
+ *   shares: -5,
+ *   cost_per_share: 0
+ * });
+ * // Returns: {
+ * //   isValid: false,
+ * //   errors: [
+ * //     'Fund is required',
+ * //     'Date is required',
+ * //     'Shares must be greater than 0',
+ * //     'Cost per share must be greater than 0'
+ * //   ]
+ * // }
  */
 export const validateTransaction = (transaction) => {
   const errors = [];
@@ -39,8 +74,43 @@ export const validateTransaction = (transaction) => {
 /**
  * Validate dividend form data
  * @param {Object} dividend - Dividend data
+ * @param {number} dividend.portfolio_fund_id - Fund ID
+ * @param {string} dividend.record_date - Record date
+ * @param {string} dividend.ex_dividend_date - Ex-dividend date
+ * @param {number} dividend.dividend_per_share - Dividend per share amount
+ * @param {string} [dividend.buy_order_date] - Buy order date (for stock dividends)
+ * @param {number} [dividend.reinvestment_shares] - Reinvestment shares (for stock dividends)
+ * @param {number} [dividend.reinvestment_price] - Reinvestment price (for stock dividends)
  * @param {Object} selectedFund - Selected fund data
+ * @param {string} [selectedFund.dividend_type] - Dividend type ('stock' or 'cash')
  * @returns {Object} - Validation result with isValid and errors
+ * @returns {boolean} returns.isValid - Whether the dividend is valid
+ * @returns {Array<string>} returns.errors - Array of error messages
+ *
+ * @example
+ * validateDividend({
+ *   portfolio_fund_id: 1,
+ *   record_date: '2024-01-15',
+ *   ex_dividend_date: '2024-01-10',
+ *   dividend_per_share: 2.50
+ * }, { dividend_type: 'cash' });
+ * // Returns: { isValid: true, errors: [] }
+ *
+ * @example
+ * validateDividend({
+ *   portfolio_fund_id: 1,
+ *   record_date: '2024-01-15',
+ *   ex_dividend_date: '2024-01-10',
+ *   dividend_per_share: 2.50,
+ *   buy_order_date: '2024-01-01'
+ * }, { dividend_type: 'stock' });
+ * // Returns: {
+ * //   isValid: false,
+ * //   errors: [
+ * //     'Reinvestment shares are required for completed stock dividends',
+ * //     'Reinvestment price is required for completed stock dividends'
+ * //   ]
+ * // }
  */
 export const validateDividend = (dividend, selectedFund) => {
   const errors = [];
@@ -97,6 +167,16 @@ export const validateDividend = (dividend, selectedFund) => {
  * @param {string} fromDate - From date
  * @param {string} toDate - To date
  * @returns {Object} - Validation result
+ * @returns {boolean} returns.isValid - Whether the date range is valid
+ * @returns {Array<string>} returns.errors - Array of error messages
+ *
+ * @example
+ * validateDateRange('2024-01-01', '2024-12-31');
+ * // Returns: { isValid: true, errors: [] }
+ *
+ * @example
+ * validateDateRange('2024-12-31', '2024-01-01');
+ * // Returns: { isValid: false, errors: ['From date must be before to date'] }
  */
 export const validateDateRange = (fromDate, toDate) => {
   const errors = [];
@@ -119,9 +199,29 @@ export const validateDateRange = (fromDate, toDate) => {
 /**
  * Check if fund can be removed (has no transactions or dividends)
  * @param {Object} fund - Fund data
+ * @param {number} fund.id - Fund ID
  * @param {Array} transactions - All transactions
  * @param {Array} dividends - All dividends
  * @returns {Object} - Check result
+ * @returns {boolean} returns.canRemove - Whether the fund can be removed
+ * @returns {number} returns.transactionCount - Number of transactions for this fund
+ * @returns {number} returns.dividendCount - Number of dividends for this fund
+ *
+ * @example
+ * canRemoveFund(
+ *   { id: 1 },
+ *   [],
+ *   []
+ * );
+ * // Returns: { canRemove: true, transactionCount: 0, dividendCount: 0 }
+ *
+ * @example
+ * canRemoveFund(
+ *   { id: 1 },
+ *   [{ portfolio_fund_id: 1 }, { portfolio_fund_id: 1 }],
+ *   [{ portfolio_fund_id: 1 }]
+ * );
+ * // Returns: { canRemove: false, transactionCount: 2, dividendCount: 1 }
  */
 export const canRemoveFund = (fund, transactions, dividends) => {
   const fundTransactions = transactions.filter((t) => t.portfolio_fund_id === fund.id);

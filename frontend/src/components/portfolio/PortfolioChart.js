@@ -3,10 +3,29 @@ import ValueChart from '../ValueChart';
 import { formatChartData, getChartLines } from '../../utils/portfolio/portfolioCalculations';
 
 /**
- * Portfolio chart component
- * @param {Array} fundHistory - Fund history data
- * @param {Array} portfolioFunds - Portfolio funds data
- * @returns {JSX.Element} - Portfolio chart component
+ * PortfolioChart component - Interactive portfolio value visualization
+ *
+ * Renders an interactive chart showing portfolio performance over time using
+ * the ValueChart component. Supports toggling between different metrics:
+ * - Value: Current market value
+ * - Cost: Total cost basis
+ * - Realized Gain/Loss: Locked-in profits/losses
+ * - Unrealized Gain/Loss: Paper profits/losses
+ * - Total Gain/Loss: Combined performance
+ *
+ * Features include zoom controls, time range selection, and responsive design.
+ * Defaults to showing 1 year of data. Uses memoization for performance.
+ *
+ * @param {Object} props
+ * @param {Array} props.fundHistory - Historical fund data array with dates and values
+ * @param {Array} props.portfolioFunds - Portfolio funds for chart line configuration
+ * @returns {JSX.Element} Interactive chart with metric toggles
+ *
+ * @example
+ * <PortfolioChart
+ *   fundHistory={historyData}
+ *   portfolioFunds={portfolioFunds}
+ * />
  */
 const PortfolioChart = ({ fundHistory, portfolioFunds }) => {
   const [visibleMetrics, setVisibleMetrics] = useState({

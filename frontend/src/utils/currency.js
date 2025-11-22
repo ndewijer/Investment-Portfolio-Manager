@@ -6,6 +6,18 @@
  * Get currency symbol for a currency code
  * @param {string} currencyCode - ISO currency code (USD, EUR, GBP, etc.)
  * @returns {string} Currency symbol
+ *
+ * @example
+ * getCurrencySymbol('USD');
+ * // Returns: "$"
+ *
+ * @example
+ * getCurrencySymbol('EUR');
+ * // Returns: "€"
+ *
+ * @example
+ * getCurrencySymbol('UNKNOWN');
+ * // Returns: "UNKNOWN"
  */
 export const getCurrencySymbol = (currencyCode) => {
   const currencySymbols = {
@@ -38,8 +50,20 @@ export const getCurrencySymbol = (currencyCode) => {
  * Format amount with currency symbol
  * @param {number} amount - Amount to format
  * @param {string} currencyCode - ISO currency code
- * @param {number} decimals - Number of decimal places (default: 2)
+ * @param {number} [decimals=2] - Number of decimal places (default: 2)
  * @returns {string} Formatted amount with currency symbol
+ *
+ * @example
+ * formatCurrency(1234.56, 'USD');
+ * // Returns: "$1234.56"
+ *
+ * @example
+ * formatCurrency(1000, 'EUR', 0);
+ * // Returns: "€1000"
+ *
+ * @example
+ * formatCurrency(50.5, 'SEK');
+ * // Returns: "50.50 kr"
  */
 export const formatCurrency = (amount, currencyCode, decimals = 2) => {
   const symbol = getCurrencySymbol(currencyCode);

@@ -6,11 +6,31 @@ import NumericInput from '../NumericInput';
 import { isDateInFuture } from '../../utils/portfolio/dateHelpers';
 
 /**
- * Portfolio actions component that handles all modals and forms
- * @param {Object} transactionState - Transaction management state
- * @param {Object} dividendState - Dividend management state
- * @param {Array} portfolioFunds - Portfolio funds data
- * @returns {JSX.Element} - Portfolio actions component
+ * PortfolioActions component - Modal collection for portfolio transactions and dividends
+ *
+ * Centralized component that renders all modal dialogs for portfolio actions:
+ * - Add/Edit transaction modals (buy/sell)
+ * - Add/Edit dividend modals (cash/stock)
+ * - Handles reinvestment fields for stock dividends
+ * - Auto-fetches historical prices for transaction dates
+ * - Validates future dates for dividend reinvestments
+ *
+ * This component receives state management objects from the parent Portfolio
+ * component and delegates rendering to FormModal components, keeping the parent
+ * component clean and focused.
+ *
+ * @param {Object} props
+ * @param {Object} props.transactionState - Transaction state and handlers from parent
+ * @param {Object} props.dividendState - Dividend state and handlers from parent
+ * @param {Array} props.portfolioFunds - Portfolio funds data for display/validation
+ * @returns {JSX.Element} Collection of modal dialogs for portfolio actions
+ *
+ * @example
+ * <PortfolioActions
+ *   transactionState={transactionState}
+ *   dividendState={dividendState}
+ *   portfolioFunds={portfolioFunds}
+ * />
  */
 const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) => {
   const {

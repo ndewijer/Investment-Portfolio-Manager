@@ -7,6 +7,10 @@
  * @param {number} shares - Number of shares
  * @param {number} costPerShare - Cost per share
  * @returns {number} - Total value
+ *
+ * @example
+ * calculateTransactionTotal(100, 25.50);
+ * // Returns: 2550
  */
 export const calculateTransactionTotal = (shares, costPerShare) => {
   return shares * costPerShare;
@@ -16,6 +20,14 @@ export const calculateTransactionTotal = (shares, costPerShare) => {
  * Get fund color for charts
  * @param {number} index - Fund index
  * @returns {string} - Color hex code
+ *
+ * @example
+ * getFundColor(0);
+ * // Returns: "#8884d8"
+ *
+ * @example
+ * getFundColor(7);
+ * // Returns: "#8884d8" (cycles back to first color)
  */
 export const getFundColor = (index) => {
   const colors = ['#8884d8', '#82ca9d', '#ff7300', '#0088fe', '#00c49f', '#ffbb28', '#ff8042'];
@@ -26,7 +38,17 @@ export const getFundColor = (index) => {
  * Sort transactions by date and other criteria
  * @param {Array} transactions - Array of transactions
  * @param {Object} sortConfig - Sort configuration
+ * @param {string} sortConfig.key - Property name to sort by (e.g., 'date', 'shares', 'cost_per_share')
+ * @param {string} sortConfig.direction - Sort direction ('asc' or 'desc')
  * @returns {Array} - Sorted transactions
+ *
+ * @example
+ * const transactions = [
+ *   { date: '2024-01-15', shares: 10, cost_per_share: 100 },
+ *   { date: '2024-01-10', shares: 5, cost_per_share: 95 }
+ * ];
+ * sortTransactions(transactions, { key: 'date', direction: 'desc' });
+ * // Returns transactions sorted by date descending (newest first)
  */
 export const sortTransactions = (transactions, sortConfig) => {
   const sortedTransactions = [...transactions];
@@ -53,7 +75,24 @@ export const sortTransactions = (transactions, sortConfig) => {
  * Filter transactions based on criteria
  * @param {Array} transactions - Array of transactions
  * @param {Object} filters - Filter criteria
+ * @param {Date} [filters.dateFrom] - Filter transactions from this date
+ * @param {Date} [filters.dateTo] - Filter transactions until this date
+ * @param {Array<string>} [filters.fund_names] - Filter by fund names
+ * @param {string} [filters.type] - Filter by transaction type (e.g., 'buy', 'sell')
  * @returns {Array} - Filtered transactions
+ *
+ * @example
+ * const transactions = [
+ *   { date: '2024-01-15', fund_name: 'Fund A', type: 'buy' },
+ *   { date: '2024-02-20', fund_name: 'Fund B', type: 'sell' }
+ * ];
+ * filterTransactions(transactions, {
+ *   dateFrom: new Date('2024-02-01'),
+ *   dateTo: new Date('2024-02-28'),
+ *   fund_names: [],
+ *   type: null
+ * });
+ * // Returns only the second transaction
  */
 export const filterTransactions = (transactions, filters) => {
   return transactions.filter((transaction) => {
@@ -77,7 +116,16 @@ export const filterTransactions = (transactions, filters) => {
 /**
  * Get unique fund names from portfolio funds
  * @param {Array} portfolioFunds - Array of portfolio funds
- * @returns {Array} - Array of unique fund names
+ * @returns {Array<string>} - Array of unique fund names
+ *
+ * @example
+ * const portfolioFunds = [
+ *   { fund_name: 'Fund A' },
+ *   { fund_name: 'Fund B' },
+ *   { fund_name: 'Fund A' }
+ * ];
+ * getUniqueFundNames(portfolioFunds);
+ * // Returns: ['Fund A', 'Fund B']
  */
 export const getUniqueFundNames = (portfolioFunds) => {
   return [...new Set(portfolioFunds.map((pf) => pf.fund_name))];
@@ -85,8 +133,34 @@ export const getUniqueFundNames = (portfolioFunds) => {
 
 /**
  * Format chart data for portfolio history
+ * Transforms daily fund history into a format suitable for charting libraries.
+ * Calculates totals and individual fund metrics for each day.
+ *
  * @param {Array} fundHistory - Fund history data
- * @returns {Array} - Formatted chart data
+ * @param {string} fundHistory[].date - Date in YYYY-MM-DD format
+ * @param {Array} fundHistory[].funds - Array of fund data for this day
+ * @returns {Array<Object>} - Formatted chart data with calculated metrics
+ *
+ * @example
+ * const fundHistory = [{
+ *   date: '2024-01-15',
+ *   funds: [
+ *     { portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 50 },
+ *     { portfolio_fund_id: 2, value: 2000, cost: 1800, realized_gain: 100 }
+ *   ]
+ * }];
+ * formatChartData(fundHistory);
+ * // Returns: [{
+ * //   date: '2024-01-15',
+ * //   totalValue: 3000,
+ * //   totalCost: 2700,
+ * //   realizedGain: 150,
+ * //   unrealizedGain: 300,
+ * //   totalGain: 450,
+ * //   fund_1_value: 1000,
+ * //   fund_1_cost: 900,
+ * //   ...
+ * // }]
  */
 export const formatChartData = (fundHistory) => {
   if (!fundHistory.length) return [];
@@ -123,9 +197,25 @@ export const formatChartData = (fundHistory) => {
 
 /**
  * Generate chart lines configuration
+ * Creates line configuration objects for charting libraries based on selected metrics.
+ *
  * @param {Array} portfolioFunds - Portfolio funds
  * @param {Object} visibleMetrics - Visible metrics configuration
- * @returns {Array} - Chart lines configuration
+ * @param {boolean} [visibleMetrics.value] - Show value lines
+ * @param {boolean} [visibleMetrics.cost] - Show cost lines
+ * @param {boolean} [visibleMetrics.realizedGain] - Show realized gain lines
+ * @param {boolean} [visibleMetrics.unrealizedGain] - Show unrealized gain lines
+ * @param {boolean} [visibleMetrics.totalGain] - Show total gain lines
+ * @returns {Array<Object>} - Chart lines configuration with dataKey, name, color, and styling properties
+ *
+ * @example
+ * const portfolioFunds = [
+ *   { id: 1, fund_name: 'Fund A' },
+ *   { id: 2, fund_name: 'Fund B' }
+ * ];
+ * const visibleMetrics = { value: true, cost: true, realizedGain: false, unrealizedGain: false, totalGain: false };
+ * getChartLines(portfolioFunds, visibleMetrics);
+ * // Returns array of line configurations for total value, total cost, and individual fund lines
  */
 export const getChartLines = (portfolioFunds, visibleMetrics) => {
   const lines = [];

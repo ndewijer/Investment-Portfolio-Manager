@@ -18,15 +18,38 @@ const TYPE_OPTIONS = [
 ].sort((a, b) => a.label.localeCompare(b.label));
 
 /**
- * Transactions table component
- * @param {Array} transactions - Transactions data
- * @param {Array} portfolioFunds - Portfolio funds data
- * @param {boolean} loading - Loading state
- * @param {Object} error - Error state
- * @param {Function} onRetry - Retry function
- * @param {Function} onEditTransaction - Edit transaction callback
- * @param {Function} onDeleteTransaction - Delete transaction callback
- * @returns {JSX.Element} - Transactions table component
+ * TransactionsTable component - Filterable and sortable transaction history
+ *
+ * Displays portfolio transactions with comprehensive filtering and sorting:
+ * - Columns: Date, Fund, Type, Source (IBKR/Manual), Shares, Cost per Share, Total
+ * - Filters: Date range, fund names (multi-select), transaction type
+ * - Sort: All columns except Source
+ * - Mobile: Custom card layout with responsive design
+ * - Actions: Edit/Delete (disabled for dividend transactions)
+ *
+ * Integrates with FilterPopup for advanced filtering using date pickers
+ * and react-select components. Shows IBKR badge for imported transactions.
+ *
+ * @param {Object} props
+ * @param {Array} props.transactions - Array of transaction objects
+ * @param {Array} props.portfolioFunds - Portfolio funds for filter options
+ * @param {boolean} props.loading - Loading state for DataTable
+ * @param {Object} props.error - Error object if fetch failed
+ * @param {Function} props.onRetry - Retry callback for error state
+ * @param {Function} props.onEditTransaction - Callback when editing a transaction
+ * @param {Function} props.onDeleteTransaction - Callback when deleting a transaction
+ * @returns {JSX.Element} Transactions table with filtering and sorting
+ *
+ * @example
+ * <TransactionsTable
+ *   transactions={transactions}
+ *   portfolioFunds={portfolioFunds}
+ *   loading={loading}
+ *   error={error}
+ *   onRetry={fetchTransactions}
+ *   onEditTransaction={handleEdit}
+ *   onDeleteTransaction={handleDelete}
+ * />
  */
 const TransactionsTable = ({
   transactions,

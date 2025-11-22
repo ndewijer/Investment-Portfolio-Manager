@@ -2,9 +2,34 @@ import React from 'react';
 import { useFormat } from '../../context/FormatContext';
 
 /**
- * Portfolio summary cards component
- * @param {Object} portfolio - Portfolio data
- * @returns {JSX.Element} - Portfolio summary component
+ * PortfolioSummary component - Portfolio metrics summary cards
+ *
+ * Displays key portfolio metrics in a grid of summary cards:
+ * - Total Value: Current market value of all holdings
+ * - Total Cost: Total invested amount (cost basis)
+ * - Total Dividends: Sum of all dividend payouts
+ * - Unrealized Gain/Loss: Value - Cost (not yet sold)
+ * - Realized Gain/Loss: Profits/losses from sold positions
+ * - Total Gain/Loss: Combined realized + unrealized
+ *
+ * Gain/loss values are color-coded (green for positive, red for negative).
+ * Uses FormatContext for consistent currency formatting.
+ *
+ * @param {Object} props
+ * @param {Object} props.portfolio - Portfolio data object with metric properties
+ * @returns {JSX.Element} Grid of summary cards displaying portfolio metrics
+ *
+ * @example
+ * <PortfolioSummary
+ *   portfolio={{
+ *     totalValue: 50000,
+ *     totalCost: 45000,
+ *     totalDividends: 1200,
+ *     totalUnrealizedGainLoss: 5000,
+ *     totalRealizedGainLoss: 500,
+ *     totalGainLoss: 5500
+ *   }}
+ * />
  */
 const PortfolioSummary = ({ portfolio }) => {
   const { formatCurrency } = useFormat();
