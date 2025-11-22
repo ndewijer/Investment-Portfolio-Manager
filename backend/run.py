@@ -338,7 +338,8 @@ def create_app(config=None):
         replace_existing=True,
     )
 
-    # Schedule the IBRK Import task to run between 06:30 and 08:30 local time every weekday
+    # Schedule the IBKR Import task to run between 06:30 and 08:30 local time Tue-Sat
+    # (fetches previous business day's close-of-business report)
     scheduler.add_job(
         func=run_ibkr_import,
         trigger=CronTrigger(hour="6-8", minute=30, day_of_week="tue-sat"),
