@@ -65,21 +65,54 @@ Our testing approach:
 **File**: `tests/test_config.py`
 
 ```python
-import tempfile
+from pathlib import Path
+from cryptography.fernet import Fernet
+
+# Get the backend directory path
+BACKEND_DIR = Path(__file__).parent.parent
+DATA_DIR = BACKEND_DIR / "data" / "db"
+
+# Ensure test database directory exists
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# Test database configuration
+TEST_DATABASE_PATH = DATA_DIR / "test_portfolio_manager.db"
+TEST_DATABASE_URI = f"sqlite:///{TEST_DATABASE_PATH}"
+
+# Generate a valid Fernet key for testing (Phase 5)
+TEST_ENCRYPTION_KEY = Fernet.generate_key().decode()
 
 TEST_CONFIG = {
-    "SQLALCHEMY_DATABASE_URI": "sqlite:////tmp/test_portfolio_manager.db",
-    "SQLALCHEMY_TRACK_MODIFICATIONS": False,
     "TESTING": True,
+    "SQLALCHEMY_DATABASE_URI": TEST_DATABASE_URI,
+    "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+    # Flask secret key for sessions
+    "SECRET_KEY": "test-secret-key-not-for-production",
+    # Disable CSRF protection in tests
+    "WTF_CSRF_ENABLED": False,
+    # IBKR encryption key for testing (Phase 5)
+    "IBKR_ENCRYPTION_KEY": TEST_ENCRYPTION_KEY,
 }
 
 def cleanup_test_database():
     """Remove test database file after test session."""
-    import os
-    db_path = "/tmp/test_portfolio_manager.db"
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    if TEST_DATABASE_PATH.exists():
+        TEST_DATABASE_PATH.unlink()
 ```
+
+**Key Configuration Items**:
+
+- **TESTING**: Enables test mode, prevents production behaviors
+- **SQLALCHEMY_DATABASE_URI**: Isolated test database location
+- **SECRET_KEY**: Test-only secret key (never use in production)
+- **WTF_CSRF_ENABLED**: Disabled for easier API testing
+- **IBKR_ENCRYPTION_KEY**: Valid Fernet key for encryption tests (added Phase 5)
+
+**IBKR Encryption Key** (Phase 5):
+- Generated using `Fernet.generate_key()` at test session startup
+- Provides a valid 32-byte base64-encoded key for tests
+- Required for `IBKRFlexService` encryption/decryption tests
+- Different from production key (which is auto-generated or set via environment)
 
 ### Lifecycle
 

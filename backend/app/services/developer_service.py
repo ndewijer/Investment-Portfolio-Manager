@@ -415,7 +415,10 @@ class DeveloperService:
             dict: Fund price details including fund_id, date and price,
                  or None if not found
         """
-        fund_price = FundPrice.query.filter_by(fund_id=fund_id, date=date_).first()
+        from sqlalchemy import select
+
+        stmt = select(FundPrice).where(FundPrice.fund_id == fund_id, FundPrice.date == date_)
+        fund_price = db.session.execute(stmt).scalar_one_or_none()
 
         if fund_price:
             return {

@@ -23,6 +23,27 @@ class TransactionService:
     """
 
     @staticmethod
+    def get_transaction(transaction_id):
+        """
+        Retrieve a transaction by ID.
+
+        Args:
+            transaction_id (str): Transaction identifier
+
+        Returns:
+            Transaction: Transaction object
+
+        Raises:
+            404: If transaction not found
+        """
+        transaction = db.session.get(Transaction, transaction_id)
+        if not transaction:
+            from flask import abort
+
+            abort(404)
+        return transaction
+
+    @staticmethod
     def get_all_transactions():
         """
         Retrieve all transactions from the database.

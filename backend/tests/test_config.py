@@ -6,6 +6,8 @@ This module provides configuration for the test database and test environment.
 
 from pathlib import Path
 
+from cryptography.fernet import Fernet
+
 # Get the backend directory path
 BACKEND_DIR = Path(__file__).parent.parent
 DATA_DIR = BACKEND_DIR / "data" / "db"
@@ -17,6 +19,9 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 TEST_DATABASE_PATH = DATA_DIR / "test_portfolio_manager.db"
 TEST_DATABASE_URI = f"sqlite:///{TEST_DATABASE_PATH}"
 
+# Generate a valid Fernet key for testing
+TEST_ENCRYPTION_KEY = Fernet.generate_key().decode()
+
 # Test configuration dictionary
 TEST_CONFIG = {
     "TESTING": True,
@@ -26,6 +31,8 @@ TEST_CONFIG = {
     "SECRET_KEY": "test-secret-key-not-for-production",
     # Disable CSRF protection in tests
     "WTF_CSRF_ENABLED": False,
+    # IBKR encryption key for testing
+    "IBKR_ENCRYPTION_KEY": TEST_ENCRYPTION_KEY,
 }
 
 
