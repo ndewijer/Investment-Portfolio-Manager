@@ -10,7 +10,37 @@
 - Flask/Gunicorn WSGI server
 - SQLite database with SQLAlchemy ORM
 - RESTful API design
+- Service layer architecture pattern
 - Comprehensive logging system
+
+### Service Layer Pattern
+
+The backend follows a service layer architecture to separate concerns and improve testability:
+
+- **Routes** (`backend/app/routes/`): Handle HTTP requests/responses, input validation, and error formatting
+- **Services** (`backend/app/services/`): Contain business logic, database operations, and complex workflows
+- **Models** (`backend/app/models/`): Define database schema and relationships
+
+**Benefits:**
+- Business logic isolated from HTTP concerns
+- Services can be tested independently without HTTP mocking
+- Routes remain thin and focused on API contract
+- Reusable logic across different endpoints
+
+**Example:**
+```python
+# Route (thin)
+@portfolio.route('/portfolios/<id>', methods=['DELETE'])
+def delete_portfolio(id):
+    return PortfolioService.delete_portfolio(id)
+
+# Service (business logic)
+class PortfolioService:
+    @staticmethod
+    def delete_portfolio(portfolio_id):
+        # Check usage, validate, delete, log
+        ...
+```
 
 ## Automated Tasks
 - Daily fund price updates (weekdays at 23:55)
