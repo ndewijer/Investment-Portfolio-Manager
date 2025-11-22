@@ -690,11 +690,17 @@ def get_transaction_allocations(transaction_id):
     """
     Get allocation details for a processed IBKR transaction.
 
+    Groups allocations by portfolio to combine stock and fee transactions.
+    Each portfolio gets one allocation record with:
+    - allocated_amount: Stock transaction amount
+    - allocated_shares: Number of shares
+    - allocated_commission: Fee transaction amount (0 if no commission)
+
     Args:
         transaction_id: IBKR Transaction ID
 
     Returns:
-        JSON response containing allocation details
+        JSON response containing allocation details grouped by portfolio
     """
     from ..models import IBKRTransactionAllocation, Transaction
 
@@ -706,32 +712,52 @@ def get_transaction_allocations(transaction_id):
             ibkr_transaction_id=transaction_id
         ).all()
 
-        allocation_details = []
+        # Group allocations by portfolio
+        portfolio_allocations = {}
         for allocation in allocations:
+            portfolio_id = allocation.portfolio_id
+
+            # Initialize portfolio entry if not exists
+            if portfolio_id not in portfolio_allocations:
+                portfolio_allocations[portfolio_id] = {
+                    "portfolio_id": portfolio_id,
+                    "portfolio_name": allocation.portfolio.name,
+                    "allocation_percentage": allocation.allocation_percentage,
+                    "allocated_amount": 0.0,
+                    "allocated_shares": 0.0,
+                    "allocated_commission": 0.0,
+                }
+
+            # Get the linked transaction to check its type
             transaction = (
                 db.session.get(Transaction, allocation.transaction_id)
                 if allocation.transaction_id
                 else None
             )
 
-            allocation_details.append(
-                {
-                    "id": allocation.id,
-                    "portfolio_id": allocation.portfolio_id,
-                    "portfolio_name": allocation.portfolio.name,
-                    "allocation_percentage": allocation.allocation_percentage,
-                    "allocated_amount": allocation.allocated_amount,
-                    "allocated_shares": allocation.allocated_shares,
-                    "transaction_id": allocation.transaction_id,
-                    "transaction_date": transaction.date.isoformat() if transaction else None,
-                }
-            )
+            # Separate fee transactions from stock transactions
+            if transaction and transaction.type == "fee":
+                # This is a commission/fee allocation
+                portfolio_allocations[portfolio_id]["allocated_commission"] += (
+                    allocation.allocated_amount
+                )
+            else:
+                # This is a stock/buy/sell/dividend allocation
+                portfolio_allocations[portfolio_id]["allocated_amount"] += (
+                    allocation.allocated_amount
+                )
+                portfolio_allocations[portfolio_id]["allocated_shares"] += (
+                    allocation.allocated_shares
+                )
+
+        # Convert to list
+        allocation_details = list(portfolio_allocations.values())
 
         logger.log(
             level=LogLevel.INFO,
             category=LogCategory.IBKR,
             message=f"Retrieved allocations for IBKR transaction {transaction_id}",
-            details={"allocation_count": len(allocation_details)},
+            details={"portfolio_count": len(allocation_details)},
         )
 
         return (
