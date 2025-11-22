@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
+from flask_restx import Api
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
@@ -279,7 +280,21 @@ def create_app(config=None):
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
-    # Register blueprints
+    # Initialize Flask-RESTX API
+    api = Api(
+        app,
+        version=get_version(),
+        title='Investment Portfolio Manager API',
+        description='API for managing investment portfolios, funds, transactions, and IBKR integration',
+        doc='/api/docs',
+        prefix='/api'
+    )
+
+    # Initialize API namespaces
+    from app.api import init_api
+    init_api(api)
+
+    # Register blueprints (legacy routes - to be gradually migrated)
     app.register_blueprint(portfolios, url_prefix="/api")
     app.register_blueprint(funds, url_prefix="/api")
     app.register_blueprint(transactions, url_prefix="/api")
