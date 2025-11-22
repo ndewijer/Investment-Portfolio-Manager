@@ -335,3 +335,200 @@ class TestDividendUpdateDelete:
 
         # API returns error for dividend not found (404 or 500)
         assert response.status_code in [404, 500]
+
+
+class TestDividendErrors:
+    """Test error paths for dividend routes."""
+
+    def test_create_dividend_service_error(self, client, db_session):
+        """Test POST /dividends handles service errors."""
+        from unittest.mock import patch
+
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "TEST", "Test Fund")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        with patch("app.routes.dividend_routes.DividendService.create_dividend") as mock_create:
+            mock_create.side_effect = Exception("Database error")
+
+            payload = {
+                "fund_id": fund.id,
+                "portfolio_fund_id": pf.id,
+                "record_date": datetime.now().date().isoformat(),
+                "ex_dividend_date": datetime.now().date().isoformat(),
+                "dividend_per_share": 0.50,
+            }
+
+            response = client.post("/api/dividends", json=payload)
+
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_get_fund_dividends_service_error(self, client):
+        """Test GET /dividends/fund/<fund_id> handles service errors."""
+        from unittest.mock import patch
+
+        with patch("app.routes.dividend_routes.DividendService.get_fund_dividends") as mock_get:
+            mock_get.side_effect = Exception("Database query failed")
+
+            fake_id = make_id()
+            response = client.get(f"/api/dividends/fund/{fake_id}")
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_get_portfolio_dividends_service_error(self, client):
+        """Test GET /dividends/portfolio/<portfolio_id> handles service errors."""
+        from unittest.mock import patch
+
+        with patch(
+            "app.routes.dividend_routes.DividendService.get_portfolio_dividends"
+        ) as mock_get:
+            mock_get.side_effect = Exception("Database query failed")
+
+            fake_id = make_id()
+            response = client.get(f"/api/dividends/portfolio/{fake_id}")
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_update_dividend_value_error(self, client, db_session):
+        """Test PUT /dividends/<dividend_id> handles validation errors."""
+        from unittest.mock import patch
+
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "TEST", "Test Fund")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        div = Dividend(
+            fund_id=fund.id,
+            portfolio_fund_id=pf.id,
+            record_date=datetime.now().date(),
+            ex_dividend_date=datetime.now().date() - timedelta(days=1),
+            shares_owned=100,
+            dividend_per_share=Decimal("0.50"),
+            total_amount=Decimal("50.00"),
+        )
+        db_session.add(div)
+        db_session.commit()
+
+        with patch("app.routes.dividend_routes.DividendService.update_dividend") as mock_update:
+            mock_update.side_effect = ValueError("Dividend not found")
+
+            payload = {
+                "fund_id": fund.id,
+                "portfolio_fund_id": pf.id,
+                "record_date": datetime.now().date().isoformat(),
+                "ex_dividend_date": datetime.now().date().isoformat(),
+                "dividend_per_share": 0.55,
+            }
+
+            response = client.put(f"/api/dividends/{div.id}", json=payload)
+
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_update_dividend_general_error(self, client, db_session):
+        """Test PUT /dividends/<dividend_id> handles unexpected errors."""
+        from unittest.mock import patch
+
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "ERR", "Error Fund")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        div = Dividend(
+            fund_id=fund.id,
+            portfolio_fund_id=pf.id,
+            record_date=datetime.now().date(),
+            ex_dividend_date=datetime.now().date() - timedelta(days=1),
+            shares_owned=50,
+            dividend_per_share=Decimal("0.75"),
+            total_amount=Decimal("37.50"),
+        )
+        db_session.add(div)
+        db_session.commit()
+
+        with patch("app.routes.dividend_routes.DividendService.update_dividend") as mock_update:
+            mock_update.side_effect = Exception("Unexpected database error")
+
+            payload = {
+                "fund_id": fund.id,
+                "portfolio_fund_id": pf.id,
+                "record_date": datetime.now().date().isoformat(),
+                "ex_dividend_date": datetime.now().date().isoformat(),
+                "dividend_per_share": 0.80,
+            }
+
+            response = client.put(f"/api/dividends/{div.id}", json=payload)
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_delete_dividend_value_error(self, client):
+        """Test DELETE /dividends/<dividend_id> handles ValueError."""
+        from unittest.mock import patch
+
+        with patch("app.routes.dividend_routes.DividendService.get_dividend") as mock_get:
+            mock_get.side_effect = ValueError("Dividend not found")
+
+            fake_id = make_id()
+            response = client.delete(f"/api/dividends/{fake_id}")
+
+            assert response.status_code == 400
+            data = response.get_json()
+            assert "error" in data or "message" in data
+
+    def test_delete_dividend_general_error(self, client, db_session):
+        """Test DELETE /dividends/<dividend_id> handles unexpected errors."""
+        from unittest.mock import patch
+
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "DEL", "Delete Test")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        div = Dividend(
+            fund_id=fund.id,
+            portfolio_fund_id=pf.id,
+            record_date=datetime.now().date(),
+            ex_dividend_date=datetime.now().date() - timedelta(days=1),
+            shares_owned=25,
+            dividend_per_share=Decimal("1.00"),
+            total_amount=Decimal("25.00"),
+        )
+        db_session.add(div)
+        db_session.commit()
+
+        # Mock get_dividend to succeed but delete_dividend to fail
+        with patch("app.routes.dividend_routes.DividendService.delete_dividend") as mock_delete:
+            mock_delete.side_effect = Exception("Database constraint violation")
+
+            response = client.delete(f"/api/dividends/{div.id}")
+
+            assert response.status_code == 500
+            data = response.get_json()
+            assert "error" in data or "message" in data
