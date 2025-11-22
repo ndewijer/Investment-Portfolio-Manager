@@ -56,6 +56,20 @@ def test_query_id():
 class TestEncryption:
     """Tests for token encryption/decryption (security critical)."""
 
+    def test_init_without_encryption_key(self, app_context):
+        """Test initialization logs warning when encryption key is missing."""
+        from flask import current_app
+
+        with patch.object(current_app.config, "get", return_value=None):
+            with patch("app.services.ibkr_flex_service.logger") as mock_logger:
+                service = IBKRFlexService()
+
+                # Should log error about missing encryption key
+                mock_logger.log.assert_called_once()
+                call_kwargs = mock_logger.log.call_args.kwargs
+                assert "ERROR" in str(call_kwargs.get("level"))
+                assert "encryption key not available" in call_kwargs.get("message").lower()
+
     def test_encrypt_decrypt_token(self, ibkr_service, test_token):
         """Test that encryption and decryption work correctly."""
         # Encrypt token
@@ -224,6 +238,57 @@ class TestErrorHandling:
         assert result is None
 
 
+class TestDebugXMLSaving:
+    """Tests for debug XML saving functionality."""
+
+    @responses.activate
+    def test_save_debug_xml_when_enabled(
+        self, app_context, db_session, ibkr_service, test_token, test_query_id
+    ):
+        """Test that debug XML is saved when IBKR_DEBUG_SAVE_XML is enabled."""
+        # Enable debug XML saving
+        ibkr_service.save_debug_xml = True
+
+        # Mock API responses
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
+
+        with patch("builtins.open", create=True) as mock_open:
+            with patch("os.makedirs"):
+                result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+
+                # Should have attempted to save XML
+                assert mock_open.called
+                assert result is not None
+
+    @responses.activate
+    def test_save_debug_xml_handles_errors(
+        self, app_context, db_session, ibkr_service, test_token, test_query_id
+    ):
+        """Test that errors during debug XML saving are handled gracefully."""
+        ibkr_service.save_debug_xml = True
+
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
+
+        # Mock file write to raise exception
+        with patch("builtins.open", side_effect=IOError("Disk full")):
+            with patch("os.makedirs"):
+                # Should not raise, should handle gracefully
+                result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+                assert result is not None
+
+
 class TestFetchStatement:
     """Tests for fetching statements from IBKR API."""
 
@@ -340,6 +405,120 @@ class TestFetchStatement:
 
         result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
         assert result is None
+
+    @responses.activate
+    def test_fetch_statement_get_statement_http_error(self, ibkr_service, test_token, test_query_id):
+        """Test handling of HTTP error when getting statement (not send request)."""
+        # Mock successful SendRequest
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+
+        # Mock GetStatement with HTTP error
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, status=500)
+
+        result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+        assert result is None
+
+    @responses.activate
+    def test_fetch_statement_timeout_all_retries(
+        self, app_context, db_session, ibkr_service, test_token, test_query_id
+    ):
+        """Test that fetch times out after exhausting all retries for 1019 error."""
+        # Mock successful SendRequest
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+
+        # Mock all GetStatement retries to return "in progress"
+        for _ in range(15):  # More than max_retries (10)
+            responses.add(
+                responses.GET,
+                FLEX_GET_STATEMENT_URL,
+                body=SAMPLE_STATEMENT_IN_PROGRESS,
+                status=200,
+            )
+
+        with patch("time.sleep"):  # Skip actual sleep delays
+            result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+
+        assert result is None
+
+    @responses.activate
+    def test_fetch_statement_non_1019_error(self, ibkr_service, test_token, test_query_id):
+        """Test handling of non-1019 error codes from GetStatement."""
+        # Mock successful SendRequest
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+
+        # Mock GetStatement with different error code
+        error_response = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexStatementResponse timestamp="15 January, 2025 10:30 AM EST">
+          <Status>Fail</Status>
+          <ErrorCode>1018</ErrorCode>
+          <ErrorMessage>Service temporarily unavailable</ErrorMessage>
+        </FlexStatementResponse>"""
+
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=error_response, status=200)
+
+        result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+        assert result is None
+
+    @responses.activate
+    def test_fetch_statement_unexpected_format(self, ibkr_service, test_token, test_query_id):
+        """Test handling of unexpected response format during retries."""
+        # Mock successful SendRequest
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+
+        # Mock GetStatement with unexpected format, then success
+        for _ in range(3):
+            responses.add(
+                responses.GET,
+                FLEX_GET_STATEMENT_URL,
+                body="Not valid XML or expected format",
+                status=200,
+            )
+        responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
+
+        with patch("time.sleep"):
+            result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+
+        # Should eventually succeed after retries
+        assert result is not None
+
+    @responses.activate
+    def test_fetch_statement_parse_error(self, ibkr_service, test_token, test_query_id):
+        """Test handling of XML parse errors in SendRequest response."""
+        # Mock SendRequest with invalid XML
+        responses.add(
+            responses.GET, FLEX_SEND_REQUEST_URL, body="<invalid>not closed", status=200
+        )
+
+        result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+        assert result is None
+
+    @responses.activate
+    def test_fetch_statement_generic_exception(self, ibkr_service, test_token, test_query_id):
+        """Test handling of unexpected exceptions."""
+        # Mock SendRequest to raise an unexpected exception
+        with patch("requests.get", side_effect=RuntimeError("Unexpected error")):
+            result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+            assert result is None
 
 
 class TestParseFlexStatement:
@@ -485,6 +664,181 @@ class TestParseFlexStatement:
         assert gbp_txns[0]["symbol"] == "VOD"
         assert gbp_txns[0]["total_amount"] == 75.00
 
+    def test_parse_statement_generic_exception(self, ibkr_service):
+        """Test handling of generic exceptions during parsing."""
+        # Create XML that will cause an exception in processing
+        with patch("xml.etree.ElementTree.fromstring", side_effect=RuntimeError("Unexpected error")):
+            transactions = ibkr_service.parse_flex_statement("<xml>test</xml>")
+            assert transactions == []
+
+    def test_parse_trade_with_zero_quantity(self, app_context, db_session, ibkr_service):
+        """Test parsing trade with zero quantity (should be skipped)."""
+        zero_quantity_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <Trades>
+                <Trade symbol="AAPL" isin="US0378331005" tradeDate="20250115"
+                       quantity="0" tradePrice="150.00" netCash="0"
+                       currency="USD" transactionID="12345" ibOrderID="67890"/>
+              </Trades>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        transactions = ibkr_service.parse_flex_statement(zero_quantity_xml)
+        # Zero quantity trade should be filtered out
+        assert len(transactions) == 0
+
+    def test_parse_trade_with_invalid_data(self, app_context, db_session, ibkr_service):
+        """Test parsing trade with invalid data (should log warning and skip)."""
+        invalid_trade_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <Trades>
+                <Trade symbol="AAPL" tradeDate="invalid_date"
+                       quantity="not_a_number" tradePrice="150.00"
+                       currency="USD"/>
+              </Trades>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        transactions = ibkr_service.parse_flex_statement(invalid_trade_xml)
+        # Invalid trade should be skipped
+        assert len(transactions) == 0
+
+    def test_parse_cash_transaction_missing_id(self, app_context, db_session, ibkr_service):
+        """Test parsing cash transaction with missing transaction ID (should generate fallback)."""
+        missing_id_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <CashTransactions>
+                <CashTransaction type="Dividends" symbol="AAPL" reportDate="20250115"
+                                amount="25.50" currency="USD" description="AAPL(US0378331005) Cash Dividend"/>
+              </CashTransactions>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        transactions = ibkr_service.parse_flex_statement(missing_id_xml)
+        assert len(transactions) == 1
+        # Should have generated a fallback ID
+        assert transactions[0]["ibkr_transaction_id"].startswith("cash_")
+
+    def test_parse_cash_transaction_non_dividend_fee(self, app_context, db_session, ibkr_service):
+        """Test parsing cash transaction that is neither dividend nor fee (should be skipped)."""
+        other_cash_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <CashTransactions>
+                <CashTransaction type="Deposit" reportDate="20250115"
+                                amount="1000.00" currency="USD"
+                                description="Wire Transfer" transactionID="12345"/>
+              </CashTransactions>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        transactions = ibkr_service.parse_flex_statement(other_cash_xml)
+        # Non-dividend/fee cash transaction should be skipped
+        assert len(transactions) == 0
+
+    def test_parse_cash_transaction_alternate_date_formats(
+        self, app_context, db_session, ibkr_service
+    ):
+        """Test parsing cash transactions with different date formats."""
+        alt_date_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <CashTransactions>
+                <CashTransaction type="Dividends" symbol="AAPL" dateTime="2025-01-15,12:00:00"
+                                amount="25.50" currency="USD"
+                                description="Dividend" transactionID="12345"/>
+              </CashTransactions>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        transactions = ibkr_service.parse_flex_statement(alt_date_xml)
+        assert len(transactions) == 1
+        assert transactions[0]["transaction_type"] == "dividend"
+
+    def test_parse_cash_transaction_with_invalid_data(self, app_context, db_session, ibkr_service):
+        """Test parsing cash transaction with invalid data (should log warning and skip)."""
+        invalid_cash_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <CashTransactions>
+                <CashTransaction type="Dividends" reportDate="invalid_date"
+                                amount="not_a_number" currency="USD"/>
+              </CashTransactions>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        transactions = ibkr_service.parse_flex_statement(invalid_cash_xml)
+        # Invalid cash transaction should be skipped
+        assert len(transactions) == 0
+
+    def test_exchange_rate_import_incomplete_data(self, app_context, db_session, ibkr_service):
+        """Test exchange rate import with incomplete data (should skip)."""
+        incomplete_rate_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <ConversionRates>
+                <ConversionRate fromCurrency="EUR" reportDate="20250115"/>
+              </ConversionRates>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        # Should not raise exception, just skip incomplete data
+        ibkr_service.parse_flex_statement(incomplete_rate_xml)
+
+    def test_exchange_rate_import_invalid_date(self, app_context, db_session, ibkr_service):
+        """Test exchange rate import with invalid date format (should skip)."""
+        invalid_date_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <ConversionRates>
+                <ConversionRate fromCurrency="EUR" toCurrency="USD"
+                               rate="1.10" reportDate="invalid"/>
+              </ConversionRates>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        # Should not raise exception, just skip invalid date
+        ibkr_service.parse_flex_statement(invalid_date_xml)
+
+    def test_exchange_rate_import_exception_handling(self, app_context, db_session, ibkr_service):
+        """Test that exchange rate import handles database exceptions gracefully."""
+        # Create valid exchange rate XML
+        valid_xml = """<?xml version="1.0" encoding="UTF-8"?>
+        <FlexQueryResponse>
+          <FlexStatements>
+            <FlexStatement>
+              <ConversionRates>
+                <ConversionRate fromCurrency="EUR" toCurrency="USD"
+                               rate="1.10" reportDate="20250115"/>
+              </ConversionRates>
+            </FlexStatement>
+          </FlexStatements>
+        </FlexQueryResponse>"""
+
+        # Mock db.session.add to raise exception
+        with patch("app.models.db.session.add", side_effect=RuntimeError("Database error")):
+            # Should not raise, should handle gracefully
+            ibkr_service.parse_flex_statement(valid_xml)
+
 
 class TestImportTransactions:
     """Tests for importing transactions to database."""
@@ -606,6 +960,85 @@ class TestImportTransactions:
         assert result["imported"] == 1
         assert result["skipped"] == 1
 
+    def test_import_transaction_individual_error(self, app_context, db_session, ibkr_service):
+        """Test that individual transaction errors are captured without stopping the batch."""
+        valid_id = make_custom_string("valid_", 8)
+        invalid_id = make_custom_string("invalid_", 8)
+
+        # Mock IBKRTransaction to raise exception for second transaction
+        original_init = IBKRTransaction.__init__
+
+        def mock_init(self, **kwargs):
+            if kwargs.get("ibkr_transaction_id") == invalid_id:
+                raise ValueError("Simulated database constraint error")
+            return original_init(self, **kwargs)
+
+        transactions = [
+            {
+                "ibkr_transaction_id": valid_id,
+                "transaction_date": datetime(2025, 1, 15).date(),
+                "symbol": "AAPL",
+                "isin": "US0378331005",
+                "description": "APPLE INC",
+                "transaction_type": "buy",
+                "quantity": 10,
+                "price": 150.00,
+                "total_amount": 1500.00,
+                "currency": "USD",
+                "fees": 1.00,
+                "raw_data": "{}",
+            },
+            {
+                "ibkr_transaction_id": invalid_id,
+                "transaction_date": datetime(2025, 1, 16).date(),
+                "symbol": "MSFT",
+                "isin": "US5949181045",
+                "description": "MICROSOFT CORP",
+                "transaction_type": "buy",
+                "quantity": 5,
+                "price": 380.00,
+                "total_amount": 1900.00,
+                "currency": "USD",
+                "fees": 1.00,
+                "raw_data": "{}",
+            },
+        ]
+
+        with patch.object(IBKRTransaction, "__init__", mock_init):
+            result = ibkr_service.import_transactions(transactions)
+
+        # First transaction should succeed, second should error
+        assert result["imported"] == 1
+        assert len(result["errors"]) == 1
+        assert result["errors"][0]["ibkr_transaction_id"] == invalid_id
+
+    def test_import_transactions_commit_failure(self, app_context, db_session, ibkr_service):
+        """Test handling of database commit failures."""
+        transactions = [
+            {
+                "ibkr_transaction_id": make_custom_string("test_", 8),
+                "transaction_date": datetime(2025, 1, 15).date(),
+                "symbol": "AAPL",
+                "isin": "US0378331005",
+                "description": "APPLE INC",
+                "transaction_type": "buy",
+                "quantity": 10,
+                "price": 150.00,
+                "total_amount": 1500.00,
+                "currency": "USD",
+                "fees": 1.00,
+                "raw_data": "{}",
+            }
+        ]
+
+        # Mock db.session.commit to raise exception
+        with patch("app.models.db.session.commit", side_effect=RuntimeError("Database error")):
+            result = ibkr_service.import_transactions(transactions)
+
+            # Should capture commit error
+            assert len(result["errors"]) > 0
+            assert any("Database commit failed" in str(err) for err in result["errors"])
+
 
 class TestConnectionTest:
     """Tests for IBKR connection testing."""
@@ -640,6 +1073,16 @@ class TestConnectionTest:
 
         assert result["success"] is False
         assert "message" in result
+
+    def test_connection_exception_handling(self, ibkr_service, test_token, test_query_id):
+        """Test that test_connection handles exceptions gracefully."""
+        # Mock fetch_statement to raise exception
+        with patch.object(ibkr_service, "fetch_statement", side_effect=RuntimeError("Unexpected error")):
+            result = ibkr_service.test_connection(test_token, test_query_id)
+
+            assert result["success"] is False
+            assert "message" in result
+            assert "failed" in result["message"].lower()
 
 
 class TestTriggerManualImport:
