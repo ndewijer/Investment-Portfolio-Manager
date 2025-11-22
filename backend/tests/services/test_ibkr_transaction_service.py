@@ -1982,14 +1982,15 @@ class TestGetTransactionAllocations:
         assert response["status"] == "processed"
         assert len(response["allocations"]) == 1
 
+        # Grouped allocations don't include transaction_id/transaction_date
+        # They combine stock and fee transactions per portfolio
         alloc_data = response["allocations"][0]
         assert alloc_data["portfolio_id"] == sample_portfolio.id
         assert alloc_data["portfolio_name"] == sample_portfolio.name
         assert alloc_data["allocation_percentage"] == 100.0
         assert alloc_data["allocated_amount"] == 1500.0
         assert alloc_data["allocated_shares"] == 10.0
-        assert alloc_data["transaction_id"] == txn.id
-        assert alloc_data["transaction_date"] == "2024-01-15"
+        assert alloc_data["allocated_commission"] == 0.0  # No commission in this test
 
     def test_get_transaction_allocations_no_allocations(self, app_context, db_session):
         """Test get_transaction_allocations returns empty list when no allocations."""
@@ -2021,3 +2022,104 @@ class TestGetTransactionAllocations:
 
         assert status == 404
         assert "error" in response
+
+
+class TestGroupedAllocations:
+    """Tests for grouped allocation logic (combining stock and fee transactions)."""
+
+    def test_get_grouped_allocations_combines_stock_and_commission(
+        self, app_context, db_session
+    ):
+        """Test that get_grouped_allocations combines stock and fee for same portfolio."""
+        # Create test data
+        portfolio = Portfolio(name="Test Portfolio")
+        db_session.add(portfolio)
+        db_session.commit()
+
+        fund = Fund(
+            name="Apple Inc",
+            isin="US0378331005",
+            symbol="AAPL",
+            currency="USD",
+            exchange="NASDAQ",
+            investment_type=InvestmentType.STOCK,
+        )
+        db_session.add(fund)
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        # Create IBKR transaction with commission
+        ibkr_txn = IBKRTransaction(
+            ibkr_transaction_id=make_ibkr_txn_id(),
+            transaction_date=date(2024, 1, 15),
+            symbol="AAPL",
+            description="Apple Inc",
+            transaction_type="buy",
+            quantity=100,
+            price=150.0,
+            total_amount=15000.0,
+            currency="USD",
+            fees=3.00,
+            status="processed",
+        )
+        db_session.add(ibkr_txn)
+        db_session.commit()
+
+        # Create stock transaction
+        stock_txn = Transaction(
+            portfolio_fund_id=pf.id,
+            date=date(2024, 1, 15),
+            type="buy",
+            shares=100.0,
+            cost_per_share=150.0,
+        )
+        db_session.add(stock_txn)
+        db_session.commit()
+
+        # Create fee transaction
+        fee_txn = Transaction(
+            portfolio_fund_id=pf.id,
+            date=date(2024, 1, 15),
+            type="fee",
+            shares=0.0,
+            cost_per_share=3.00,
+        )
+        db_session.add(fee_txn)
+        db_session.commit()
+
+        # Create allocations for both
+        stock_allocation = IBKRTransactionAllocation(
+            ibkr_transaction_id=ibkr_txn.id,
+            portfolio_id=portfolio.id,
+            allocation_percentage=100.0,
+            allocated_amount=15000.0,
+            allocated_shares=100.0,
+            transaction_id=stock_txn.id,
+        )
+        fee_allocation = IBKRTransactionAllocation(
+            ibkr_transaction_id=ibkr_txn.id,
+            portfolio_id=portfolio.id,
+            allocation_percentage=100.0,
+            allocated_amount=3.00,
+            allocated_shares=0.0,
+            transaction_id=fee_txn.id,
+        )
+        db_session.add_all([stock_allocation, fee_allocation])
+        db_session.commit()
+
+        # Get grouped allocations
+        result = IBKRTransactionService.get_grouped_allocations(ibkr_txn.id)
+
+        # Should return 1 grouped allocation (not 2!)
+        assert len(result) == 1
+
+        alloc = result[0]
+        assert alloc["portfolio_id"] == portfolio.id
+        assert alloc["portfolio_name"] == "Test Portfolio"
+        assert alloc["allocation_percentage"] == 100.0
+        assert alloc["allocated_amount"] == 15000.0  # Stock amount
+        assert alloc["allocated_shares"] == 100.0  # Stock shares
+        assert alloc["allocated_commission"] == 3.00  # Fee amount

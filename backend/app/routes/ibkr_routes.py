@@ -552,11 +552,13 @@ def get_transaction_allocations(transaction_id):
     """
     Get allocation details for a processed IBKR transaction.
 
+    Groups allocations by portfolio to combine stock and fee transactions.
+
     Args:
         transaction_id: IBKR Transaction ID
 
     Returns:
-        JSON response containing allocation details
+        JSON response containing allocation details grouped by portfolio
     """
     response, status = IBKRTransactionService.get_transaction_allocations(transaction_id)
     return jsonify(response), status
