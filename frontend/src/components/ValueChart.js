@@ -13,6 +13,50 @@ import {
 import './ValueChart.css';
 import { useFormat } from '../context/FormatContext';
 
+/**
+ * ValueChart component - Advanced interactive chart with zoom, pan, and mobile support
+ *
+ * A feature-rich charting component built on Recharts that supports:
+ * - Desktop: Click-and-drag zoom, Ctrl+scroll wheel zoom/pan
+ * - Mobile: Pinch-to-zoom, swipe-to-pan, tap to toggle tooltip
+ * - Fullscreen mode for mobile devices
+ * - Dynamic metric toggling (value, cost, gains/losses)
+ * - Time range presets (1M, 3M, 1Y, All)
+ * - Peak value reference line
+ * - Auto-loading of historical data
+ * - Responsive design with orientation change support
+ *
+ * The component manages complex zoom state, touch interactions, and provides
+ * a seamless experience across desktop and mobile platforms.
+ *
+ * @param {Object} props
+ * @param {Array} props.data - Chart data array with date and value properties
+ * @param {number} [props.height=400] - Chart height in pixels (desktop mode)
+ * @param {Array} [props.lines=[]] - Line configurations with dataKey, name, color, strokeWidth, etc.
+ * @param {string|boolean} [props.timeRange=false] - Current time range selection ('1M', 'ALL', etc.)
+ * @param {Function} props.onTimeRangeChange - Callback when time range changes
+ * @param {boolean} [props.showTimeRangeButtons=false] - Whether to show time range selection buttons
+ * @param {Object|boolean} [props.visibleMetrics=false] - Object controlling which metrics are visible
+ * @param {Function} props.setVisibleMetrics - Callback to update visible metrics
+ * @param {number} [props.defaultZoomDays=null] - Number of days to show by default (e.g., 365 for last year)
+ * @param {Function} props.onZoomChange - Callback for zoom state changes
+ * @param {Function} props.onLoadAllData - Callback to load all available historical data
+ * @param {Object} [props.totalDataRange=null] - Information about the total data range available
+ * @returns {JSX.Element} Interactive chart component with zoom and pan capabilities
+ *
+ * @example
+ * <ValueChart
+ *   data={chartData}
+ *   lines={[
+ *     { dataKey: 'totalValue', name: 'Value', color: '#1976d2', strokeWidth: 2 },
+ *     { dataKey: 'totalCost', name: 'Cost', color: '#ff6b35', strokeWidth: 2 }
+ *   ]}
+ *   visibleMetrics={{ value: true, cost: true, realizedGain: false }}
+ *   setVisibleMetrics={setVisibleMetrics}
+ *   defaultZoomDays={365}
+ *   onLoadAllData={handleLoadAllData}
+ * />
+ */
 const ValueChart = ({
   data,
   height = 400,

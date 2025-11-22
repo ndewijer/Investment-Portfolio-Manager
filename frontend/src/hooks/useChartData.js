@@ -2,11 +2,47 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../utils/api';
 
 /**
- * Custom hook for managing chart data with intelligent loading based on zoom state
- * @param {string} endpoint - API endpoint to fetch data from
- * @param {Object} params - Additional parameters for the API call
- * @param {number} defaultZoomDays - Default number of days to load initially
- * @returns {Object} - Chart data management object
+ * Custom hook for managing chart data with intelligent progressive loading
+ *
+ * Implements a progressive data loading strategy for time-series charts. Instead of
+ * loading all historical data upfront, it loads a default time range initially and
+ * fetches additional data as the user zooms out. This significantly improves initial
+ * load times while maintaining smooth zoom interactions. The hook tracks loaded ranges
+ * and intelligently appends data at boundaries to avoid duplicate API calls.
+ *
+ * @param {string} endpoint - API endpoint to fetch time-series data from
+ * @param {Object} [params={}] - Additional query parameters for the API call
+ * @param {number} [defaultZoomDays=365] - Initial number of days to load (default: 1 year)
+ * @returns {Object} Chart data management object
+ * @returns {Array} returns.data - Array of data points sorted by date
+ * @returns {boolean} returns.loading - True when fetching data from the API
+ * @returns {string|null} returns.error - Error message if data fetch failed
+ * @returns {Object|null} returns.loadedRange - Currently loaded date range {start, end}
+ * @returns {Object|null} returns.totalDataRange - Total available data range
+ * @returns {function} returns.onZoomChange - Callback for chart zoom state changes
+ * @returns {function} returns.loadDateRange - Manually load a specific date range
+ * @returns {function} returns.resetToInitialRange - Reset to the default zoom level
+ * @returns {function} returns.loadAllData - Load all available historical data
+ * @returns {function} returns.refetch - Re-fetch the currently loaded range
+ *
+ * @example
+ * const {
+ *   data,
+ *   loading,
+ *   onZoomChange,
+ *   loadAllData
+ * } = useChartData('/api/portfolio-history', { portfolio_id: 123 }, 180);
+ *
+ * return (
+ *   <Chart
+ *     data={data}
+ *     loading={loading}
+ *     onZoom={onZoomChange}
+ *     onLoadAll={loadAllData}
+ *   />
+ * );
+ *
+ * @see PortfolioChart for implementation example
  */
 const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
   const [data, setData] = useState([]);

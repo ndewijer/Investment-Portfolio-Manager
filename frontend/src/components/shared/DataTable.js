@@ -6,6 +6,65 @@ import ErrorMessage from './ErrorMessage';
 import FilterPopup from '../FilterPopup';
 import './DataTable.css';
 
+/**
+ * A fully-featured data table component with sorting, filtering, and responsive design.
+ *
+ * Displays data in a table format on desktop and card format on mobile. Supports
+ * client-side sorting, filtering with custom filter types, pagination, and row click handling.
+ * Automatically handles loading and error states.
+ *
+ * @param {Object} props
+ * @param {Array<Object>} [props.data=[]] - Array of data objects to display in the table
+ * @param {Array<Object>} [props.columns=[]] - Column configuration array. Each column object should have:
+ *   - key: string - Property key in data objects
+ *   - header: string - Display header text
+ *   - render: function(value, item) - Optional custom renderer
+ *   - sortable: boolean - Whether column is sortable (default: true)
+ *   - filterable: boolean - Whether column is filterable (default: true)
+ *   - filter: function(item, filterValue) - Custom filter function
+ *   - filterType: string - Type of filter ('text', 'select', 'date', etc.)
+ *   - filterOptions: Array - Options for select-type filters
+ *   - sortFn: function(a, b, direction) - Custom sort function
+ *   - className: string - Header cell CSS class
+ *   - cellClassName: string - Body cell CSS class
+ * @param {boolean} [props.loading=false] - Whether the table is in a loading state
+ * @param {Error|string|null} [props.error=null] - Error to display if data loading failed
+ * @param {function|null} [props.onRowClick=null] - Callback function when a row is clicked: (item) => void
+ * @param {boolean} [props.sortable=true] - Enable/disable sorting functionality globally
+ * @param {boolean} [props.filterable=true] - Enable/disable filtering functionality globally
+ * @param {function|null} [props.mobileCardRenderer=null] - Custom renderer for mobile cards: (item) => JSX.Element
+ * @param {string} [props.className=''] - Additional CSS class for the wrapper
+ * @param {string} [props.emptyMessage='No data available'] - Message to display when data array is empty
+ * @param {function|null} [props.onRetry=null] - Callback for retry button on error: () => void
+ * @param {Object|null} [props.pagination=null] - Pagination configuration object:
+ *   - currentPage: number - Current page number
+ *   - totalPages: number - Total number of pages
+ *   - totalItems: number - Total number of items
+ * @param {function|null} [props.onPaginationChange=null] - Callback when pagination changes: (page) => void
+ * @param {Object|null} [props.defaultSort=null] - Default sort configuration:
+ *   - key: string - Column key to sort by
+ *   - direction: string - Sort direction ('asc' or 'desc')
+ * @returns {JSX.Element}
+ *
+ * @example
+ * const columns = [
+ *   { key: 'name', header: 'Name', sortable: true, filterable: true },
+ *   { key: 'amount', header: 'Amount', render: (val) => `$${val.toFixed(2)}` }
+ * ];
+ * const data = [
+ *   { id: 1, name: 'Apple Inc.', amount: 1500.50 },
+ *   { id: 2, name: 'Microsoft', amount: 2300.75 }
+ * ];
+ *
+ * <DataTable
+ *   data={data}
+ *   columns={columns}
+ *   loading={false}
+ *   onRowClick={(item) => console.log('Clicked:', item)}
+ *   sortable={true}
+ *   filterable={true}
+ * />
+ */
 const DataTable = ({
   data = [],
   columns = [],

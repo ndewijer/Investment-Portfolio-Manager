@@ -4,10 +4,63 @@ import api from '../../utils/api';
 import { getTodayString, toDateString } from '../../utils/portfolio/dateHelpers';
 
 /**
- * Custom hook for managing transactions
- * @param {string} portfolioId - Portfolio ID
- * @param {Function} onDataChange - Callback when data changes
- * @returns {Object} - Transaction management functions and state
+ * Custom hook for managing portfolio transactions (buy/sell operations)
+ *
+ * Provides comprehensive transaction management including CRUD operations, modal states,
+ * and automatic price lookup for buy transactions. This hook handles the complexity of
+ * creating, editing, and deleting transactions while maintaining synchronized state with
+ * the backend. It also integrates fund price fetching to auto-populate transaction costs.
+ *
+ * @param {string} portfolioId - ID of the portfolio to manage transactions for
+ * @param {function} [onDataChange] - Callback invoked after successful create/update/delete operations
+ * @returns {Object} Transaction management object
+ * @returns {Array} returns.transactions - Array of transaction objects for the portfolio
+ * @returns {Object} returns.newTransaction - Current new transaction form state
+ * @returns {Object|null} returns.editingTransaction - Transaction currently being edited
+ * @returns {boolean} returns.transactionsLoading - True when loading transactions
+ * @returns {string|null} returns.transactionsError - Error message if loading failed
+ * @returns {boolean} returns.isTransactionModalOpen - Create modal visibility state
+ * @returns {boolean} returns.isTransactionEditModalOpen - Edit modal visibility state
+ * @returns {boolean} returns.priceFound - True if fund price was found for selected date
+ * @returns {function} returns.loadTransactions - Fetch all transactions for the portfolio
+ * @returns {function} returns.handleCreateTransaction - Create a new transaction
+ * @returns {function} returns.handleEditTransaction - Open edit modal for a transaction
+ * @returns {function} returns.handleUpdateTransaction - Save changes to an existing transaction
+ * @returns {function} returns.handleDeleteTransaction - Delete a transaction with confirmation
+ * @returns {function} returns.handleTransactionDateChange - Handle date changes with price lookup
+ * @returns {function} returns.openTransactionModal - Open create modal for a specific fund
+ * @returns {function} returns.closeTransactionModal - Close create modal and reset form
+ * @returns {function} returns.closeEditModal - Close edit modal and clear editing state
+ * @returns {function} returns.setNewTransaction - Update new transaction form state
+ * @returns {function} returns.setEditingTransaction - Update editing transaction state
+ * @returns {function} returns.setPriceFound - Update price found indicator
+ *
+ * @example
+ * const {
+ *   transactions,
+ *   newTransaction,
+ *   isTransactionModalOpen,
+ *   handleCreateTransaction,
+ *   openTransactionModal,
+ *   closeTransactionModal,
+ *   setNewTransaction
+ * } = useTransactionManagement(portfolioId, () => refreshPortfolio());
+ *
+ * return (
+ *   <>
+ *     <button onClick={() => openTransactionModal(fundId)}>Add Transaction</button>
+ *     <TransactionModal
+ *       isOpen={isTransactionModalOpen}
+ *       transaction={newTransaction}
+ *       onChange={setNewTransaction}
+ *       onSubmit={handleCreateTransaction}
+ *       onClose={closeTransactionModal}
+ *     />
+ *   </>
+ * );
+ *
+ * @see useFundPricing for the price lookup implementation
+ * @see TransactionModal for UI component usage
  */
 export const useTransactionManagement = (portfolioId, onDataChange) => {
   // API state for transactions

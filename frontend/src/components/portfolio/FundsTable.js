@@ -5,18 +5,48 @@ import { useFormat } from '../../context/FormatContext';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 
 /**
- * Funds table component
- * @param {Array} portfolioFunds - Portfolio funds data
- * @param {Array} availableFunds - Available funds for adding
- * @param {boolean} loading - Loading state
- * @param {Object} error - Error state
- * @param {Function} onRetry - Retry function
- * @param {Function} onAddFund - Add fund callback
- * @param {Function} onRemoveFund - Remove fund callback
- * @param {Function} onAddTransaction - Add transaction callback
- * @param {Function} onAddDividend - Add dividend callback
- * @param {Function} onLoadAvailableFunds - Load available funds callback
- * @returns {JSX.Element} - Funds table component
+ * FundsTable component - Portfolio funds/stocks management table
+ *
+ * Displays all funds and stocks in the portfolio with detailed metrics:
+ * - Fund name (clickable to navigate to fund details)
+ * - Latest share price
+ * - Total shares owned
+ * - Average cost per share
+ * - Total cost basis
+ * - Current market value
+ * - Total dividends received
+ * - Actions: Add transaction, Add dividend, Remove fund
+ *
+ * Includes "Add Fund/Stock" button that opens a modal to add new holdings
+ * from the available funds list. Mobile view uses custom card layout.
+ * Dividend button only shown for funds with dividend_type !== 'none'.
+ *
+ * @param {Object} props
+ * @param {Array} props.portfolioFunds - Array of portfolio fund objects with metrics
+ * @param {Array} props.availableFunds - Funds available to add to portfolio
+ * @param {boolean} props.loading - Loading state for DataTable
+ * @param {Object} props.error - Error object if fetch failed
+ * @param {Function} props.onRetry - Retry callback for error state
+ * @param {Function} props.onAddFund - Callback when adding a fund (receives fund ID)
+ * @param {Function} props.onRemoveFund - Callback when removing a fund
+ * @param {Function} props.onAddTransaction - Callback when adding a transaction
+ * @param {Function} props.onAddDividend - Callback when adding a dividend
+ * @param {Function} props.onLoadAvailableFunds - Callback to load available funds list
+ * @returns {JSX.Element} Funds table with action buttons
+ *
+ * @example
+ * <FundsTable
+ *   portfolioFunds={portfolioFunds}
+ *   availableFunds={availableFunds}
+ *   loading={loading}
+ *   error={error}
+ *   onRetry={fetchFunds}
+ *   onAddFund={handleAddFund}
+ *   onRemoveFund={handleRemoveFund}
+ *   onAddTransaction={openTransactionModal}
+ *   onAddDividend={openDividendModal}
+ *   onLoadAvailableFunds={fetchAvailableFunds}
+ * />
  */
 const FundsTable = ({
   portfolioFunds,

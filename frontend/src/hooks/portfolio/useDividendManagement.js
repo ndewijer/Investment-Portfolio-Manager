@@ -4,10 +4,64 @@ import api from '../../utils/api';
 import { getTodayString, toDateString, isDateInFuture } from '../../utils/portfolio/dateHelpers';
 
 /**
- * Custom hook for managing dividends
- * @param {string} portfolioId - Portfolio ID
- * @param {Function} onDataChange - Callback when data changes
- * @returns {Object} - Dividend management functions and state
+ * Custom hook for managing portfolio dividends and reinvestments
+ *
+ * Handles the complete lifecycle of dividend management including both cash and stock
+ * dividends. For stock dividends, it manages the reinvestment workflow including buy
+ * order dates and transaction creation. Supports both past dividends (with complete
+ * reinvestment data) and future dividends (pending reinvestment). Integrates with
+ * fund metadata to determine dividend type and validate required fields.
+ *
+ * @param {string} portfolioId - ID of the portfolio to manage dividends for
+ * @param {function} [onDataChange] - Callback invoked after successful create/update/delete operations
+ * @returns {Object} Dividend management object
+ * @returns {Array} returns.dividends - Array of dividend objects for the portfolio
+ * @returns {Object} returns.newDividend - Current new dividend form state
+ * @returns {Object|null} returns.editingDividend - Dividend currently being edited
+ * @returns {Object|null} returns.selectedFund - Fund details for the current dividend operation
+ * @returns {boolean} returns.dividendsLoading - True when loading dividends
+ * @returns {string|null} returns.dividendsError - Error message if loading failed
+ * @returns {boolean} returns.isDividendModalOpen - Create modal visibility state
+ * @returns {boolean} returns.isDividendEditModalOpen - Edit modal visibility state
+ * @returns {function} returns.loadDividends - Fetch all dividends for the portfolio
+ * @returns {function} returns.handleAddDividend - Open create modal for a specific fund
+ * @returns {function} returns.handleCreateDividend - Create a new dividend record
+ * @returns {function} returns.handleEditDividend - Open edit modal for a dividend
+ * @returns {function} returns.handleUpdateDividend - Save changes to an existing dividend
+ * @returns {function} returns.handleDeleteDividend - Delete a dividend with confirmation
+ * @returns {function} returns.closeDividendModal - Close create modal and reset form
+ * @returns {function} returns.closeDividendEditModal - Close edit modal and clear editing state
+ * @returns {function} returns.setNewDividend - Update new dividend form state
+ * @returns {function} returns.setEditingDividend - Update editing dividend state
+ * @returns {function} returns.setSelectedFund - Update selected fund state
+ *
+ * @example
+ * const {
+ *   dividends,
+ *   newDividend,
+ *   selectedFund,
+ *   isDividendModalOpen,
+ *   handleAddDividend,
+ *   handleCreateDividend,
+ *   closeDividendModal,
+ *   setNewDividend
+ * } = useDividendManagement(portfolioId, () => refreshPortfolio());
+ *
+ * return (
+ *   <>
+ *     <button onClick={() => handleAddDividend(fund)}>Add Dividend</button>
+ *     <DividendModal
+ *       isOpen={isDividendModalOpen}
+ *       dividend={newDividend}
+ *       fund={selectedFund}
+ *       onChange={setNewDividend}
+ *       onSubmit={handleCreateDividend}
+ *       onClose={closeDividendModal}
+ *     />
+ *   </>
+ * );
+ *
+ * @see DividendModal for UI component usage
  */
 export const useDividendManagement = (portfolioId, onDataChange) => {
   // API state for dividends
