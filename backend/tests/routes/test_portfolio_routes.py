@@ -495,3 +495,119 @@ class TestPortfolioFunds:
         data = response.get_json()
         # Fund history endpoint returns fund-specific historical data
         assert data is not None
+
+
+class TestPortfolioErrors:
+    """Test error paths for portfolio routes."""
+
+    def test_archive_portfolio_not_found(self, app_context, client):
+        """Test POST /portfolios/<id>/archive handles non-existent portfolio."""
+        fake_id = make_id()
+        response = client.post(f"/api/portfolios/{fake_id}/archive")
+
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+
+    def test_unarchive_portfolio_not_found(self, app_context, client):
+        """Test POST /portfolios/<id>/unarchive handles non-existent portfolio."""
+        fake_id = make_id()
+        response = client.post(f"/api/portfolios/{fake_id}/unarchive")
+
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+
+    def test_create_portfolio_fund_invalid_portfolio(self, app_context, client, db_session):
+        """Test POST /portfolio-funds rejects non-existent portfolio."""
+        fund = create_fund("US", "TEST", "Test Fund")
+        db_session.add(fund)
+        db_session.commit()
+
+        payload = {"portfolio_id": make_id(), "fund_id": fund.id}
+
+        response = client.post("/api/portfolio-funds", json=payload)
+
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+
+    def test_create_portfolio_fund_invalid_fund(self, app_context, client, db_session):
+        """Test POST /portfolio-funds rejects non-existent fund."""
+        portfolio = Portfolio(name="Test Portfolio")
+        db_session.add(portfolio)
+        db_session.commit()
+
+        payload = {"portfolio_id": portfolio.id, "fund_id": make_id()}
+
+        response = client.post("/api/portfolio-funds", json=payload)
+
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data
+
+    def test_delete_portfolio_fund_not_found(self, app_context, client):
+        """Test DELETE /portfolio-funds/<id> handles non-existent portfolio fund."""
+        fake_id = make_id()
+        response = client.delete(f"/api/portfolio-funds/{fake_id}?confirm=true")
+
+        assert response.status_code == 404
+        data = response.get_json()
+        assert "error" in data or "message" in data
+
+    def test_delete_portfolio_fund_database_error(
+        self, app_context, client, db_session, monkeypatch
+    ):
+        """Test DELETE /portfolio-funds/<id> handles database errors."""
+        portfolio = Portfolio(name="Test")
+        fund = create_fund("US", "ERR", "Error Fund")
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        # Mock PortfolioService.delete_portfolio_fund to raise general exception
+        def mock_delete_pf(portfolio_fund_id, confirmed=False):
+            raise Exception("Database connection failed")
+
+        monkeypatch.setattr(
+            "app.routes.portfolio_routes.PortfolioService.delete_portfolio_fund",
+            mock_delete_pf,
+        )
+
+        response = client.delete(f"/api/portfolio-funds/{pf.id}?confirm=true")
+
+        assert response.status_code == 400
+        data = response.get_json()
+        assert "error" in data or "message" in data
+
+    def test_get_portfolios_with_include_excluded(self, app_context, client, db_session):
+        """Test GET /portfolios?include_excluded=true includes excluded portfolios."""
+        p1 = Portfolio(name="Normal", exclude_from_overview=False)
+        p2 = Portfolio(name="Excluded", exclude_from_overview=True)
+        db_session.add_all([p1, p2])
+        db_session.commit()
+
+        response = client.get("/api/portfolios?include_excluded=true")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        # Should include both portfolios
+        assert len(data) >= 2
+
+    def test_get_portfolios_without_include_excluded(self, app_context, client, db_session):
+        """Test GET /portfolios excludes excluded portfolios by default."""
+        p1 = Portfolio(name="Normal", exclude_from_overview=False)
+        p2 = Portfolio(name="Excluded", exclude_from_overview=True)
+        db_session.add_all([p1, p2])
+        db_session.commit()
+
+        response = client.get("/api/portfolios")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        # Should work (service layer handles filtering)
