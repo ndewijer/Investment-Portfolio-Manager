@@ -32,24 +32,34 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 
 ### Current Coverage
 
-As of version 1.3.3+ (Phase 4):
+As of version 1.3.3+ (Phase 5):
 
 - **Service Tests**: Comprehensive coverage across all major services
-  - **High Coverage Services** (80%+):
-    - `dividend_service.py`: 93% (21 tests) ✅
-    - `transaction_service.py`: 87% (26 tests) ✅
+  - **Excellent Coverage Services** (95%+):
+    - `ibkr_flex_service.py`: 97% (56 tests) ✅ **Updated Phase 5**
+    - `price_update_service.py`: 98% (17 tests) ✅
     - `fund_matching_service.py`: 100% (27 tests) ✅
     - `symbol_lookup_service.py`: 100% (20 tests) ✅
-    - `price_update_service.py`: 98% (17 tests) ✅
-    - `ibkr_flex_service.py`: 77% (31 tests) ✅
-    - `ibkr_transaction_service.py`: 90% (36 tests) ✅
+    - `system_service.py`: 100% ✅
+    - `ibkr_config_service.py`: 100% ✅
+  - **High Coverage Services** (90%+):
+    - `dividend_service.py`: 92% (21 tests) ✅
+    - `portfolio_service.py`: 91% ✅
+    - `transaction_service.py`: 94% (26 tests) ✅
+    - `logging_service.py`: 96% ✅
+    - `fund_service.py`: 97% ✅
   - **Target Coverage Services** (85%+):
-    - `logging_service.py`: 71% → 85%+ (in progress)
-  - **Lower Priority Services** (80%+ target):
-    - `developer_service.py`: 23% → 80%+ (pending)
-    - `fund_service.py`: 20% (existing)
-    - `portfolio_service.py`: 13% (existing)
-    - `ibkr_config_service.py`: 21% (existing)
+    - `ibkr_transaction_service.py`: 89% (40 tests) ✅
+    - `developer_service.py`: 99% ✅
+
+- **Route Tests**: Complete coverage of all route error paths
+  - `ibkr_routes.py`: 100% ✅ **Updated Phase 5**
+  - `portfolio_routes.py`: 100% ✅
+  - `transaction_routes.py`: 100% ✅
+  - `dividend_routes.py`: 100% ✅
+  - `system_routes.py`: 100% ✅
+  - `fund_routes.py`: 96% ✅
+  - `developer_routes.py`: 91% ✅
 
 - **Critical Bugs Found**: 5 bugs discovered and fixed during testing
   - ReinvestmentStatus enum vs string mismatch
@@ -58,7 +68,13 @@ As of version 1.3.3+ (Phase 4):
   - Validation bypassing with zero values
   - UNIQUE constraint errors with invalid cache
 
-**Overall Test Coverage**: 140+ tests across 7 services, 85%+ average coverage for tested services
+**Overall Test Coverage**: 656+ tests across routes and services, **95.20%** average coverage
+
+**Phase 5 Improvements**:
+- ibkr_flex_service coverage: 77% → 97% (+20%)
+- Added 25 new comprehensive error path tests
+- Achieved 100% coverage on all refactored routes
+- Overall coverage: 85% → 95.20% (+10%)
 
 ### Goals
 
