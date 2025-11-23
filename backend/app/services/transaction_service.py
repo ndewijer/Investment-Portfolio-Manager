@@ -113,7 +113,11 @@ class TransactionService:
 
     @staticmethod
     def format_transaction(
-        transaction, ibkr_allocation=None, portfolio_fund_lookup=None, batch_mode=False
+        transaction,
+        ibkr_allocation=None,
+        portfolio_fund_lookup=None,
+        batch_mode=False,
+        include_realized_gain=False,
     ):
         """
         Format a transaction object into a dictionary.
@@ -129,6 +133,8 @@ class TransactionService:
             batch_mode (bool, optional): If True, skip database queries for missing
                 data. Use when calling with pre-loaded data to avoid N+1 queries.
                 Default: False.
+            include_realized_gain (bool, optional): If True, includes realized_gain_loss
+                for sell transactions. Default: False.
 
         Returns:
             dict: Formatted transaction containing:
@@ -141,6 +147,8 @@ class TransactionService:
                 - cost_per_share: Cost per share
                 - ibkr_linked: Boolean indicating if transaction came from IBKR
                 - ibkr_transaction_id: ID of parent IBKR transaction (if applicable)
+                - realized_gain_loss: Realized gain/loss amount (only if include_realized_gain=True
+                  and transaction is a sell)
         """
         # If IBKR allocation not provided, query it (backwards compatibility)
         # Skip querying if in batch mode to avoid N+1 queries
@@ -158,7 +166,7 @@ class TransactionService:
             # Only access relationship if not in batch mode
             fund_name = transaction.portfolio_fund.fund.name if not batch_mode else "Unknown"
 
-        return {
+        result = {
             "id": transaction.id,
             "portfolio_fund_id": transaction.portfolio_fund_id,
             "fund_name": fund_name,
@@ -169,6 +177,16 @@ class TransactionService:
             "ibkr_linked": bool(ibkr_allocation),
             "ibkr_transaction_id": ibkr_allocation.ibkr_transaction_id if ibkr_allocation else None,
         }
+
+        # Include realized gain/loss if requested and it's a sell transaction
+        if include_realized_gain and transaction.type == "sell" and not batch_mode:
+            realized_record = RealizedGainLoss.query.filter_by(
+                transaction_id=transaction.id
+            ).first()
+            if realized_record:
+                result["realized_gain_loss"] = realized_record.realized_gain_loss
+
+        return result
 
     @staticmethod
     def create_transaction(data):

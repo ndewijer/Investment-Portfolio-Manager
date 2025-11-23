@@ -12,7 +12,6 @@ from flask import Blueprint, jsonify, request
 from ..models import (
     LogCategory,
     LogLevel,
-    RealizedGainLoss,
 )
 from ..services.logging_service import logger, track_request
 from ..services.transaction_service import TransactionService
@@ -92,16 +91,10 @@ def create_transaction():
         service = TransactionService()
         transaction = service.create_transaction(data)
 
-        # Format the transaction response
-        response = service.format_transaction(transaction)
-        if data["type"] == "sell":
-            # Add realized gain/loss info to response for sell transactions
-            realized_records = RealizedGainLoss.query.filter_by(
-                transaction_id=transaction.id
-            ).first()
-
-            if realized_records:
-                response["realized_gain_loss"] = realized_records.realized_gain_loss
+        # Format the transaction response with realized gain/loss for sell transactions
+        response = service.format_transaction(
+            transaction, include_realized_gain=(data["type"] == "sell")
+        )
 
         logger.log(
             level=LogLevel.INFO,
@@ -189,23 +182,10 @@ def update_transaction(transaction_id):
         service = TransactionService()
         transaction = service.update_transaction(transaction_id, data)
 
-        # Format the transaction response
-        response = service.format_transaction(transaction)
-        if transaction.type == "sell":
-            # Add realized gain/loss info to response
-            portfolio_fund = transaction.portfolio_fund
-            realized_records = (
-                RealizedGainLoss.query.filter_by(
-                    portfolio_id=portfolio_fund.portfolio_id,
-                    fund_id=portfolio_fund.fund_id,
-                    transaction_date=transaction.date,
-                )
-                .order_by(RealizedGainLoss.created_at.desc())
-                .first()
-            )
-
-            if realized_records:
-                response["realized_gain_loss"] = realized_records.realized_gain_loss
+        # Format the transaction response with realized gain/loss for sell transactions
+        response = service.format_transaction(
+            transaction, include_realized_gain=(transaction.type == "sell")
+        )
 
         logger.log(
             level=LogLevel.INFO,

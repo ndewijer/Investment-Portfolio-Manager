@@ -12,7 +12,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 
-from ..models import Fund, LogCategory, LogLevel, db
+from ..models import LogCategory, LogLevel, db
 from ..services.fund_service import FundService
 from ..services.logging_service import logger, track_request
 from ..services.price_update_service import HistoricalPriceService, TodayPriceService
@@ -32,28 +32,14 @@ def get_funds():
         JSON response containing list of funds with their details
     """
     try:
-        funds = Fund.query.all()
+        funds_data = FundService.get_all_funds_formatted()
         logger.log(
             level=LogLevel.INFO,
             category=LogCategory.FUND,
             message="Successfully retrieved all funds",
-            details={"fund_count": len(funds)},
+            details={"fund_count": len(funds_data)},
         )
-        return jsonify(
-            [
-                {
-                    "id": f.id,
-                    "name": f.name,
-                    "isin": f.isin,
-                    "symbol": f.symbol,
-                    "currency": f.currency,
-                    "exchange": f.exchange,
-                    "dividend_type": f.dividend_type.value,
-                    "investment_type": f.investment_type.value,
-                }
-                for f in funds
-            ]
-        )
+        return jsonify(funds_data)
     except Exception as e:
         response, status = logger.log(
             level=LogLevel.ERROR,
@@ -528,53 +514,7 @@ def update_all_fund_prices():
         JSON response containing update results
     """
     try:
-        # Get all funds with symbols
-        funds_with_symbols = Fund.query.filter(Fund.symbol.isnot(None), Fund.symbol != "").all()
-
-        updated_funds = []
-        errors = []
-
-        for fund in funds_with_symbols:
-            try:
-                result, status = HistoricalPriceService.update_historical_prices(fund.id)
-
-                if status == 200:
-                    updated_funds.append(
-                        {
-                            "fund_id": fund.id,
-                            "name": fund.name,
-                            "symbol": fund.symbol,
-                            "prices_added": result.get("prices_added", 0),
-                        }
-                    )
-                else:
-                    errors.append(
-                        {
-                            "fund_id": fund.id,
-                            "name": fund.name,
-                            "symbol": fund.symbol,
-                            "error": result.get("message", "Unknown error"),
-                        }
-                    )
-            except Exception as e:
-                errors.append(
-                    {
-                        "fund_id": fund.id,
-                        "name": fund.name,
-                        "symbol": fund.symbol,
-                        "error": str(e),
-                    }
-                )
-
-        return jsonify(
-            {
-                "success": True,
-                "updated_funds": updated_funds,
-                "errors": errors,
-                "total_updated": len(updated_funds),
-                "total_errors": len(errors),
-            }
-        )
-
+        result = FundService.update_all_fund_prices()
+        return jsonify(result)
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

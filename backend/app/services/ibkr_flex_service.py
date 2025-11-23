@@ -834,6 +834,76 @@ class IBKRFlexService:
 
         return results
 
+    def trigger_manual_import(self, config) -> tuple[dict, int]:
+        """
+        Trigger a manual IBKR transaction import.
+
+        This method orchestrates the full import process:
+        1. Decrypts the token
+        2. Fetches the statement from IBKR
+        3. Parses transactions
+        4. Imports them to database
+        5. Updates the last import date
+
+        Args:
+            config: IBKRConfig object with credentials
+
+        Returns:
+            tuple: (response dict, status code)
+        """
+        try:
+            # Decrypt token
+            token = self._decrypt_token(config.flex_token)
+
+            # Fetch statement
+            xml_data = self.fetch_statement(token, config.flex_query_id, use_cache=True)
+
+            if not xml_data:
+                logger.log(
+                    level=LogLevel.ERROR,
+                    category=LogCategory.IBKR,
+                    message="Failed to fetch statement from IBKR",
+                    details={"query_id": config.flex_query_id},
+                )
+                return {"error": "Failed to fetch statement from IBKR"}, 500
+
+            # Parse transactions
+            transactions = self.parse_flex_statement(xml_data)
+
+            # Import transactions
+            results = self.import_transactions(transactions)
+
+            # Update last import date
+            config.last_import_date = datetime.now()
+            db.session.commit()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message="Manual IBKR import completed",
+                details=results,
+            )
+
+            return (
+                {
+                    "success": True,
+                    "message": "Import completed",
+                    "imported": results["imported"],
+                    "skipped": results["skipped"],
+                    "errors": results["errors"],
+                },
+                200,
+            )
+
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Error during IBKR import",
+                details={"error": str(e)},
+            )
+            return {"error": "Import failed", "details": str(e)}, 500
+
     def test_connection(self, token: str, query_id: str) -> dict:
         """
         Test IBKR Flex connection.
