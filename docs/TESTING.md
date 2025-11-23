@@ -32,11 +32,9 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 
 ### Current Coverage
 
-As of version 1.3.3+ (Phase 5):
-
 - **Service Tests**: Comprehensive coverage across all major services
   - **Excellent Coverage Services** (95%+):
-    - `ibkr_flex_service.py`: 97% (56 tests) ✅ **Updated Phase 5**
+    - `ibkr_flex_service.py`: 97% (56 tests) ✅
     - `price_update_service.py`: 98% (17 tests) ✅
     - `fund_matching_service.py`: 100% (27 tests) ✅
     - `symbol_lookup_service.py`: 100% (20 tests) ✅
@@ -53,7 +51,7 @@ As of version 1.3.3+ (Phase 5):
     - `developer_service.py`: 99% ✅
 
 - **Route Tests**: Complete coverage of all route error paths
-  - `ibkr_routes.py`: 100% ✅ **Updated Phase 5**
+  - `ibkr_routes.py`: 100% ✅
   - `portfolio_routes.py`: 100% ✅
   - `transaction_routes.py`: 100% ✅
   - `dividend_routes.py`: 100% ✅
@@ -69,12 +67,6 @@ As of version 1.3.3+ (Phase 5):
   - UNIQUE constraint errors with invalid cache
 
 **Overall Test Coverage**: 656+ tests across routes and services, **95.20%** average coverage
-
-**Phase 5 Improvements**:
-- ibkr_flex_service coverage: 77% → 97% (+20%)
-- Added 25 new comprehensive error path tests
-- Achieved 100% coverage on all refactored routes
-- Overall coverage: 85% → 95.20% (+10%)
 
 ### Goals
 

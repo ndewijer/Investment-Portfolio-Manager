@@ -4,9 +4,7 @@
 **Service**: `app/services/ibkr_flex_service.py`\
 **Constants**: `app/constants/ibkr_constants.py`\
 **Tests**: 56 tests\
-**Coverage**: 97% (302 statements, 8 missed)\
-**Created**: Version 1.3.3 (Phase 4)\
-**Updated**: Phase 5 (Constant Extraction + Coverage Improvements)
+**Coverage**: 97% (302 statements, 8 missed)
 
 ## Overview
 
@@ -21,9 +19,9 @@ Comprehensive test suite for the IBKRFlexService class, which handles integratio
 
 The test suite achieves **97% coverage**, testing all public methods, error handling paths, edge cases, and integration points with the IBKR API.
 
-## Architecture - Constants Module (Phase 5 Refactoring)
+## Architecture - Constants Module
 
-As of Phase 5, IBKR Flex API constants have been extracted from the service class to a dedicated constants module for improved maintainability and code organization.
+IBKR Flex API constants are extracted from the service class into a dedicated constants module for improved maintainability and code organization.
 
 ### Constants Location: `app/constants/ibkr_constants.py`
 
@@ -59,13 +57,13 @@ FLEX_ERROR_CODES = {
 
 #### 1. TestEncryption (3 tests)
 Tests token encryption and decryption functionality:
-- `test_init_without_encryption_key` - **NEW**: Validates error logging when encryption key is missing
+- `test_init_without_encryption_key` - Validates error logging when encryption key is missing
 - `test_encrypt_decrypt_token` - Full encryption cycle validation
 - `test_encrypt_without_key` - Validates encryption fails without key
 
 **Coverage**: Critical security functionality ensuring tokens are never stored in plaintext.
 
-#### 2. TestDebugXMLSaving (2 tests) **NEW**
+#### 2. TestDebugXMLSaving (2 tests)
 Tests debug XML saving functionality for troubleshooting:
 - `test_save_debug_xml_when_enabled` - Validates XML is saved when debug mode enabled
 - `test_save_debug_xml_handles_errors` - Ensures file write errors are handled gracefully
@@ -75,12 +73,10 @@ Tests debug XML saving functionality for troubleshooting:
 #### 3. TestFetchStatement (15 tests)
 Tests IBKR Flex API interaction and HTTP communication:
 
-**Existing Tests**:
+**Test Coverage**:
 - `test_fetch_statement_success` - Successful statement fetch
 - `test_fetch_statement_with_retry` - Retry logic for 1019 error (statement not ready)
 - `test_fetch_statement_network_error` - Network failure handling
-
-**NEW Error Path Tests** (7 additional):
 - `test_fetch_statement_get_statement_http_error` - HTTP 500 error on GetStatement call
 - `test_fetch_statement_timeout_all_retries` - Exhausting all retries for 1019 error
 - `test_fetch_statement_non_1019_error` - Non-1019 error codes (e.g., 1018)
@@ -93,12 +89,10 @@ Tests IBKR Flex API interaction and HTTP communication:
 #### 4. TestParseFlexStatement (17 tests)
 Tests XML parsing and transaction extraction:
 
-**Existing Tests**:
+**Test Coverage**:
 - `test_parse_flex_statement_trades` - Trade transaction parsing
 - `test_parse_statement_empty` - Empty statement handling
 - `test_parse_invalid_xml` - Invalid XML error handling
-
-**NEW Edge Case Tests** (10 additional):
 - `test_parse_statement_multiple_currencies` - USD, EUR, GBP in single statement
 - `test_parse_statement_generic_exception` - Exception during XML processing
 - `test_parse_trade_with_zero_quantity` - Zero quantity trades filtered out
@@ -116,12 +110,10 @@ Tests XML parsing and transaction extraction:
 #### 5. TestImportTransactions (5 tests)
 Tests transaction import with duplicate detection:
 
-**Existing Tests**:
+**Test Coverage**:
 - `test_import_transactions_success` - Import new transactions
 - `test_import_duplicate_transaction` - Skip duplicates
 - `test_import_mixed_new_and_duplicate` - Mixed import
-
-**NEW Error Handling Tests** (2 additional):
 - `test_import_transaction_individual_error` - One transaction fails, others succeed
 - `test_import_transactions_commit_failure` - Database commit exception handling
 
@@ -140,11 +132,9 @@ Tests cache creation, retrieval, and cleanup:
 #### 7. TestConnectionTest (3 tests)
 Tests IBKR API connectivity validation:
 
-**Existing Tests**:
+**Test Coverage**:
 - `test_connection_success` - Successful connection test
 - `test_connection_failure` - API failure handling
-
-**NEW**:
 - `test_connection_exception_handling` - Unexpected exceptions during connection test
 
 **Coverage**: 100% of test_connection method.
@@ -183,18 +173,6 @@ Tests manual import orchestration:
 3. **Uncovered lines are extreme edge cases** with diminishing returns
 4. **Focus on quality over quantity** - tests cover real-world scenarios
 5. **Production-ready** - comprehensive error handling validated
-
-### Improvements from Phase 5 Coverage Drive
-
-**Before**: 77% coverage (31 tests, 67 lines missed)\
-**After**: 97% coverage (56 tests, 8 lines missed)
-
-**Key Improvements**:
-- +20% coverage increase
-- +25 new tests added
-- +59 additional lines covered
-- Error path coverage increased from 80% to 98%
-- Edge case coverage increased from 60% to 95%
 
 ## Testing Strategy
 
