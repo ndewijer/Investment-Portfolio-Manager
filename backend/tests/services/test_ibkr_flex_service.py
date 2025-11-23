@@ -60,15 +60,17 @@ class TestEncryption:
         """Test initialization logs warning when encryption key is missing."""
         from flask import current_app
 
-        with patch.object(current_app.config, "get", return_value=None):
-            with patch("app.services.ibkr_flex_service.logger") as mock_logger:
-                service = IBKRFlexService()
+        with (
+            patch.object(current_app.config, "get", return_value=None),
+            patch("app.services.ibkr_flex_service.logger") as mock_logger,
+        ):
+            IBKRFlexService()
 
-                # Should log error about missing encryption key
-                mock_logger.log.assert_called_once()
-                call_kwargs = mock_logger.log.call_args.kwargs
-                assert "ERROR" in str(call_kwargs.get("level"))
-                assert "encryption key not available" in call_kwargs.get("message").lower()
+            # Should log error about missing encryption key
+            mock_logger.log.assert_called_once()
+            call_kwargs = mock_logger.log.call_args.kwargs
+            assert "ERROR" in str(call_kwargs.get("level"))
+            assert "encryption key not available" in call_kwargs.get("message").lower()
 
     def test_encrypt_decrypt_token(self, ibkr_service, test_token):
         """Test that encryption and decryption work correctly."""
@@ -258,13 +260,12 @@ class TestDebugXMLSaving:
         )
         responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
 
-        with patch("builtins.open", create=True) as mock_open:
-            with patch("os.makedirs"):
-                result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+        with patch("builtins.open", create=True) as mock_open, patch("os.makedirs"):
+            result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
 
-                # Should have attempted to save XML
-                assert mock_open.called
-                assert result is not None
+            # Should have attempted to save XML
+            assert mock_open.called
+            assert result is not None
 
     @responses.activate
     def test_save_debug_xml_handles_errors(
@@ -282,11 +283,10 @@ class TestDebugXMLSaving:
         responses.add(responses.GET, FLEX_GET_STATEMENT_URL, body=SAMPLE_FLEX_STATEMENT, status=200)
 
         # Mock file write to raise exception
-        with patch("builtins.open", side_effect=IOError("Disk full")):
-            with patch("os.makedirs"):
-                # Should not raise, should handle gracefully
-                result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
-                assert result is not None
+        with patch("builtins.open", side_effect=OSError("Disk full")), patch("os.makedirs"):
+            # Should not raise, should handle gracefully
+            result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
+            assert result is not None
 
 
 class TestFetchStatement:
@@ -407,7 +407,9 @@ class TestFetchStatement:
         assert result is None
 
     @responses.activate
-    def test_fetch_statement_get_statement_http_error(self, ibkr_service, test_token, test_query_id):
+    def test_fetch_statement_get_statement_http_error(
+        self, ibkr_service, test_token, test_query_id
+    ):
         """Test handling of HTTP error when getting statement (not send request)."""
         # Mock successful SendRequest
         responses.add(
@@ -505,9 +507,7 @@ class TestFetchStatement:
     def test_fetch_statement_parse_error(self, ibkr_service, test_token, test_query_id):
         """Test handling of XML parse errors in SendRequest response."""
         # Mock SendRequest with invalid XML
-        responses.add(
-            responses.GET, FLEX_SEND_REQUEST_URL, body="<invalid>not closed", status=200
-        )
+        responses.add(responses.GET, FLEX_SEND_REQUEST_URL, body="<invalid>not closed", status=200)
 
         result = ibkr_service.fetch_statement(test_token, test_query_id, use_cache=False)
         assert result is None
@@ -667,7 +667,9 @@ class TestParseFlexStatement:
     def test_parse_statement_generic_exception(self, ibkr_service):
         """Test handling of generic exceptions during parsing."""
         # Create XML that will cause an exception in processing
-        with patch("xml.etree.ElementTree.fromstring", side_effect=RuntimeError("Unexpected error")):
+        with patch(
+            "xml.etree.ElementTree.fromstring", side_effect=RuntimeError("Unexpected error")
+        ):
             transactions = ibkr_service.parse_flex_statement("<xml>test</xml>")
             assert transactions == []
 
@@ -717,7 +719,8 @@ class TestParseFlexStatement:
             <FlexStatement>
               <CashTransactions>
                 <CashTransaction type="Dividends" symbol="AAPL" reportDate="20250115"
-                                amount="25.50" currency="USD" description="AAPL(US0378331005) Cash Dividend"/>
+                                amount="25.50" currency="USD"
+                                description="AAPL(US0378331005) Cash Dividend"/>
               </CashTransactions>
             </FlexStatement>
           </FlexStatements>
@@ -1077,7 +1080,9 @@ class TestConnectionTest:
     def test_connection_exception_handling(self, ibkr_service, test_token, test_query_id):
         """Test that test_connection handles exceptions gracefully."""
         # Mock fetch_statement to raise exception
-        with patch.object(ibkr_service, "fetch_statement", side_effect=RuntimeError("Unexpected error")):
+        with patch.object(
+            ibkr_service, "fetch_statement", side_effect=RuntimeError("Unexpected error")
+        ):
             result = ibkr_service.test_connection(test_token, test_query_id)
 
             assert result["success"] is False

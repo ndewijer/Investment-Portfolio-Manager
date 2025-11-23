@@ -2154,9 +2154,9 @@ class TestGetTransactionDetail:
 
     def test_get_transaction_detail_not_found(self, app_context, db_session):
         """Test getting transaction detail for non-existent transaction."""
-        from flask import abort
+        from werkzeug.exceptions import HTTPException
 
-        with pytest.raises(Exception):  # Should call abort(404)
+        with pytest.raises(HTTPException):  # Should call abort(404)
             IBKRTransactionService.get_transaction_detail("nonexistent_id")
 
 
