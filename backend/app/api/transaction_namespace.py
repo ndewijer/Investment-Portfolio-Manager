@@ -189,6 +189,65 @@ class Transaction(Resource):
             )
             return {"error": str(e)}, 500
 
+    @ns.doc('update_transaction')
+    @ns.expect(transaction_create_model, validate=True)
+    @ns.response(200, 'Transaction updated', transaction_model)
+    @ns.response(404, 'Transaction not found', error_model)
+    @ns.response(500, 'Server error', error_model)
+    def put(self, transaction_id):
+        """
+        Update a transaction.
+
+        Updates the details of an existing transaction.
+        For sell transactions, this recalculates realized gain/loss.
+
+        Note: Modifying transactions may affect historical calculations
+        and should be done with caution.
+        """
+        try:
+            data = request.json
+            service = TransactionService()
+            transaction = service.update_transaction(transaction_id, data)
+
+            # Format the transaction response with realized gain/loss for sell transactions
+            response = service.format_transaction(
+                transaction, include_realized_gain=(transaction.type == "sell")
+            )
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.TRANSACTION,
+                message=f"Successfully updated transaction {transaction_id}",
+                details={
+                    "type": transaction.type,
+                    "shares": transaction.shares,
+                    "cost_per_share": transaction.cost_per_share,
+                },
+            )
+
+            return response, 200
+        except ValueError as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.TRANSACTION,
+                message=f"Error updating transaction: {str(e)}",
+                details={
+                    "user_message": str(e),
+                    "transaction_id": transaction_id,
+                    "error": str(e),
+                    "request_data": data,
+                },
+            )
+            return {"error": str(e)}, 400
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.TRANSACTION,
+                message=f"Error updating transaction: {str(e)}",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": str(e)}, 500
+
     @ns.doc('delete_transaction')
     @ns.response(200, 'Transaction deleted')
     @ns.response(404, 'Transaction not found', error_model)

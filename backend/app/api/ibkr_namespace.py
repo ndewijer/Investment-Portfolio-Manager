@@ -330,6 +330,136 @@ class IBKRInbox(Resource):
             return {"error": "Error retrieving inbox", "details": str(e)}, 500
 
 
+@ns.route('/inbox/count')
+class IBKRInboxCount(Resource):
+    """IBKR inbox count endpoint."""
+
+    @ns.doc('get_inbox_count')
+    @ns.param('status', 'Filter by status (default: pending)', _in='query')
+    @ns.response(200, 'Success')
+    @ns.response(500, 'Server error', error_model)
+    def get(self):
+        """
+        Get count of IBKR transactions.
+
+        Returns the number of transactions matching the status filter.
+        Useful for displaying inbox badge counts.
+
+        Query parameters:
+        - status: Filter by status (pending, processed, ignored) - defaults to 'pending'
+        """
+        try:
+            status = request.args.get("status", "pending")
+            count = IBKRTransactionService.get_inbox_count(status=status)
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Retrieved IBKR inbox count for status '{status}'",
+                details={"status": status, "count": count},
+            )
+
+            return {"count": count}, 200
+
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Error retrieving IBKR inbox count",
+                details={"error": str(e)},
+            )
+            return {"error": "Failed to retrieve count", "details": str(e)}, 500
+
+
+@ns.route('/inbox/bulk-allocate')
+class IBKRBulkAllocate(Resource):
+    """IBKR bulk allocation endpoint."""
+
+    @ns.doc('bulk_allocate_transactions')
+    @ns.expect([allocation_model], validate=True)
+    @ns.response(200, 'Transactions allocated')
+    @ns.response(400, 'Invalid request', error_model)
+    @ns.response(500, 'Server error', error_model)
+    def post(self):
+        """
+        Allocate multiple IBKR transactions with same allocations.
+
+        Processes multiple pending transactions using the same portfolio allocation percentages.
+        Useful for batch processing similar transactions.
+
+        Request body:
+        {
+            "transaction_ids": ["id1", "id2", ...],
+            "allocations": [
+                {"portfolio_id": "uuid", "percentage": 50.0},
+                ...
+            ]
+        }
+        """
+        data = request.get_json()
+
+        if not data or "transaction_ids" not in data or "allocations" not in data:
+            return {"error": "Missing transaction_ids or allocations"}, 400
+
+        transaction_ids = data["transaction_ids"]
+        allocations = data["allocations"]
+
+        result = IBKRTransactionService.bulk_allocate_transactions(transaction_ids, allocations)
+
+        if result["success"]:
+            return result, 200
+        else:
+            return result, 400
+
+
+@ns.route('/portfolios')
+class IBKRPortfolios(Resource):
+    """IBKR portfolios list endpoint."""
+
+    @ns.doc('get_portfolios_for_allocation')
+    @ns.response(200, 'Success')
+    def get(self):
+        """
+        Get available portfolios for transaction allocation.
+
+        Returns a list of active portfolios that can be used for
+        allocating IBKR transactions.
+        """
+        from ..services.portfolio_service import PortfolioService
+
+        portfolios = PortfolioService.get_active_portfolios()
+
+        return [{"id": p.id, "name": p.name, "description": p.description} for p in portfolios], 200
+
+
+@ns.route('/dividends/pending')
+class IBKRPendingDividends(Resource):
+    """IBKR pending dividends endpoint."""
+
+    @ns.doc('get_pending_dividends')
+    @ns.param('symbol', 'Filter by symbol', _in='query')
+    @ns.param('isin', 'Filter by ISIN', _in='query')
+    @ns.response(200, 'Success')
+    @ns.response(500, 'Server error', error_model)
+    def get(self):
+        """
+        Get pending dividend records for matching.
+
+        Returns dividend records that can be matched to IBKR dividend transactions.
+        Useful for reconciling dividend payments.
+
+        Query parameters:
+        - symbol: Filter by trading symbol (optional)
+        - isin: Filter by ISIN (optional)
+        """
+        symbol = request.args.get("symbol")
+        isin = request.args.get("isin")
+
+        dividends = IBKRTransactionService.get_pending_dividends(symbol, isin)
+
+        return dividends, 200
+
+
 @ns.route('/inbox/<string:transaction_id>')
 @ns.param('transaction_id', 'Transaction unique identifier')
 class IBKRTransaction(Resource):
@@ -455,3 +585,181 @@ class IBKRTransactionIgnore(Resource):
             return response, status
         except Exception as e:
             return {"error": "Error ignoring transaction", "details": str(e)}, 500
+
+
+@ns.route('/inbox/<string:transaction_id>/eligible-portfolios')
+@ns.param('transaction_id', 'Transaction unique identifier')
+class IBKRTransactionEligiblePortfolios(Resource):
+    """IBKR transaction eligible portfolios endpoint."""
+
+    @ns.doc('get_eligible_portfolios')
+    @ns.response(200, 'Success')
+    @ns.response(404, 'Transaction not found', error_model)
+    @ns.response(500, 'Server error', error_model)
+    def get(self, transaction_id):
+        """
+        Get eligible portfolios for allocating this transaction.
+
+        Returns portfolios that have the fund/stock matching this transaction
+        (by ISIN or symbol).
+
+        Response includes:
+        - match_info: Details about fund matching
+        - portfolios: List of eligible portfolios
+        - warning: Optional warning if no match or no portfolios
+        """
+        from werkzeug.exceptions import HTTPException
+
+        from ..services.fund_matching_service import FundMatchingService
+
+        try:
+            # Get the transaction using the service
+            transaction = IBKRTransactionService.get_transaction(transaction_id)
+
+            # Find eligible portfolios using the matching service
+            result = FundMatchingService.get_eligible_portfolios_for_transaction(transaction)
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message=f"Retrieved eligible portfolios for transaction {transaction_id}",
+                details={
+                    "fund_found": result["match_info"]["found"],
+                    "portfolio_count": len(result["portfolios"]),
+                    "matched_by": result["match_info"]["matched_by"],
+                },
+            )
+
+            return result, 200
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message=f"Error getting eligible portfolios: {str(e)}",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": "Error getting eligible portfolios", "details": str(e)}, 500
+
+
+@ns.route('/inbox/<string:transaction_id>/match-dividend')
+@ns.param('transaction_id', 'Transaction unique identifier')
+class IBKRTransactionMatchDividend(Resource):
+    """IBKR dividend matching endpoint."""
+
+    @ns.doc('match_dividend')
+    @ns.response(200, 'Dividend matched')
+    @ns.response(400, 'Invalid request', error_model)
+    @ns.response(404, 'Transaction not found', error_model)
+    def post(self, transaction_id):
+        """
+        Match IBKR dividend transaction to existing dividend records.
+
+        Associates an imported IBKR dividend transaction with one or more
+        existing Dividend records for reconciliation.
+
+        Request body:
+        {
+            "dividend_ids": ["id1", "id2", ...]
+        }
+        """
+        data = request.get_json()
+
+        if not data or "dividend_ids" not in data:
+            return {"error": "Missing dividend_ids"}, 400
+
+        result = IBKRTransactionService.match_dividend(transaction_id, data["dividend_ids"])
+
+        if result["success"]:
+            return result, 200
+        else:
+            return result, 400
+
+
+@ns.route('/inbox/<string:transaction_id>/unallocate')
+@ns.param('transaction_id', 'Transaction unique identifier')
+class IBKRTransactionUnallocate(Resource):
+    """IBKR transaction unallocation endpoint."""
+
+    @ns.doc('unallocate_transaction')
+    @ns.response(200, 'Transaction unallocated')
+    @ns.response(400, 'Cannot unallocate', error_model)
+    @ns.response(404, 'Transaction not found', error_model)
+    def post(self, transaction_id):
+        """
+        Unallocate a processed IBKR transaction.
+
+        Deletes all portfolio transactions and allocations,
+        reverting the IBKR transaction status to pending.
+
+        Useful for correcting allocation mistakes.
+        """
+        response, status = IBKRTransactionService.unallocate_transaction(transaction_id)
+        return response, status
+
+
+@ns.route('/inbox/<string:transaction_id>/allocations')
+@ns.param('transaction_id', 'Transaction unique identifier')
+class IBKRTransactionAllocations(Resource):
+    """IBKR transaction allocations management endpoint."""
+
+    @ns.doc('get_transaction_allocations')
+    @ns.response(200, 'Success')
+    @ns.response(404, 'Transaction not found', error_model)
+    def get(self, transaction_id):
+        """
+        Get allocation details for a processed IBKR transaction.
+
+        Returns allocation information grouped by portfolio,
+        combining stock and fee transactions.
+        """
+        response, status = IBKRTransactionService.get_transaction_allocations(transaction_id)
+        return response, status
+
+    @ns.doc('modify_transaction_allocations')
+    @ns.expect([allocation_model], validate=True)
+    @ns.response(200, 'Allocations modified')
+    @ns.response(400, 'Invalid request', error_model)
+    @ns.response(404, 'Transaction not found', error_model)
+    def put(self, transaction_id):
+        """
+        Modify allocation percentages for a processed IBKR transaction.
+
+        Updates the allocation percentages without unallocating and re-allocating.
+        This preserves the transaction while adjusting the distribution.
+
+        Request body:
+        {
+            "allocations": [
+                {"portfolio_id": "uuid", "percentage": 60.0},
+                {"portfolio_id": "uuid", "percentage": 40.0}
+            ]
+        }
+        """
+        data = request.get_json()
+
+        if not data or "allocations" not in data:
+            return {"error": "Missing allocations"}, 400
+
+        try:
+            result = IBKRTransactionService.modify_allocations(transaction_id, data["allocations"])
+            return result, 200
+
+        except ValueError as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Failed to modify allocations",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": str(e)}, 400
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.IBKR,
+                message="Unexpected error modifying allocations",
+                details={"transaction_id": transaction_id, "error": str(e)},
+            )
+            return {"error": "Unexpected error", "details": str(e)}, 500

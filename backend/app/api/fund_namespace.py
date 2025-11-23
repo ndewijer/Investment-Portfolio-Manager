@@ -338,6 +338,99 @@ class Fund(Resource):
             )
             return {"error": "Error updating fund", "details": str(e)}, 500
 
+    @ns.doc('delete_fund')
+    @ns.response(200, 'Fund deleted')
+    @ns.response(404, 'Fund not found', error_model)
+    @ns.response(409, 'Fund in use', error_model)
+    @ns.response(500, 'Server error', error_model)
+    def delete(self, fund_id):
+        """
+        Delete a fund.
+
+        Deletes a fund if it's not being used in any portfolios.
+        Cannot delete funds that have transactions or are attached to portfolios.
+
+        Returns error if fund is in use.
+        """
+        try:
+            fund_details = FundService.delete_fund(fund_id)
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.FUND,
+                message=f"Successfully deleted fund {fund_details['fund_name']}",
+                details=fund_details,
+            )
+
+            return {"success": True, "message": "Fund deleted successfully"}, 200
+
+        except ValueError as e:
+            error_message = str(e)
+
+            if "Cannot delete" in error_message and "attached to" in error_message:
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.FUND,
+                    message="Cannot delete fund while attached to portfolios",
+                    details={"fund_id": fund_id, "user_message": error_message},
+                )
+                return {"error": error_message}, 409
+            else:
+                return {"error": error_message}, 404
+
+        except Exception as e:
+            db.session.rollback()
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.FUND,
+                message=f"Error deleting fund: {str(e)}",
+                details={"fund_id": fund_id, "error": str(e)},
+            )
+            return {"error": "Error deleting fund", "details": str(e)}, 500
+
+
+@ns.route('/<string:fund_id>/check-usage')
+@ns.param('fund_id', 'Fund unique identifier (UUID)')
+class FundUsage(Resource):
+    """Fund usage check endpoint."""
+
+    @ns.doc('check_fund_usage')
+    @ns.response(200, 'Success')
+    @ns.response(500, 'Server error', error_model)
+    def get(self, fund_id):
+        """
+        Check if fund is being used.
+
+        Returns information about whether a fund is being used in any portfolios,
+        including:
+        - Usage status
+        - List of portfolios using the fund
+        - Transaction count
+        - Dividend count
+
+        Useful before attempting to delete a fund.
+        """
+        try:
+            usage_info = FundService.check_fund_usage(fund_id)
+
+            if usage_info["in_use"]:
+                logger.log(
+                    level=LogLevel.INFO,
+                    category=LogCategory.FUND,
+                    message=f"Fund {fund_id} is in use",
+                    details=usage_info,
+                )
+
+            return usage_info, 200
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.FUND,
+                message=f"Error checking fund usage: {str(e)}",
+                details={"error": str(e)},
+            )
+            return {"error": "Error checking fund usage", "details": str(e)}, 500
+
 
 @ns.route('/<string:fund_id>/price/today')
 @ns.param('fund_id', 'Fund unique identifier (UUID)')
@@ -444,3 +537,175 @@ class SymbolInfo(Resource):
                 details={"symbol": symbol, "error": str(e)},
             )
             return {"error": "Error looking up symbol", "details": str(e)}, 500
+
+
+@ns.route('/update-all-prices')
+class UpdateAllPrices(Resource):
+    """Update all fund prices endpoint."""
+
+    @ns.doc('update_all_fund_prices', security='apikey')
+    @ns.response(200, 'Prices updated')
+    @ns.response(500, 'Server error', error_model)
+    @require_api_key
+    def post(self):
+        """
+        Update prices for all funds.
+
+        Fetches current prices for all funds with symbols from external sources
+        and updates the database.
+
+        This endpoint is protected by API key authentication and is typically
+        called on a scheduled basis (daily) to keep prices up-to-date.
+
+        Warning: This can be a long-running operation.
+        """
+        try:
+            result = FundService.update_all_fund_prices()
+            return result, 200
+        except Exception as e:
+            return {"success": False, "error": str(e)}, 500
+
+
+# Legacy route compatibility
+@ns.route('/lookup-symbol-info/<string:symbol>')
+@ns.param('symbol', 'Trading symbol (e.g., AAPL, VOO)')
+@ns.doc(False)  # Hide from Swagger UI (duplicate of /symbol/{symbol})
+class LegacySymbolInfo(Resource):
+    """Legacy symbol lookup endpoint for backward compatibility."""
+
+    def get(self, symbol):
+        """
+        Legacy endpoint for symbol lookup.
+
+        This endpoint exists for backward compatibility with existing clients.
+        New clients should use /funds/symbol/{symbol} instead.
+        """
+        try:
+            force_refresh = request.args.get("force_refresh", "false").lower() == "true"
+            symbol_info = SymbolLookupService.get_symbol_info(symbol, force_refresh=force_refresh)
+
+            if symbol_info:
+                logger.log(
+                    level=LogLevel.INFO,
+                    category=LogCategory.FUND,
+                    message=f"Successfully retrieved symbol info for {symbol}",
+                    details={
+                        "symbol": symbol,
+                        "source": "cache" if not force_refresh else "yfinance",
+                        "info": symbol_info,
+                    },
+                )
+                return symbol_info, 200
+            else:
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.FUND,
+                    message=f"No information found for symbol {symbol}",
+                    details={"symbol": symbol},
+                )
+                return {"error": f"No information found for symbol {symbol}"}, 404
+
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.FUND,
+                message=f"Error looking up symbol: {str(e)}",
+                details={"symbol": symbol, "error": str(e)},
+            )
+            return {"error": "Error looking up symbol", "details": str(e)}, 500
+
+
+# Fund prices endpoints
+fund_price_model = ns.model('FundPrice', {
+    'id': fields.String(required=True, description='Price record ID'),
+    'date': fields.String(required=True, description='Price date (YYYY-MM-DD)'),
+    'price': fields.Float(required=True, description='Price value')
+})
+
+
+@ns.route('/fund-prices/<string:fund_id>')
+@ns.param('fund_id', 'Fund unique identifier (UUID)')
+class FundPrices(Resource):
+    """Fund price history endpoint."""
+
+    @ns.doc('get_fund_prices')
+    @ns.response(200, 'Success', [fund_price_model])
+    @ns.response(404, 'Fund not found', error_model)
+    @ns.response(500, 'Server error', error_model)
+    def get(self, fund_id):
+        """
+        Get price history for a fund.
+
+        Returns all historical prices for a fund, ordered by date.
+        Useful for charting and analysis.
+        """
+        try:
+            # Get the fund to ensure it exists
+            fund = FundService.get_fund(fund_id)
+
+            # Get all prices for this fund, ordered by date
+            prices = FundService.get_fund_price_history(fund_id)
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.FUND,
+                message=f"Successfully retrieved price history for fund {fund.name}",
+                details={"fund_id": fund_id, "price_count": len(prices)},
+            )
+
+            return [
+                {"id": price.id, "date": price.date.isoformat(), "price": price.price}
+                for price in prices
+            ], 200
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.FUND,
+                message=f"Error retrieving fund prices: {str(e)}",
+                details={"fund_id": fund_id, "error": str(e)},
+            )
+            return {"error": "Error retrieving fund prices", "details": str(e)}, 500
+
+
+@ns.route('/fund-prices/<string:fund_id>/update')
+@ns.param('fund_id', 'Fund unique identifier (UUID)')
+class FundPriceUpdate(Resource):
+    """Fund price update endpoint."""
+
+    @ns.doc('update_fund_prices')
+    @ns.param('type', 'Update type (today or historical)', _in='query')
+    @ns.response(200, 'Prices updated')
+    @ns.response(404, 'Fund not found', error_model)
+    @ns.response(500, 'Server error', error_model)
+    def post(self, fund_id):
+        """
+        Update fund prices from external source.
+
+        Fetches and updates prices from Yahoo Finance.
+
+        Query Parameters:
+        - type: 'today' for current day price, 'historical' for complete history (default: 'today')
+
+        Note: Historical updates can be long-running operations.
+        """
+        try:
+            update_type = request.args.get("type", "today")
+
+            if update_type == "today":
+                TodayPriceService.update_single_fund_price(fund_id)
+            else:
+                HistoricalPriceService.update_single_fund_historical_prices(fund_id)
+
+            return {"success": True}, 200
+
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.FUND,
+                message=f"Error updating fund prices: {str(e)}",
+                details={"fund_id": fund_id, "update_type": update_type, "error": str(e)},
+            )
+            return {"error": "Error updating fund prices", "details": str(e)}, 500
