@@ -3,6 +3,7 @@ click
 Flask
 Flask-Cors
 Flask-Migrate
+Flask-RESTx
 Flask-SQLAlchemy
 python-dotenv
 SQLAlchemy
