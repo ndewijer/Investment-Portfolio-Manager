@@ -8,7 +8,7 @@ Tests all Fund API endpoints:
 - PUT /funds/<fund_id> - Update fund ✅
 - DELETE /funds/<fund_id> - Delete fund ✅
 - GET /funds/<fund_id>/check-usage - Check fund usage ✅
-- GET /lookup-symbol-info/<symbol> - Lookup symbol info ✅
+- GET /funds/symbol/<symbol> - Lookup symbol info ✅
 - GET /fund-prices/<fund_id> - Get fund prices (SKIPPED - requires route refactoring)
 - POST /fund-prices/<fund_id>/update - Update fund prices ✅
 - POST /funds/update-all-prices - Update all fund prices ✅
@@ -107,7 +107,7 @@ class TestFundListAndCreate:
 
         response = client.post("/api/funds", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert "id" in data
         assert data["name"] == "Test Fund"
@@ -380,7 +380,7 @@ class TestSymbolLookup:
 
     def test_lookup_symbol_info_mock(self, app_context, client):
         """
-        Verify GET /lookup-symbol-info/<symbol> returns symbol metadata from lookup service.
+        Verify GET /funds/symbol/<symbol> returns symbol metadata from lookup service.
 
         WHY: Users need to quickly find and verify fund information when creating new
         funds. Auto-populated data (name, currency, exchange) reduces manual entry
@@ -405,7 +405,7 @@ class TestSymbolLookup:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/lookup-symbol-info/VTI")
+            response = client.get("/api/funds/symbol/VTI")
 
             assert response.status_code == 200
             data = response.get_json()
@@ -414,7 +414,7 @@ class TestSymbolLookup:
 
     def test_lookup_symbol_not_found(self, app_context, client):
         """
-        Verify GET /lookup-symbol-info/<symbol> returns 404 for invalid symbols.
+        Verify GET /funds/symbol/<symbol> returns 404 for invalid symbols.
 
         WHY: Users may mistype symbols or try non-existent tickers. Proper 404 handling
         allows the UI to show clear "symbol not found" messages instead of crashing,
@@ -432,7 +432,7 @@ class TestSymbolLookup:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/lookup-symbol-info/INVALID")
+            response = client.get("/api/funds/symbol/INVALID")
 
             assert response.status_code == 404
 
@@ -466,7 +466,7 @@ class TestFundPrices:
         db_session.add_all([price1, price2])
         db_session.commit()
 
-        response = client.get(f"/api/fund-prices/{fund.id}")
+        response = client.get(f"/api/funds/fund-prices/{fund.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -498,7 +498,7 @@ class TestFundPrices:
             "update_todays_price",
             staticmethod(mock_update_todays_price),
         ):
-            response = client.post(f"/api/fund-prices/{fund.id}/update?type=today")
+            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=today")
 
             assert response.status_code == 200
             data = response.get_json()
@@ -506,7 +506,7 @@ class TestFundPrices:
 
     def test_update_historical_prices(self, app_context, client, db_session):
         """
-        Verify POST /fund-prices/<fund_id>/update?type=historical backfills price history.
+        Verify POST /funds/fund-prices/<fund_id>/update?type=historical backfills price history.
 
         WHY: Historical prices are needed for performance calculations, charts, and
         accurate portfolio valuations at past dates. This backfill is essential when
@@ -527,7 +527,7 @@ class TestFundPrices:
             "update_historical_prices",
             staticmethod(mock_update_historical_prices),
         ):
-            response = client.post(f"/api/fund-prices/{fund.id}/update?type=historical")
+            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=historical")
 
             assert response.status_code == 200
             data = response.get_json()
@@ -659,7 +659,7 @@ class TestFundCRUDErrors:
         def mock_create_fund(data, symbol_info=None):
             raise Exception("Database connection failed")
 
-        with patch("app.routes.fund_routes.FundService.create_fund", mock_create_fund):
+        with patch("app.api.fund_namespace.FundService.create_fund", mock_create_fund):
             payload = {
                 "name": "Test Fund",
                 "isin": make_isin("US"),
@@ -712,7 +712,7 @@ class TestFundCRUDErrors:
         def mock_update_fund(fund_id, data):
             raise Exception("Database error")
 
-        with patch("app.routes.fund_routes.FundService.update_fund", mock_update_fund):
+        with patch("app.api.fund_namespace.FundService.update_fund", mock_update_fund):
             payload = {
                 "name": "Updated Name",
                 "isin": make_isin("US"),
@@ -722,7 +722,7 @@ class TestFundCRUDErrors:
 
             response = client.put(f"/api/funds/{fund.id}", json=payload)
 
-            assert response.status_code == 400
+            assert response.status_code == 500
             data = response.get_json()
             assert "error" in data or "message" in data
 
@@ -757,7 +757,7 @@ class TestFundCRUDErrors:
         def mock_delete_fund(fund_id):
             raise Exception("Database error")
 
-        with patch("app.routes.fund_routes.FundService.delete_fund", mock_delete_fund):
+        with patch("app.api.fund_namespace.FundService.delete_fund", mock_delete_fund):
             response = client.delete(f"/api/funds/{fund.id}")
 
             assert response.status_code == 500
@@ -777,7 +777,7 @@ class TestFundCRUDErrors:
         def mock_check_usage(fund_id):
             raise ValueError("Fund not found")
 
-        with patch("app.routes.fund_routes.FundService.check_fund_usage", mock_check_usage):
+        with patch("app.api.fund_namespace.FundService.check_fund_usage", mock_check_usage):
             fake_id = make_id()
             response = client.get(f"/api/funds/{fake_id}/check-usage")
 
@@ -796,7 +796,7 @@ class TestFundCRUDErrors:
         def mock_check_usage(fund_id):
             raise Exception("Database error")
 
-        with patch("app.routes.fund_routes.FundService.check_fund_usage", mock_check_usage):
+        with patch("app.api.fund_namespace.FundService.check_fund_usage", mock_check_usage):
             fake_id = make_id()
             response = client.get(f"/api/funds/{fake_id}/check-usage")
 
@@ -817,7 +817,7 @@ class TestFundCRUDErrors:
         def mock_get_fund(fund_id):
             raise Exception("Database connection failed")
 
-        with patch("app.routes.fund_routes.FundService.get_fund", mock_get_fund):
+        with patch("app.api.fund_namespace.FundService.get_fund", mock_get_fund):
             fake_id = make_id()
             response = client.get(f"/api/funds/{fake_id}")
 
@@ -835,8 +835,8 @@ class TestFundCRUDErrors:
         """
         from unittest.mock import patch
 
-        # Mock FundService.get_all_funds_formatted to raise exception
-        with patch("app.routes.fund_routes.FundService.get_all_funds_formatted") as mock_get:
+        # Mock FundService.get_all_funds to raise exception
+        with patch("app.api.fund_namespace.FundService.get_all_funds") as mock_get:
             mock_get.side_effect = Exception("Database query failed")
 
             response = client.get("/api/funds")
@@ -851,7 +851,7 @@ class TestSymbolLookupErrors:
 
     def test_lookup_symbol_external_api_failure(self, app_context, client):
         """
-        Verify GET /lookup-symbol-info/<symbol> returns 500 on external API failures.
+        Verify GET /funds/symbol/<symbol> returns 500 on external API failures.
 
         WHY: Third-party APIs (yfinance) may be down or rate-limited. Proper error
         handling allows the UI to show appropriate error messages and lets users
@@ -869,7 +869,7 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/lookup-symbol-info/VTI")
+            response = client.get("/api/funds/symbol/VTI")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -877,7 +877,7 @@ class TestSymbolLookupErrors:
 
     def test_lookup_symbol_force_refresh_failure(self, app_context, client):
         """
-        Verify GET /lookup-symbol-info with force_refresh handles API failures.
+        Verify GET /funds/symbol/<symbol> with force_refresh handles API failures.
 
         WHY: Force refresh bypasses cache and hits external APIs directly. Rate
         limits or API outages must be handled gracefully with clear error messages
@@ -897,7 +897,7 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/lookup-symbol-info/VTI?force_refresh=true")
+            response = client.get("/api/funds/symbol/VTI?force_refresh=true")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -905,7 +905,7 @@ class TestSymbolLookupErrors:
 
     def test_lookup_symbol_empty_symbol(self, app_context, client):
         """
-        Verify GET /lookup-symbol-info handles empty/missing symbol parameter.
+        Verify GET /funds/symbol/<symbol> handles empty/missing symbol parameter.
 
         WHY: URL routing edge cases (trailing slashes, empty params) should be
         handled gracefully. Prevents server errors from user input mistakes or
@@ -925,14 +925,14 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/lookup-symbol-info/")
+            response = client.get("/api/funds/symbol/")
 
             # May get 404 from Flask routing or 404 from our handler
             assert response.status_code in [404, 308]  # 308 is redirect
 
     def test_lookup_symbol_cache_error(self, app_context, client):
         """
-        Verify GET /lookup-symbol-info returns 500 on cache read/write failures.
+        Verify GET /funds/symbol/<symbol> returns 500 on cache read/write failures.
 
         WHY: Redis or file cache failures shouldn't break symbol lookup entirely.
         Proper error handling ensures users get feedback about cache issues rather
@@ -950,7 +950,7 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/lookup-symbol-info/AAPL")
+            response = client.get("/api/funds/symbol/AAPL")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -974,9 +974,9 @@ class TestPriceUpdateErrors:
         def mock_get_fund(fund_id):
             raise NotFound("Fund not found")
 
-        with patch("app.routes.fund_routes.FundService.get_fund", mock_get_fund):
+        with patch("app.api.fund_namespace.FundService.get_fund", mock_get_fund):
             fake_id = make_id()
-            response = client.get(f"/api/fund-prices/{fake_id}")
+            response = client.get(f"/api/funds/fund-prices/{fake_id}")
 
             assert response.status_code == 404
 
@@ -997,10 +997,10 @@ class TestPriceUpdateErrors:
             raise Exception("Database query failed")
 
         with patch(
-            "app.routes.fund_routes.FundService.get_fund_price_history",
+            "app.api.fund_namespace.FundService.get_fund_price_history",
             mock_get_price_history,
         ):
-            response = client.get(f"/api/fund-prices/{fund.id}")
+            response = client.get(f"/api/funds/fund-prices/{fund.id}")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -1029,7 +1029,7 @@ class TestPriceUpdateErrors:
             "update_todays_price",
             staticmethod(mock_update_todays_price),
         ):
-            response = client.post(f"/api/fund-prices/{fund.id}/update?type=today")
+            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=today")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -1058,7 +1058,7 @@ class TestPriceUpdateErrors:
             "update_historical_prices",
             staticmethod(mock_update_historical_prices),
         ):
-            response = client.post(f"/api/fund-prices/{fund.id}/update?type=historical")
+            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=historical")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -1117,7 +1117,7 @@ class TestPriceUpdateErrors:
         time_token = hashlib.sha256(f"{api_key}{current_hour}".encode()).hexdigest()
 
         # Mock FundService.update_all_fund_prices to raise exception
-        with patch("app.routes.fund_routes.FundService.update_all_fund_prices") as mock_update:
+        with patch("app.api.fund_namespace.FundService.update_all_fund_prices") as mock_update:
             mock_update.side_effect = Exception("Database connection failed")
 
             headers = {"X-API-Key": api_key, "X-Time-Token": time_token}

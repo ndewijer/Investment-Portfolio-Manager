@@ -1077,8 +1077,17 @@ class TestConnectionTest:
         assert result["success"] is False
         assert "message" in result
 
+    @responses.activate
     def test_connection_exception_handling(self, ibkr_service, test_token, test_query_id):
         """Test that test_connection handles exceptions gracefully."""
+        # Mock successful initial request
+        responses.add(
+            responses.GET,
+            FLEX_SEND_REQUEST_URL,
+            body=SAMPLE_SEND_REQUEST_SUCCESS,
+            status=200,
+        )
+
         # Mock fetch_statement to raise exception
         with patch.object(
             ibkr_service, "fetch_statement", side_effect=RuntimeError("Unexpected error")

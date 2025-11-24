@@ -1,6 +1,6 @@
 # Portfolio Routes Integration Tests
 
-**File**: `tests/routes/test_portfolio_routes.py`
+**File**: `tests/api/test_portfolio_routes.py`
 **Route File**: `app/routes/portfolio_routes.py`
 **Test Count**: 30 tests (22 integration + 8 error path)
 **Coverage**: 100% (110/110 statements)
@@ -125,22 +125,22 @@ Added TestPortfolioErrors class with 8 error path tests to achieve 100% coverage
 
 ### Run all portfolio route tests:
 ```bash
-pytest tests/routes/test_portfolio_routes.py -v
+pytest tests/api/test_portfolio_routes.py -v
 ```
 
 ### Run specific test class:
 ```bash
-pytest tests/routes/test_portfolio_routes.py::TestPortfolioListAndCreate -v
+pytest tests/api/test_portfolio_routes.py::TestPortfolioListAndCreate -v
 ```
 
 ### Run specific test:
 ```bash
-pytest tests/routes/test_portfolio_routes.py::TestPortfolioListAndCreate::test_create_portfolio -v
+pytest tests/api/test_portfolio_routes.py::TestPortfolioListAndCreate::test_create_portfolio -v
 ```
 
 ### Run without coverage (faster):
 ```bash
-pytest tests/routes/test_portfolio_routes.py -v --no-cov
+pytest tests/api/test_portfolio_routes.py -v --no-cov
 ```
 
 ---

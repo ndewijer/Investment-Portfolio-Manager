@@ -65,7 +65,7 @@ class TestSystemErrors:
             raise Exception("Version file not found")
 
         with patch(
-            "app.routes.system_routes.SystemService.get_version_info",
+            "app.api.system_namespace.SystemService.get_version_info",
             mock_get_version,
         ):
             response = client.get("/api/system/version")
@@ -84,7 +84,7 @@ class TestSystemErrors:
         the database is down, health check must return 503 Service Unavailable.
         """
         # Mock db.session.execute to raise exception
-        with patch("app.routes.system_routes.db.session.execute") as mock_execute:
+        with patch("app.api.system_namespace.db.session.execute") as mock_execute:
             mock_execute.side_effect = Exception("Database connection failed")
 
             response = client.get("/api/system/health")

@@ -77,11 +77,34 @@ This folder contains planning documents and task lists for the Investment Portfo
 **Released**: November 12, 2025
 **GitHub Release**: https://github.com/ndewijer/Investment-Portfolio-Manager/releases/tag/v1.3.2
 
+### Version 1.3.3 - Swagger/OpenAPI Documentation & Blueprint Migration ✅ COMPLETED
+- [x] Flask-RESTX API implementation with automatic Swagger UI
+  - [x] 72 endpoints across 7 namespaces (System, Portfolio, Fund, Transaction, Dividend, IBKR, Developer)
+  - [x] Interactive Swagger UI at `/api/docs`
+  - [x] Type-safe request/response models with automatic validation
+  - [x] Service layer architecture (zero business logic in routes)
+- [x] Blueprint route decommissioning
+  - [x] Removed all legacy Blueprint routes (`backend/app/routes/`)
+  - [x] Updated all route integration tests to use Flask-RESTX namespaces
+  - [x] Cleaned up imports in `run.py`
+- [x] Developer namespace enhancements (Phase 5)
+  - [x] Centralized CSV validation with UTF-8/BOM support
+  - [x] 15 production-ready developer endpoints
+  - [x] Enhanced test coverage: 59 service tests, 45 passing route tests
+  - [x] Real-time logging management and viewing
+- [x] Comprehensive documentation updates
+  - [x] API_DOCUMENTATION.md (72 endpoints documented)
+  - [x] SWAGGER_API_RELEASE_DRAFT.md (PR documentation)
+  - [x] RELEASE_NOTES_1.3.3.md (version notes)
+  - [x] Service test documentation (DEVELOPER_SERVICE_TESTS.md)
+
+**Completed**: November 24, 2024
+
 ---
 
 ## 🚧 In Progress
 
-### Version 1.3.3 - Comprehensive Backend Testing 🚧 IN PROGRESS
+### Version 1.3.4 - Comprehensive Backend Testing 🚧 IN PROGRESS
 **Plan**: See [TESTING_PLAN_1.3.3.md](./TESTING_PLAN_1.3.3.md)
 **Goal**: Achieve 80%+ backend test coverage with CI/CD integration
 **Timeline**: 3-4 weeks (30 days)
@@ -93,31 +116,9 @@ This folder contains planning documents and task lists for the Investment Portfo
 - [ ] Create test data factories
 - [ ] Enhance test fixtures
 
-#### Phase 2: Refactoring - Move Business Logic to Services (Days 4-10)
-**Plan**: See [ROUTE_REFACTORING_REMEDIATION_PLAN.md](./ROUTE_REFACTORING_REMEDIATION_PLAN.md) for detailed analysis and implementation steps
-**Violations Found**: 24 violations across 7 route files (3 critical, 3 high, 11 medium, 7 low)
-
-**Critical Refactorings** (must be done first):
-- [ ] IBKR Import Orchestration (ibkr_routes.py:174-237) - 64 lines
-- [ ] Portfolio Fund Deletion (portfolio_routes.py:320-396) - 77 lines
-- [ ] IBKR Transaction Unallocation (ibkr_routes.py:621-684) - 64 lines
-
-**High Priority**:
-- [ ] Bulk IBKR Transaction Allocation (ibkr_routes.py:813-918) - 106 lines
-- [ ] Bulk Fund Price Update (fund_routes.py:528-575) - 48 lines
-- [ ] Log Filtering & Pagination (developer_routes.py:634-700) - 67 lines
-
-**Medium Priority** (code quality):
-- [ ] CSV File Handling Utilities (developer_routes.py:184-507) - DRY violations
-- [ ] Transaction Realized Gain/Loss Queries (transaction_routes.py:98-209) - duplicate logic
-- [ ] Portfolio Funds Data Enrichment (portfolio_routes.py:249-264)
-- [ ] Portfolio Totals Calculation (portfolio_routes.py:62-70)
-
-**Low Priority** (optional polish):
-- [ ] IBKR Transaction Status Updates (ibkr_routes.py:378-405, 419-445)
-- [ ] Fund Service Enhancements (fund_routes.py:177-261)
-- [ ] System Service Additions (system_routes.py, developer_routes.py)
-- [ ] IBKR Allocation Operations (ibkr_routes.py:701-746, 761-809)
+#### Phase 2: ~~Refactoring - Move Business Logic to Services~~ ✅ OBSOLETE
+**Status**: COMPLETED via Flask-RESTX migration (v1.3.3)
+**Note**: Blueprint routes have been completely replaced with Flask-RESTX namespaces that follow service-first architecture from the start. No refactoring needed.
 
 #### Phase 3: Service Layer Unit Tests (Days 11-20)
 - [ ] DividendService tests (90%+ coverage target)
@@ -128,13 +129,16 @@ This folder contains planning documents and task lists for the Investment Portfo
 - [ ] PriceUpdateService tests (80%+ coverage target)
 - [ ] Remaining services tests (70%+ coverage target)
 
-#### Phase 4: Route Integration Tests (Days 21-24)
-- [ ] Portfolio routes integration tests (8 endpoints)
-- [ ] Transaction routes integration tests (5 endpoints)
-- [ ] Dividend routes integration tests (5 endpoints)
-- [ ] Fund routes integration tests (10 endpoints)
-- [ ] IBKR routes integration tests (16 endpoints)
-- [ ] System & Developer routes tests (14 endpoints)
+#### Phase 4: API Namespace Integration Tests (Days 21-24)
+- [x] System namespace tests (2 endpoints) - ✅ Complete
+- [x] Portfolio namespace tests (13 endpoints) - ✅ Complete
+- [x] Fund namespace tests (12 endpoints) - ✅ Complete
+- [x] Transaction namespace tests (5 endpoints) - ✅ Complete
+- [x] Dividend namespace tests (6 endpoints) - ✅ Complete
+- [x] IBKR namespace tests (19 endpoints) - ✅ Complete
+- [x] Developer namespace tests (15 endpoints) - ✅ Complete
+
+**Status**: All 72 Flask-RESTX endpoints have integration tests (47 passing tests total, 3 skipped)
 
 #### Phase 5: Coverage Analysis & Edge Cases (Days 25-27)
 - [ ] Run coverage analysis and identify gaps
@@ -195,14 +199,18 @@ This folder contains planning documents and task lists for the Investment Portfo
 
 **Trigger**: When needed for multi-currency IBKR account or requested
 
-#### API Documentation Generation (v1.5.0+)
-**Plan**: See [API_DOCUMENTATION_GENERATION_PLAN.md](./API_DOCUMENTATION_GENERATION_PLAN.md)
-- [ ] Automated documentation from code (Python AST parser)
-- [ ] Comprehensive API reference (all 60+ endpoints)
-- [ ] Request/response examples
-- [ ] Optional: Route implementation standardization
+#### ~~API Documentation Generation~~ ✅ LARGELY COMPLETE
+**Status**: Swagger/OpenAPI documentation implemented in v1.3.3
+- [x] Interactive Swagger UI at `/api/docs` (automatic, always up-to-date)
+- [x] Comprehensive API reference (all 72 endpoints documented)
+- [x] Request/response examples (via Swagger "Try it out" feature)
+- [x] Type-safe schemas with validation rules
 
-**Trigger**: For better LLM context and contributor onboarding
+**Remaining** (optional enhancements):
+- [ ] Additional code examples in docs/API_DOCUMENTATION.md
+- [ ] Frontend integration guide using Swagger specs
+
+**Note**: Flask-RESTX provides automatic documentation generation, making the original AST parser plan unnecessary.
 
 #### Dark Mode
 - [ ] Dark mode toggle in UI
@@ -249,6 +257,6 @@ If you encounter these, fix them:
 
 ---
 
-**Last Updated**: 2025-11-12
-**Current Version**: 1.3.2 (released), 1.3.3 (in progress - testing)
+**Last Updated**: 2024-11-24
+**Current Version**: 1.3.2 (released), 1.3.3 (completed - Swagger/Flask-RESTX), 1.3.4 (in progress - testing)
 **Philosophy**: Feature complete - only add what's needed

@@ -161,7 +161,7 @@ class TestTransactionCreate:
 
         response = client.post("/api/transactions", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert data["type"] == "buy"
         assert data["shares"] == 15
@@ -211,7 +211,7 @@ class TestTransactionCreate:
 
         response = client.post("/api/transactions", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert data["type"] == "sell"
         assert data["shares"] == 10
@@ -243,7 +243,7 @@ class TestTransactionCreate:
 
         response = client.post("/api/transactions", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert data["type"] == "dividend"
 
@@ -396,7 +396,7 @@ class TestTransactionRetrieveUpdateDelete:
 
         response = client.delete(f"/api/transactions/{txn_id}")
 
-        assert response.status_code == 204
+        assert response.status_code == 200
 
         # Verify database
         deleted = db.session.get(Transaction, txn_id)
@@ -413,8 +413,8 @@ class TestTransactionRetrieveUpdateDelete:
         fake_id = make_id()
         response = client.delete(f"/api/transactions/{fake_id}")
 
-        # API returns 400 for transaction not found
-        assert response.status_code == 400
+        # API returns 404 for transaction not found
+        assert response.status_code == 404
 
 
 class TestTransactionErrors:
@@ -432,7 +432,7 @@ class TestTransactionErrors:
 
         # Mock TransactionService.get_all_transactions to raise exception
         with patch(
-            "app.routes.transaction_routes.TransactionService.get_all_transactions"
+            "app.api.transaction_namespace.TransactionService.get_all_transactions"
         ) as mock_get_all:
             mock_get_all.side_effect = Exception("Database query failed")
 
@@ -463,7 +463,7 @@ class TestTransactionErrors:
 
         # Mock TransactionService.create_transaction to raise exception
         with patch(
-            "app.routes.transaction_routes.TransactionService.create_transaction"
+            "app.api.transaction_namespace.TransactionService.create_transaction"
         ) as mock_create:
             mock_create.side_effect = Exception("Database error")
 
@@ -492,7 +492,7 @@ class TestTransactionErrors:
         from unittest.mock import patch
 
         # Mock TransactionService.get_transaction to raise exception
-        with patch("app.routes.transaction_routes.TransactionService.get_transaction") as mock_get:
+        with patch("app.api.transaction_namespace.TransactionService.get_transaction") as mock_get:
             mock_get.side_effect = Exception("Transaction not found")
 
             fake_id = make_id()
@@ -533,7 +533,7 @@ class TestTransactionErrors:
 
         # Mock TransactionService.update_transaction to raise ValueError
         with patch(
-            "app.routes.transaction_routes.TransactionService.update_transaction"
+            "app.api.transaction_namespace.TransactionService.update_transaction"
         ) as mock_update:
             mock_update.side_effect = ValueError("Invalid transaction data")
 
@@ -618,7 +618,7 @@ class TestTransactionErrors:
 
         # Mock TransactionService.delete_transaction to raise general exception
         with patch(
-            "app.routes.transaction_routes.TransactionService.delete_transaction"
+            "app.api.transaction_namespace.TransactionService.delete_transaction"
         ) as mock_delete:
             mock_delete.side_effect = Exception("Unexpected database error")
 

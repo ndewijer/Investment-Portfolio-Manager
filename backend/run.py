@@ -5,13 +5,6 @@ import sys
 
 import click
 from app.models import LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
-from app.routes.developer_routes import developer
-from app.routes.dividend_routes import dividends
-from app.routes.fund_routes import funds
-from app.routes.ibkr_routes import ibkr
-from app.routes.portfolio_routes import portfolios
-from app.routes.system_routes import system
-from app.routes.transaction_routes import transactions
 from app.seed_data import seed_database
 from app.tasks.ibkr_import import run_automated_ibkr_import
 from app.tasks.price_updates import update_all_fund_prices
@@ -21,6 +14,7 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
+from flask_restx import Api
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
@@ -279,14 +273,21 @@ def create_app(config=None):
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
-    # Register blueprints
-    app.register_blueprint(portfolios, url_prefix="/api")
-    app.register_blueprint(funds, url_prefix="/api")
-    app.register_blueprint(transactions, url_prefix="/api")
-    app.register_blueprint(developer, url_prefix="/api")
-    app.register_blueprint(dividends, url_prefix="/api")
-    app.register_blueprint(ibkr, url_prefix="/api")
-    app.register_blueprint(system, url_prefix="/api")
+    # Initialize Flask-RESTX API
+    api = Api(
+        app,
+        version=get_version(),
+        title="Investment Portfolio Manager API",
+        description="API for managing investment portfolios, "
+        "funds, transactions, and IBKR integration",
+        doc="/api/docs",
+        prefix="/api",
+    )
+
+    # Initialize API namespaces
+    from app.api import init_api
+
+    init_api(api)
 
     # Create database tables and set default settings (skip in test mode)
     # Tests handle their own database setup in conftest.py

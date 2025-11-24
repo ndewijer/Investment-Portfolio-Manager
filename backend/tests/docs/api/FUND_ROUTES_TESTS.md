@@ -1,6 +1,6 @@
 # Fund Routes Integration Tests
 
-**File**: `tests/routes/test_fund_routes.py`
+**File**: `tests/api/test_fund_routes.py`
 **Route File**: `app/routes/fund_routes.py`
 **Test Count**: 19 tests (19 passing, 0 skipped)
 **Status**: ✅ All tests passing (Phase 1 - Query.get_or_404() issues resolved)
@@ -9,7 +9,7 @@
 
 ## Docstring Reference
 
-All test implementation details, parameters, and assertions are documented in the test file docstrings. Refer to `tests/routes/test_fund_routes.py` for complete test specifications.
+All test implementation details, parameters, and assertions are documented in the test file docstrings. Refer to `tests/api/test_fund_routes.py` for complete test specifications.
 
 ---
 
@@ -109,13 +109,13 @@ In use: {"in_use": true, "portfolios": [...], "transaction_count": N, "dividend_
 
 ```bash
 # All fund route tests
-pytest tests/routes/test_fund_routes.py -v
+pytest tests/api/test_fund_routes.py -v
 
 # Specific test class
-pytest tests/routes/test_fund_routes.py::TestFundListAndCreate -v
+pytest tests/api/test_fund_routes.py::TestFundListAndCreate -v
 
 # Without coverage (faster)
-pytest tests/routes/test_fund_routes.py -v --no-cov
+pytest tests/api/test_fund_routes.py -v --no-cov
 ```
 
 **Execution Time**: ~2.0 seconds (mocked external APIs)

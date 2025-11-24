@@ -322,6 +322,7 @@ class LogCategory(Enum):
         DATABASE: Database-related logs
         SECURITY: Security-related logs
         IBKR: IBKR integration-related logs
+        DEVELOPER: Developer tools and utilities logs
     """
 
     PORTFOLIO = "portfolio"
@@ -332,6 +333,7 @@ class LogCategory(Enum):
     DATABASE = "database"
     SECURITY = "security"
     IBKR = "ibkr"
+    DEVELOPER = "developer"
 
 
 class Log(db.Model):

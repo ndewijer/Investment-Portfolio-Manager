@@ -1,6 +1,6 @@
 # Developer Routes Integration Tests
 
-**File**: `tests/routes/test_developer_routes.py`
+**File**: `tests/api/test_developer_routes.py`
 **Route File**: `app/routes/developer_routes.py`
 **Test Count**: 13 tests (11 passing, 2 skipped)
 **Coverage**: Core functionality tested (Phase 2c complete)
@@ -114,19 +114,19 @@ Integration tests for developer-focused API endpoints including exchange rates, 
 
 ```bash
 # Run all developer route tests
-pytest tests/routes/test_developer_routes.py -v
+pytest tests/api/test_developer_routes.py -v
 
 # Run specific test class
-pytest tests/routes/test_developer_routes.py::TestExchangeRate -v
-pytest tests/routes/test_developer_routes.py::TestLogging -v
-pytest tests/routes/test_developer_routes.py::TestFundPrice -v
+pytest tests/api/test_developer_routes.py::TestExchangeRate -v
+pytest tests/api/test_developer_routes.py::TestLogging -v
+pytest tests/api/test_developer_routes.py::TestFundPrice -v
 
 # Run individual test
-pytest tests/routes/test_developer_routes.py::TestFundPrice::test_get_fund_price -v
-pytest tests/routes/test_developer_routes.py::TestLogging::test_get_logs_with_filters -v
+pytest tests/api/test_developer_routes.py::TestFundPrice::test_get_fund_price -v
+pytest tests/api/test_developer_routes.py::TestLogging::test_get_logs_with_filters -v
 
 # Run without coverage (faster)
-pytest tests/routes/test_developer_routes.py -v --no-cov
+pytest tests/api/test_developer_routes.py -v --no-cov
 ```
 
 ---

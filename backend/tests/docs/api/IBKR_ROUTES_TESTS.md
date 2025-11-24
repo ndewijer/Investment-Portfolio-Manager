@@ -1,6 +1,6 @@
 # IBKR Routes Integration Tests
 
-**File**: `tests/routes/test_ibkr_routes.py`
+**File**: `tests/api/test_ibkr_routes.py`
 **Route File**: `app/routes/ibkr_routes.py`
 **Test Count**: 61 tests (18 integration + 43 error paths)
 **Coverage**: 95% (215/215 statements, 11 missing lines)
@@ -145,16 +145,16 @@ Integration tests for Interactive Brokers (IBKR) transaction processing API endp
 
 ```bash
 # Run all IBKR route tests
-pytest tests/routes/test_ibkr_routes.py -v
+pytest tests/api/test_ibkr_routes.py -v
 
 # Run specific test class
-pytest tests/routes/test_ibkr_routes.py::TestIBKRAllocation -v
+pytest tests/api/test_ibkr_routes.py::TestIBKRAllocation -v
 
 # Run with coverage
-pytest tests/routes/test_ibkr_routes.py --cov=app/routes/ibkr_routes --cov-report=term-missing
+pytest tests/api/test_ibkr_routes.py --cov=app/routes/ibkr_routes --cov-report=term-missing
 
 # Run integration tests only (skip error paths)
-pytest tests/routes/test_ibkr_routes.py -k "not Error" -v
+pytest tests/api/test_ibkr_routes.py -k "not Error" -v
 ```
 
 ---

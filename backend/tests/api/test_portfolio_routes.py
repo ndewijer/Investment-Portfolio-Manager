@@ -9,11 +9,11 @@ Tests all Portfolio API endpoints:
 - DELETE /portfolios/<id> - Delete portfolio
 - POST /portfolios/<id>/archive - Archive portfolio
 - POST /portfolios/<id>/unarchive - Unarchive portfolio
-- GET /portfolio-summary - Get portfolio summary (overview)
-- GET /portfolio-history - Get portfolio historical performance
-- GET /portfolio-funds - List portfolio funds (optional filter by portfolio_id)
-- POST /portfolio-funds - Add fund to portfolio
-- DELETE /portfolio-funds/<id> - Remove fund from portfolio
+- GET /portfolios-summary - Get portfolio summary (overview)
+- GET /portfolios-history - Get portfolio historical performance
+- GET /portfolios-funds - List portfolio funds (optional filter by portfolio_id)
+- POST /portfolios-funds - Add fund to portfolio
+- DELETE /portfolios-funds/<id> - Remove fund from portfolio
 - GET /portfolios/<id>/fund-history - Get fund-specific history for portfolio
 """
 
@@ -94,7 +94,7 @@ class TestPortfolioListAndCreate:
 
         response = client.post("/api/portfolios", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert data["name"] == "My New Portfolio"
         assert data["description"] == "Test portfolio"
@@ -119,10 +119,10 @@ class TestPortfolioListAndCreate:
 
         response = client.post("/api/portfolios", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert data["name"] == "Minimal Portfolio"
-        assert data["description"] == ""  # Default empty description
+        assert data["description"] is None  # Default null for optional field
 
 
 class TestPortfolioRetrieveUpdateDelete:
@@ -262,7 +262,7 @@ class TestPortfolioRetrieveUpdateDelete:
 
         response = client.delete(f"/api/portfolios/{portfolio_id}")
 
-        assert response.status_code == 204
+        assert response.status_code == 200
 
         # Verify database
         deleted = db.session.get(Portfolio, portfolio_id)
@@ -361,7 +361,7 @@ class TestPortfolioSummaryAndHistory:
         db_session.add(txn)
         db_session.commit()
 
-        response = client.get("/api/portfolio-summary")
+        response = client.get("/api/portfolios-summary")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -385,7 +385,7 @@ class TestPortfolioSummaryAndHistory:
         db_session.add_all([p1, p2])
         db_session.commit()
 
-        response = client.get("/api/portfolio-summary")
+        response = client.get("/api/portfolios-summary")
 
         assert response.status_code == 200
         # Should only include active portfolio data
@@ -430,7 +430,7 @@ class TestPortfolioSummaryAndHistory:
             db_session.add(fund_price)
         db_session.commit()
 
-        response = client.get("/api/portfolio-history")
+        response = client.get("/api/portfolios-history")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -460,7 +460,7 @@ class TestPortfolioFunds:
         db_session.add_all([pf1, pf2])
         db_session.commit()
 
-        response = client.get("/api/portfolio-funds")
+        response = client.get("/api/portfolios-funds")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -486,7 +486,7 @@ class TestPortfolioFunds:
         db_session.add_all([pf1, pf2])
         db_session.commit()
 
-        response = client.get(f"/api/portfolio-funds?portfolio_id={p1.id}")
+        response = client.get(f"/api/portfolios-funds?portfolio_id={p1.id}")
 
         assert response.status_code == 200
         # Should only return funds for p1
@@ -507,9 +507,9 @@ class TestPortfolioFunds:
 
         payload = {"portfolio_id": portfolio.id, "fund_id": fund.id}
 
-        response = client.post("/api/portfolio-funds", json=payload)
+        response = client.post("/api/portfolios-funds", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert "id" in data
         assert data["portfolio_id"] == portfolio.id
@@ -537,7 +537,7 @@ class TestPortfolioFunds:
         db_session.commit()
         pf_id = pf.id
 
-        response = client.delete(f"/api/portfolio-funds/{pf_id}?confirm=true")
+        response = client.delete(f"/api/portfolios-funds/{pf_id}?confirm=true")
 
         assert response.status_code == 204
 
@@ -576,7 +576,7 @@ class TestPortfolioFunds:
         db_session.commit()
 
         # Try delete without confirmation
-        response = client.delete(f"/api/portfolio-funds/{pf.id}")
+        response = client.delete(f"/api/portfolios-funds/{pf.id}")
 
         assert response.status_code == 409  # Conflict - requires confirmation
         data = response.get_json()
@@ -674,7 +674,7 @@ class TestPortfolioErrors:
 
         payload = {"portfolio_id": make_id(), "fund_id": fund.id}
 
-        response = client.post("/api/portfolio-funds", json=payload)
+        response = client.post("/api/portfolios-funds", json=payload)
 
         assert response.status_code == 404
         data = response.get_json()
@@ -694,7 +694,7 @@ class TestPortfolioErrors:
 
         payload = {"portfolio_id": portfolio.id, "fund_id": make_id()}
 
-        response = client.post("/api/portfolio-funds", json=payload)
+        response = client.post("/api/portfolios-funds", json=payload)
 
         assert response.status_code == 404
         data = response.get_json()
@@ -709,7 +709,7 @@ class TestPortfolioErrors:
         accurate expectations about system state.
         """
         fake_id = make_id()
-        response = client.delete(f"/api/portfolio-funds/{fake_id}?confirm=true")
+        response = client.delete(f"/api/portfolios-funds/{fake_id}?confirm=true")
 
         assert response.status_code == 404
         data = response.get_json()
@@ -737,10 +737,10 @@ class TestPortfolioErrors:
             raise Exception("Database connection failed")
 
         with patch(
-            "app.routes.portfolio_routes.PortfolioService.delete_portfolio_fund",
+            "app.api.portfolio_namespace.PortfolioService.delete_portfolio_fund",
             mock_delete_pf,
         ):
-            response = client.delete(f"/api/portfolio-funds/{pf.id}?confirm=true")
+            response = client.delete(f"/api/portfolios-funds/{pf.id}?confirm=true")
 
             assert response.status_code == 400
             data = response.get_json()

@@ -45,7 +45,7 @@ export const useFundPricing = () => {
   // Fetch fund price for a specific fund
   const fetchFundPrice = useCallback(async (fundId) => {
     try {
-      const response = await api.get(`/fund-prices/${fundId}`);
+      const response = await api.get(`/funds/fund-prices/${fundId}`);
       const prices = response.data;
       const priceMap = prices.reduce((acc, price) => {
         acc[price.date.split('T')[0]] = price.price;

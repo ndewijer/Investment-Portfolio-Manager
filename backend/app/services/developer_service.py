@@ -118,6 +118,19 @@ class DeveloperService:
         if not rate or rate <= 0:
             raise ValueError("Rate must be a positive number")
 
+        # Validate currency codes against whitelist
+        valid_currencies = {"USD", "EUR", "GBP", "JPY"}
+        if from_currency not in valid_currencies:
+            raise ValueError(
+                f"Invalid currency code: {from_currency}. "
+                "Valid codes: {', '.join(sorted(valid_currencies))}"
+            )
+        if to_currency not in valid_currencies:
+            raise ValueError(
+                f"Invalid currency code: {to_currency}. "
+                "Valid codes: {', '.join(sorted(valid_currencies))}"
+            )
+
         exchange_rate = ExchangeRate.query.filter_by(
             from_currency=from_currency, to_currency=to_currency, date=date
         ).first()
@@ -272,6 +285,88 @@ class DeveloperService:
             ) from e
 
     @staticmethod
+    def validate_csv_headers(file_content: bytes, expected_headers: set) -> dict:
+        r"""
+        Validate CSV file headers and encoding for import operations.
+
+        Performs comprehensive validation of CSV files to ensure they contain the required
+        headers and are properly encoded in UTF-8 (with or without BOM). This centralized
+        validation function is used by both transaction and fund price import operations
+        to maintain consistent validation logic across CSV import endpoints.
+
+        Supported Encodings:
+        - UTF-8 without BOM
+        - UTF-8 with BOM (utf-8-sig)
+        - Handles Unicode content including emojis and international characters
+
+        Args:
+            file_content (bytes): Raw CSV file content as bytes
+            expected_headers (set): Set of required header column names (case-sensitive)
+
+        Returns:
+            dict: Validation result containing:
+                - 'valid' (bool): True if validation passes, False if headers are invalid
+                - 'encoding' (str): Detected encoding ('utf-8' or 'utf-8-sig') when valid
+                - 'error' (str): Error message when valid=False
+                - 'expected_headers' (list): Required headers when valid=False
+                - 'found_headers' (list): Actual headers found when valid=False
+
+        Raises:
+            ValueError: If file cannot be decoded as UTF-8, is empty, or cannot be parsed
+
+        Example:
+            >>> content = b"date,price\\n2024-01-15,125.75"
+            >>> headers = {"date", "price"}
+            >>> result = DeveloperService.validate_csv_headers(content, headers)
+            >>> result['valid']
+            True
+            >>> result['encoding']
+            'utf-8'
+
+        Note:
+            This function only validates the first line (headers) of the CSV file.
+            It does not parse or validate the data rows. Additional columns beyond
+            the expected headers are allowed (e.g., extra columns for manual tracking).
+        """
+        # First try UTF-8 with BOM, then UTF-8 without BOM
+        decoded_content = None
+        encoding_used = None
+
+        try:
+            # Try UTF-8 with BOM first
+            decoded_content = file_content.decode("utf-8-sig")
+            encoding_used = "utf-8-sig"
+        except UnicodeDecodeError:
+            try:
+                # Try UTF-8 without BOM
+                decoded_content = file_content.decode("utf-8")
+                encoding_used = "utf-8"
+            except UnicodeDecodeError as e:
+                raise ValueError(
+                    f"File must be UTF-8 encoded. "
+                    "Detected encoding appears to be incompatible. Error: {e}"
+                ) from e
+
+        try:
+            first_line = decoded_content.split("\n")[0].strip()
+            if not first_line:
+                raise ValueError("CSV file appears to be empty")
+
+            found_headers = {h.strip() for h in first_line.split(",")}
+
+            if not expected_headers.issubset(found_headers):
+                return {
+                    "valid": False,
+                    "error": "Invalid CSV format",
+                    "expected_headers": list(expected_headers),
+                    "found_headers": list(found_headers),
+                }
+
+            return {"valid": True, "encoding": encoding_used}
+        except Exception as e:
+            raise ValueError(f"Cannot parse CSV headers: {e}") from e
+
+    @staticmethod
     def import_transactions_csv(file_content, portfolio_fund_id):
         """
         Import transactions from CSV file content.
@@ -286,6 +381,12 @@ class DeveloperService:
         Raises:
             ValueError: If file format is invalid or import fails
         """
+        # Validate CSV headers first
+        expected_headers = {"date", "type", "shares", "cost_per_share"}
+        validation_result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+        if not validation_result["valid"]:
+            raise ValueError(validation_result["error"])
+
         portfolio_fund = db.session.get(PortfolioFund, portfolio_fund_id)
         if not portfolio_fund:
             raise ValueError("Portfolio-fund relationship not found")
@@ -356,6 +457,21 @@ class DeveloperService:
         Raises:
             ValueError: If file format is invalid or import fails
         """
+        # Validate CSV headers first
+        expected_headers = {"date", "price"}
+        validation_result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+        if not validation_result["valid"]:
+            raise ValueError(validation_result["error"])
+
+        # Check if this is a transaction file (common mistake)
+        decoded_content = file_content.decode("utf-8-sig")
+        first_line = decoded_content.split("\n")[0].strip()
+        found_headers = {h.strip() for h in first_line.split(",")}
+        if "type" in found_headers and "shares" in found_headers:
+            raise ValueError(
+                "This appears to be a transaction file. "
+                "Please use the 'Import Transactions' section above to import transactions."
+            )
 
         def process_fund_price_row(mapped_row, row_num):
             """Process a single fund price row."""
@@ -440,7 +556,15 @@ class DeveloperService:
 
         Returns:
             dict: Fund price details including fund_id, date and price
+
+        Raises:
+            ValueError: If fund_id doesn't exist
         """
+        # Validate fund exists
+        fund = db.session.get(Fund, fund_id)
+        if not fund:
+            raise ValueError(f"Fund not found: {fund_id}")
+
         if date_ is None:
             date_ = datetime.now().date()
 

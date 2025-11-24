@@ -81,7 +81,7 @@ const PortfolioDetail = () => {
   const handleAddFund = useCallback(
     async (selectedFundId) => {
       try {
-        await api.post('/portfolio-funds', {
+        await api.post('/portfolios-funds', {
           portfolio_id: id,
           fund_id: selectedFundId,
         });
@@ -97,7 +97,7 @@ const PortfolioDetail = () => {
   const handleRemoveFund = useCallback(
     async (fund) => {
       try {
-        await api.delete(`/portfolio-funds/${fund.id}`);
+        await api.delete(`/portfolios-funds/${fund.id}`);
         fetchPortfolioData();
       } catch (error) {
         if (error.response && error.response.status === 409) {
@@ -111,7 +111,7 @@ const PortfolioDetail = () => {
 
           if (window.confirm(confirmMessage)) {
             try {
-              await api.delete(`/portfolio-funds/${fund.id}?confirm=true`);
+              await api.delete(`/portfolios-funds/${fund.id}?confirm=true`);
               fetchPortfolioData();
               loadTransactions();
               loadDividends();
