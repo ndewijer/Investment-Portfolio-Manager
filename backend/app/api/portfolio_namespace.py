@@ -10,59 +10,84 @@ This namespace provides endpoints for:
 
 from flask import request
 from flask_restx import Namespace, Resource, fields
+from werkzeug.exceptions import HTTPException
 
-from ..models import Fund, LogCategory, LogLevel, db
+from ..models import LogCategory, LogLevel
 from ..services.logging_service import logger
 from ..services.portfolio_service import PortfolioService
 
 # Create namespace
-ns = Namespace('portfolios', description='Portfolio management operations')
+ns = Namespace("portfolios", description="Portfolio management operations")
 
 # Define models for documentation
-portfolio_list_item_model = ns.model('PortfolioListItem', {
-    'id': fields.String(required=True, description='Portfolio unique identifier (UUID)'),
-    'name': fields.String(required=True, description='Portfolio name'),
-    'description': fields.String(description='Portfolio description'),
-    'is_archived': fields.Boolean(required=True, description='Whether portfolio is archived'),
-    'exclude_from_overview': fields.Boolean(required=True, description='Whether to exclude from overview')
-})
+portfolio_list_item_model = ns.model(
+    "PortfolioListItem",
+    {
+        "id": fields.String(required=True, description="Portfolio unique identifier (UUID)"),
+        "name": fields.String(required=True, description="Portfolio name"),
+        "description": fields.String(description="Portfolio description"),
+        "is_archived": fields.Boolean(required=True, description="Whether portfolio is archived"),
+        "exclude_from_overview": fields.Boolean(
+            required=True, description="Whether to exclude from overview"
+        ),
+    },
+)
 
-portfolio_detail_model = ns.model('PortfolioDetail', {
-    'id': fields.String(required=True, description='Portfolio unique identifier (UUID)'),
-    'name': fields.String(required=True, description='Portfolio name'),
-    'description': fields.String(description='Portfolio description'),
-    'is_archived': fields.Boolean(required=True, description='Whether portfolio is archived'),
-    'totalValue': fields.Float(required=True, description='Total current value'),
-    'totalCost': fields.Float(required=True, description='Total cost basis'),
-    'totalDividends': fields.Float(required=True, description='Total dividends received'),
-    'totalUnrealizedGainLoss': fields.Float(required=True, description='Total unrealized gain/loss'),
-    'totalRealizedGainLoss': fields.Float(required=True, description='Total realized gain/loss'),
-    'totalGainLoss': fields.Float(required=True, description='Total gain/loss (realized + unrealized)')
-})
+portfolio_detail_model = ns.model(
+    "PortfolioDetail",
+    {
+        "id": fields.String(required=True, description="Portfolio unique identifier (UUID)"),
+        "name": fields.String(required=True, description="Portfolio name"),
+        "description": fields.String(description="Portfolio description"),
+        "is_archived": fields.Boolean(required=True, description="Whether portfolio is archived"),
+        "totalValue": fields.Float(required=True, description="Total current value"),
+        "totalCost": fields.Float(required=True, description="Total cost basis"),
+        "totalDividends": fields.Float(required=True, description="Total dividends received"),
+        "totalUnrealizedGainLoss": fields.Float(
+            required=True, description="Total unrealized gain/loss"
+        ),
+        "totalRealizedGainLoss": fields.Float(
+            required=True, description="Total realized gain/loss"
+        ),
+        "totalGainLoss": fields.Float(
+            required=True, description="Total gain/loss (realized + unrealized)"
+        ),
+    },
+)
 
-portfolio_create_model = ns.model('PortfolioCreate', {
-    'name': fields.String(required=True, description='Portfolio name', example='Retirement Portfolio'),
-    'description': fields.String(description='Portfolio description', example='Long-term retirement savings')
-})
+portfolio_create_model = ns.model(
+    "PortfolioCreate",
+    {
+        "name": fields.String(
+            required=True, description="Portfolio name", example="Retirement Portfolio"
+        ),
+        "description": fields.String(
+            description="Portfolio description", example="Long-term retirement savings"
+        ),
+    },
+)
 
-portfolio_update_model = ns.model('PortfolioUpdate', {
-    'name': fields.String(description='Portfolio name', example='Updated Portfolio Name'),
-    'description': fields.String(description='Portfolio description'),
-    'exclude_from_overview': fields.Boolean(description='Whether to exclude from overview')
-})
+portfolio_update_model = ns.model(
+    "PortfolioUpdate",
+    {
+        "name": fields.String(description="Portfolio name", example="Updated Portfolio Name"),
+        "description": fields.String(description="Portfolio description"),
+        "exclude_from_overview": fields.Boolean(description="Whether to exclude from overview"),
+    },
+)
 
-error_model = ns.model('Error', {
-    'error': fields.String(required=True, description='Error message')
-})
+error_model = ns.model(
+    "Error", {"error": fields.String(required=True, description="Error message")}
+)
 
 
-@ns.route('')
+@ns.route("")
 class PortfolioList(Resource):
     """Portfolio collection endpoint."""
 
-    @ns.doc('list_portfolios')
-    @ns.response(200, 'Success', [portfolio_list_item_model])
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("list_portfolios")
+    @ns.response(200, "Success", [portfolio_list_item_model])
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get all portfolios.
@@ -82,6 +107,8 @@ class PortfolioList(Resource):
                 }
                 for p in portfolios
             ], 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -91,11 +118,11 @@ class PortfolioList(Resource):
             )
             return {"error": str(e)}, 500
 
-    @ns.doc('create_portfolio')
+    @ns.doc("create_portfolio")
     @ns.expect(portfolio_create_model, validate=True)
-    @ns.response(201, 'Portfolio created', portfolio_list_item_model)
-    @ns.response(400, 'Validation error', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(201, "Portfolio created", portfolio_list_item_model)
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Create a new portfolio.
@@ -106,8 +133,7 @@ class PortfolioList(Resource):
         try:
             data = request.json
             portfolio = PortfolioService.create_portfolio(
-                name=data["name"],
-                description=data.get("description")
+                name=data["name"], description=data.get("description")
             )
 
             logger.log(
@@ -126,7 +152,9 @@ class PortfolioList(Resource):
             }, 201
 
         except ValueError as e:
-            return {"error": str(e)}, 400
+            return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -137,15 +165,15 @@ class PortfolioList(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route('/<string:portfolio_id>')
-@ns.param('portfolio_id', 'Portfolio unique identifier (UUID)')
+@ns.route("/<string:portfolio_id>")
+@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
 class Portfolio(Resource):
     """Portfolio detail endpoint."""
 
-    @ns.doc('get_portfolio')
-    @ns.response(200, 'Success', portfolio_detail_model)
-    @ns.response(404, 'Portfolio not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_portfolio")
+    @ns.response(200, "Success", portfolio_detail_model)
+    @ns.response(404, "Portfolio not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self, portfolio_id):
         """
         Get portfolio details.
@@ -172,11 +200,18 @@ class Portfolio(Resource):
                 "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
                 "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
                 "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
-                "totalUnrealizedGainLoss": sum(pf["unrealized_gain_loss"] for pf in portfolio_funds_data),
-                "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
+                "totalUnrealizedGainLoss": sum(
+                    pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+                ),
+                "totalRealizedGainLoss": sum(
+                    pf["realized_gain_loss"] for pf in portfolio_funds_data
+                ),
                 "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
             }, 200
 
+        except HTTPException:
+            # Let Flask handle HTTP exceptions (like abort(404))
+            raise
         except ValueError as e:
             return {"error": str(e)}, 404
         except Exception as e:
@@ -188,11 +223,11 @@ class Portfolio(Resource):
             )
             return {"error": str(e)}, 500
 
-    @ns.doc('update_portfolio')
+    @ns.doc("update_portfolio")
     @ns.expect(portfolio_update_model, validate=True)
-    @ns.response(200, 'Portfolio updated', portfolio_list_item_model)
-    @ns.response(404, 'Portfolio not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(200, "Portfolio updated", portfolio_list_item_model)
+    @ns.response(404, "Portfolio not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def put(self, portfolio_id):
         """
         Update portfolio information.
@@ -206,7 +241,7 @@ class Portfolio(Resource):
                 portfolio_id=portfolio_id,
                 name=data.get("name"),
                 description=data.get("description"),
-                exclude_from_overview=data.get("exclude_from_overview")
+                exclude_from_overview=data.get("exclude_from_overview"),
             )
 
             logger.log(
@@ -226,6 +261,8 @@ class Portfolio(Resource):
 
         except ValueError as e:
             return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -235,10 +272,10 @@ class Portfolio(Resource):
             )
             return {"error": str(e)}, 500
 
-    @ns.doc('delete_portfolio')
-    @ns.response(200, 'Portfolio deleted')
-    @ns.response(404, 'Portfolio not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("delete_portfolio")
+    @ns.response(200, "Portfolio deleted")
+    @ns.response(404, "Portfolio not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def delete(self, portfolio_id):
         """
         Delete a portfolio.
@@ -264,6 +301,8 @@ class Portfolio(Resource):
 
         except ValueError as e:
             return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -274,15 +313,15 @@ class Portfolio(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route('/<string:portfolio_id>/archive')
-@ns.param('portfolio_id', 'Portfolio unique identifier (UUID)')
+@ns.route("/<string:portfolio_id>/archive")
+@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
 class PortfolioArchive(Resource):
     """Portfolio archive endpoint."""
 
-    @ns.doc('archive_portfolio')
-    @ns.response(200, 'Portfolio archived')
-    @ns.response(404, 'Portfolio not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("archive_portfolio")
+    @ns.response(200, "Portfolio archived")
+    @ns.response(404, "Portfolio not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self, portfolio_id):
         """
         Archive a portfolio.
@@ -291,7 +330,7 @@ class PortfolioArchive(Resource):
         Archived portfolios can be unarchived later.
         """
         try:
-            PortfolioService.archive_portfolio(portfolio_id)
+            portfolio = PortfolioService.update_archive_status(portfolio_id, True)
 
             logger.log(
                 level=LogLevel.INFO,
@@ -300,10 +339,12 @@ class PortfolioArchive(Resource):
                 details={"portfolio_id": portfolio_id},
             )
 
-            return {"success": True}, 200
+            return PortfolioService.format_portfolio_list_item(portfolio), 200
 
         except ValueError as e:
             return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -314,15 +355,15 @@ class PortfolioArchive(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route('/<string:portfolio_id>/unarchive')
-@ns.param('portfolio_id', 'Portfolio unique identifier (UUID)')
+@ns.route("/<string:portfolio_id>/unarchive")
+@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
 class PortfolioUnarchive(Resource):
     """Portfolio unarchive endpoint."""
 
-    @ns.doc('unarchive_portfolio')
-    @ns.response(200, 'Portfolio unarchived')
-    @ns.response(404, 'Portfolio not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("unarchive_portfolio")
+    @ns.response(200, "Portfolio unarchived")
+    @ns.response(404, "Portfolio not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self, portfolio_id):
         """
         Unarchive a portfolio.
@@ -330,7 +371,7 @@ class PortfolioUnarchive(Resource):
         Restores an archived portfolio, making it visible in normal views again.
         """
         try:
-            PortfolioService.unarchive_portfolio(portfolio_id)
+            portfolio = PortfolioService.update_archive_status(portfolio_id, False)
 
             logger.log(
                 level=LogLevel.INFO,
@@ -339,10 +380,12 @@ class PortfolioUnarchive(Resource):
                 details={"portfolio_id": portfolio_id},
             )
 
-            return {"success": True}, 200
+            return PortfolioService.format_portfolio_list_item(portfolio), 200
 
         except ValueError as e:
             return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -353,13 +396,13 @@ class PortfolioUnarchive(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route('-summary')
+@ns.route("-summary")
 class PortfolioSummary(Resource):
     """Portfolio summary endpoint."""
 
-    @ns.doc('get_portfolio_summary')
-    @ns.response(200, 'Success')
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_portfolio_summary")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get summary of all portfolios.
@@ -371,6 +414,8 @@ class PortfolioSummary(Resource):
         """
         try:
             return PortfolioService.get_portfolio_summary(), 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -381,15 +426,15 @@ class PortfolioSummary(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route('-history')
+@ns.route("-history")
 class PortfolioHistory(Resource):
     """Portfolio history endpoint."""
 
-    @ns.doc('get_portfolio_history')
-    @ns.param('start_date', 'Start date (YYYY-MM-DD)', _in='query')
-    @ns.param('end_date', 'End date (YYYY-MM-DD)', _in='query')
-    @ns.response(200, 'Success')
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_portfolio_history")
+    @ns.param("start_date", "Start date (YYYY-MM-DD)", _in="query")
+    @ns.param("end_date", "End date (YYYY-MM-DD)", _in="query")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get historical data for all portfolios.
@@ -407,6 +452,8 @@ class PortfolioHistory(Resource):
             end_date = request.args.get("end_date")
 
             return PortfolioService.get_portfolio_history(start_date, end_date), 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -417,14 +464,14 @@ class PortfolioHistory(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route('-funds')
+@ns.route("-funds")
 class PortfolioFundsList(Resource):
     """Portfolio-fund relationships endpoint."""
 
-    @ns.doc('get_portfolio_funds')
-    @ns.param('portfolio_id', 'Filter by portfolio ID', _in='query')
-    @ns.response(200, 'Success')
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_portfolio_funds")
+    @ns.param("portfolio_id", "Filter by portfolio ID", _in="query")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get portfolio-fund relationships.
@@ -445,6 +492,8 @@ class PortfolioFundsList(Resource):
                 portfolio_funds = PortfolioService.get_all_portfolio_funds()
 
             return portfolio_funds, 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -454,14 +503,20 @@ class PortfolioFundsList(Resource):
             )
             return {"error": str(e)}, 500
 
-    @ns.doc('create_portfolio_fund')
-    @ns.expect(ns.model('PortfolioFundCreate', {
-        'portfolio_id': fields.String(required=True, description='Portfolio ID'),
-        'fund_id': fields.String(required=True, description='Fund ID')
-    }), validate=True)
-    @ns.response(201, 'Portfolio-fund relationship created')
-    @ns.response(404, 'Portfolio or fund not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("create_portfolio_fund")
+    @ns.expect(
+        ns.model(
+            "PortfolioFundCreate",
+            {
+                "portfolio_id": fields.String(required=True, description="Portfolio ID"),
+                "fund_id": fields.String(required=True, description="Fund ID"),
+            },
+        ),
+        validate=True,
+    )
+    @ns.response(201, "Portfolio-fund relationship created")
+    @ns.response(404, "Portfolio or fund not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Create portfolio-fund relationship.
@@ -472,8 +527,7 @@ class PortfolioFundsList(Resource):
         try:
             data = request.json
             portfolio_fund = PortfolioService.create_portfolio_fund(
-                portfolio_id=data["portfolio_id"],
-                fund_id=data["fund_id"]
+                portfolio_id=data["portfolio_id"], fund_id=data["fund_id"]
             )
 
             return {
@@ -483,21 +537,23 @@ class PortfolioFundsList(Resource):
             }, 201
         except ValueError as e:
             return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             return {"error": str(e)}, 500
 
 
-@ns.route('-funds/<string:portfolio_fund_id>')
-@ns.param('portfolio_fund_id', 'Portfolio-Fund relationship ID')
+@ns.route("-funds/<string:portfolio_fund_id>")
+@ns.param("portfolio_fund_id", "Portfolio-Fund relationship ID")
 class PortfolioFundDetail(Resource):
     """Portfolio-fund relationship detail endpoint."""
 
-    @ns.doc('delete_portfolio_fund')
-    @ns.param('confirm', 'Confirm deletion with transactions', _in='query')
-    @ns.response(204, 'Portfolio-fund relationship deleted')
-    @ns.response(404, 'Not found', error_model)
-    @ns.response(409, 'Confirmation required', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("delete_portfolio_fund")
+    @ns.param("confirm", "Confirm deletion with transactions", _in="query")
+    @ns.response(204, "Portfolio-fund relationship deleted")
+    @ns.response(404, "Not found", error_model)
+    @ns.response(409, "Confirmation required", error_model)
+    @ns.response(500, "Server error", error_model)
     def delete(self, portfolio_fund_id):
         """
         Delete portfolio-fund relationship.
@@ -546,20 +602,28 @@ class PortfolioFundDetail(Resource):
                     }, 409
 
             return {"error": error_message}, 404
+        except HTTPException:
+            raise
         except Exception as e:
-            return {"error": str(e)}, 500
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.PORTFOLIO,
+                message=f"Error deleting portfolio fund: {e!s}",
+                details={"error": str(e), "portfolio_fund_id": portfolio_fund_id},
+            )
+            return {"error": "Error deleting fund from portfolio"}, 400
 
 
-@ns.route('/<string:portfolio_id>/fund-history')
-@ns.param('portfolio_id', 'Portfolio unique identifier (UUID)')
+@ns.route("/<string:portfolio_id>/fund-history")
+@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
 class PortfolioFundHistory(Resource):
     """Portfolio fund history endpoint."""
 
-    @ns.doc('get_portfolio_fund_history')
-    @ns.param('start_date', 'Start date (YYYY-MM-DD)', _in='query')
-    @ns.param('end_date', 'End date (YYYY-MM-DD)', _in='query')
-    @ns.response(200, 'Success')
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_portfolio_fund_history")
+    @ns.param("start_date", "Start date (YYYY-MM-DD)", _in="query")
+    @ns.param("end_date", "End date (YYYY-MM-DD)", _in="query")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
     def get(self, portfolio_id):
         """
         Get historical fund values for a portfolio.
@@ -580,6 +644,8 @@ class PortfolioFundHistory(Resource):
             return PortfolioService.get_portfolio_fund_history(
                 portfolio_id, start_date, end_date
             ), 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,

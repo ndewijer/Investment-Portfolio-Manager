@@ -62,7 +62,7 @@ const Funds = () => {
       const fundsWithSymbols = funds.filter((fund) => fund.symbol);
       for (const fund of fundsWithSymbols) {
         try {
-          const response = await api.get(`/lookup-symbol-info/${fund.symbol}`);
+          const response = await api.get(`/funds/symbol/${fund.symbol}`);
           if (response.data) {
             setSymbolInfo((prev) => ({
               ...prev,
@@ -201,7 +201,7 @@ const Funds = () => {
 
     if (symbol) {
       try {
-        const response = await api.get(`/lookup-symbol-info/${symbol}`);
+        const response = await api.get(`/funds/symbol/${symbol}`);
         if (response.data) {
           setSymbolInfo((prev) => ({
             ...prev,

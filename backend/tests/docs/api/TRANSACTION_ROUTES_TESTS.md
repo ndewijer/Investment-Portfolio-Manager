@@ -1,6 +1,6 @@
 # Transaction Routes Integration Tests
 
-**File**: `tests/routes/test_transaction_routes.py`
+**File**: `tests/api/test_transaction_routes.py`
 **Route File**: `app/routes/transaction_routes.py`
 **Test Count**: 18 tests (12 integration + 6 error path)
 **Coverage**: 100% (78/78 statements)
@@ -90,22 +90,22 @@ Integration tests for transaction management API endpoints. Tests verify transac
 
 ### Run all transaction route tests:
 ```bash
-pytest tests/routes/test_transaction_routes.py -v
+pytest tests/api/test_transaction_routes.py -v
 ```
 
 ### Run specific test class:
 ```bash
-pytest tests/routes/test_transaction_routes.py::TestTransactionCreate -v
+pytest tests/api/test_transaction_routes.py::TestTransactionCreate -v
 ```
 
 ### Run with timing:
 ```bash
-pytest tests/routes/test_transaction_routes.py -v --durations=10
+pytest tests/api/test_transaction_routes.py -v --durations=10
 ```
 
 ### Run without coverage (faster):
 ```bash
-pytest tests/routes/test_transaction_routes.py -v --no-cov
+pytest tests/api/test_transaction_routes.py -v --no-cov
 ```
 
 ---

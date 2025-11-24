@@ -12,7 +12,7 @@ The Investment Portfolio Manager provides a comprehensive REST API for managing 
 
 - **Automatic Documentation**: Interactive Swagger UI at `/api/docs`
 - **Type-Safe Schemas**: Request/response models with validation
-- **Comprehensive Coverage**: 68 endpoints across 7 namespaces
+- **Comprehensive Coverage**: 72 endpoints across 7 namespaces
 - **Service Layer Architecture**: Business logic separated from HTTP interface
 - **Error Handling**: Standardized error responses with appropriate HTTP status codes
 - **Logging**: Comprehensive request/response logging for debugging
@@ -147,20 +147,30 @@ Interactive Brokers integration.
 
 ### 7. Developer (`/api/developer`)
 
-Development and debugging utilities.
+Development and debugging utilities with comprehensive CSV import capabilities.
 
-**Endpoints**: 10
-- System logs viewing
+**Endpoints**: 15
+- System logs viewing and clearing
+- Logging configuration management
 - Exchange rate management
 - Fund price management
-- CSV templates
-- Database introspection
+- CSV template generation
+- CSV transaction and fund price imports
+- Database introspection utilities
+
+**Key Features**:
+- **CSV Import Validation**: Centralized UTF-8 encoding and header validation
+- **Logging Management**: View, clear, and configure system logging settings
+- **Manual Data Entry**: Override exchange rates and fund prices for testing
+- **Developer Tools**: Access system logs and database information
 
 **Use Cases**:
-- Debugging system issues
-- Manually setting exchange rates or fund prices
-- Downloading CSV import templates
-- Viewing system logs
+- Debugging system issues through log analysis
+- Importing transaction and fund price data from CSV files
+- Manually setting exchange rates or fund prices for development/testing
+- Configuring system logging levels and behavior
+- Downloading properly formatted CSV import templates
+- Bulk importing historical data from external sources
 
 ---
 
@@ -487,14 +497,9 @@ The Swagger API coexists with the legacy Blueprint routes during the transition 
 
 ### Compatibility Notes
 
-1. **Path Compatibility**: Some legacy paths have compatibility routes:
-   - Legacy: `/lookup-symbol-info/{symbol}`
-   - Swagger: `/api/funds/lookup-symbol-info/{symbol}` (hidden from Swagger UI)
-   - New: `/api/funds/symbol/{symbol}` (recommended)
+1. **Response Format**: Response formats are consistent across all Swagger API endpoints
 
-2. **Response Format**: Response formats are identical between legacy and Swagger APIs
-
-3. **Business Logic**: Both APIs use the same service layer, ensuring consistent behavior
+2. **Business Logic**: All APIs use the same service layer, ensuring consistent behavior
 
 ---
 
@@ -707,7 +712,7 @@ curl http://localhost:5001/api/portfolios
 ### Version 1.3.3 - Swagger Implementation
 
 - **Initial Release**: Complete Swagger/OpenAPI documentation
-- **Coverage**: 68 endpoints across 7 namespaces
+- **Coverage**: 72 endpoints across 7 namespaces
 - **Features**: Interactive Swagger UI, typed models, error handling
 - **Compatibility**: Coexists with legacy Blueprint routes
 

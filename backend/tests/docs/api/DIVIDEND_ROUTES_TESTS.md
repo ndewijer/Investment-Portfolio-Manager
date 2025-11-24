@@ -1,6 +1,6 @@
 # Dividend Routes Integration Tests
 
-**File**: `tests/routes/test_dividend_routes.py`
+**File**: `tests/api/test_dividend_routes.py`
 **Route File**: `app/routes/dividend_routes.py`
 **Test Count**: 17 tests (10 integration + 7 error path)
 **Coverage**: 100% (65/65 statements)
@@ -88,22 +88,22 @@ Tests include `dividend_type` parameter in `create_fund()` helper to support bot
 
 ### Run all dividend route tests:
 ```bash
-pytest tests/routes/test_dividend_routes.py -v
+pytest tests/api/test_dividend_routes.py -v
 ```
 
 ### Run specific test class:
 ```bash
-pytest tests/routes/test_dividend_routes.py::TestDividendCreate -v
+pytest tests/api/test_dividend_routes.py::TestDividendCreate -v
 ```
 
 ### Run with transaction debugging:
 ```bash
-pytest tests/routes/test_dividend_routes.py -v -s
+pytest tests/api/test_dividend_routes.py -v -s
 ```
 
 ### Run without coverage (faster):
 ```bash
-pytest tests/routes/test_dividend_routes.py -v --no-cov
+pytest tests/api/test_dividend_routes.py -v --no-cov
 ```
 
 ---

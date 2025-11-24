@@ -51,12 +51,12 @@ ignore = [
 
 [tool.pytest.ini_options]
 # Default test path
-testpaths = ["backend/tests/services", "backend/tests/routes"]
+testpaths = ["backend/tests/services", "backend/tests/api"]
 
 # Default command line options
 addopts = [
     "--cov=backend/app/services",
-    "--cov=backend/app/routes",
+    "--cov=backend/app/api",
     # "--cov-report=term-missing",  # Show missing lines in coverage
     # "--cov-report=html",           # Generate HTML coverage report
     "--cov-fail-under=90",          # Make sure we adhere to a min code coverage

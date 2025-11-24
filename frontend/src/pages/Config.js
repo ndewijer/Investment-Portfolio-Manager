@@ -634,7 +634,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
 
   const fetchCurrentExchangeRate = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/exchange-rate`, {
+      const response = await axios.get(`${API_BASE_URL}/developer/exchange-rate`, {
         params: {
           from_currency: exchangeRate.from_currency,
           to_currency: exchangeRate.to_currency,
@@ -655,8 +655,8 @@ const PowerUserTab = ({ setMessage, setError }) => {
     const loadInitialData = async () => {
       fetchFunds(() => axios.get(`${API_BASE_URL}/funds`));
       fetchPortfolios(() => axios.get(`${API_BASE_URL}/portfolios`));
-      fetchCsvTemplate(() => axios.get(`${API_BASE_URL}/csv-template`));
-      fetchFundPriceTemplate(() => axios.get(`${API_BASE_URL}/fund-price-template`));
+      fetchCsvTemplate(() => axios.get(`${API_BASE_URL}/developer/csv/transactions/template`));
+      fetchFundPriceTemplate(() => axios.get(`${API_BASE_URL}/developer/csv/fund-prices/template`));
       await fetchCurrentExchangeRate();
     };
 
@@ -672,7 +672,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
   const handleExchangeRateSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_BASE_URL}/exchange-rate`, exchangeRate);
+      const response = await axios.post(`${API_BASE_URL}/developer/exchange-rate`, exchangeRate);
       setMessage(`Exchange rate set successfully: ${response.data.rate}`);
       fetchCurrentExchangeRate();
     } catch (err) {
@@ -683,7 +683,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
   const handleFundPriceSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${API_BASE_URL}/fund-price`, fundPrice);
+      const response = await axios.post(`${API_BASE_URL}/developer/fund-price`, fundPrice);
       setMessage(`Fund price set successfully: ${response.data.price}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Error setting fund price');

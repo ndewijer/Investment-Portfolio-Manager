@@ -9,50 +9,67 @@ This namespace provides endpoints for:
 
 from flask import request
 from flask_restx import Namespace, Resource, fields
+from werkzeug.exceptions import HTTPException
 
 from ..models import LogCategory, LogLevel, RealizedGainLoss
 from ..services.logging_service import logger
 from ..services.transaction_service import TransactionService
 
 # Create namespace
-ns = Namespace('transactions', description='Transaction management operations')
+ns = Namespace("transactions", description="Transaction management operations")
 
 # Define models
-transaction_model = ns.model('Transaction', {
-    'id': fields.String(required=True, description='Transaction unique identifier (UUID)'),
-    'portfolio_fund_id': fields.String(required=True, description='Portfolio-Fund relationship ID'),
-    'date': fields.String(required=True, description='Transaction date (YYYY-MM-DD)'),
-    'type': fields.String(required=True, description='Transaction type', enum=['buy', 'sell', 'dividend', 'fee']),
-    'shares': fields.Float(required=True, description='Number of shares'),
-    'cost_per_share': fields.Float(required=True, description='Cost per share'),
-    'created_at': fields.DateTime(description='Creation timestamp')
-})
+transaction_model = ns.model(
+    "Transaction",
+    {
+        "id": fields.String(required=True, description="Transaction unique identifier (UUID)"),
+        "portfolio_fund_id": fields.String(
+            required=True, description="Portfolio-Fund relationship ID"
+        ),
+        "date": fields.String(required=True, description="Transaction date (YYYY-MM-DD)"),
+        "type": fields.String(
+            required=True, description="Transaction type", enum=["buy", "sell", "dividend", "fee"]
+        ),
+        "shares": fields.Float(required=True, description="Number of shares"),
+        "cost_per_share": fields.Float(required=True, description="Cost per share"),
+        "created_at": fields.DateTime(description="Creation timestamp"),
+    },
+)
 
-transaction_create_model = ns.model('TransactionCreate', {
-    'portfolio_fund_id': fields.String(required=True, description='Portfolio-Fund relationship ID'),
-    'date': fields.String(required=True, description='Transaction date (YYYY-MM-DD)', example='2024-01-15'),
-    'type': fields.String(required=True, description='Transaction type', enum=['buy', 'sell', 'dividend', 'fee']),
-    'shares': fields.Float(required=True, description='Number of shares', example=10.5),
-    'cost_per_share': fields.Float(required=True, description='Cost per share', example=150.25)
-})
+transaction_create_model = ns.model(
+    "TransactionCreate",
+    {
+        "portfolio_fund_id": fields.String(
+            required=True, description="Portfolio-Fund relationship ID"
+        ),
+        "date": fields.String(
+            required=True, description="Transaction date (YYYY-MM-DD)", example="2024-01-15"
+        ),
+        "type": fields.String(
+            required=True, description="Transaction type", enum=["buy", "sell", "dividend", "fee"]
+        ),
+        "shares": fields.Float(required=True, description="Number of shares", example=10.5),
+        "cost_per_share": fields.Float(required=True, description="Cost per share", example=150.25),
+    },
+)
 
-error_model = ns.model('Error', {
-    'error': fields.String(required=True, description='Error message')
-})
+error_model = ns.model(
+    "Error", {"error": fields.String(required=True, description="Error message")}
+)
 
 
-@ns.route('')
+@ns.route("")
 class TransactionList(Resource):
     """Transaction collection endpoint."""
 
-    @ns.doc('list_transactions')
-    @ns.param('portfolio_id', 'Filter by portfolio ID', _in='query')
-    @ns.param('fund_id', 'Filter by fund ID', _in='query')
-    @ns.param('start_date', 'Start date (YYYY-MM-DD)', _in='query')
-    @ns.param('end_date', 'End date (YYYY-MM-DD)', _in='query')
-    @ns.param('type', 'Transaction type', _in='query')
-    @ns.response(200, 'Success', [transaction_model])
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("list_transactions")
+    @ns.param("portfolio_id", "Filter by portfolio ID", _in="query")
+    @ns.param("fund_id", "Filter by fund ID", _in="query")
+    @ns.param("start_date", "Start date (YYYY-MM-DD)", _in="query")
+    @ns.param("end_date", "End date (YYYY-MM-DD)", _in="query")
+    @ns.param("type", "Transaction type", _in="query")
+    @ns.response(200, "Success", [transaction_model])
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get all transactions with optional filters.
@@ -85,20 +102,22 @@ class TransactionList(Resource):
             )
 
             return transactions, 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.TRANSACTION,
-                message=f"Error retrieving transactions: {str(e)}",
+                message=f"Error retrieving transactions: {e!s}",
                 details={"portfolio_id": portfolio_id, "error": str(e)},
             )
             return {"error": str(e)}, 500
 
-    @ns.doc('create_transaction')
+    @ns.doc("create_transaction")
     @ns.expect(transaction_create_model, validate=True)
-    @ns.response(201, 'Transaction created', transaction_model)
-    @ns.response(400, 'Validation error', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(201, "Transaction created", transaction_model)
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Create a new transaction.
@@ -137,11 +156,13 @@ class TransactionList(Resource):
             )
 
             return response, 201
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.TRANSACTION,
-                message=f"Error creating transaction: {str(e)}",
+                message=f"Error creating transaction: {e!s}",
                 details={
                     "user_message": "Error creating transaction",
                     "error": str(e),
@@ -151,15 +172,15 @@ class TransactionList(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route('/<string:transaction_id>')
-@ns.param('transaction_id', 'Transaction unique identifier (UUID)')
+@ns.route("/<string:transaction_id>")
+@ns.param("transaction_id", "Transaction unique identifier (UUID)")
 class Transaction(Resource):
     """Transaction detail endpoint."""
 
-    @ns.doc('get_transaction')
-    @ns.response(200, 'Success', transaction_model)
-    @ns.response(404, 'Transaction not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_transaction")
+    @ns.response(200, "Success", transaction_model)
+    @ns.response(404, "Transaction not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self, transaction_id):
         """
         Get transaction details.
@@ -178,22 +199,22 @@ class Transaction(Resource):
             )
 
             return service.format_transaction(transaction), 200
-        except ValueError as e:
-            return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.TRANSACTION,
-                message=f"Error retrieving transaction: {str(e)}",
+                message=f"Error retrieving transaction: {e!s}",
                 details={"transaction_id": transaction_id, "error": str(e)},
             )
-            return {"error": str(e)}, 500
+            return {"error": str(e)}, 404
 
-    @ns.doc('update_transaction')
+    @ns.doc("update_transaction")
     @ns.expect(transaction_create_model, validate=True)
-    @ns.response(200, 'Transaction updated', transaction_model)
-    @ns.response(404, 'Transaction not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(200, "Transaction updated", transaction_model)
+    @ns.response(404, "Transaction not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def put(self, transaction_id):
         """
         Update a transaction.
@@ -230,7 +251,7 @@ class Transaction(Resource):
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.TRANSACTION,
-                message=f"Error updating transaction: {str(e)}",
+                message=f"Error updating transaction: {e!s}",
                 details={
                     "user_message": str(e),
                     "transaction_id": transaction_id,
@@ -239,19 +260,21 @@ class Transaction(Resource):
                 },
             )
             return {"error": str(e)}, 400
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.TRANSACTION,
-                message=f"Error updating transaction: {str(e)}",
+                message=f"Error updating transaction: {e!s}",
                 details={"transaction_id": transaction_id, "error": str(e)},
             )
             return {"error": str(e)}, 500
 
-    @ns.doc('delete_transaction')
-    @ns.response(200, 'Transaction deleted')
-    @ns.response(404, 'Transaction not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("delete_transaction")
+    @ns.response(200, "Transaction deleted")
+    @ns.response(404, "Transaction not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def delete(self, transaction_id):
         """
         Delete a transaction.
@@ -275,11 +298,13 @@ class Transaction(Resource):
             return {"success": True}, 200
         except ValueError as e:
             return {"error": str(e)}, 404
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.TRANSACTION,
-                message=f"Error deleting transaction: {str(e)}",
+                message=f"Error deleting transaction: {e!s}",
                 details={"transaction_id": transaction_id, "error": str(e)},
             )
             return {"error": str(e)}, 500

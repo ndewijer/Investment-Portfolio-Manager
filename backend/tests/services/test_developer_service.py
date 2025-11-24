@@ -158,6 +158,16 @@ class TestExchangeRateManagement:
         with pytest.raises(ValueError, match="Rate must be a positive number"):
             DeveloperService.set_exchange_rate("USD", "EUR", -0.5)
 
+    def test_set_exchange_rate_validation_invalid_from_currency(self, app_context, db_session):
+        """Test validation fails with invalid from_currency code."""
+        with pytest.raises(ValueError, match="Invalid currency code: XXX"):
+            DeveloperService.set_exchange_rate("XXX", "EUR", 0.85)
+
+    def test_set_exchange_rate_validation_invalid_to_currency(self, app_context, db_session):
+        """Test validation fails with invalid to_currency code."""
+        with pytest.raises(ValueError, match="Invalid currency code: YYY"):
+            DeveloperService.set_exchange_rate("USD", "YYY", 0.85)
+
     def test_get_exchange_rate_found(self, app_context, db_session):
         """Test getting existing exchange rate."""
         # Use unique currencies to avoid UNIQUE constraint conflicts
@@ -587,6 +597,14 @@ class TestFundPriceManagement:
         assert result["date"] == datetime.now().date().isoformat()
         assert result["price"] == 150.75
 
+    def test_set_fund_price_invalid_fund_id(self, app_context, db_session):
+        """Test setting fund price with invalid fund_id raises ValueError."""
+        test_date = date(2024, 3, 15)
+        fake_fund_id = make_id()
+
+        with pytest.raises(ValueError, match=f"Fund not found: {fake_fund_id}"):
+            DeveloperService.set_fund_price(fake_fund_id, 150.75, test_date)
+
 
 class TestFundPriceImport:
     """Tests for fund price CSV import functionality."""
@@ -675,3 +693,142 @@ class TestFundPriceImport:
 
         with pytest.raises(ValueError, match="Error in row 2"):
             DeveloperService.import_fund_prices_csv(file_content, fund.id)
+
+
+class TestCSVValidation:
+    """Tests for CSV header validation functionality."""
+
+    def test_validate_csv_headers_valid_transaction_headers(self):
+        """Test validation passes with correct transaction CSV headers."""
+        csv_content = "date,type,shares,cost_per_share\n2024-01-15,buy,10,100.50"
+        file_content = csv_content.encode("utf-8")
+        expected_headers = {"date", "type", "shares", "cost_per_share"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is True
+        assert result["encoding"] in ["utf-8", "utf-8-sig"]  # Support any UTF-8 variant
+
+    def test_validate_csv_headers_valid_fund_price_headers(self):
+        """Test validation passes with correct fund price CSV headers."""
+        csv_content = "date,price\n2024-01-15,125.75"
+        file_content = csv_content.encode("utf-8")
+        expected_headers = {"date", "price"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is True
+        assert result["encoding"] in ["utf-8", "utf-8-sig"]  # Support any UTF-8 variant
+
+    def test_validate_csv_headers_valid_with_bom(self):
+        """Test validation passes with UTF-8 BOM encoding."""
+        csv_content = "date,price\n2024-01-15,125.75"
+        file_content = csv_content.encode("utf-8-sig")  # With BOM
+        expected_headers = {"date", "price"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is True
+        assert result["encoding"] == "utf-8-sig"
+
+    def test_validate_csv_headers_extra_headers_allowed(self):
+        """Test validation passes when CSV has extra headers beyond expected."""
+        csv_content = "date,price,extra_column\n2024-01-15,125.75,extra_value"
+        file_content = csv_content.encode("utf-8")
+        expected_headers = {"date", "price"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is True
+        assert result["encoding"] in ["utf-8", "utf-8-sig"]  # Support any UTF-8 variant
+
+    def test_validate_csv_headers_missing_required_headers(self):
+        """Test validation fails when required headers are missing."""
+        csv_content = "date,wrong_header\n2024-01-15,some_value"
+        file_content = csv_content.encode("utf-8")
+        expected_headers = {"date", "price"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is False
+        assert result["error"] == "Invalid CSV format"
+        assert "price" in result["expected_headers"]
+        assert "wrong_header" in result["found_headers"]
+
+    def test_validate_csv_headers_wrong_transaction_headers(self):
+        """Test validation fails with wrong transaction headers."""
+        csv_content = "wrong,headers,here\n2024-01-15,value1,value2"
+        file_content = csv_content.encode("utf-8")
+        expected_headers = {"date", "type", "shares", "cost_per_share"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is False
+        assert result["error"] == "Invalid CSV format"
+        assert set(result["expected_headers"]) == expected_headers
+        assert set(result["found_headers"]) == {"wrong", "headers", "here"}
+
+    def test_validate_csv_headers_invalid_encoding(self):
+        """Test validation raises error for non-UTF-8 encoding."""
+        # Use content with non-ASCII characters that would fail UTF-8 decoding
+        # Create bytes that are not valid UTF-8
+        file_content = b"date,price\n2024-01-15,\xff\xfe invalid bytes"
+        expected_headers = {"date", "price"}
+
+        with pytest.raises(ValueError, match="File must be UTF-8 encoded"):
+            DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+    def test_validate_csv_headers_utf8_variants(self):
+        """Test validation works with different UTF-8 variants."""
+        csv_content = "date,price,description\n2024-01-15,125.75,Test with émojis 🚀 and ñoñó"
+        expected_headers = {"date", "price"}
+
+        # Test UTF-8 without BOM
+        file_content_utf8 = csv_content.encode("utf-8")
+        result = DeveloperService.validate_csv_headers(file_content_utf8, expected_headers)
+        assert result["valid"] is True
+        assert result["encoding"] in ["utf-8", "utf-8-sig"]
+
+        # Test UTF-8 with BOM
+        file_content_bom = csv_content.encode("utf-8-sig")
+        result = DeveloperService.validate_csv_headers(file_content_bom, expected_headers)
+        assert result["valid"] is True
+        assert result["encoding"] in ["utf-8", "utf-8-sig"]
+
+    def test_validate_csv_headers_unicode_content(self):
+        """Test validation works with various Unicode characters."""
+        csv_content = "date,price,notes\n2024-01-15,125.75,测试 Тест العربية 日本語"
+        file_content = csv_content.encode("utf-8")
+        expected_headers = {"date", "price"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is True
+        assert result["encoding"] in ["utf-8", "utf-8-sig"]
+
+    def test_validate_csv_headers_empty_file(self):
+        """Test validation raises error for empty CSV file."""
+        file_content = b""
+        expected_headers = {"date", "price"}
+
+        with pytest.raises(ValueError, match="CSV file appears to be empty"):
+            DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+    def test_validate_csv_headers_only_newlines(self):
+        """Test validation raises error for file with only newlines."""
+        file_content = b"\n\n\n"
+        expected_headers = {"date", "price"}
+
+        with pytest.raises(ValueError, match="CSV file appears to be empty"):
+            DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+    def test_validate_csv_headers_whitespace_handling(self):
+        """Test validation handles whitespace in headers correctly."""
+        csv_content = " date , price , extra \n2024-01-15,125.75,value"
+        file_content = csv_content.encode("utf-8")
+        expected_headers = {"date", "price"}
+
+        result = DeveloperService.validate_csv_headers(file_content, expected_headers)
+
+        assert result["valid"] is True
+        assert result["encoding"] in ["utf-8", "utf-8-sig"]  # Support any UTF-8 variant

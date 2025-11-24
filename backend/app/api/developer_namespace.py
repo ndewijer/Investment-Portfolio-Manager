@@ -21,46 +21,58 @@ from ..services.developer_service import DeveloperService
 from ..services.logging_service import logger
 
 # Create namespace
-ns = Namespace('developer', description='Developer and debugging operations')
+ns = Namespace("developer", description="Developer and debugging operations")
 
 # Define models
-log_entry_model = ns.model('LogEntry', {
-    'id': fields.String(required=True, description='Log entry ID'),
-    'timestamp': fields.DateTime(required=True, description='Log timestamp'),
-    'level': fields.String(required=True, description='Log level'),
-    'category': fields.String(required=True, description='Log category'),
-    'message': fields.String(required=True, description='Log message'),
-    'details': fields.Raw(description='Additional details')
-})
+log_entry_model = ns.model(
+    "LogEntry",
+    {
+        "id": fields.String(required=True, description="Log entry ID"),
+        "timestamp": fields.DateTime(required=True, description="Log timestamp"),
+        "level": fields.String(required=True, description="Log level"),
+        "category": fields.String(required=True, description="Log category"),
+        "message": fields.String(required=True, description="Log message"),
+        "details": fields.Raw(description="Additional details"),
+    },
+)
 
-exchange_rate_model = ns.model('ExchangeRate', {
-    'from_currency': fields.String(required=True, description='Source currency'),
-    'to_currency': fields.String(required=True, description='Target currency'),
-    'rate': fields.Float(required=True, description='Exchange rate'),
-    'date': fields.String(description='Rate date')
-})
+exchange_rate_model = ns.model(
+    "ExchangeRate",
+    {
+        "from_currency": fields.String(required=True, description="Source currency"),
+        "to_currency": fields.String(required=True, description="Target currency"),
+        "rate": fields.Float(required=True, description="Exchange rate"),
+        "date": fields.String(description="Rate date"),
+    },
+)
 
-fund_price_model = ns.model('FundPrice', {
-    'fund_id': fields.String(required=True, description='Fund ID'),
-    'price': fields.Float(required=True, description='Price'),
-    'date': fields.String(required=True, description='Price date')
-})
+fund_price_model = ns.model(
+    "FundPrice",
+    {
+        "fund_id": fields.String(required=True, description="Fund ID"),
+        "price": fields.Float(required=True, description="Price"),
+        "date": fields.String(required=True, description="Price date"),
+    },
+)
 
-error_model = ns.model('Error', {
-    'error': fields.String(required=True, description='Error message'),
-    'details': fields.String(description='Additional error details')
-})
+error_model = ns.model(
+    "Error",
+    {
+        "error": fields.String(required=True, description="Error message"),
+        "details": fields.String(description="Additional error details"),
+    },
+)
 
 
-@ns.route('/logs')
+@ns.route("/logs")
 class DeveloperLogs(Resource):
     """Developer logs endpoint."""
 
-    @ns.doc('get_logs')
-    @ns.param('level', 'Filter by log level', _in='query')
-    @ns.param('category', 'Filter by category', _in='query')
-    @ns.param('limit', 'Limit number of results', _in='query')
-    @ns.response(200, 'Success', [log_entry_model])
+    @ns.doc("get_logs")
+    @ns.param("level", "Filter by log level", _in="query")
+    @ns.param("category", "Filter by category", _in="query")
+    @ns.param("limit", "Limit number of results", _in="query")
+    @ns.response(200, "Success", [log_entry_model])
     def get(self):
         """
         Get system logs.
@@ -76,12 +88,32 @@ class DeveloperLogs(Resource):
         - category: Filter by category (SYSTEM, FUND, PORTFOLIO, TRANSACTION, etc.)
         - limit: Maximum number of logs to return (default: 100)
         """
-        # Note: The actual log retrieval logic should be implemented in the service layer
-        # For now, returning a placeholder message
-        return {"message": "Log retrieval - implement in DeveloperService"}, 200
+        from ..services.logging_service import LoggingService
 
-    @ns.doc('clear_logs')
-    @ns.response(200, 'Logs cleared')
+        try:
+            result = LoggingService.get_logs(
+                levels=request.args.get("level"),
+                categories=request.args.get("category"),
+                start_date=request.args.get("start_date"),
+                end_date=request.args.get("end_date"),
+                source=request.args.get("source"),
+                sort_by=request.args.get("sort_by", "timestamp"),
+                sort_dir=request.args.get("sort_dir", "desc"),
+                page=int(request.args.get("page", 1)),
+                per_page=int(request.args.get("per_page", 50)),
+            )
+            return result, 200
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error retrieving logs",
+                details={"error": str(e)},
+            )
+            return {"error": "Error retrieving logs", "details": str(e)}, 500
+
+    @ns.doc("clear_logs")
+    @ns.response(200, "Logs cleared")
     def delete(self):
         """
         Clear all system logs.
@@ -91,21 +123,40 @@ class DeveloperLogs(Resource):
         Warning: This operation cannot be undone.
         Use with caution in production environments.
         """
-        # Note: The actual log clearing logic should be implemented in the service layer
-        return {"message": "Log clearing - implement in DeveloperService"}, 200
+        from ..services.logging_service import LoggingService
+
+        try:
+            LoggingService.clear_logs()
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.DEVELOPER,
+                message="All logs cleared by user",
+                source="clear_logs",
+            )
+
+            return {"message": "All logs cleared successfully"}, 200
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error clearing logs",
+                details={"error": str(e)},
+            )
+            return {"error": "Error clearing logs", "details": str(e)}, 500
 
 
-@ns.route('/exchange-rate')
+@ns.route("/exchange-rate")
 class DeveloperExchangeRate(Resource):
     """Developer exchange rate endpoint."""
 
-    @ns.doc('get_exchange_rate')
-    @ns.param('from_currency', 'Source currency (e.g., USD)', required=True, _in='query')
-    @ns.param('to_currency', 'Target currency (e.g., EUR)', required=True, _in='query')
-    @ns.param('date', 'Rate date (YYYY-MM-DD)', _in='query')
-    @ns.response(200, 'Success', exchange_rate_model)
-    @ns.response(400, 'Missing parameters', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_exchange_rate")
+    @ns.param("from_currency", "Source currency (e.g., USD)", required=True, _in="query")
+    @ns.param("to_currency", "Target currency (e.g., EUR)", required=True, _in="query")
+    @ns.param("date", "Rate date (YYYY-MM-DD)", _in="query")
+    @ns.response(200, "Success", exchange_rate_model)
+    @ns.response(400, "Missing parameters", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get exchange rate for currency pair.
@@ -118,9 +169,9 @@ class DeveloperExchangeRate(Resource):
         - to_currency: Target currency code (e.g., EUR)
         - date: Optional date for historical rates (YYYY-MM-DD)
         """
-        from_currency = request.args.get('from_currency')
-        to_currency = request.args.get('to_currency')
-        date_str = request.args.get('date')
+        from_currency = request.args.get("from_currency")
+        to_currency = request.args.get("to_currency")
+        date_str = request.args.get("date")
 
         if not from_currency or not to_currency:
             return {"error": "Missing required parameters: from_currency and to_currency"}, 400
@@ -136,7 +187,7 @@ class DeveloperExchangeRate(Resource):
                 "from_currency": from_currency,
                 "to_currency": to_currency,
                 "rate": rate,
-                "date": rate_date.isoformat() if rate_date else None
+                "date": rate_date.isoformat() if rate_date else None,
             }, 200
 
         except Exception as e:
@@ -148,11 +199,11 @@ class DeveloperExchangeRate(Resource):
             )
             return {"error": "Error retrieving exchange rate", "details": str(e)}, 500
 
-    @ns.doc('set_exchange_rate')
+    @ns.doc("set_exchange_rate")
     @ns.expect(exchange_rate_model, validate=True)
-    @ns.response(200, 'Exchange rate set')
-    @ns.response(400, 'Validation error', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(200, "Exchange rate set")
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Set exchange rate for currency pair.
@@ -168,14 +219,14 @@ class DeveloperExchangeRate(Resource):
 
         try:
             rate_date = None
-            if data.get('date'):
-                rate_date = date.fromisoformat(data['date'])
+            if data.get("date"):
+                rate_date = date.fromisoformat(data["date"])
 
             DeveloperService.set_exchange_rate(
-                from_currency=data['from_currency'],
-                to_currency=data['to_currency'],
-                rate=data['rate'],
-                date=rate_date
+                from_currency=data["from_currency"],
+                to_currency=data["to_currency"],
+                rate=data["rate"],
+                date=rate_date,
             )
 
             logger.log(
@@ -187,27 +238,31 @@ class DeveloperExchangeRate(Resource):
 
             return {"success": True, "message": "Exchange rate set successfully"}, 200
 
+        except ValueError as e:
+            # Date format errors return 400 (matching legacy behavior)
+            return {"message": str(e)}, 400
         except Exception as e:
+            # All other exceptions return 400 (matching legacy behavior)
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.DEVELOPER,
                 message="Error setting exchange rate",
                 details={"error": str(e)},
             )
-            return {"error": "Error setting exchange rate", "details": str(e)}, 500
+            return {"message": f"Error setting exchange rate: {e!s}"}, 400
 
 
-@ns.route('/fund-price')
+@ns.route("/fund-price")
 class DeveloperFundPrice(Resource):
     """Developer fund price management endpoint."""
 
-    @ns.doc('get_fund_price')
-    @ns.param('fund_id', 'Fund ID', required=True, _in='query')
-    @ns.param('date', 'Price date (YYYY-MM-DD)', required=True, _in='query')
-    @ns.response(200, 'Success', fund_price_model)
-    @ns.response(400, 'Missing parameters', error_model)
-    @ns.response(404, 'Price not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_fund_price")
+    @ns.param("fund_id", "Fund ID", required=True, _in="query")
+    @ns.param("date", "Price date (YYYY-MM-DD)", required=True, _in="query")
+    @ns.response(200, "Success", fund_price_model)
+    @ns.response(400, "Missing parameters", error_model)
+    @ns.response(404, "Price not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get fund price for specific date.
@@ -215,8 +270,8 @@ class DeveloperFundPrice(Resource):
         Retrieves the price for a fund on a specific date.
         Useful for debugging price lookup issues.
         """
-        fund_id = request.args.get('fund_id')
-        date_str = request.args.get('date')
+        fund_id = request.args.get("fund_id")
+        date_str = request.args.get("date")
 
         if not fund_id or not date_str:
             return {"error": "Missing required parameters: fund_id and date"}, 400
@@ -225,24 +280,31 @@ class DeveloperFundPrice(Resource):
             price_date = date.fromisoformat(date_str)
             result = DeveloperService.get_fund_price(fund_id, price_date)
 
+            # Return 404 if result is None (matching legacy behavior)
+            if not result:
+                return {"message": "Fund price not found"}, 404
+
             return result, 200
 
         except ValueError as e:
-            return {"error": str(e)}, 404
+            # Date format errors return 400
+            # (matching legacy behavior via exception cascade to general handler)
+            return {"message": str(e)}, 400
         except Exception as e:
+            # All other exceptions return 500 (matching legacy behavior)
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.DEVELOPER,
                 message="Error retrieving fund price",
                 details={"error": str(e)},
             )
-            return {"error": "Error retrieving fund price", "details": str(e)}, 500
+            return {"message": f"Error retrieving fund price: {e!s}"}, 500
 
-    @ns.doc('set_fund_price')
+    @ns.doc("set_fund_price")
     @ns.expect(fund_price_model, validate=True)
-    @ns.response(200, 'Price set')
-    @ns.response(400, 'Validation error', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(200, "Price set")
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Set fund price for specific date.
@@ -258,13 +320,11 @@ class DeveloperFundPrice(Resource):
 
         try:
             price_date = None
-            if data.get('date'):
-                price_date = date.fromisoformat(data['date'])
+            if data.get("date"):
+                price_date = date.fromisoformat(data["date"])
 
             result = DeveloperService.set_fund_price(
-                fund_id=data['fund_id'],
-                price=data['price'],
-                date_=price_date
+                fund_id=data["fund_id"], price=data["price"], date_=price_date
             )
 
             logger.log(
@@ -276,22 +336,71 @@ class DeveloperFundPrice(Resource):
 
             return result, 200
 
+        except ValueError as e:
+            # Date format errors return 400 (matching legacy behavior)
+            return {"message": str(e)}, 400
         except Exception as e:
+            # All other exceptions return 400 (matching legacy behavior)
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.DEVELOPER,
                 message="Error setting fund price",
                 details={"error": str(e)},
             )
-            return {"error": "Error setting fund price", "details": str(e)}, 500
+            return {"message": f"Error setting fund price: {e!s}"}, 400
 
 
-@ns.route('/csv/transactions/template')
+@ns.route("/fund-price/<string:fund_id>")
+class DeveloperFundPriceById(Resource):
+    """Get fund price by ID endpoint."""
+
+    @ns.doc("get_fund_price_by_id")
+    @ns.param("date", "Price date (YYYY-MM-DD)", _in="query")
+    @ns.response(200, "Success", fund_price_model)
+    @ns.response(404, "Price not found", error_model)
+    @ns.response(500, "Server error", error_model)
+    def get(self, fund_id):
+        """
+        Get fund price for specific fund and date.
+
+        Retrieves the price for a fund on a specific date.
+        If date is not provided, returns today's price.
+        """
+        date_str = request.args.get("date")
+
+        try:
+            from datetime import datetime
+
+            if date_str:
+                price_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            else:
+                price_date = datetime.now().date()
+
+            result = DeveloperService.get_fund_price(fund_id, price_date)
+
+            # Return 404 if result is None (matching legacy behavior)
+            if not result:
+                return {"message": "Fund price not found"}, 404
+
+            return result, 200
+
+        except Exception as e:
+            # All exceptions return 500 (matching legacy behavior - ValueError also goes here)
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error retrieving fund price",
+                details={"error": str(e)},
+            )
+            return {"message": f"Error retrieving fund price: {e!s}"}, 500
+
+
+@ns.route("/csv/transactions/template")
 class TransactionCSVTemplate(Resource):
     """Transaction CSV template endpoint."""
 
-    @ns.doc('get_transaction_csv_template')
-    @ns.response(200, 'CSV template')
+    @ns.doc("get_transaction_csv_template")
+    @ns.response(200, "CSV template")
     def get(self):
         """
         Get CSV template for transaction import.
@@ -308,12 +417,12 @@ class TransactionCSVTemplate(Resource):
             return {"error": "Error generating template", "details": str(e)}, 500
 
 
-@ns.route('/csv/fund-prices/template')
+@ns.route("/csv/fund-prices/template")
 class FundPriceCSVTemplate(Resource):
     """Fund price CSV template endpoint."""
 
-    @ns.doc('get_fund_price_csv_template')
-    @ns.response(200, 'CSV template')
+    @ns.doc("get_fund_price_csv_template")
+    @ns.response(200, "CSV template")
     def get(self):
         """
         Get CSV template for fund price import.
@@ -330,12 +439,12 @@ class FundPriceCSVTemplate(Resource):
             return {"error": "Error generating template", "details": str(e)}, 500
 
 
-@ns.route('/data/funds')
+@ns.route("/data/funds")
 class DeveloperFunds(Resource):
     """Developer funds data endpoint."""
 
-    @ns.doc('get_funds_data')
-    @ns.response(200, 'Success')
+    @ns.doc("get_funds_data")
+    @ns.response(200, "Success")
     def get(self):
         """
         Get all funds data.
@@ -349,12 +458,12 @@ class DeveloperFunds(Resource):
             return {"error": "Error retrieving funds", "details": str(e)}, 500
 
 
-@ns.route('/data/portfolios')
+@ns.route("/data/portfolios")
 class DeveloperPortfolios(Resource):
     """Developer portfolios data endpoint."""
 
-    @ns.doc('get_portfolios_data')
-    @ns.response(200, 'Success')
+    @ns.doc("get_portfolios_data")
+    @ns.response(200, "Success")
     def get(self):
         """
         Get all portfolios data.
@@ -366,3 +475,235 @@ class DeveloperPortfolios(Resource):
             return portfolios, 200
         except Exception as e:
             return {"error": "Error retrieving portfolios", "details": str(e)}, 500
+
+
+@ns.route("/import-transactions")
+class ImportTransactions(Resource):
+    """CSV transaction import endpoint."""
+
+    @ns.doc("import_transactions")
+    @ns.expect(
+        ns.parser()
+        .add_argument(
+            "file",
+            location="files",
+            type="file",
+            required=True,
+            help="CSV file with transaction data",
+        )
+        .add_argument(
+            "fund_id",
+            location="form",
+            type=str,
+            required=True,
+            help="Portfolio-Fund relationship ID",
+        )
+    )
+    @ns.response(200, "Import successful")
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
+    def post(self):
+        """
+        Import transactions from CSV file.
+
+        Accepts a CSV file with transaction data and imports it into the system.
+
+        CSV Format:
+        - Headers: date,type,shares,cost_per_share
+        - Date format: YYYY-MM-DD
+        - Type: buy, sell, dividend, etc.
+
+        Form Data:
+        - file: CSV file containing transaction data
+        - fund_id: Portfolio-Fund relationship ID
+        """
+        try:
+            if "file" not in request.files:
+                return {"message": "No file provided"}, 400
+
+            file = request.files["file"]
+            portfolio_fund_id = request.form.get("fund_id")
+
+            if not portfolio_fund_id:
+                return {"message": "No portfolio_fund_id provided"}, 400
+
+            if not file.filename.endswith(".csv"):
+                return {"message": "File must be CSV"}, 400
+
+            # Read file content and delegate to service
+            file_content = file.read()
+            count = DeveloperService.import_transactions_csv(file_content, portfolio_fund_id)
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.DEVELOPER,
+                message=f"Successfully imported {count} transactions",
+                details={"transaction_count": count, "portfolio_fund_id": portfolio_fund_id},
+            )
+
+            return {"message": f"Successfully imported {count} transactions"}, 200
+
+        except ValueError as e:
+            return {"message": str(e)}, 400
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error during transaction import",
+                details={"error": str(e)},
+            )
+            return {"error": "Error during transaction import", "details": str(e)}, 500
+
+
+@ns.route("/import-fund-prices")
+class ImportFundPrices(Resource):
+    """CSV fund price import endpoint."""
+
+    @ns.doc("import_fund_prices")
+    @ns.expect(
+        ns.parser()
+        .add_argument(
+            "file",
+            location="files",
+            type="file",
+            required=True,
+            help="CSV file with fund price data",
+        )
+        .add_argument("fund_id", location="form", type=str, required=True, help="Fund ID")
+    )
+    @ns.response(200, "Import successful")
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
+    def post(self):
+        """
+        Import fund prices from CSV file.
+
+        Accepts a CSV file with fund price data and imports it into the system.
+
+        CSV Format:
+        - Headers: date,price
+        - Date format: YYYY-MM-DD
+        - Price: Decimal number
+
+        Form Data:
+        - file: CSV file containing fund price data
+        - fund_id: Fund ID
+        """
+        try:
+            if "file" not in request.files:
+                return {"message": "No file provided"}, 400
+
+            file = request.files["file"]
+            fund_id = request.form.get("fund_id")
+
+            if not fund_id:
+                return {"message": "No fund_id provided"}, 400
+
+            if not file.filename.endswith(".csv"):
+                return {"message": "File must be CSV"}, 400
+
+            # Read file content and delegate to service
+            file_content = file.read()
+            count = DeveloperService.import_fund_prices_csv(file_content, fund_id)
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.DEVELOPER,
+                message=f"Successfully imported {count} fund prices",
+                details={"fund_id": fund_id, "price_count": count},
+            )
+
+            return {"message": f"Successfully imported {count} fund prices"}, 200
+
+        except ValueError as e:
+            return {"message": str(e)}, 400
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error during fund price import",
+                details={"error": str(e)},
+            )
+            return {"error": "Error during fund price import", "details": str(e)}, 500
+
+
+@ns.route("/system-settings/logging")
+class LoggingSettings(Resource):
+    """Logging configuration settings endpoint."""
+
+    @ns.doc("get_logging_settings")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
+    def get(self):
+        """
+        Get current logging configuration settings.
+
+        Returns the current logging enabled state and level.
+        Useful for debugging and system monitoring.
+        """
+        try:
+            from ..services.logging_service import LoggingService
+
+            settings = LoggingService.get_logging_settings()
+            return settings, 200
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error retrieving logging settings",
+                details={"error": str(e)},
+            )
+            return {"error": "Error retrieving logging settings", "details": str(e)}, 500
+
+    @ns.doc("update_logging_settings")
+    @ns.expect(
+        ns.model(
+            "LoggingSettings",
+            {
+                "enabled": fields.Boolean(required=True, description="Enable/disable logging"),
+                "level": fields.String(
+                    required=True,
+                    description="Logging level (debug, info, warning, error, critical)",
+                ),
+            },
+        ),
+        validate=True,
+    )
+    @ns.response(200, "Settings updated")
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
+    def put(self):
+        """
+        Update logging configuration settings.
+
+        Updates the system logging enabled state and level.
+        Changes take effect immediately.
+
+        Request Body:
+        - enabled: Boolean - Enable/disable logging
+        - level: String - Logging level (debug, info, warning, error, critical)
+        """
+        try:
+            from ..services.logging_service import LoggingService
+
+            data = request.json
+            result = LoggingService.update_logging_settings(
+                enabled=data["enabled"], level=data["level"]
+            )
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.DEVELOPER,
+                message="Logging settings updated",
+                details=result,
+            )
+
+            return result, 200
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error updating logging settings",
+                details={"error": str(e)},
+            )
+            return {"error": "Error updating logging settings", "details": str(e)}, 500

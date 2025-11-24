@@ -13,79 +13,111 @@ from flask_restx import Namespace, Resource, fields
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 
-from ..models import Fund, LogCategory, LogLevel, db
+from ..models import LogCategory, LogLevel, db
 from ..services.fund_service import FundService
 from ..services.logging_service import logger
 from ..services.price_update_service import HistoricalPriceService, TodayPriceService
 from ..services.symbol_lookup_service import SymbolLookupService
-from ..utils.security import require_api_key
+from ..utils.security import require_api_key_restx
 
 # Create namespace
-ns = Namespace('funds', description='Fund and stock management operations')
+ns = Namespace("funds", description="Fund and stock management operations")
 
 # Define models for documentation
-fund_model = ns.model('Fund', {
-    'id': fields.String(required=True, description='Fund unique identifier (UUID)'),
-    'name': fields.String(required=True, description='Fund name'),
-    'isin': fields.String(required=True, description='International Securities Identification Number'),
-    'symbol': fields.String(description='Trading symbol'),
-    'currency': fields.String(required=True, description='Trading currency code (e.g., USD, EUR)'),
-    'exchange': fields.String(required=True, description='Exchange where fund is traded'),
-    'dividend_type': fields.String(required=True, description='Dividend type', enum=['none', 'cash', 'stock']),
-    'investment_type': fields.String(required=True, description='Investment type', enum=['fund', 'stock'])
-})
+fund_model = ns.model(
+    "Fund",
+    {
+        "id": fields.String(required=True, description="Fund unique identifier (UUID)"),
+        "name": fields.String(required=True, description="Fund name"),
+        "isin": fields.String(
+            required=True, description="International Securities Identification Number"
+        ),
+        "symbol": fields.String(description="Trading symbol"),
+        "currency": fields.String(
+            required=True, description="Trading currency code (e.g., USD, EUR)"
+        ),
+        "exchange": fields.String(required=True, description="Exchange where fund is traded"),
+        "dividend_type": fields.String(
+            required=True, description="Dividend type", enum=["none", "cash", "stock"]
+        ),
+        "investment_type": fields.String(
+            required=True, description="Investment type", enum=["fund", "stock"]
+        ),
+    },
+)
 
-fund_detail_model = ns.inherit('FundDetail', fund_model, {
-    'latest_price': fields.Raw(description='Latest price information')
-})
+fund_detail_model = ns.inherit(
+    "FundDetail", fund_model, {"latest_price": fields.Raw(description="Latest price information")}
+)
 
-fund_create_model = ns.model('FundCreate', {
-    'name': fields.String(required=True, description='Fund name', example='Vanguard S&P 500 ETF'),
-    'isin': fields.String(required=True, description='ISIN', example='US9229083632'),
-    'symbol': fields.String(description='Trading symbol', example='VOO'),
-    'currency': fields.String(required=True, description='Currency code', example='USD'),
-    'exchange': fields.String(required=True, description='Exchange', example='NYSE'),
-    'dividend_type': fields.String(description='Dividend type', enum=['none', 'cash', 'stock'], default='none'),
-    'investment_type': fields.String(description='Investment type', enum=['fund', 'stock'], default='fund')
-})
+fund_create_model = ns.model(
+    "FundCreate",
+    {
+        "name": fields.String(
+            required=True, description="Fund name", example="Vanguard S&P 500 ETF"
+        ),
+        "isin": fields.String(required=True, description="ISIN", example="US9229083632"),
+        "symbol": fields.String(description="Trading symbol", example="VOO"),
+        "currency": fields.String(required=True, description="Currency code", example="USD"),
+        "exchange": fields.String(required=True, description="Exchange", example="NYSE"),
+        "dividend_type": fields.String(
+            description="Dividend type", enum=["none", "cash", "stock"], default="none"
+        ),
+        "investment_type": fields.String(
+            description="Investment type", enum=["fund", "stock"], default="fund"
+        ),
+    },
+)
 
-fund_update_model = ns.model('FundUpdate', {
-    'name': fields.String(description='Fund name'),
-    'isin': fields.String(description='ISIN'),
-    'symbol': fields.String(description='Trading symbol'),
-    'currency': fields.String(description='Currency code'),
-    'exchange': fields.String(description='Exchange'),
-    'dividend_type': fields.String(description='Dividend type', enum=['none', 'cash', 'stock']),
-    'investment_type': fields.String(description='Investment type', enum=['fund', 'stock'])
-})
+fund_update_model = ns.model(
+    "FundUpdate",
+    {
+        "name": fields.String(description="Fund name"),
+        "isin": fields.String(description="ISIN"),
+        "symbol": fields.String(description="Trading symbol"),
+        "currency": fields.String(description="Currency code"),
+        "exchange": fields.String(description="Exchange"),
+        "dividend_type": fields.String(description="Dividend type", enum=["none", "cash", "stock"]),
+        "investment_type": fields.String(description="Investment type", enum=["fund", "stock"]),
+    },
+)
 
-price_update_model = ns.model('PriceUpdate', {
-    'success': fields.Boolean(required=True, description='Update success status'),
-    'price': fields.Float(description='Updated price'),
-    'date': fields.String(description='Price date')
-})
+price_update_model = ns.model(
+    "PriceUpdate",
+    {
+        "success": fields.Boolean(required=True, description="Update success status"),
+        "price": fields.Float(description="Updated price"),
+        "date": fields.String(description="Price date"),
+    },
+)
 
-symbol_info_model = ns.model('SymbolInfo', {
-    'symbol': fields.String(required=True, description='Trading symbol'),
-    'name': fields.String(description='Security name'),
-    'exchange': fields.String(description='Exchange'),
-    'currency': fields.String(description='Currency'),
-    'price': fields.Float(description='Current price')
-})
+symbol_info_model = ns.model(
+    "SymbolInfo",
+    {
+        "symbol": fields.String(required=True, description="Trading symbol"),
+        "name": fields.String(description="Security name"),
+        "exchange": fields.String(description="Exchange"),
+        "currency": fields.String(description="Currency"),
+        "price": fields.Float(description="Current price"),
+    },
+)
 
-error_model = ns.model('Error', {
-    'error': fields.String(required=True, description='Error message'),
-    'details': fields.String(description='Additional error details')
-})
+error_model = ns.model(
+    "Error",
+    {
+        "error": fields.String(required=True, description="Error message"),
+        "details": fields.String(description="Additional error details"),
+    },
+)
 
 
-@ns.route('')
+@ns.route("")
 class FundList(Resource):
     """Fund collection endpoint."""
 
-    @ns.doc('list_funds')
-    @ns.response(200, 'Success', [fund_model])
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("list_funds")
+    @ns.response(200, "Success", [fund_model])
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get all funds.
@@ -94,7 +126,7 @@ class FundList(Resource):
         Each fund includes basic information such as name, ISIN, symbol, and dividend type.
         """
         try:
-            funds = Fund.query.all()
+            funds = FundService.get_all_funds()
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.FUND,
@@ -114,20 +146,22 @@ class FundList(Resource):
                 }
                 for f in funds
             ], 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error retrieving funds: {str(e)}",
+                message=f"Error retrieving funds: {e!s}",
                 details={"error": str(e)},
             )
             return {"error": str(e)}, 500
 
-    @ns.doc('create_fund')
+    @ns.doc("create_fund")
     @ns.expect(fund_create_model, validate=True)
-    @ns.response(201, 'Fund created', fund_model)
-    @ns.response(400, 'Validation error', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(201, "Fund created", fund_model)
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Create a new fund.
@@ -155,11 +189,13 @@ class FundList(Resource):
                             message=f"Successfully retrieved symbol info for {data['symbol']}",
                             details=symbol_info,
                         )
+                except HTTPException:
+                    raise
                 except Exception as e:
                     logger.log(
                         level=LogLevel.WARNING,
                         category=LogCategory.FUND,
-                        message=f"Failed to retrieve symbol info: {str(e)}",
+                        message=f"Failed to retrieve symbol info: {e!s}",
                         details={"symbol": data["symbol"]},
                     )
 
@@ -195,26 +231,28 @@ class FundList(Resource):
                 },
             )
             return {"error": "A fund with this ISIN already exists", "details": str(e)}, 400
+        except HTTPException:
+            raise
         except Exception as e:
             db.session.rollback()
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error creating fund: {str(e)}",
+                message=f"Error creating fund: {e!s}",
                 details={"user_message": "Error creating fund", "error": str(e)},
             )
             return {"error": "Error creating fund", "details": str(e)}, 500
 
 
-@ns.route('/<string:fund_id>')
-@ns.param('fund_id', 'Fund unique identifier (UUID)')
-class Fund(Resource):
+@ns.route("/<string:fund_id>")
+@ns.param("fund_id", "Fund unique identifier (UUID)")
+class FundDetail(Resource):
     """Fund detail endpoint."""
 
-    @ns.doc('get_fund')
-    @ns.response(200, 'Success', fund_detail_model)
-    @ns.response(404, 'Fund not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_fund")
+    @ns.response(200, "Success", fund_detail_model)
+    @ns.response(404, "Fund not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self, fund_id):
         """
         Get fund details.
@@ -261,7 +299,7 @@ class Fund(Resource):
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error retrieving fund: {str(e)}",
+                message=f"Error retrieving fund: {e!s}",
                 details={
                     "fund_id": fund_id,
                     "error": str(e),
@@ -270,11 +308,11 @@ class Fund(Resource):
             )
             return {"error": "Unable to retrieve fund details", "details": str(e)}, 500
 
-    @ns.doc('update_fund')
+    @ns.doc("update_fund")
     @ns.expect(fund_update_model, validate=True)
-    @ns.response(200, 'Fund updated', fund_model)
-    @ns.response(404, 'Fund not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(200, "Fund updated", fund_model)
+    @ns.response(404, "Fund not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def put(self, fund_id):
         """
         Update fund information.
@@ -292,7 +330,9 @@ class Fund(Resource):
             # If symbol changed, try to get symbol info
             if symbol_changed and fund.symbol:
                 try:
-                    symbol_info = SymbolLookupService.get_symbol_info(fund.symbol, force_refresh=True)
+                    symbol_info = SymbolLookupService.get_symbol_info(
+                        fund.symbol, force_refresh=True
+                    )
                     if symbol_info:
                         logger.log(
                             level=LogLevel.INFO,
@@ -300,11 +340,13 @@ class Fund(Resource):
                             message=f"Successfully retrieved symbol info for updated fund",
                             details={"fund_id": fund_id, "symbol": fund.symbol},
                         )
+                except HTTPException:
+                    raise
                 except Exception as e:
                     logger.log(
                         level=LogLevel.WARNING,
                         category=LogCategory.FUND,
-                        message=f"Failed to retrieve symbol info for updated symbol: {str(e)}",
+                        message=f"Failed to retrieve symbol info for updated symbol: {e!s}",
                         details={"fund_id": fund_id, "symbol": fund.symbol},
                     )
 
@@ -326,6 +368,8 @@ class Fund(Resource):
                 "investment_type": fund.investment_type.value,
             }, 200
 
+        except ValueError as e:
+            return {"error": str(e)}, 404
         except HTTPException:
             raise
         except Exception as e:
@@ -333,16 +377,16 @@ class Fund(Resource):
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error updating fund: {str(e)}",
+                message=f"Error updating fund: {e!s}",
                 details={"fund_id": fund_id, "error": str(e)},
             )
             return {"error": "Error updating fund", "details": str(e)}, 500
 
-    @ns.doc('delete_fund')
-    @ns.response(200, 'Fund deleted')
-    @ns.response(404, 'Fund not found', error_model)
-    @ns.response(409, 'Fund in use', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("delete_fund")
+    @ns.response(200, "Fund deleted")
+    @ns.response(404, "Fund not found", error_model)
+    @ns.response(409, "Fund in use", error_model)
+    @ns.response(500, "Server error", error_model)
     def delete(self, fund_id):
         """
         Delete a fund.
@@ -378,25 +422,27 @@ class Fund(Resource):
             else:
                 return {"error": error_message}, 404
 
+        except HTTPException:
+            raise
         except Exception as e:
             db.session.rollback()
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error deleting fund: {str(e)}",
+                message=f"Error deleting fund: {e!s}",
                 details={"fund_id": fund_id, "error": str(e)},
             )
             return {"error": "Error deleting fund", "details": str(e)}, 500
 
 
-@ns.route('/<string:fund_id>/check-usage')
-@ns.param('fund_id', 'Fund unique identifier (UUID)')
+@ns.route("/<string:fund_id>/check-usage")
+@ns.param("fund_id", "Fund unique identifier (UUID)")
 class FundUsage(Resource):
     """Fund usage check endpoint."""
 
-    @ns.doc('check_fund_usage')
-    @ns.response(200, 'Success')
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("check_fund_usage")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
     def get(self, fund_id):
         """
         Check if fund is being used.
@@ -422,25 +468,27 @@ class FundUsage(Resource):
                 )
 
             return usage_info, 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error checking fund usage: {str(e)}",
+                message=f"Error checking fund usage: {e!s}",
                 details={"error": str(e)},
             )
             return {"error": "Error checking fund usage", "details": str(e)}, 500
 
 
-@ns.route('/<string:fund_id>/price/today')
-@ns.param('fund_id', 'Fund unique identifier (UUID)')
+@ns.route("/<string:fund_id>/price/today")
+@ns.param("fund_id", "Fund unique identifier (UUID)")
 class FundTodayPrice(Resource):
     """Fund today price update endpoint."""
 
-    @ns.doc('update_today_price')
-    @ns.response(200, 'Price updated', price_update_model)
-    @ns.response(404, 'Fund not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("update_today_price")
+    @ns.response(200, "Price updated", price_update_model)
+    @ns.response(404, "Fund not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self, fund_id):
         """
         Update today's price for a fund.
@@ -453,26 +501,28 @@ class FundTodayPrice(Resource):
         try:
             TodayPriceService.update_single_fund_price(fund_id)
             return {"success": True}, 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error updating today's price: {str(e)}",
+                message=f"Error updating today's price: {e!s}",
                 details={"fund_id": fund_id, "error": str(e)},
             )
             return {"error": "Error updating price", "details": str(e)}, 500
 
 
-@ns.route('/<string:fund_id>/price/historical')
-@ns.param('fund_id', 'Fund unique identifier (UUID)')
+@ns.route("/<string:fund_id>/price/historical")
+@ns.param("fund_id", "Fund unique identifier (UUID)")
 class FundHistoricalPrice(Resource):
     """Fund historical price update endpoint."""
 
-    @ns.doc('update_historical_prices', security='apikey')
-    @ns.response(200, 'Prices updated', price_update_model)
-    @ns.response(404, 'Fund not found', error_model)
-    @ns.response(500, 'Server error', error_model)
-    @require_api_key
+    @ns.doc("update_historical_prices", security="apikey")
+    @ns.response(200, "Prices updated", price_update_model)
+    @ns.response(404, "Fund not found", error_model)
+    @ns.response(500, "Server error", error_model)
+    @require_api_key_restx
     def post(self, fund_id):
         """
         Update historical prices for a fund.
@@ -486,27 +536,29 @@ class FundHistoricalPrice(Resource):
         extensive history. Consider rate limiting and monitoring.
         """
         try:
-            HistoricalPriceService.update_single_fund_historical_prices(fund_id)
+            HistoricalPriceService.update_historical_prices(fund_id)
             return {"success": True}, 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error updating historical prices: {str(e)}",
+                message=f"Error updating historical prices: {e!s}",
                 details={"fund_id": fund_id, "error": str(e)},
             )
             return {"error": "Error updating historical prices", "details": str(e)}, 500
 
 
-@ns.route('/symbol/<string:symbol>')
-@ns.param('symbol', 'Trading symbol (e.g., AAPL, VOO)')
+@ns.route("/symbol/<string:symbol>")
+@ns.param("symbol", "Trading symbol (e.g., AAPL, VOO)")
 class SymbolInfo(Resource):
     """Symbol information lookup endpoint."""
 
-    @ns.doc('get_symbol_info')
-    @ns.response(200, 'Success', symbol_info_model)
-    @ns.response(404, 'Symbol not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_symbol_info")
+    @ns.response(200, "Success", symbol_info_model)
+    @ns.response(404, "Symbol not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self, symbol):
         """
         Get information about a trading symbol.
@@ -521,7 +573,7 @@ class SymbolInfo(Resource):
         - force_refresh (bool): Force refresh from external source (default: false)
         """
         try:
-            force_refresh = request.args.get('force_refresh', 'false').lower() == 'true'
+            force_refresh = request.args.get("force_refresh", "false").lower() == "true"
             symbol_info = SymbolLookupService.get_symbol_info(symbol, force_refresh=force_refresh)
 
             if not symbol_info:
@@ -529,24 +581,26 @@ class SymbolInfo(Resource):
 
             return symbol_info, 200
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error looking up symbol: {str(e)}",
+                message=f"Error looking up symbol: {e!s}",
                 details={"symbol": symbol, "error": str(e)},
             )
             return {"error": "Error looking up symbol", "details": str(e)}, 500
 
 
-@ns.route('/update-all-prices')
+@ns.route("/update-all-prices")
 class UpdateAllPrices(Resource):
     """Update all fund prices endpoint."""
 
-    @ns.doc('update_all_fund_prices', security='apikey')
-    @ns.response(200, 'Prices updated')
-    @ns.response(500, 'Server error', error_model)
-    @require_api_key
+    @ns.doc("update_all_fund_prices", security="apikey")
+    @ns.response(200, "Prices updated")
+    @ns.response(500, "Server error", error_model)
+    @require_api_key_restx
     def post(self):
         """
         Update prices for all funds.
@@ -562,76 +616,32 @@ class UpdateAllPrices(Resource):
         try:
             result = FundService.update_all_fund_prices()
             return result, 200
+        except HTTPException:
+            raise
         except Exception as e:
             return {"success": False, "error": str(e)}, 500
 
 
-# Legacy route compatibility
-@ns.route('/lookup-symbol-info/<string:symbol>')
-@ns.param('symbol', 'Trading symbol (e.g., AAPL, VOO)')
-@ns.doc(False)  # Hide from Swagger UI (duplicate of /symbol/{symbol})
-class LegacySymbolInfo(Resource):
-    """Legacy symbol lookup endpoint for backward compatibility."""
-
-    def get(self, symbol):
-        """
-        Legacy endpoint for symbol lookup.
-
-        This endpoint exists for backward compatibility with existing clients.
-        New clients should use /funds/symbol/{symbol} instead.
-        """
-        try:
-            force_refresh = request.args.get("force_refresh", "false").lower() == "true"
-            symbol_info = SymbolLookupService.get_symbol_info(symbol, force_refresh=force_refresh)
-
-            if symbol_info:
-                logger.log(
-                    level=LogLevel.INFO,
-                    category=LogCategory.FUND,
-                    message=f"Successfully retrieved symbol info for {symbol}",
-                    details={
-                        "symbol": symbol,
-                        "source": "cache" if not force_refresh else "yfinance",
-                        "info": symbol_info,
-                    },
-                )
-                return symbol_info, 200
-            else:
-                logger.log(
-                    level=LogLevel.WARNING,
-                    category=LogCategory.FUND,
-                    message=f"No information found for symbol {symbol}",
-                    details={"symbol": symbol},
-                )
-                return {"error": f"No information found for symbol {symbol}"}, 404
-
-        except Exception as e:
-            logger.log(
-                level=LogLevel.ERROR,
-                category=LogCategory.FUND,
-                message=f"Error looking up symbol: {str(e)}",
-                details={"symbol": symbol, "error": str(e)},
-            )
-            return {"error": "Error looking up symbol", "details": str(e)}, 500
-
-
 # Fund prices endpoints
-fund_price_model = ns.model('FundPrice', {
-    'id': fields.String(required=True, description='Price record ID'),
-    'date': fields.String(required=True, description='Price date (YYYY-MM-DD)'),
-    'price': fields.Float(required=True, description='Price value')
-})
+fund_price_model = ns.model(
+    "FundPrice",
+    {
+        "id": fields.String(required=True, description="Price record ID"),
+        "date": fields.String(required=True, description="Price date (YYYY-MM-DD)"),
+        "price": fields.Float(required=True, description="Price value"),
+    },
+)
 
 
-@ns.route('/fund-prices/<string:fund_id>')
-@ns.param('fund_id', 'Fund unique identifier (UUID)')
+@ns.route("/fund-prices/<string:fund_id>")
+@ns.param("fund_id", "Fund unique identifier (UUID)")
 class FundPrices(Resource):
     """Fund price history endpoint."""
 
-    @ns.doc('get_fund_prices')
-    @ns.response(200, 'Success', [fund_price_model])
-    @ns.response(404, 'Fund not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_fund_prices")
+    @ns.response(200, "Success", [fund_price_model])
+    @ns.response(404, "Fund not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self, fund_id):
         """
         Get price history for a fund.
@@ -664,22 +674,22 @@ class FundPrices(Resource):
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error retrieving fund prices: {str(e)}",
+                message=f"Error retrieving fund prices: {e!s}",
                 details={"fund_id": fund_id, "error": str(e)},
             )
             return {"error": "Error retrieving fund prices", "details": str(e)}, 500
 
 
-@ns.route('/fund-prices/<string:fund_id>/update')
-@ns.param('fund_id', 'Fund unique identifier (UUID)')
+@ns.route("/fund-prices/<string:fund_id>/update")
+@ns.param("fund_id", "Fund unique identifier (UUID)")
 class FundPriceUpdate(Resource):
     """Fund price update endpoint."""
 
-    @ns.doc('update_fund_prices')
-    @ns.param('type', 'Update type (today or historical)', _in='query')
-    @ns.response(200, 'Prices updated')
-    @ns.response(404, 'Fund not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("update_fund_prices")
+    @ns.param("type", "Update type (today or historical)", _in="query")
+    @ns.response(200, "Prices updated")
+    @ns.response(404, "Fund not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self, fund_id):
         """
         Update fund prices from external source.
@@ -695,17 +705,19 @@ class FundPriceUpdate(Resource):
             update_type = request.args.get("type", "today")
 
             if update_type == "today":
-                TodayPriceService.update_single_fund_price(fund_id)
+                response, status = TodayPriceService.update_todays_price(fund_id)
             else:
-                HistoricalPriceService.update_single_fund_historical_prices(fund_id)
+                response, status = HistoricalPriceService.update_historical_prices(fund_id)
 
-            return {"success": True}, 200
+            return response, status
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
-                message=f"Error updating fund prices: {str(e)}",
+                message=f"Error updating fund prices: {e!s}",
                 details={"fund_id": fund_id, "update_type": update_type, "error": str(e)},
             )
             return {"error": "Error updating fund prices", "details": str(e)}, 500

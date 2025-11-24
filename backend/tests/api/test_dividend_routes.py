@@ -78,7 +78,7 @@ class TestDividendCreate:
 
         response = client.post("/api/dividends", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         assert "id" in data
         assert data["shares_owned"] == 100
@@ -127,7 +127,7 @@ class TestDividendCreate:
 
         response = client.post("/api/dividends", json=payload)
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
         # Total should be 50 * 1.50 = 75.00
         assert data["total_amount"] == 75.00
@@ -376,7 +376,7 @@ class TestDividendUpdateDelete:
 
         response = client.delete(f"/api/dividends/{div_id}")
 
-        assert response.status_code == 204
+        assert response.status_code == 200
 
         # Verify database
         deleted = db.session.get(Dividend, div_id)
@@ -419,7 +419,7 @@ class TestDividendErrors:
         db_session.add(pf)
         db_session.commit()
 
-        with patch("app.routes.dividend_routes.DividendService.create_dividend") as mock_create:
+        with patch("app.api.dividend_namespace.DividendService.create_dividend") as mock_create:
             mock_create.side_effect = Exception("Database error")
 
             payload = {
@@ -432,7 +432,7 @@ class TestDividendErrors:
 
             response = client.post("/api/dividends", json=payload)
 
-            assert response.status_code == 400
+            assert response.status_code == 500
             data = response.get_json()
             assert "error" in data or "message" in data
 
@@ -446,7 +446,7 @@ class TestDividendErrors:
         """
         from unittest.mock import patch
 
-        with patch("app.routes.dividend_routes.DividendService.get_fund_dividends") as mock_get:
+        with patch("app.api.dividend_namespace.DividendService.get_fund_dividends") as mock_get:
             mock_get.side_effect = Exception("Database query failed")
 
             fake_id = make_id()
@@ -467,7 +467,7 @@ class TestDividendErrors:
         from unittest.mock import patch
 
         with patch(
-            "app.routes.dividend_routes.DividendService.get_portfolio_dividends"
+            "app.api.dividend_namespace.DividendService.get_portfolio_dividends"
         ) as mock_get:
             mock_get.side_effect = Exception("Database query failed")
 
@@ -509,7 +509,7 @@ class TestDividendErrors:
         db_session.add(div)
         db_session.commit()
 
-        with patch("app.routes.dividend_routes.DividendService.update_dividend") as mock_update:
+        with patch("app.api.dividend_namespace.DividendService.update_dividend") as mock_update:
             mock_update.side_effect = ValueError("Dividend not found")
 
             payload = {
@@ -522,7 +522,7 @@ class TestDividendErrors:
 
             response = client.put(f"/api/dividends/{div.id}", json=payload)
 
-            assert response.status_code == 400
+            assert response.status_code == 404
             data = response.get_json()
             assert "error" in data or "message" in data
 
@@ -557,7 +557,7 @@ class TestDividendErrors:
         db_session.add(div)
         db_session.commit()
 
-        with patch("app.routes.dividend_routes.DividendService.update_dividend") as mock_update:
+        with patch("app.api.dividend_namespace.DividendService.update_dividend") as mock_update:
             mock_update.side_effect = Exception("Unexpected database error")
 
             payload = {
@@ -584,13 +584,13 @@ class TestDividendErrors:
         """
         from unittest.mock import patch
 
-        with patch("app.routes.dividend_routes.DividendService.get_dividend") as mock_get:
-            mock_get.side_effect = ValueError("Dividend not found")
+        with patch("app.api.dividend_namespace.DividendService.delete_dividend") as mock_delete:
+            mock_delete.side_effect = ValueError("Dividend not found")
 
             fake_id = make_id()
             response = client.delete(f"/api/dividends/{fake_id}")
 
-            assert response.status_code == 400
+            assert response.status_code == 404
             data = response.get_json()
             assert "error" in data or "message" in data
 
@@ -626,7 +626,7 @@ class TestDividendErrors:
         db_session.commit()
 
         # Mock get_dividend to succeed but delete_dividend to fail
-        with patch("app.routes.dividend_routes.DividendService.delete_dividend") as mock_delete:
+        with patch("app.api.dividend_namespace.DividendService.delete_dividend") as mock_delete:
             mock_delete.side_effect = Exception("Database constraint violation")
 
             response = client.delete(f"/api/dividends/{div.id}")

@@ -5,13 +5,6 @@ import sys
 
 import click
 from app.models import LogLevel, Portfolio, SystemSetting, SystemSettingKey, db
-from app.routes.developer_routes import developer
-from app.routes.dividend_routes import dividends
-from app.routes.fund_routes import funds
-from app.routes.ibkr_routes import ibkr
-from app.routes.portfolio_routes import portfolios
-from app.routes.system_routes import system
-from app.routes.transaction_routes import transactions
 from app.seed_data import seed_database
 from app.tasks.ibkr_import import run_automated_ibkr_import
 from app.tasks.price_updates import update_all_fund_prices
@@ -284,24 +277,17 @@ def create_app(config=None):
     api = Api(
         app,
         version=get_version(),
-        title='Investment Portfolio Manager API',
-        description='API for managing investment portfolios, funds, transactions, and IBKR integration',
-        doc='/api/docs',
-        prefix='/api'
+        title="Investment Portfolio Manager API",
+        description="API for managing investment portfolios, "
+        "funds, transactions, and IBKR integration",
+        doc="/api/docs",
+        prefix="/api",
     )
 
     # Initialize API namespaces
     from app.api import init_api
-    init_api(api)
 
-    # Register blueprints (legacy routes - to be gradually migrated)
-    app.register_blueprint(portfolios, url_prefix="/api")
-    app.register_blueprint(funds, url_prefix="/api")
-    app.register_blueprint(transactions, url_prefix="/api")
-    app.register_blueprint(developer, url_prefix="/api")
-    app.register_blueprint(dividends, url_prefix="/api")
-    app.register_blueprint(ibkr, url_prefix="/api")
-    app.register_blueprint(system, url_prefix="/api")
+    init_api(api)
 
     # Create database tables and set default settings (skip in test mode)
     # Tests handle their own database setup in conftest.py

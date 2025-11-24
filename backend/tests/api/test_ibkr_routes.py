@@ -804,7 +804,8 @@ class TestIBKRConfigErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "Missing required fields" in data["error"]
+        # Flask-RESTX validation returns errors in 'errors' field
+        assert "errors" in data or "error" in data
 
     def test_save_config_missing_flex_query_id(self, client):
         """
@@ -819,7 +820,8 @@ class TestIBKRConfigErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "Missing required fields" in data["error"]
+        # Flask-RESTX validation returns errors in 'errors' field
+        assert "errors" in data or "error" in data
 
     def test_save_config_empty_payload(self, client):
         """
@@ -832,7 +834,8 @@ class TestIBKRConfigErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "Missing required fields" in data["error"]
+        # Flask-RESTX validation returns errors in 'errors' field
+        assert "errors" in data or "error" in data
 
     def test_save_config_no_payload(self, client):
         """
@@ -877,7 +880,7 @@ class TestIBKRConfigErrors:
             raise Exception("Database error")
 
         with patch(
-            "app.routes.ibkr_routes.IBKRConfigService.save_config",
+            "app.api.ibkr_namespace.IBKRConfigService.save_config",
             mock_save_config,
         ):
             payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
@@ -899,7 +902,7 @@ class TestIBKRConfigErrors:
             raise ValueError("No configuration found")
 
         with patch(
-            "app.routes.ibkr_routes.IBKRConfigService.delete_config",
+            "app.api.ibkr_namespace.IBKRConfigService.delete_config",
             mock_delete_config,
         ):
             response = client.delete("/api/ibkr/config")
@@ -920,7 +923,7 @@ class TestIBKRConfigErrors:
             raise Exception("Database error")
 
         with patch(
-            "app.routes.ibkr_routes.IBKRConfigService.delete_config",
+            "app.api.ibkr_namespace.IBKRConfigService.delete_config",
             mock_delete_config,
         ):
             response = client.delete("/api/ibkr/config")
@@ -946,7 +949,8 @@ class TestIBKRConnectionErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "Missing required fields" in data["error"]
+        # Flask-RESTX validation returns errors in 'errors' field
+        assert "errors" in data or "error" in data
 
     def test_connection_missing_flex_query_id(self, client):
         """
@@ -961,7 +965,8 @@ class TestIBKRConnectionErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "Missing required fields" in data["error"]
+        # Flask-RESTX validation returns errors in 'errors' field
+        assert "errors" in data or "error" in data
 
     def test_connection_empty_payload(self, client):
         """
@@ -981,7 +986,7 @@ class TestIBKRConnectionErrors:
         WHY: Users need confirmation that their IBKR credentials are valid before saving
         configuration. Success feedback builds user confidence in the integration setup.
         """
-        with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
+        with patch("app.api.ibkr_namespace.IBKRFlexService") as mock_service_class:
             mock_instance = mock_service_class.return_value
             mock_instance.test_connection.return_value = {"success": True, "message": "Connected"}
 
@@ -999,7 +1004,7 @@ class TestIBKRConnectionErrors:
         WHY: Users with invalid credentials need clear error messages explaining why the
         connection failed. Prevents saving credentials that cannot work.
         """
-        with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
+        with patch("app.api.ibkr_namespace.IBKRFlexService") as mock_service_class:
             mock_instance = mock_service_class.return_value
             mock_instance.test_connection.return_value = {
                 "success": False,
@@ -1020,7 +1025,7 @@ class TestIBKRConnectionErrors:
         WHY: IBKR API outages or network issues must be handled gracefully. Users need to
         distinguish between invalid credentials and temporary infrastructure problems.
         """
-        with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
+        with patch("app.api.ibkr_namespace.IBKRFlexService") as mock_service_class:
             mock_instance = mock_service_class.return_value
             mock_instance.test_connection.side_effect = Exception("API error")
 
@@ -1042,7 +1047,7 @@ class TestIBKRImportErrors:
         WHY: Users attempting to import before configuring IBKR credentials need clear guidance
         to complete setup first. Prevents confusing failures from unconfigured systems.
         """
-        with patch("app.routes.ibkr_routes.IBKRConfigService.get_first_config") as mock_get:
+        with patch("app.api.ibkr_namespace.IBKRConfigService.get_first_config") as mock_get:
             mock_get.return_value = None
 
             response = client.post("/api/ibkr/import")
@@ -1089,13 +1094,12 @@ class TestIBKRImportErrors:
         db_session.add(config)
         db_session.commit()
 
-        with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
+        with patch("app.api.ibkr_namespace.IBKRFlexService") as mock_service_class:
             mock_instance = mock_service_class.return_value
-            # Mock trigger_manual_import to return an error response
-            mock_instance.trigger_manual_import.return_value = (
-                {"error": "Failed to fetch statement from IBKR"},
-                500,
-            )
+            # Mock _decrypt_token to return a token
+            mock_instance._decrypt_token.return_value = "decrypted_token"
+            # Mock fetch_statement to return None (simulating API failure)
+            mock_instance.fetch_statement.return_value = None
 
             response = client.post("/api/ibkr/import")
 
@@ -1119,7 +1123,7 @@ class TestIBKRImportErrors:
         db_session.add(config)
         db_session.commit()
 
-        with patch("app.routes.ibkr_routes.IBKRFlexService") as mock_service_class:
+        with patch("app.api.ibkr_namespace.IBKRFlexService") as mock_service_class:
             mock_instance = mock_service_class.return_value
             # Mock trigger_manual_import to return an exception response
             mock_instance.trigger_manual_import.return_value = (
@@ -1195,7 +1199,7 @@ class TestIBKRInboxErrors:
         def mock_commit():
             raise Exception("Database error")
 
-        with patch("app.routes.ibkr_routes.db.session.commit", mock_commit):
+        with patch("app.models.db.session.commit", mock_commit):
             response = client.delete(f"/api/ibkr/inbox/{txn.id}")
 
             assert response.status_code == 500
@@ -1207,7 +1211,7 @@ class TestIBKRInboxErrors:
         WHY: Database query failures should not crash the notification badge UI component.
         Returns 500 with error message instead of breaking the entire user interface.
         """
-        with patch("app.routes.ibkr_routes.IBKRTransactionService.get_inbox_count") as mock_count:
+        with patch("app.api.ibkr_namespace.IBKRTransactionService.get_inbox_count") as mock_count:
             mock_count.side_effect = Exception("Database query failed")
 
             response = client.get("/api/ibkr/inbox/count")
@@ -1398,7 +1402,8 @@ class TestIBKRAllocationErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "error" in data
+        # Accept either Flask-RESTX validation format or legacy format
+        assert "errors" in data or "error" in data
 
     def test_update_allocations_value_error(self, client, db_session):
         """
@@ -1423,7 +1428,7 @@ class TestIBKRAllocationErrors:
         db_session.commit()
 
         with patch(
-            "app.routes.ibkr_routes.IBKRTransactionService.modify_allocations"
+            "app.api.ibkr_namespace.IBKRTransactionService.modify_allocations"
         ) as mock_modify:
             mock_modify.side_effect = ValueError("Allocation validation failed")
 
@@ -1457,7 +1462,7 @@ class TestIBKRAllocationErrors:
         db_session.commit()
 
         with patch(
-            "app.routes.ibkr_routes.IBKRTransactionService.modify_allocations"
+            "app.api.ibkr_namespace.IBKRTransactionService.modify_allocations"
         ) as mock_modify:
             mock_modify.side_effect = Exception("Unexpected database error")
 
@@ -1588,7 +1593,7 @@ class TestIBKRBulkOperationsErrors:
 
         # Mock process_transaction_allocation to fail for one transaction
         with patch(
-            "app.routes.ibkr_routes.IBKRTransactionService.process_transaction_allocation"
+            "app.api.ibkr_namespace.IBKRTransactionService.process_transaction_allocation"
         ) as mock_process:
             # First call succeeds, second call fails
             mock_process.side_effect = [
@@ -1618,7 +1623,7 @@ class TestIBKRBulkOperationsErrors:
         and reported. Prevents silent data corruption and provides diagnostic information.
         """
         with patch(
-            "app.routes.ibkr_routes.IBKRTransactionService.process_transaction_allocation"
+            "app.api.ibkr_namespace.IBKRTransactionService.process_transaction_allocation"
         ) as mock_process:
             mock_process.side_effect = Exception("Critical database error")
 

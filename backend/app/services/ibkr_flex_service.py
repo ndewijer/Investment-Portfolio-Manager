@@ -73,6 +73,51 @@ class IBKRFlexService:
             error_code, f"Unknown error (code: {error_code}). Please check IBKR documentation."
         )
 
+    def _map_flex_error_to_http_status(self, error_code: str) -> int:
+        """
+        Map IBKR Flex error codes to appropriate HTTP status codes.
+
+        Args:
+            error_code: IBKR error code (e.g., "1009")
+
+        Returns:
+            HTTP status code (400, 401, 403, 429, or 500)
+        """
+        # Server errors - IBKR infrastructure issues
+        server_errors = [
+            "1001",
+            "1003",
+            "1004",
+            "1005",
+            "1006",
+            "1007",
+            "1008",
+            "1009",
+            "1019",
+            "1021",
+        ]
+
+        # Forbidden - Access/permission issues
+        forbidden_errors = ["1011", "1013", "1014", "1015", "1016"]
+
+        # Unauthorized - Token expired
+        unauthorized_errors = ["1012"]
+
+        # Rate limiting - Too many requests
+        rate_limit_errors = ["1018"]
+
+        if error_code in server_errors:
+            return 500
+        elif error_code in forbidden_errors:
+            return 403
+        elif error_code in unauthorized_errors:
+            return 401
+        elif error_code in rate_limit_errors:
+            return 429
+        else:
+            # Default for bad requests (like 1010, 1017, 1020)
+            return 400
+
     def _encrypt_token(self, token: str) -> str:
         """
         Encrypt IBKR token.
@@ -904,6 +949,81 @@ class IBKRFlexService:
             )
             return {"error": "Import failed", "details": str(e)}, 500
 
+    def _test_connection_request(self, token: str, query_id: str) -> dict:
+        """
+        Perform a single connection test request and extract error information.
+
+        Args:
+            token: IBKR Flex token
+            query_id: IBKR Flex query ID
+
+        Returns:
+            Dictionary with detailed test results including error codes
+        """
+        try:
+            # Step 1: Test the initial request
+            response = requests.get(
+                FLEX_SEND_REQUEST_URL, params={"t": token, "q": query_id, "v": "3"}, timeout=30
+            )
+
+            if response.status_code != 200:
+                return {
+                    "success": False,
+                    "message": "Failed to connect to IBKR API",
+                    "http_status": 500,
+                    "details": f"HTTP {response.status_code}: {response.text}",
+                }
+
+            # Parse response to check for errors
+            root = ET.fromstring(response.text)
+            status = root.find("Status").text if root.find("Status") is not None else None
+            error_code = root.find("ErrorCode").text if root.find("ErrorCode") is not None else None
+
+            if status != "Success":
+                error_msg = self._get_error_message(error_code) if error_code else "Unknown error"
+                http_status = self._map_flex_error_to_http_status(error_code) if error_code else 400
+
+                return {
+                    "success": False,
+                    "message": error_msg,
+                    "error_code": error_code,
+                    "http_status": http_status,
+                }
+
+            # Success - we got a reference code
+            reference_code = (
+                root.find("ReferenceCode").text if root.find("ReferenceCode") is not None else None
+            )
+
+            return {
+                "success": True,
+                "message": "Connection successful",
+                "reference_code": reference_code,
+                "http_status": 200,
+            }
+
+        except requests.RequestException as e:
+            return {
+                "success": False,
+                "message": "Network error connecting to IBKR",
+                "http_status": 500,
+                "details": str(e),
+            }
+        except ET.ParseError as e:
+            return {
+                "success": False,
+                "message": "Invalid response from IBKR",
+                "http_status": 500,
+                "details": str(e),
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": "Unexpected error during connection test",
+                "http_status": 500,
+                "details": str(e),
+            }
+
     def test_connection(self, token: str, query_id: str) -> dict:
         """
         Test IBKR Flex connection.
@@ -913,25 +1033,59 @@ class IBKRFlexService:
             query_id: IBKR Flex query ID
 
         Returns:
-            Dictionary with test results
+            Dictionary with test results including appropriate HTTP status code
         """
         try:
-            # Try to fetch statement (don't cache test requests)
+            # Use the detailed connection test
+            result = self._test_connection_request(token, query_id)
+
+            if not result["success"]:
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.IBKR,
+                    message=f"IBKR connection test failed: {result['message']}",
+                    details={
+                        "query_id": query_id,
+                        "error_code": result.get("error_code"),
+                        "http_status": result.get("http_status"),
+                    },
+                )
+                return result
+
+            # Connection successful - now fetch and parse the statement to verify full functionality
             xml_data = self.fetch_statement(token, query_id, use_cache=False)
 
-            if xml_data:
-                # Try to parse it
-                transactions = self.parse_flex_statement(xml_data)
-                return {
-                    "success": True,
-                    "message": "Connection successful",
-                    "transaction_count": len(transactions),
-                }
-            else:
+            if not xml_data:
                 return {
                     "success": False,
-                    "message": "Failed to fetch statement from IBKR",
+                    "message": "Connection failed: Unable to fetch statement",
+                    "http_status": 500,
                 }
+
+            # Parse the XML to count transactions
+            root = ET.fromstring(xml_data)
+            trade_count = len(root.findall(".//Trade"))
+            cash_count = len(root.findall(".//CashTransaction"))
+            transaction_count = trade_count + cash_count
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.IBKR,
+                message="IBKR connection test successful",
+                details={
+                    "query_id": query_id,
+                    "reference_code": result.get("reference_code"),
+                    "transaction_count": transaction_count,
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Connection successful",
+                "reference_code": result.get("reference_code"),
+                "transaction_count": transaction_count,
+                "http_status": 200,
+            }
 
         except Exception as e:
             logger.log(
@@ -940,4 +1094,8 @@ class IBKRFlexService:
                 message="Error testing IBKR connection",
                 details={"error": str(e)},
             )
-            return {"success": False, "message": f"Connection test failed: {e!s}"}
+            return {
+                "success": False,
+                "message": f"Connection test failed: {e!s}",
+                "http_status": 500,
+            }

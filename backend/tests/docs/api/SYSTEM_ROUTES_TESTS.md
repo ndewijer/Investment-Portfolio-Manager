@@ -1,6 +1,6 @@
 # System Routes Integration Tests
 
-**File**: `tests/routes/test_system_routes.py`
+**File**: `tests/api/test_system_routes.py`
 **Route File**: `app/routes/system_routes.py`
 **Test Count**: 4 tests (2 integration + 2 error paths)
 **Coverage**: 100% (21/21 statements)
@@ -50,13 +50,13 @@ Integration tests for system information and health check API endpoints. These t
 
 ```bash
 # Run all system route tests
-pytest tests/routes/test_system_routes.py -v
+pytest tests/api/test_system_routes.py -v
 
 # Run specific test class
-pytest tests/routes/test_system_routes.py::TestSystemRoutes -v
+pytest tests/api/test_system_routes.py::TestSystemRoutes -v
 
 # Run without coverage (faster)
-pytest tests/routes/test_system_routes.py -v --no-cov
+pytest tests/api/test_system_routes.py -v --no-cov
 ```
 
 ---

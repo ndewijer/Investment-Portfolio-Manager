@@ -2,7 +2,7 @@
 
 **Service**: `app/services/developer_service.py` \
 **Test File**: `tests/services/test_developer_service.py` \
-**Coverage**: 99% (44 tests) \
+**Coverage**: 99% (59 tests) \
 **Status**: ✅ Complete
 
 ---
@@ -17,9 +17,10 @@ The **DeveloperService** provides developer-related operations including data im
 2. **Exchange Rate Management**: Set, update, and retrieve currency exchange rates
 3. **Database Queries**: Retrieve funds and portfolios for administrative operations
 4. **CSV Templates**: Provide template information for data imports
-5. **CSV Processing**: UTF-8/BOM handling, field mapping, and validation
-6. **Data Import**: Transaction and fund price CSV imports with error handling
-7. **Fund Price Management**: Set, update, and retrieve historical fund prices
+5. **CSV Header Validation**: Centralized UTF-8 encoding and header validation for CSV imports
+6. **CSV Processing**: UTF-8/BOM handling, field mapping, and validation
+7. **Data Import**: Transaction and fund price CSV imports with error handling
+8. **Fund Price Management**: Set, update, and retrieve historical fund prices
 
 ### Test Suite Scope
 
@@ -28,6 +29,7 @@ The **DeveloperService** provides developer-related operations including data im
 - Exchange rate management (8 tests)
 - Database query operations (2 tests)
 - CSV template generation (2 tests)
+- CSV header validation (12 tests)
 - CSV processing utilities (8 tests)
 - Transaction import functionality (4 tests)
 - Fund price management (5 tests)
@@ -46,6 +48,7 @@ class TestSanitizationMethods:         # 13 tests - Data cleaning utilities
 class TestExchangeRateManagement:      # 8 tests - Currency rate operations
 class TestDatabaseQueries:             # 2 tests - Fund/portfolio retrieval
 class TestCSVTemplates:                # 2 tests - Template generation
+class TestCSVValidation:               # 12 tests - CSV header and encoding validation
 class TestCSVProcessing:               # 8 tests - CSV parsing and validation
 class TestTransactionImport:           # 4 tests - Transaction CSV import
 class TestFundPriceManagement:         # 5 tests - Price data operations
@@ -576,8 +579,9 @@ pytest tests/services/test_developer_service.py::TestTransactionImport::test_imp
 
 ---
 
-**Last Updated**: v1.3.3 (Phase 4) \
-**Test Count**: 44 tests \
+**Last Updated**: v1.3.3 (Phase 5 - CSV Validation Enhancement) \
+**Test Count**: 59 tests \
 **Coverage**: 99% \
 **Status**: Complete ✅ \
-**Critical Bug Fixed**: 0 (clean implementation)
+**Critical Bug Fixed**: 0 (clean implementation) \
+**New Feature**: Centralized CSV header validation with comprehensive UTF-8 support

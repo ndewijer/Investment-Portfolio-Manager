@@ -112,7 +112,7 @@ const LogViewer = () => {
       params.append('page', page);
       params.append('per_page', 50);
 
-      return api.get(`/logs?${params.toString()}`);
+      return api.get(`/developer/logs?${params.toString()}`);
     },
     [filters]
   );
@@ -126,7 +126,7 @@ const LogViewer = () => {
     if (window.confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
       try {
         setClearing(true);
-        await api.post('/logs/clear');
+        await api.delete('/developer/logs');
         fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
       } catch (err) {
         console.error('Error clearing logs:', err);

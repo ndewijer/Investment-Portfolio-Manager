@@ -12,6 +12,7 @@ from datetime import datetime
 
 from flask import request
 from flask_restx import Namespace, Resource, fields
+from werkzeug.exceptions import HTTPException
 
 from ..models import LogCategory, LogLevel
 from ..services.ibkr_config_service import IBKRConfigService
@@ -20,64 +21,98 @@ from ..services.ibkr_transaction_service import IBKRTransactionService
 from ..services.logging_service import logger
 
 # Create namespace
-ns = Namespace('ibkr', description='Interactive Brokers integration operations')
+ns = Namespace("ibkr", description="Interactive Brokers integration operations")
 
 # Define models
-ibkr_config_model = ns.model('IBKRConfig', {
-    'configured': fields.Boolean(required=True, description='Whether IBKR is configured'),
-    'flex_query_id': fields.String(description='Flex Query ID'),
-    'token_expires_at': fields.String(description='Token expiration date (ISO format)'),
-    'token_warning': fields.String(description='Token expiration warning'),
-    'last_import_date': fields.String(description='Last import date'),
-    'auto_import_enabled': fields.Boolean(description='Auto import enabled'),
-    'enabled': fields.Boolean(description='Configuration enabled'),
-    'created_at': fields.String(description='Configuration creation date'),
-    'updated_at': fields.String(description='Last update date')
-})
+ibkr_config_model = ns.model(
+    "IBKRConfig",
+    {
+        "configured": fields.Boolean(required=True, description="Whether IBKR is configured"),
+        "flex_query_id": fields.String(description="Flex Query ID"),
+        "token_expires_at": fields.String(description="Token expiration date (ISO format)"),
+        "token_warning": fields.String(description="Token expiration warning"),
+        "last_import_date": fields.String(description="Last import date"),
+        "auto_import_enabled": fields.Boolean(description="Auto import enabled"),
+        "enabled": fields.Boolean(description="Configuration enabled"),
+        "created_at": fields.String(description="Configuration creation date"),
+        "updated_at": fields.String(description="Last update date"),
+    },
+)
 
-ibkr_config_create_model = ns.model('IBKRConfigCreate', {
-    'flex_token': fields.String(required=True, description='Flex API token', example='XXXXXXXXXXXXXX'),
-    'flex_query_id': fields.String(required=True, description='Flex Query ID', example='123456'),
-    'token_expires_at': fields.String(description='Token expiration date (ISO format)'),
-    'auto_import_enabled': fields.Boolean(description='Enable automatic import', default=False),
-    'enabled': fields.Boolean(description='Enable configuration', default=True)
-})
+ibkr_config_create_model = ns.model(
+    "IBKRConfigCreate",
+    {
+        "flex_token": fields.String(
+            required=True, description="Flex API token", example="XXXXXXXXXXXXXX"
+        ),
+        "flex_query_id": fields.String(
+            required=True, description="Flex Query ID", example="123456"
+        ),
+        "token_expires_at": fields.String(description="Token expiration date (ISO format)"),
+        "auto_import_enabled": fields.Boolean(description="Enable automatic import", default=False),
+        "enabled": fields.Boolean(description="Enable configuration", default=True),
+    },
+)
 
-ibkr_transaction_model = ns.model('IBKRTransaction', {
-    'id': fields.String(required=True, description='Transaction ID'),
-    'ibkr_transaction_id': fields.String(required=True, description='IBKR Transaction ID'),
-    'transaction_date': fields.String(required=True, description='Transaction date'),
-    'symbol': fields.String(required=True, description='Security symbol'),
-    'isin': fields.String(description='ISIN'),
-    'description': fields.String(description='Description'),
-    'transaction_type': fields.String(required=True, description='Transaction type'),
-    'quantity': fields.Float(required=True, description='Quantity'),
-    'price': fields.Float(required=True, description='Price'),
-    'total_amount': fields.Float(required=True, description='Total amount'),
-    'currency': fields.String(required=True, description='Currency'),
-    'fees': fields.Float(description='Fees'),
-    'status': fields.String(required=True, description='Processing status'),
-    'imported_at': fields.String(description='Import timestamp'),
-    'processed_at': fields.String(description='Processing timestamp')
-})
+ibkr_transaction_model = ns.model(
+    "IBKRTransaction",
+    {
+        "id": fields.String(required=True, description="Transaction ID"),
+        "ibkr_transaction_id": fields.String(required=True, description="IBKR Transaction ID"),
+        "transaction_date": fields.String(required=True, description="Transaction date"),
+        "symbol": fields.String(required=True, description="Security symbol"),
+        "isin": fields.String(description="ISIN"),
+        "description": fields.String(description="Description"),
+        "transaction_type": fields.String(required=True, description="Transaction type"),
+        "quantity": fields.Float(required=True, description="Quantity"),
+        "price": fields.Float(required=True, description="Price"),
+        "total_amount": fields.Float(required=True, description="Total amount"),
+        "currency": fields.String(required=True, description="Currency"),
+        "fees": fields.Float(description="Fees"),
+        "status": fields.String(required=True, description="Processing status"),
+        "imported_at": fields.String(description="Import timestamp"),
+        "processed_at": fields.String(description="Processing timestamp"),
+    },
+)
 
-allocation_model = ns.model('Allocation', {
-    'portfolio_id': fields.String(required=True, description='Portfolio ID', example='uuid-here'),
-    'percentage': fields.Float(required=True, description='Allocation percentage (0-100)', example=50.0)
-})
+allocation_model = ns.model(
+    "Allocation",
+    {
+        "portfolio_id": fields.String(
+            required=True, description="Portfolio ID", example="uuid-here"
+        ),
+        "percentage": fields.Float(
+            required=True, description="Allocation percentage (0-100)", example=50.0
+        ),
+    },
+)
 
-error_model = ns.model('Error', {
-    'error': fields.String(required=True, description='Error message'),
-    'details': fields.String(description='Additional error details')
-})
+allocation_request_model = ns.model(
+    "AllocationRequest",
+    {
+        "allocations": fields.List(
+            fields.Nested(allocation_model),
+            required=True,
+            description="List of portfolio allocations",
+        )
+    },
+)
+
+error_model = ns.model(
+    "Error",
+    {
+        "error": fields.String(required=True, description="Error message"),
+        "details": fields.String(description="Additional error details"),
+    },
+)
 
 
-@ns.route('/config')
+@ns.route("/config")
 class IBKRConfig(Resource):
     """IBKR configuration endpoint."""
 
-    @ns.doc('get_ibkr_config')
-    @ns.response(200, 'Success', ibkr_config_model)
+    @ns.doc("get_ibkr_config")
+    @ns.response(200, "Success", ibkr_config_model)
     def get(self):
         """
         Get IBKR configuration status.
@@ -94,11 +129,11 @@ class IBKRConfig(Resource):
         config_status = IBKRConfigService.get_config_status()
         return config_status, 200
 
-    @ns.doc('save_ibkr_config')
+    @ns.doc("save_ibkr_config")
     @ns.expect(ibkr_config_create_model, validate=True)
-    @ns.response(200, 'Configuration saved')
-    @ns.response(400, 'Validation error', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(200, "Configuration saved")
+    @ns.response(400, "Validation error", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Create or update IBKR configuration.
@@ -143,6 +178,8 @@ class IBKRConfig(Resource):
 
             return {"success": True, "message": "Configuration saved successfully"}, 200
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -152,10 +189,10 @@ class IBKRConfig(Resource):
             )
             return {"error": "Failed to save configuration", "details": str(e)}, 500
 
-    @ns.doc('delete_ibkr_config')
-    @ns.response(200, 'Configuration deleted')
-    @ns.response(404, 'Configuration not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("delete_ibkr_config")
+    @ns.response(200, "Configuration deleted")
+    @ns.response(404, "Configuration not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def delete(self):
         """
         Delete IBKR configuration.
@@ -178,6 +215,8 @@ class IBKRConfig(Resource):
         except ValueError as e:
             return {"error": str(e)}, 404
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -188,15 +227,15 @@ class IBKRConfig(Resource):
             return {"error": "Failed to delete configuration", "details": str(e)}, 500
 
 
-@ns.route('/config/test')
+@ns.route("/config/test")
 class IBKRConfigTest(Resource):
     """IBKR configuration test endpoint."""
 
-    @ns.doc('test_ibkr_connection')
+    @ns.doc("test_ibkr_connection")
     @ns.expect(ibkr_config_create_model)
-    @ns.response(200, 'Connection successful')
-    @ns.response(400, 'Connection failed', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.response(200, "Connection successful")
+    @ns.response(400, "Connection failed", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Test IBKR connection with provided credentials.
@@ -216,8 +255,12 @@ class IBKRConfigTest(Resource):
             if result["success"]:
                 return result, 200
             else:
-                return result, 400
+                # Use the service-provided HTTP status code
+                status_code = result.get("http_status", 400)
+                return result, status_code
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -228,15 +271,15 @@ class IBKRConfigTest(Resource):
             return {"error": "Connection test failed", "details": str(e)}, 500
 
 
-@ns.route('/import')
+@ns.route("/import")
 class IBKRImport(Resource):
     """IBKR import trigger endpoint."""
 
-    @ns.doc('trigger_ibkr_import')
-    @ns.response(200, 'Import successful')
-    @ns.response(400, 'IBKR not configured', error_model)
-    @ns.response(403, 'IBKR disabled', error_model)
-    @ns.response(500, 'Import failed', error_model)
+    @ns.doc("trigger_ibkr_import")
+    @ns.response(200, "Import successful")
+    @ns.response(400, "IBKR not configured", error_model)
+    @ns.response(403, "IBKR disabled", error_model)
+    @ns.response(500, "Import failed", error_model)
     def post(self):
         """
         Manually trigger IBKR transaction import.
@@ -282,6 +325,8 @@ class IBKRImport(Resource):
 
             return result, 200
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -292,15 +337,15 @@ class IBKRImport(Resource):
             return {"error": "Import failed", "details": str(e)}, 500
 
 
-@ns.route('/inbox')
+@ns.route("/inbox")
 class IBKRInbox(Resource):
     """IBKR transaction inbox endpoint."""
 
-    @ns.doc('list_ibkr_transactions')
-    @ns.param('status', 'Filter by status (pending, processed, ignored)', _in='query')
-    @ns.param('transaction_type', 'Filter by transaction type', _in='query')
-    @ns.response(200, 'Success', [ibkr_transaction_model])
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("list_ibkr_transactions")
+    @ns.param("status", "Filter by status (pending, processed, ignored)", _in="query")
+    @ns.param("transaction_type", "Filter by transaction type", _in="query")
+    @ns.response(200, "Success", [ibkr_transaction_model])
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get all IBKR transactions in inbox.
@@ -313,13 +358,15 @@ class IBKRInbox(Resource):
         - transaction_type: Filter by transaction type (buy, sell, dividend, etc.)
         """
         try:
-            status = request.args.get('status', 'pending')
-            transaction_type = request.args.get('transaction_type')
+            status = request.args.get("status", "pending")
+            transaction_type = request.args.get("transaction_type")
 
             transactions = IBKRTransactionService.get_inbox(status, transaction_type)
 
             return transactions, 200
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -330,14 +377,14 @@ class IBKRInbox(Resource):
             return {"error": "Error retrieving inbox", "details": str(e)}, 500
 
 
-@ns.route('/inbox/count')
+@ns.route("/inbox/count")
 class IBKRInboxCount(Resource):
     """IBKR inbox count endpoint."""
 
-    @ns.doc('get_inbox_count')
-    @ns.param('status', 'Filter by status (default: pending)', _in='query')
-    @ns.response(200, 'Success')
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_inbox_count")
+    @ns.param("status", "Filter by status (default: pending)", _in="query")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get count of IBKR transactions.
@@ -361,6 +408,8 @@ class IBKRInboxCount(Resource):
 
             return {"count": count}, 200
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -371,15 +420,15 @@ class IBKRInboxCount(Resource):
             return {"error": "Failed to retrieve count", "details": str(e)}, 500
 
 
-@ns.route('/inbox/bulk-allocate')
+@ns.route("/inbox/bulk-allocate")
 class IBKRBulkAllocate(Resource):
     """IBKR bulk allocation endpoint."""
 
-    @ns.doc('bulk_allocate_transactions')
-    @ns.expect([allocation_model], validate=True)
-    @ns.response(200, 'Transactions allocated')
-    @ns.response(400, 'Invalid request', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("bulk_allocate_transactions")
+    @ns.expect(allocation_request_model, validate=True)
+    @ns.response(200, "Transactions allocated")
+    @ns.response(400, "Invalid request", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self):
         """
         Allocate multiple IBKR transactions with same allocations.
@@ -412,12 +461,12 @@ class IBKRBulkAllocate(Resource):
             return result, 400
 
 
-@ns.route('/portfolios')
+@ns.route("/portfolios")
 class IBKRPortfolios(Resource):
     """IBKR portfolios list endpoint."""
 
-    @ns.doc('get_portfolios_for_allocation')
-    @ns.response(200, 'Success')
+    @ns.doc("get_portfolios_for_allocation")
+    @ns.response(200, "Success")
     def get(self):
         """
         Get available portfolios for transaction allocation.
@@ -432,15 +481,15 @@ class IBKRPortfolios(Resource):
         return [{"id": p.id, "name": p.name, "description": p.description} for p in portfolios], 200
 
 
-@ns.route('/dividends/pending')
+@ns.route("/dividends/pending")
 class IBKRPendingDividends(Resource):
     """IBKR pending dividends endpoint."""
 
-    @ns.doc('get_pending_dividends')
-    @ns.param('symbol', 'Filter by symbol', _in='query')
-    @ns.param('isin', 'Filter by ISIN', _in='query')
-    @ns.response(200, 'Success')
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_pending_dividends")
+    @ns.param("symbol", "Filter by symbol", _in="query")
+    @ns.param("isin", "Filter by ISIN", _in="query")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
     def get(self):
         """
         Get pending dividend records for matching.
@@ -460,14 +509,14 @@ class IBKRPendingDividends(Resource):
         return dividends, 200
 
 
-@ns.route('/inbox/<string:transaction_id>')
-@ns.param('transaction_id', 'Transaction unique identifier')
+@ns.route("/inbox/<string:transaction_id>")
+@ns.param("transaction_id", "Transaction unique identifier")
 class IBKRTransaction(Resource):
     """IBKR transaction detail endpoint."""
 
-    @ns.doc('get_ibkr_transaction')
-    @ns.response(200, 'Success', ibkr_transaction_model)
-    @ns.response(404, 'Transaction not found', error_model)
+    @ns.doc("get_ibkr_transaction")
+    @ns.response(200, "Success", ibkr_transaction_model)
+    @ns.response(404, "Transaction not found", error_model)
     def get(self, transaction_id):
         """
         Get IBKR transaction details.
@@ -476,8 +525,10 @@ class IBKRTransaction(Resource):
         including any existing portfolio allocations.
         """
         try:
-            response, status = IBKRTransactionService.get_transaction_allocations(transaction_id)
-            return response, status
+            transaction_detail = IBKRTransactionService.get_transaction_detail(transaction_id)
+            return transaction_detail, 200
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -487,10 +538,10 @@ class IBKRTransaction(Resource):
             )
             return {"error": "Error retrieving transaction", "details": str(e)}, 500
 
-    @ns.doc('delete_ibkr_transaction')
-    @ns.response(200, 'Transaction deleted')
-    @ns.response(400, 'Cannot delete processed transaction', error_model)
-    @ns.response(404, 'Transaction not found', error_model)
+    @ns.doc("delete_ibkr_transaction")
+    @ns.response(200, "Transaction deleted")
+    @ns.response(400, "Cannot delete processed transaction", error_model)
+    @ns.response(404, "Transaction not found", error_model)
     def delete(self, transaction_id):
         """
         Delete an IBKR transaction.
@@ -501,21 +552,23 @@ class IBKRTransaction(Resource):
         try:
             response, status = IBKRTransactionService.delete_transaction(transaction_id)
             return response, status
+        except HTTPException:
+            raise
         except Exception as e:
             return {"error": "Error deleting transaction", "details": str(e)}, 500
 
 
-@ns.route('/inbox/<string:transaction_id>/allocate')
-@ns.param('transaction_id', 'Transaction unique identifier')
+@ns.route("/inbox/<string:transaction_id>/allocate")
+@ns.param("transaction_id", "Transaction unique identifier")
 class IBKRTransactionAllocate(Resource):
     """IBKR transaction allocation endpoint."""
 
-    @ns.doc('allocate_transaction')
-    @ns.expect([allocation_model], validate=True)
-    @ns.response(200, 'Transaction allocated')
-    @ns.response(400, 'Invalid allocation', error_model)
-    @ns.response(404, 'Transaction not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("allocate_transaction")
+    @ns.expect(allocation_request_model, validate=True)
+    @ns.response(200, "Transaction allocated")
+    @ns.response(400, "Invalid allocation", error_model)
+    @ns.response(404, "Transaction not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def post(self, transaction_id):
         """
         Allocate IBKR transaction to portfolios.
@@ -545,10 +598,19 @@ class IBKRTransactionAllocate(Resource):
                 transaction_id, allocations
             )
 
-            return result, 200
+            if result["success"]:
+                return result, 200
+            else:
+                return result, 400
 
         except ValueError as e:
-            return {"error": str(e)}, 400
+            # Return 404 if it's a "not found" error, otherwise 400 for validation errors
+            error_message = str(e)
+            if "not found" in error_message.lower():
+                return {"error": error_message}, 404
+            return {"error": error_message}, 400
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
@@ -559,15 +621,15 @@ class IBKRTransactionAllocate(Resource):
             return {"error": "Error allocating transaction", "details": str(e)}, 500
 
 
-@ns.route('/inbox/<string:transaction_id>/ignore')
-@ns.param('transaction_id', 'Transaction unique identifier')
+@ns.route("/inbox/<string:transaction_id>/ignore")
+@ns.param("transaction_id", "Transaction unique identifier")
 class IBKRTransactionIgnore(Resource):
     """IBKR transaction ignore endpoint."""
 
-    @ns.doc('ignore_transaction')
-    @ns.response(200, 'Transaction ignored')
-    @ns.response(400, 'Cannot ignore processed transaction', error_model)
-    @ns.response(404, 'Transaction not found', error_model)
+    @ns.doc("ignore_transaction")
+    @ns.response(200, "Transaction ignored")
+    @ns.response(400, "Cannot ignore processed transaction", error_model)
+    @ns.response(404, "Transaction not found", error_model)
     def post(self, transaction_id):
         """
         Mark IBKR transaction as ignored.
@@ -583,19 +645,21 @@ class IBKRTransactionIgnore(Resource):
         try:
             response, status = IBKRTransactionService.ignore_transaction(transaction_id)
             return response, status
+        except HTTPException:
+            raise
         except Exception as e:
             return {"error": "Error ignoring transaction", "details": str(e)}, 500
 
 
-@ns.route('/inbox/<string:transaction_id>/eligible-portfolios')
-@ns.param('transaction_id', 'Transaction unique identifier')
+@ns.route("/inbox/<string:transaction_id>/eligible-portfolios")
+@ns.param("transaction_id", "Transaction unique identifier")
 class IBKRTransactionEligiblePortfolios(Resource):
     """IBKR transaction eligible portfolios endpoint."""
 
-    @ns.doc('get_eligible_portfolios')
-    @ns.response(200, 'Success')
-    @ns.response(404, 'Transaction not found', error_model)
-    @ns.response(500, 'Server error', error_model)
+    @ns.doc("get_eligible_portfolios")
+    @ns.response(200, "Success")
+    @ns.response(404, "Transaction not found", error_model)
+    @ns.response(500, "Server error", error_model)
     def get(self, transaction_id):
         """
         Get eligible portfolios for allocating this transaction.
@@ -638,21 +702,21 @@ class IBKRTransactionEligiblePortfolios(Resource):
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.IBKR,
-                message=f"Error getting eligible portfolios: {str(e)}",
+                message=f"Error getting eligible portfolios: {e!s}",
                 details={"transaction_id": transaction_id, "error": str(e)},
             )
             return {"error": "Error getting eligible portfolios", "details": str(e)}, 500
 
 
-@ns.route('/inbox/<string:transaction_id>/match-dividend')
-@ns.param('transaction_id', 'Transaction unique identifier')
+@ns.route("/inbox/<string:transaction_id>/match-dividend")
+@ns.param("transaction_id", "Transaction unique identifier")
 class IBKRTransactionMatchDividend(Resource):
     """IBKR dividend matching endpoint."""
 
-    @ns.doc('match_dividend')
-    @ns.response(200, 'Dividend matched')
-    @ns.response(400, 'Invalid request', error_model)
-    @ns.response(404, 'Transaction not found', error_model)
+    @ns.doc("match_dividend")
+    @ns.response(200, "Dividend matched")
+    @ns.response(400, "Invalid request", error_model)
+    @ns.response(404, "Transaction not found", error_model)
     def post(self, transaction_id):
         """
         Match IBKR dividend transaction to existing dividend records.
@@ -678,15 +742,15 @@ class IBKRTransactionMatchDividend(Resource):
             return result, 400
 
 
-@ns.route('/inbox/<string:transaction_id>/unallocate')
-@ns.param('transaction_id', 'Transaction unique identifier')
+@ns.route("/inbox/<string:transaction_id>/unallocate")
+@ns.param("transaction_id", "Transaction unique identifier")
 class IBKRTransactionUnallocate(Resource):
     """IBKR transaction unallocation endpoint."""
 
-    @ns.doc('unallocate_transaction')
-    @ns.response(200, 'Transaction unallocated')
-    @ns.response(400, 'Cannot unallocate', error_model)
-    @ns.response(404, 'Transaction not found', error_model)
+    @ns.doc("unallocate_transaction")
+    @ns.response(200, "Transaction unallocated")
+    @ns.response(400, "Cannot unallocate", error_model)
+    @ns.response(404, "Transaction not found", error_model)
     def post(self, transaction_id):
         """
         Unallocate a processed IBKR transaction.
@@ -700,14 +764,14 @@ class IBKRTransactionUnallocate(Resource):
         return response, status
 
 
-@ns.route('/inbox/<string:transaction_id>/allocations')
-@ns.param('transaction_id', 'Transaction unique identifier')
+@ns.route("/inbox/<string:transaction_id>/allocations")
+@ns.param("transaction_id", "Transaction unique identifier")
 class IBKRTransactionAllocations(Resource):
     """IBKR transaction allocations management endpoint."""
 
-    @ns.doc('get_transaction_allocations')
-    @ns.response(200, 'Success')
-    @ns.response(404, 'Transaction not found', error_model)
+    @ns.doc("get_transaction_allocations")
+    @ns.response(200, "Success")
+    @ns.response(404, "Transaction not found", error_model)
     def get(self, transaction_id):
         """
         Get allocation details for a processed IBKR transaction.
@@ -718,11 +782,11 @@ class IBKRTransactionAllocations(Resource):
         response, status = IBKRTransactionService.get_transaction_allocations(transaction_id)
         return response, status
 
-    @ns.doc('modify_transaction_allocations')
-    @ns.expect([allocation_model], validate=True)
-    @ns.response(200, 'Allocations modified')
-    @ns.response(400, 'Invalid request', error_model)
-    @ns.response(404, 'Transaction not found', error_model)
+    @ns.doc("modify_transaction_allocations")
+    @ns.expect(allocation_request_model, validate=True)
+    @ns.response(200, "Allocations modified")
+    @ns.response(400, "Invalid request", error_model)
+    @ns.response(404, "Transaction not found", error_model)
     def put(self, transaction_id):
         """
         Modify allocation percentages for a processed IBKR transaction.
@@ -748,13 +812,19 @@ class IBKRTransactionAllocations(Resource):
             return result, 200
 
         except ValueError as e:
+            # Return 404 if it's a "not found" error, otherwise 400 for validation errors
+            error_message = str(e)
+            if "not found" in error_message.lower():
+                return {"error": error_message}, 404
             logger.log(
                 level=LogLevel.ERROR,
                 category=LogCategory.IBKR,
                 message="Failed to modify allocations",
-                details={"transaction_id": transaction_id, "error": str(e)},
+                details={"transaction_id": transaction_id, "error": error_message},
             )
-            return {"error": str(e)}, 400
+            return {"error": error_message}, 400
+        except HTTPException:
+            raise
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,
