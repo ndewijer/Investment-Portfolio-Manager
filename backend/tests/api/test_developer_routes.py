@@ -9,8 +9,8 @@ Tests Developer API endpoints:
 - GET /api/developer/csv/transactions/template - Get CSV template ✅
 - GET /api/developer/csv/fund-prices/template - Get fund price template ✅
 - POST /api/import-fund-prices - Import fund prices ✅
-- GET /api/system-settings/logging - Get logging settings ✅
-- PUT /api/system-settings/logging - Update logging settings ✅
+- GET /api/developer/system-settings/logging - Get logging settings ✅
+- PUT /api/developer/system-settings/logging - Update logging settings ✅
 - GET /api/logs - Get logs ✅
 - GET /api/logs?level=ERROR - Get logs with filters ✅
 - GET /api/developer/fund-price/<fund_id> - Get fund price ✅

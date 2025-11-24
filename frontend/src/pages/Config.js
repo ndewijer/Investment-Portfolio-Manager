@@ -435,13 +435,13 @@ const SystemSettingsTab = ({ setMessage, setError }) => {
   });
 
   useEffect(() => {
-    fetchLoggingSettings(() => axios.get(`${API_BASE_URL}/system-settings/logging`));
+    fetchLoggingSettings(() => axios.get(`${API_BASE_URL}/developer/system-settings/logging`));
   }, [fetchLoggingSettings]);
 
   const handleLoggingSettingsUpdate = async (newSettings) => {
     try {
       await fetchLoggingSettings(
-        () => axios.put(`${API_BASE_URL}/system-settings/logging`, newSettings),
+        () => axios.put(`${API_BASE_URL}/developer/system-settings/logging`, newSettings),
         {
           onSuccess: () => {
             setMessage('Logging settings updated successfully');
