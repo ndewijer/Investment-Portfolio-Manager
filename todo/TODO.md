@@ -4,10 +4,7 @@ This folder contains planning documents and task lists for the Investment Portfo
 
 ## 📁 Planning Documents
 
-- **[API_DOCUMENTATION_GENERATION_PLAN.md](./API_DOCUMENTATION_GENERATION_PLAN.md)** - Plan for automated API documentation generation
 - **[CURRENCY_CONVERSION_PLAN.md](./CURRENCY_CONVERSION_PLAN.md)** - Plan for multi-currency support implementation
-- **[PERFORMANCE_OPTIMIZATION_PLAN.md](./PERFORMANCE_OPTIMIZATION_PLAN.md)** - Performance investigation and 3-phase optimization roadmap
-- **[ROUTE_REFACTORING_REMEDIATION_PLAN.md](./ROUTE_REFACTORING_REMEDIATION_PLAN.md)** - Route business logic refactoring plan (24 violations, 4 phases)
 - **[TESTING_PLAN_1.3.3.md](./TESTING_PLAN_1.3.3.md)** - Comprehensive testing strategy for v1.3.3 (80%+ coverage goal)
 
 ---
@@ -173,20 +170,18 @@ This folder contains planning documents and task lists for the Investment Portfo
 - [x] **Performance optimization (Phase 2)**: ✅ COMPLETED - Added eager loading to eliminate N+1 queries (50+ queries → 9 queries, 231 queries → 4 queries)
 - [x] **Performance optimization (Phase 3)**: ✅ SKIPPED - Response caching not needed (current performance already excellent)
 
-**See**: [PERFORMANCE_OPTIMIZATION_PLAN.md](./PERFORMANCE_OPTIMIZATION_PLAN.md) for detailed investigation and implementation plan
-
 **Before**: Overview page loaded slowly (5-10s, 16,460 queries). Portfolio detail loaded slowly (3-5s, 7,900 queries).
 **After Phase 1 & 2**: Overview loads in 0.2s (16 queries). Portfolio detail loads in 0.08s (10 queries). Portfolio summary loads in 0.013s (9 queries). Transactions load in 0.001s (4 queries).
 
 **Status**: Performance optimization complete - all targets exceeded, no further optimization needed
 
-#### IBKR Fee Transaction Allocation (v1.3.3 or v1.4.0)
-- [ ] Automatically create fee transactions when allocating IBKR transactions
-- [ ] Extract fees/commission from IBKR transaction
-- [ ] Create separate "fee" type transactions for each portfolio allocation
-- [ ] Allocate fees proportionally based on allocation percentages
-- [ ] Backend: Modify `ibkr_transaction_service.py` allocation logic
-- [ ] Testing: Verify fee allocation calculations and transaction creation
+#### IBKR Fee Transaction Allocation (v1.3.3) ✅ COMPLETED
+- [X] Automatically create fee transactions when allocating IBKR transactions
+- [X] Extract fees/commission from IBKR transaction
+- [X] Create separate "fee" type transactions for each portfolio allocation
+- [X] Allocate fees proportionally based on allocation percentages
+- [X] Backend: Modify `ibkr_transaction_service.py` allocation logic
+- [X] Testing: Verify fee allocation calculations and transaction creation
 
 **Trigger**: When needed for accurate cost tracking in portfolios
 
