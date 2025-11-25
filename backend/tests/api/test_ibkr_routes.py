@@ -1096,10 +1096,11 @@ class TestIBKRImportErrors:
 
         with patch("app.api.ibkr_namespace.IBKRFlexService") as mock_service_class:
             mock_instance = mock_service_class.return_value
-            # Mock _decrypt_token to return a token
-            mock_instance._decrypt_token.return_value = "decrypted_token"
-            # Mock fetch_statement to return None (simulating API failure)
-            mock_instance.fetch_statement.return_value = None
+            # Mock trigger_manual_import to return failure response
+            mock_instance.trigger_manual_import.return_value = (
+                {"error": "Failed to fetch statement from IBKR"},
+                500,
+            )
 
             response = client.post("/api/ibkr/import")
 

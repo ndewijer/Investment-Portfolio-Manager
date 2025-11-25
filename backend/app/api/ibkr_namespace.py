@@ -303,27 +303,8 @@ class IBKRImport(Resource):
 
         try:
             service = IBKRFlexService()
-
-            # Decrypt token
-            token = service._decrypt_token(config.flex_token)
-
-            # Fetch statement
-            xml_data = service.fetch_statement(token, config.flex_query_id, use_cache=True)
-
-            if not xml_data:
-                return {"error": "Failed to fetch statement from IBKR"}, 500
-
-            # Parse and import transactions
-            result = service.parse_and_import_transactions(xml_data)
-
-            logger.log(
-                level=LogLevel.INFO,
-                category=LogCategory.IBKR,
-                message="IBKR import completed",
-                details=result,
-            )
-
-            return result, 200
+            result, status_code = service.trigger_manual_import(config)
+            return result, status_code
 
         except HTTPException:
             raise
