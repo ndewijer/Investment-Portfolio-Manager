@@ -8,7 +8,7 @@ import { useNumericInput } from '../hooks/useNumericInput';
  * of decimal places. Uses the useNumericInput hook to handle formatting and validation.
  * Supports all standard HTML input attributes via props spreading.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {number|string} props.value - The current numeric value
  * @param {Function} props.onChange - Callback function when value changes, receives the new numeric value
  * @param {number} [props.decimals=2] - Number of decimal places to display

@@ -21,7 +21,7 @@ import './FilterPopup.css';
  * The popup appears next to the element that triggered it and handles
  * various filter scenarios common in data tables.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {string} props.type - Filter type: 'date', 'datetime', 'multiselect', or 'text'
  * @param {boolean} props.isOpen - Whether the popup is currently visible
  * @param {Function} props.onClose - Callback when popup is closed

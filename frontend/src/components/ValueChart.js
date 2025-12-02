@@ -29,7 +29,7 @@ import { useFormat } from '../context/FormatContext';
  * The component manages complex zoom state, touch interactions, and provides
  * a seamless experience across desktop and mobile platforms.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Array} props.data - Chart data array with date and value properties
  * @param {number} [props.height=400] - Chart height in pixels (desktop mode)
  * @param {Array} [props.lines=[]] - Line configurations with dataKey, name, color, strokeWidth, etc.

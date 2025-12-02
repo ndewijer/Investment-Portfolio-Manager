@@ -14,7 +14,7 @@ import './Toast.css';
  * - Info notifications ("Data refreshed")
  * - Warning alerts ("Network connection unstable")
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {string} props.message - The message text to display
  * @param {string} props.type - Message type: 'success', 'error', 'info', or 'warning'
  * @param {Function} props.onClose - Callback function when toast is dismissed

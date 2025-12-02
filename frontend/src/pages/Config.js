@@ -100,7 +100,7 @@ const Config = () => {
  * - Enable/disable toggle: Controls IBKR feature visibility and auto-import
  * - Auto-import schedule: Tuesday-Saturday at 06:30 (when enabled)
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Function} props.setMessage - Success message setter
  * @param {Function} props.setError - Error message setter
  * @param {Function} props.refreshIBKRConfig - Refresh IBKR config in AppContext
@@ -424,7 +424,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
  * Controls application-wide system settings including logging configuration.
  * Logging can be toggled on/off and minimum level adjusted (debug/info/warning/error/critical).
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Function} props.setMessage - Success message setter
  * @param {Function} props.setError - Error message setter
  */
@@ -602,7 +602,7 @@ const UserPreferencesTab = () => {
  * Includes CSV format documentation via collapsible info sections. Transaction imports
  * require portfolio selection, which filters available funds to prevent cross-portfolio mistakes.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Function} props.setMessage - Success message setter
  * @param {Function} props.setError - Error message setter
  */

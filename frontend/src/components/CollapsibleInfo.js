@@ -8,7 +8,7 @@ import './CollapsibleInfo.css';
  * a toggle icon (+/-) and shows/hides content when clicked. Useful for
  * organizing information in a compact, user-friendly way.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {string} props.title - The header text to display
  * @param {React.ReactNode} props.children - The content to show/hide when expanded
  * @returns {JSX.Element} Collapsible section with header and toggleable content

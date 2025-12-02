@@ -8,7 +8,7 @@ import './ErrorMessage.css';
  * optional action buttons. Supports different variants for different contexts (inline, banner, etc.).
  * Automatically handles Error objects or string messages.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Error|string|null} props.error - The error to display (Error object or string message)
  * @param {function} [props.onRetry] - Callback for retry button: () => void
  * @param {function} [props.onDismiss] - Callback for dismiss button: () => void
