@@ -18,6 +18,7 @@ LOG_DIR=/data/logs
 INTERNAL_API_KEY=your-secure-key-here  # Optional; auto-generated if not provided
 
 # Frontend
+BACKEND_HOST=investment-portfolio-backend  # Backend container hostname (default: investment-portfolio-backend)
 # Inherits DOMAIN and USE_HTTPS
 ```
 
@@ -25,6 +26,7 @@ INTERNAL_API_KEY=your-secure-key-here  # Optional; auto-generated if not provide
 ```bash
 DOMAIN=ipm.local
 USE_HTTPS=false
+BACKEND_HOST=investment-portfolio-backend  # Optional: override for custom container names
 INTERNAL_API_KEY=your-secure-random-key-here
 ```
 
@@ -58,6 +60,30 @@ volumes:
 ## Development vs Production
 - Development: Webpack dev server & Flask
 - Production: Nginx & Gunicorn
+
+## Custom Container Names
+If you use custom container names (e.g., on Unraid or in custom docker-compose files), set the `BACKEND_HOST` environment variable:
+
+```yaml
+services:
+  backend:
+    container_name: myapp-backend  # Custom name
+    # ... rest of config
+
+  frontend:
+    container_name: myapp-frontend
+    environment:
+      - BACKEND_HOST=myapp-backend  # Must match backend container name
+    # ... rest of config
+```
+
+Or using environment variables:
+```bash
+# .env file
+BACKEND_HOST=myapp-backend
+```
+
+The frontend will use this hostname to proxy `/api/` requests to the backend.
 
 ## API Key Management
 The INTERNAL_API_KEY can be handled in two ways:
