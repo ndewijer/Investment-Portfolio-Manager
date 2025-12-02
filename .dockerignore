@@ -4,3 +4,18 @@ build
 .git
 .gitignore
 README.md
+
+# Python
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.pytest_cache
+.coverage
+htmlcov
+
+# Development files
+**/tests/
+**/.mypy_cache/
+**/*.egg-info/
