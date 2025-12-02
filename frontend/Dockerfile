@@ -27,17 +27,16 @@ FROM nginx:alpine
 
 # Re-declare the build argument and env variable in this stage
 ARG DOMAIN=localhost \
-    USE_HTTPS=false
+    USE_HTTPS=false \
+    BACKEND_HOST=investment-portfolio-backend
 ENV DOMAIN=$DOMAIN \
-    USE_HTTPS=$USE_HTTPS
+    USE_HTTPS=$USE_HTTPS \
+    BACKEND_HOST=$BACKEND_HOST
 
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/nginx.conf
-
-RUN envsubst '${DOMAIN}' < /etc/nginx/conf.d/nginx.conf > /etc/nginx/conf.d/default.conf && \
-    rm /etc/nginx/conf.d/nginx.conf
+# Copy nginx configuration as template
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 CMD ["nginx", "-g", "daemon off;"]
