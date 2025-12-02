@@ -5,6 +5,58 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4] - 2025-12-02
+
+### Changed
+- **Migrated from pip to uv package manager**
+  - 10-100x faster dependency installation
+  - Modern pyproject.toml-based dependency management
+  - Production dependencies pinned for stability
+  - Development dependencies with flexible version ranges
+  - Universal lockfile (uv.lock) for reproducible builds
+  - CI/CD migration with dependency caching
+  - Multi-stage Docker builds with uv
+  - Complete documentation updates
+
+### Added
+- Created `docs/MIGRATION_GUIDE.md` for developers transitioning to uv
+- Added performance marker to pytest configuration
+- Moved performance tests to `backend/tests/performance/` directory
+
+### Deprecated
+- `backend/requirements.txt` and `backend/dev-requirements.txt` (will be removed in v1.4.0)
+  - All dependencies now managed in `pyproject.toml`
+
+## [1.3.3.1] - 2025-11-25
+
+### Fixed
+- **Critical**: IBKR manual import functionality
+  - Fixed 500 error when clicking "Import Now" in IBKR configuration
+  - Corrected API endpoint to use `trigger_manual_import()` method
+  - Updated tests to match new implementation
+
+## [1.3.3] - 2025-11-24
+
+### Added
+- **Complete Swagger/OpenAPI API Documentation** - See [PR #99](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/99)
+  - Interactive Swagger UI at `/api/docs`
+  - 68 documented endpoints across 7 namespaces
+  - Type-safe request/response validation
+  - 100% backward compatibility with legacy routes
+- **Comprehensive Backend Testing** - See [PR #102](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/102)
+  - 682 total tests (668 passed, 14 skipped)
+  - 94% average service coverage
+  - Performance test suite with query count validation
+- **Frontend Component Documentation** - See [PR #103](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/103)
+  - Complete JSDoc coverage for all components
+  - JSDoc validation enforced as errors
+  - Component usage examples and prop documentation
+
+### Changed
+- Migrated all Flask Blueprint routes to Flask-RESTX namespaces
+- Service layer architecture with thin controllers
+- Standardized error handling across all endpoints
+
 ## [1.3.2] - 2025-11-12
 
 ### Added
