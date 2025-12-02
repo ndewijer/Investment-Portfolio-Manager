@@ -30,7 +30,7 @@ const TYPE_OPTIONS = [
  * Integrates with FilterPopup for advanced filtering using date pickers
  * and react-select components. Shows IBKR badge for imported transactions.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Array} props.transactions - Array of transaction objects
  * @param {Array} props.portfolioFunds - Portfolio funds for filter options
  * @param {boolean} props.loading - Loading state for DataTable

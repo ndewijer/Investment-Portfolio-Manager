@@ -7,12 +7,12 @@ import './LoadingSpinner.css';
  * Displays an animated spinner to indicate loading state. Can be used inline or as
  * a full-screen overlay. Supports multiple sizes and customizable loading messages.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {string} [props.size='medium'] - Spinner size: 'small', 'medium', 'large'
  * @param {string} [props.message='Loading...'] - Message to display below the spinner (set to empty string to hide)
  * @param {boolean} [props.overlay=false] - Whether to display as a full-screen overlay (covers entire parent)
  * @param {string} [props.className=''] - Additional CSS class for the container
- * @returns {JSX.Element}
+ * @returns {JSX.Element} Loading spinner component with animated dots
  *
  * @example
  * <LoadingSpinner message="Loading transactions..." />

@@ -13,7 +13,7 @@ import './DataTable.css';
  * client-side sorting, filtering with custom filter types, pagination, and row click handling.
  * Automatically handles loading and error states.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Array<Object>} [props.data=[]] - Array of data objects to display in the table
  * @param {Array<Object>} [props.columns=[]] - Column configuration array. Each column object should have:
  *   - key: string - Property key in data objects
@@ -44,7 +44,7 @@ import './DataTable.css';
  * @param {Object|null} [props.defaultSort=null] - Default sort configuration:
  *   - key: string - Column key to sort by
  *   - direction: string - Sort direction ('asc' or 'desc')
- * @returns {JSX.Element}
+ * @returns {JSX.Element} Table component with headers, rows, sorting, filtering, and pagination
  *
  * @example
  * const columns = [

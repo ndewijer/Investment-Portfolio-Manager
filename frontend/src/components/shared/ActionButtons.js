@@ -7,7 +7,7 @@ import './ActionButtons.css';
  * Provides consistent button styling with multiple variants, sizes, and states
  * including loading state with spinner. Can be used standalone or within ActionButtons container.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {string} [props.variant='default'] - Button style variant: 'default', 'primary', 'secondary', 'danger', 'success', etc.
  * @param {string} [props.size='medium'] - Button size: 'small', 'medium', 'large'
  * @param {function} [props.onClick] - Callback when button is clicked: (event) => void
@@ -16,7 +16,7 @@ import './ActionButtons.css';
  * @param {React.ReactNode} props.children - Button content/text
  * @param {string} [props.className=''] - Additional CSS class for the button
  * @param {string} [props.type='button'] - HTML button type: 'button', 'submit', 'reset'
- * @returns {JSX.Element}
+ * @returns {JSX.Element} Styled action button with loading state
  *
  * @example
  * <ActionButton
@@ -71,13 +71,13 @@ const ActionButton = ({
  * Provides consistent layout and spacing for groups of buttons, with support for
  * horizontal/vertical layouts and different alignment options.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {React.ReactNode} props.children - ActionButton components or other button elements
  * @param {string} [props.className=''] - Additional CSS class for the container
  * @param {string} [props.layout='horizontal'] - Layout direction: 'horizontal', 'vertical'
  * @param {string} [props.align='left'] - Button alignment: 'left', 'center', 'right'
  * @param {string} [props.spacing='normal'] - Spacing between buttons: 'compact', 'normal', 'loose'
- * @returns {JSX.Element}
+ * @returns {JSX.Element} Container for action buttons with layout and alignment
  *
  * @example
  * <ActionButtons align="right" spacing="normal">

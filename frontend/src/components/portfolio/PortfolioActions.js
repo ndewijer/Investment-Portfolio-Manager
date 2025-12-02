@@ -19,7 +19,7 @@ import { isDateInFuture } from '../../utils/portfolio/dateHelpers';
  * component and delegates rendering to FormModal components, keeping the parent
  * component clean and focused.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Object} props.transactionState - Transaction state and handlers from parent
  * @param {Object} props.dividendState - Dividend state and handlers from parent
  * @param {Array} props.portfolioFunds - Portfolio funds data for display/validation

@@ -16,7 +16,7 @@ import { formatChartData, getChartLines } from '../../utils/portfolio/portfolioC
  * Features include zoom controls, time range selection, and responsive design.
  * Defaults to showing 1 year of data. Uses memoization for performance.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Array} props.fundHistory - Historical fund data array with dates and values
  * @param {Array} props.portfolioFunds - Portfolio funds for chart line configuration
  * @returns {JSX.Element} Interactive chart with metric toggles

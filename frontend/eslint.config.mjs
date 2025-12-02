@@ -49,7 +49,7 @@ export default [...fixupConfigRules(compat.extends(
         "react/react-in-jsx-scope": "off",
 
         // JSDoc rules for documentation coverage
-        "jsdoc/require-jsdoc": ["warn", {
+        "jsdoc/require-jsdoc": ["error", {
             require: {
                 FunctionDeclaration: true,
                 MethodDefinition: false,
@@ -65,10 +65,10 @@ export default [...fixupConfigRules(compat.extends(
                 "Program > VariableDeclaration > VariableDeclarator[id.name=/^[A-Z]/] > ArrowFunctionExpression"
             ]
         }],
-        "jsdoc/require-description": "warn",
-        "jsdoc/require-param-description": "warn",
-        "jsdoc/require-returns-description": "warn",
-        "jsdoc/check-alignment": "warn",
+        "jsdoc/require-description": "error",
+        "jsdoc/require-param-description": "error",
+        "jsdoc/require-returns-description": "error",
+        "jsdoc/check-alignment": "error",
         "jsdoc/check-indentation": "off", // Can be strict, disable if too noisy
     },
 }];

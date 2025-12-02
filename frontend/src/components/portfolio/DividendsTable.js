@@ -21,7 +21,7 @@ import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
  * Stock dividends show chart icon, cash dividends show money icon.
  * Uses DataTable component for sorting and responsive design.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Array} props.dividends - Array of dividend objects
  * @param {boolean} props.loading - Loading state for DataTable
  * @param {Object} props.error - Error object if fetch failed

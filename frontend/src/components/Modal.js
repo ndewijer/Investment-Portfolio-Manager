@@ -15,7 +15,7 @@ import './Modal.css';
  * The modal prevents background scrolling and provides a dark overlay.
  * Content is centered on the screen with a white background and close button.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {boolean} props.isOpen - Whether the modal is currently open
  * @param {Function} props.onClose - Callback function when modal is closed
  * @param {string} props.title - Modal title displayed in the header

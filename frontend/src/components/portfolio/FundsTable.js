@@ -21,7 +21,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
  * from the available funds list. Mobile view uses custom card layout.
  * Dividend button only shown for funds with dividend_type !== 'none'.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Array} props.portfolioFunds - Array of portfolio fund objects with metrics
  * @param {Array} props.availableFunds - Funds available to add to portfolio
  * @param {boolean} props.loading - Loading state for DataTable

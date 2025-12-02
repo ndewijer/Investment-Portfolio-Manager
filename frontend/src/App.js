@@ -37,6 +37,18 @@ import './pages/Config.css';
 import './pages/LogViewer.css';
 import './pages/IBKRInbox.css';
 
+/**
+ * Main App component - Root application component with routing and context providers
+ *
+ * Sets up the application structure with:
+ * - Context providers (Theme, Format, App) for global state
+ * - React Router for client-side navigation
+ * - Main navigation and version banner
+ * - Route configuration for all pages
+ * - Global CSS imports and styling setup
+ *
+ * @returns {JSX.Element} The complete application with routing and providers
+ */
 function App() {
   return (
     <ThemeProvider>

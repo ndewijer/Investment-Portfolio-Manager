@@ -12,7 +12,7 @@ import './FormModal.css';
  * consistent styling and error handling. Automatically generates field IDs and
  * handles required field indicators.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {string} props.label - Label text for the field
  * @param {string} [props.type='text'] - Input type: 'text', 'number', 'email', 'password', 'select', 'textarea', 'checkbox', 'date', etc.
  * @param {string|boolean} props.value - Current value of the field
@@ -23,7 +23,7 @@ import './FormModal.css';
  * @param {Array<Object>} [props.options=[]] - Options for select type: [{ value, label }]
  * @param {string} [props.className=''] - Additional CSS class for the field wrapper
  * @param {string} [props.error=''] - Error message to display below the field
- * @returns {JSX.Element}
+ * @returns {JSX.Element} Form field with label, input, and error message
  *
  * @example
  * <FormField
@@ -161,7 +161,7 @@ const FormField = ({
  * error handling, and automatic form submission handling. Includes overlay spinner
  * during form submission.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {boolean} props.isOpen - Whether the modal is currently open
  * @param {function} props.onClose - Callback when modal is closed: () => void
  * @param {string} props.title - Title text displayed in the modal header
@@ -178,7 +178,7 @@ const FormField = ({
  * @param {boolean} [props.showCancel=true] - Whether to show the cancel button
  * @param {boolean} [props.closeOnOverlayClick=true] - Whether clicking the overlay closes the modal
  * @param {function} [props.onError] - Callback when form submission throws an error: (error) => void
- * @returns {JSX.Element}
+ * @returns {JSX.Element} Modal dialog with form fields and action buttons
  *
  * @example
  * <FormModal

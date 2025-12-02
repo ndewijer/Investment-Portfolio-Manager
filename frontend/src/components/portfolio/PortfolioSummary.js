@@ -15,7 +15,7 @@ import { useFormat } from '../../context/FormatContext';
  * Gain/loss values are color-coded (green for positive, red for negative).
  * Uses FormatContext for consistent currency formatting.
  *
- * @param {Object} props
+ * @param {Object} props - Component props object
  * @param {Object} props.portfolio - Portfolio data object with metric properties
  * @returns {JSX.Element} Grid of summary cards displaying portfolio metrics
  *
