@@ -10,9 +10,6 @@ WORKDIR /app
 # Copy dependency files from project root
 COPY pyproject.toml uv.lock ./
 
-# Create placeholder for backend directory to satisfy workspace structure
-RUN mkdir -p backend
-
 # Install dependencies (production only)
 RUN uv sync --frozen --no-dev
 
