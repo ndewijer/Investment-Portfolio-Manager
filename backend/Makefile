@@ -1,4 +1,14 @@
-.PHONY: build run clean test seed fix-style
+.PHONY: build run clean test seed fix-style install sync
+
+# Local development with uv
+install:
+	cd .. && uv sync --frozen
+
+sync:
+	cd .. && uv sync
+
+test-local:
+	cd .. && uv run pytest backend/tests/
 
 # Variables
 IMAGE_NAME = investment-portfolio-backend
@@ -13,7 +23,7 @@ setup-dirs:
 
 # Build the Docker image
 build: setup-dirs
-	docker build -t $(IMAGE_NAME) .
+	cd .. && docker build -f backend/Dockerfile -t $(IMAGE_NAME) .
 
 # Run the container
 run:

@@ -10,11 +10,22 @@ This module tests the SystemService functionality including:
 """
 
 import unittest.mock
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 from app.models import LogCategory, LogLevel, db
 from app.services.system_service import SystemService
+
+
+# Read current app version from VERSION file
+def get_expected_version():
+    """Get the current application version from VERSION file."""
+    version_file = Path(__file__).parent.parent.parent / "VERSION"
+    return version_file.read_text().strip()
+
+
+EXPECTED_VERSION = get_expected_version()
 
 
 class TestSystemService:
@@ -28,8 +39,8 @@ class TestSystemService:
         assert version != "unknown"
         assert isinstance(version, str)
         assert len(version.split(".")) >= 2  # Should be at least major.minor format
-        # Version 1.3.2 should be current
-        assert version.startswith("1.3")
+        # Should match current VERSION file
+        assert version == EXPECTED_VERSION
 
     def test_get_app_version_file_not_found(self, app_context):
         """Test app version retrieval when VERSION file doesn't exist."""
@@ -263,8 +274,8 @@ class TestSystemService:
         }
         assert set(version_info.keys()) == required_keys
 
-        # Verify current state (app 1.3.2, db 1.3.1, no migrations needed)
-        assert version_info["app_version"] == "1.3.2"
+        # Verify current state (app version from VERSION file, db 1.3.1, no migrations needed)
+        assert version_info["app_version"] == EXPECTED_VERSION
         assert version_info["db_version"] == "1.3.1"
         assert version_info["migration_needed"] is False
         assert version_info["migration_message"] is None
@@ -288,7 +299,7 @@ class TestSystemService:
             assert version_info["migration_needed"] is True
             assert "Database schema updates are available" in version_info["migration_message"]
             assert "v1.2.0" in version_info["migration_message"]
-            assert "v1.3.2" in version_info["migration_message"]
+            assert f"v{EXPECTED_VERSION}" in version_info["migration_message"]
 
     def test_get_version_info_migration_error(self, app_context):
         """Test complete version info when migration check has an error."""
@@ -416,7 +427,7 @@ class TestSystemServiceLogging:
                 category=LogCategory.SYSTEM,
                 message="Version check requested",
                 details={
-                    "app_version": "1.3.2",
+                    "app_version": EXPECTED_VERSION,
                     "db_version": "1.3.1",
                     "migration_needed": False,
                 },
@@ -439,7 +450,7 @@ class TestSystemServiceIntegration:
         version_info = SystemService.get_version_info()
 
         # Verify we get real, expected values
-        assert version_info["app_version"] == "1.3.2"
+        assert version_info["app_version"] == EXPECTED_VERSION
         assert version_info["db_version"] == "1.3.1"
         assert version_info["migration_needed"] is False  # No migrations pending
         assert version_info["migration_message"] is None
@@ -465,4 +476,4 @@ class TestSystemServiceIntegration:
 
         # Should successfully read the actual VERSION file
         assert version != "unknown"
-        assert version == "1.3.2"  # Current version
+        assert version == EXPECTED_VERSION  # Current version from VERSION file

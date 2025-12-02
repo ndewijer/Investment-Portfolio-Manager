@@ -16,6 +16,7 @@ import pytest
 from app.services.portfolio_service import PortfolioService
 
 
+# @pytest.mark.performance
 class TestPortfolioHistoryPerformance:
     """Test suite for portfolio history performance optimizations."""
 
@@ -168,6 +169,7 @@ class TestPortfolioHistoryPerformance:
         assert elapsed < 2.0, f"Too slow: {elapsed:.3f}s (target: < 2s)"
 
 
+# @pytest.mark.performance
 class TestPortfolioHistoryCorrectness:
     """
     Test suite to verify calculation correctness after optimization.
@@ -247,6 +249,7 @@ class TestPortfolioHistoryCorrectness:
         assert 29 <= len(result) <= 32  # Allow some flexibility for weekends, etc.
 
 
+# @pytest.mark.performance
 class TestPhase2EagerLoadingPerformance:
     """
     Performance tests for Phase 2 eager loading optimizations.
