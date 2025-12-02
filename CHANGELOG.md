@@ -5,6 +5,25 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.4.1] - 2025-12-02
+
+### Fixed
+- **Critical Docker runtime issues** - See [PR #111](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/111)
+  - Fixed backend ModuleNotFoundError on container startup
+  - Excluded local `.venv` from Docker build context
+  - Added gunicorn via uv in builder stage (Docker-only dependency)
+  - Made frontend nginx backend hostname configurable via `BACKEND_HOST`
+  - Frontend now uses nginx templates for runtime configuration
+  - Works with custom container names (e.g., Unraid deployments)
+
+### Changed
+- Updated root `.dockerignore` to exclude Python virtual environments and artifacts
+- Simplified backend Docker entrypoint script
+
+### Added
+- `BACKEND_HOST` environment variable for frontend (defaults to `investment-portfolio-backend`)
+- Documentation for custom container name configuration in `docs/DOCKER.md`
+
 ## [1.3.4] - 2025-12-02
 
 ### Changed
