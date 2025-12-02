@@ -10,20 +10,35 @@ While functional for personal use, replacing my manual Excel tracking, it is not
 
 ## Quick Start
 
-1. Clone and setup:
+### Docker (Recommended)
 ```bash
 git clone https://github.com/ndewijer/investment-portfolio-manager.git
 cd investment-portfolio-manager
-# Set DOMAIN, USE_HTTPS, DB_DIR, and LOG_DIR in .env
-```
-
-2. Run with Docker:
-```bash
+# Configure .env with DOMAIN, USE_HTTPS, etc.
 docker compose up -d
 docker compose exec backend flask seed-db
 ```
+Access at http://localhost
 
-Access at http://localhost (or your configured domain)
+### Local Development
+**Prerequisites**: Python 3.13+, Node.js 23+, uv
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Backend
+uv sync --frozen
+cd backend
+uv run flask db upgrade
+uv run flask seed-db
+uv run flask run
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm start
+```
 
 ## Documentation
 ### Architecture

@@ -7,13 +7,30 @@
 ## Local Development
 
 ### Backend Setup
+
+#### Using uv (Recommended)
+```bash
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies (from project root)
+uv sync --frozen
+
+# Run Flask
+cd backend
+uv run flask run
+```
+
+#### Using pip (Deprecated - will be removed in v1.4.0)
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r dev-requirements.txt
 flask run
 ```
+
+**Note**: All dependencies are managed in `pyproject.toml`. Requirements files are kept for backward compatibility only.
 
 ### Frontend Setup
 ```bash
@@ -24,8 +41,47 @@ npm start
 
 ## Development Tools
 - ESLint and Prettier for frontend
-- Black and Flake8 for backend
+- Ruff for backend (linting and formatting)
+- uv for Python package management
 - Pre-commit hooks for code quality
+
+## Dependency Management
+
+### Adding Dependencies
+**Production** (pinned version):
+```bash
+# 1. Edit pyproject.toml [project.dependencies], add: "package==1.2.3"
+# 2. Update lock and sync
+uv lock
+uv sync --frozen
+```
+
+**Development** (flexible range):
+```bash
+# 1. Edit pyproject.toml [dependency-groups.dev], add: "package>=1.0.0,<2.0.0"
+# 2. Update lock and sync
+uv lock
+uv sync --frozen
+```
+
+### Updating Dependencies
+```bash
+# Update all to latest compatible versions
+uv lock --upgrade
+uv sync
+
+# Update specific package
+uv lock --upgrade-package package-name
+uv sync
+```
+
+### Common Commands
+| Task | Command |
+|------|---------|
+| Install dependencies | `uv sync --frozen` |
+| Run tests | `uv run pytest backend/tests/` |
+| Run Flask | `cd backend && uv run flask run` |
+| Run linting | `uv run ruff check backend/` |
 
 ## Environment Setup
 ```bash

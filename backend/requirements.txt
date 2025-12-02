@@ -1,3 +1,9 @@
+# DEPRECATED: Maintained for backward compatibility only
+# All dependencies managed in ../pyproject.toml [project.dependencies]
+# To install: uv sync --frozen (from project root)
+# This file will be REMOVED in v1.4.0
+#
+# Production dependencies (pinned versions):
 APScheduler==3.11.1
 click==8.3.1
 Flask==3.1.2
