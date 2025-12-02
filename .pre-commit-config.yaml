@@ -24,7 +24,7 @@ repos:
     hooks:
       - id: pytest-backend
         name: pytest-backend
-        entry: ./backend/.venv/bin/pytest
+        entry: bash -c 'uv run pytest backend/tests/'
         language: system
         types: [python]
         pass_filenames: false

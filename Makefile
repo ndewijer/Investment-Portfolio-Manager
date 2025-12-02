@@ -1,4 +1,19 @@
-.PHONY: build up down clean logs test
+.PHONY: build up down clean logs test install sync update
+
+# Python dependency management with uv
+install:
+	uv sync --frozen
+
+sync:
+	uv sync
+
+update:
+	uv lock --upgrade
+	uv sync
+
+# Run backend tests locally
+test:
+	uv run pytest backend/tests/
 
 # Build all services
 build:
