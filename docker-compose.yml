@@ -1,6 +1,8 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
     container_name: investment-portfolio-backend
     environment:
       - DB_DIR=/data/db
