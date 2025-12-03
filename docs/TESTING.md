@@ -1,7 +1,7 @@
 # Testing Framework Guide
 
-**Version**: 1.3.2+
-**Last Updated**: 2025-01-21
+**Version**: 1.3.5+
+**Last Updated**: 2025-12-03
 **Status**: Foundation established, expanding coverage
 
 This guide documents the pytest testing framework introduced in version 1.3.2 and provides guidance for adding new tests.
@@ -681,6 +681,215 @@ def test_full_import():
 
 ---
 
+## Docker Integration Testing
+
+### Overview
+
+**Added in**: Version 1.3.5
+**Purpose**: Prevent production deployment failures by testing Docker container builds, startup, and integration
+
+The Docker integration test workflow validates:
+- Container builds succeed
+- Services start without errors
+- Health endpoints respond correctly
+- Frontend-backend networking works
+- Custom container name configurations work
+
+### Running Docker Tests Locally
+
+**Automated Test Script (Recommended):**
+```bash
+# Run the complete Docker integration test suite
+./scripts/test-docker-integration.sh
+```
+
+This script automatically:
+- Builds Docker images
+- Starts containers
+- Tests backend health (from inside container)
+- Verifies backend response
+- Tests frontend static content serving
+- Tests frontend-backend proxy integration
+- Cleans up containers on exit
+
+**Manual Testing:**
+```bash
+# Run all Docker integration tests manually
+docker compose build
+docker compose up -d
+
+# Test backend directly (from inside container using Python)
+docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/health').read().decode())"
+
+# Test frontend serves static content
+curl http://localhost/
+
+# Test API proxy through frontend (production architecture)
+curl http://localhost/api/system/health
+curl http://localhost/api/system/version
+
+# Check logs
+docker compose logs backend
+docker compose logs frontend
+
+# Cleanup
+docker compose down -v
+```
+
+### Architecture Note
+
+**IMPORTANT**: The backend port 5000 is NOT exposed to the host. The backend is only accessible:
+- From inside the Docker network (via `docker compose exec` using Python's urllib)
+- Through the frontend Nginx proxy at `http://localhost/api/`
+
+This is the production architecture and what the tests verify.
+
+**Note**: The backend container does not include curl. To test the backend from inside the container, use Python's `urllib.request` module which is part of the standard library.
+
+### CI/CD Integration
+
+Docker tests run automatically in GitHub Actions (`.github/workflows/docker-test.yml`) when:
+- Dockerfiles are modified
+- docker-compose.yml changes
+- Python dependencies change (pyproject.toml, uv.lock)
+- Nginx configuration changes
+
+**Test Jobs:**
+1. **docker-integration-test**: Tests default configuration
+2. **docker-custom-hostname-test**: Tests custom BACKEND_HOST
+
+### Test Coverage
+
+#### Container Build
+- ✅ Backend builds successfully with uv and Python 3.13
+- ✅ Frontend builds successfully with Node 24
+- ✅ Multi-stage builds optimize image size
+- ✅ Dependencies install correctly
+
+#### Container Startup
+- ✅ Backend starts and creates database
+- ✅ Frontend starts and serves static files
+- ✅ Services connect via Docker network
+- ✅ Auto-generated INTERNAL_API_KEY works
+
+#### Health Checks
+- ✅ Backend health endpoint returns 200
+- ✅ Backend health response includes database status
+- ✅ Backend version endpoint returns version info
+- ✅ Health checks complete within 60 seconds
+
+#### Frontend-Backend Integration
+- ✅ Frontend serves index page
+- ✅ Frontend proxies /api/ requests to backend
+- ✅ Nginx template substitution works correctly
+- ✅ API responses return through proxy
+
+#### Custom Configuration
+- ✅ Custom BACKEND_HOST values work
+- ✅ Custom container names work correctly
+- ✅ Environment variable substitution works
+
+### Hybrid Testing Approach
+
+The Docker integration test workflow uses a **three-layer testing approach**:
+
+**Step 1: Backend Health (Internal)**
+- Tests backend independently from inside container network
+- Uses `docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/system/health')"`
+- Catches backend-specific failures (database, startup, configuration)
+- Verifies backend is healthy before testing integration
+- Note: Uses Python's urllib since curl is not available in the backend container
+
+**Step 2: Frontend Serves Static Content**
+- Tests frontend container independently from host
+- Uses `curl http://localhost/`
+- Catches frontend failures (Nginx configuration, static files)
+- Verifies frontend container is running
+
+**Step 3: Frontend-Backend Integration (API Proxy)**
+- Tests production architecture end-to-end
+- Uses `curl http://localhost/api/system/health`
+- Catches networking issues (proxy configuration, DNS resolution)
+- Verifies complete stack works together
+
+This approach ensures failures can be isolated to specific layers, making debugging faster and more accurate.
+
+### Testing Custom Configurations
+
+**Test custom container names:**
+```bash
+cat > docker-compose.override.yml <<EOF
+services:
+  backend:
+    container_name: custom-backend-name
+  frontend:
+    build:
+      args:
+        - BACKEND_HOST=custom-backend-name
+    environment:
+      - BACKEND_HOST=custom-backend-name
+EOF
+
+docker compose build
+docker compose up -d
+curl http://localhost/api/system/health
+docker compose down -v
+```
+
+**Test custom domain:**
+```bash
+export DOMAIN=test.local
+export USE_HTTPS=false
+
+docker compose build
+docker compose up -d
+curl http://localhost/api/system/version
+docker compose down -v
+```
+
+### Troubleshooting Docker Tests
+
+**Backend fails health check:**
+- Check backend logs: `docker compose logs backend`
+- Verify database directory permissions
+- Ensure INTERNAL_API_KEY is generated
+- Test backend from inside container: `docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/health').read().decode())"`
+
+**Frontend proxy fails:**
+- Check BACKEND_HOST environment variable
+- Verify nginx template substitution in logs: `docker compose logs frontend`
+- Check network connectivity between containers: `docker network inspect investment-portfolio-manager_app-network`
+- Test frontend serves static files: `curl http://localhost/`
+- Test backend directly from inside: `docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/health').read().decode())"`
+
+**Containers won't start:**
+- Check port conflicts: `lsof -i :80` (backend port 5000 is internal only)
+- Verify Docker resources (memory/disk)
+- Check build logs: `docker compose build --progress=plain`
+- Clean Docker cache: `docker system prune -a`
+
+**Tests pass locally but fail in CI:**
+- Check GitHub Actions logs for specific error
+- Verify jq is available (used for JSON parsing)
+- Check timeout values (60 seconds for health checks)
+- Ensure no port conflicts in CI environment
+
+### Best Practices
+
+1. **Test before deploying**: Always run Docker tests before production deployment
+2. **Test custom configs**: If using custom container names, test with docker-compose.override.yml
+3. **Monitor health endpoints**: Use /api/system/health for monitoring
+4. **Check logs on failure**: Always examine container logs when tests fail
+5. **Clean between runs**: Use `docker compose down -v` to remove volumes
+
+### Related Documentation
+
+- [Docker Configuration Guide](DOCKER.md)
+- [CI/CD Workflows](.github/workflows/docker-test.yml)
+- [Health Check API](../backend/app/api/system_namespace.py)
+
+---
+
 ## Troubleshooting
 
 ### Issue: Import Errors
@@ -750,6 +959,6 @@ When adding new features:
 
 ---
 
-**Version**: 1.3.2+
-**Last Updated**: 2025-01-21
+**Version**: 1.3.5+
+**Last Updated**: 2025-12-03
 **Maintainer**: @ndewijer

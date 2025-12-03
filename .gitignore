@@ -9,6 +9,9 @@ ENV/
 .flaskenv
 local_files/
 
+# Docker
+docker-compose.override.yml
+
 # Testing & Coverage
 .coverage
 .coverage.*
