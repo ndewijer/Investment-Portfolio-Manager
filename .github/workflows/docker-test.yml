@@ -63,7 +63,7 @@ jobs:
         run: |
           RESPONSE=$(docker compose exec -T backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/version').read().decode())")
           echo "Backend version response: $RESPONSE"
-          echo "$RESPONSE" | jq -e '.version != null' || exit 1
+          echo "$RESPONSE" | jq -e '.app_version != null' || exit 1
 
       # Step 2: Test frontend serves static content
       - name: Wait for frontend to serve content
@@ -98,7 +98,7 @@ jobs:
         run: |
           RESPONSE=$(curl -s http://localhost/api/system/version)
           echo "Proxied version response: $RESPONSE"
-          echo "$RESPONSE" | jq -e '.version != null' || exit 1
+          echo "$RESPONSE" | jq -e '.app_version != null' || exit 1
 
       - name: Check backend container logs
         if: failure()
