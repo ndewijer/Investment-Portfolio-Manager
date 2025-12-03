@@ -30,6 +30,14 @@ repos:
         pass_filenames: false
         always_run: false
 
+      - id: docker-integration-test
+        name: docker-integration-test
+        entry: scripts/test-docker-integration.sh
+        language: system
+        pass_filenames: false
+        always_run: false
+        files: ^(backend/Dockerfile|frontend/Dockerfile|docker-compose\.yml|pyproject\.toml|uv\.lock|frontend/nginx\.conf)$
+
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v9.39.1
     hooks:

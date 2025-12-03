@@ -10,7 +10,7 @@ services:
       - DOMAIN=${DOMAIN:-localhost}
       - IBKR_ENCRYPTION_KEY=${IBKR_ENCRYPTION_KEY:-}
     volumes:
-      - /path/to/your/data:/data
+      - portfolio-data:/data
     networks:
       - app-network
 
@@ -36,3 +36,7 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  portfolio-data:
+    driver: local

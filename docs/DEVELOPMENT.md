@@ -45,6 +45,83 @@ npm start
 - uv for Python package management
 - Pre-commit hooks for code quality
 
+### Pre-commit Hooks
+
+The project uses pre-commit hooks to ensure code quality before commits. Hooks are configured in `.pre-commit-config.yaml`.
+
+**Installation:**
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+**Available Hooks:**
+- **Code formatting**: Trailing whitespace, end-of-file fixer
+- **Validation**: YAML and JSON syntax checking
+- **Python**: Ruff linting and formatting, pytest tests
+- **Frontend**: ESLint, Prettier
+- **Docker**: Integration tests (when Docker-related files change)
+
+**Docker Integration Tests:**
+
+The Docker integration test hook runs automatically when you modify Docker-related files:
+- `backend/Dockerfile`
+- `frontend/Dockerfile`
+- `docker-compose.yml`
+- `pyproject.toml` / `uv.lock`
+- `frontend/nginx.conf`
+
+**How it works:**
+- Executes `scripts/test-docker-integration.sh`
+- Builds containers, tests health endpoints, verifies integration
+- Automatically cleans up on exit (success or failure)
+
+**Requirements:**
+- **Docker Desktop** or **Docker Engine** must be installed and running
+- If Docker is not available, the hook will skip gracefully with a warning
+
+**Running manually:**
+```bash
+./scripts/test-docker-integration.sh
+```
+
+**Running Hooks Manually:**
+```bash
+# Run all hooks on changed files
+pre-commit run
+
+# Run all hooks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run docker-integration-test
+
+# Run Docker tests directly (faster for debugging)
+./scripts/test-docker-integration.sh
+
+# Skip hooks for a commit (not recommended)
+git commit --no-verify
+```
+
+**Expected Behavior:**
+- ⚠️ If Docker isn't installed: Hook skips with warning message
+- 🐳 If Docker is installed: Runs integration test (waits up to 60 seconds for backend)
+- ✅ Success: Containers build, all health checks pass, cleanup completes
+- ❌ Failure: Shows detailed error messages and container logs, prevents commit
+
+**Troubleshooting:**
+```bash
+# If Docker tests fail locally:
+docker compose down -v  # Clean up any stuck containers
+docker system prune     # Clean Docker cache if needed
+
+# Run the test script with verbose output:
+./scripts/test-docker-integration.sh
+
+# If you need to commit without Docker tests:
+git commit --no-verify  # Use sparingly!
+```
+
 ## Dependency Management
 
 ### Adding Dependencies
