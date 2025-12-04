@@ -462,6 +462,159 @@
   color: #e0e0e0;
 }
 
+/* Status Tab Styles */
+.status-tab {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.status-header h2 {
+  margin: 0;
+}
+
+.refresh-button {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.refresh-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.last-checked {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.status-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.status-section {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.status-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #333;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.status-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.status-value {
+  font-family: 'Courier New', monospace;
+  color: #333;
+}
+
+.status-green {
+  color: #28a745;
+  font-weight: bold;
+}
+
+.status-red {
+  color: #dc3545;
+  font-weight: bold;
+}
+
+.status-gray {
+  color: #6c757d;
+}
+
+.error-item {
+  grid-column: 1 / -1;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.error-item .status-value {
+  color: #721c24;
+}
+
+.warning-item {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+}
+
+.warning-item .status-value {
+  color: #856404;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.feature-indicator {
+  font-size: 18px;
+}
+
+.feature-indicator.enabled {
+  color: #28a745;
+}
+
+.feature-indicator.disabled {
+  color: #6c757d;
+}
+
+.feature-name {
+  font-size: 14px;
+  color: #333;
+}
+
 /* Config-specific mobile styles (common patterns moved to mobile.css) */
 @media (max-width: 768px) {
   .ibkr-versions h4 {
@@ -471,5 +624,13 @@
   .setup-instructions ol {
     margin-left: 1rem;
     padding-left: 0.5rem;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
   }
 }
