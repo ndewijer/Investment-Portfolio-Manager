@@ -79,7 +79,4 @@ export default [...fixupConfigRules(compat.extends(
             ...globals.jest,
         },
     },
-    rules: {
-        "jsdoc/require-jsdoc": "off", // Don't require JSDoc in test files
-    },
 }];
