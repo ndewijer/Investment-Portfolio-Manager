@@ -1,7 +1,7 @@
 /**
- * @fileoverview System status page component
+ * @fileoverview Status tab component for Config page
  *
- * Displays comprehensive system health and version information including:
+ * Displays system health and version information as a tab within the Config page:
  * - Backend health status (healthy/unhealthy, database connection)
  * - Application and database version information
  * - Enabled feature flags
@@ -13,37 +13,29 @@
  * - Color-coded status indicators (green/red/gray)
  * - Last checked timestamp
  *
- * This page is accessible at /status route and is useful for:
- * - System administrators monitoring deployment health
- * - Developers debugging connectivity issues
- * - Users verifying application version and features
+ * @param {Object} props - Component props
+ * @param {Function} props.setError - Function to set error message
+ * @returns {React.ReactElement} Status tab content
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useApp } from '../context/AppContext';
 import api from '../utils/api';
-import LoadingSpinner from '../components/shared/LoadingSpinner';
-import ErrorMessage from '../components/shared/ErrorMessage';
-import './StatusPage.css';
+import LoadingSpinner from './shared/LoadingSpinner';
 
 /**
- * System status page component
- *
- * @returns {React.ReactElement} Status page with health, version, and system information
+ * Status tab component
  */
-const StatusPage = () => {
+const StatusTab = ({ setError }) => {
   const { versionInfo } = useApp();
   const [healthData, setHealthData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [lastChecked, setLastChecked] = useState(null);
 
-  /**
-   * Fetches health data from the backend
-   */
-  const fetchHealthData = async () => {
+  const fetchHealthData = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setError('');
 
     try {
       const response = await api.get('system/health');
@@ -55,7 +47,7 @@ const StatusPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setError]);
 
   useEffect(() => {
     fetchHealthData();
@@ -63,14 +55,8 @@ const StatusPage = () => {
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchHealthData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchHealthData]);
 
-  /**
-   * Gets color class for status display
-   *
-   * @param {string} status - Status value ('healthy', 'unhealthy', etc.)
-   * @returns {string} CSS class name for status color
-   */
   const getStatusColor = (status) => {
     switch (status) {
       case 'healthy':
@@ -82,12 +68,6 @@ const StatusPage = () => {
     }
   };
 
-  /**
-   * Gets icon for status display
-   *
-   * @param {string} status - Status value ('healthy', 'unhealthy', etc.)
-   * @returns {string} Icon character for status
-   */
   const getStatusIcon = (status) => {
     switch (status) {
       case 'healthy':
@@ -101,23 +81,20 @@ const StatusPage = () => {
 
   if (loading && !healthData) {
     return (
-      <div className="status-page">
-        <h1>System Status</h1>
+      <div className="status-tab">
         <LoadingSpinner />
       </div>
     );
   }
 
   return (
-    <div className="status-page">
+    <div className="status-tab">
       <div className="status-header">
-        <h1>System Status</h1>
+        <h2>System Status</h2>
         <button onClick={fetchHealthData} disabled={loading} className="refresh-button">
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
-
-      {error && <ErrorMessage message={error} />}
 
       {lastChecked && (
         <p className="last-checked">Last checked: {new Date(lastChecked).toLocaleString()}</p>
@@ -126,7 +103,7 @@ const StatusPage = () => {
       <div className="status-sections">
         {/* Health Status Section */}
         <section className="status-section">
-          <h2>Health Status</h2>
+          <h3>Health Status</h3>
           {healthData && (
             <div className="status-grid">
               <div className="status-item">
@@ -158,7 +135,7 @@ const StatusPage = () => {
 
         {/* Version Information Section */}
         <section className="status-section">
-          <h2>Version Information</h2>
+          <h3>Version Information</h3>
           {versionInfo && (
             <div className="status-grid">
               <div className="status-item">
@@ -188,7 +165,7 @@ const StatusPage = () => {
         {/* Features Section */}
         {versionInfo?.features && (
           <section className="status-section">
-            <h2>Enabled Features</h2>
+            <h3>Enabled Features</h3>
             <div className="features-grid">
               {Object.entries(versionInfo.features).map(([feature, enabled]) => (
                 <div key={feature} className="feature-item">
@@ -206,7 +183,7 @@ const StatusPage = () => {
 
         {/* System Information Section */}
         <section className="status-section">
-          <h2>System Information</h2>
+          <h3>System Information</h3>
           <div className="status-grid">
             <div className="status-item">
               <span className="status-label">Backend URL:</span>
@@ -223,4 +200,8 @@ const StatusPage = () => {
   );
 };
 
-export default StatusPage;
+StatusTab.propTypes = {
+  setError: PropTypes.func.isRequired,
+};
+
+export default StatusTab;

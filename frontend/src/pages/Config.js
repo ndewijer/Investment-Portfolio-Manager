@@ -3,6 +3,7 @@ import axios from 'axios';
 import './Config.css';
 import CollapsibleInfo from '../components/CollapsibleInfo';
 import Toast from '../components/Toast';
+import StatusTab from '../components/StatusTab';
 import { useFormat } from '../context/FormatContext';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
@@ -12,10 +13,12 @@ import { useApiState } from '../components/shared';
 /**
  * System configuration page with tabbed interface
  *
- * Centralized configuration hub for IBKR integration, system settings, user preferences,
- * and power user tools. Uses tabbed navigation to organize different configuration domains.
+ * Centralized configuration hub for system status, IBKR integration, system settings,
+ * user preferences, and power user tools. Uses tabbed navigation to organize different
+ * configuration domains.
  *
  * Tabs:
+ * - Status: System health, version info, and enabled features (default tab)
  * - IBKR Setup: Configure Interactive Brokers Flex Web Service integration (if enabled)
  * - System Settings: Manage logging levels and system-wide configurations
  * - User Preferences: Number formatting (US/EU) and dark mode settings
@@ -24,7 +27,7 @@ import { useApiState } from '../components/shared';
  * @returns {JSX.Element} The configuration page
  */
 const Config = () => {
-  const [activeTab, setActiveTab] = useState('ibkr');
+  const [activeTab, setActiveTab] = useState('status');
   const { features, refreshIBKRConfig } = useApp();
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -42,6 +45,12 @@ const Config = () => {
       <Toast message={error} type="error" onClose={clearMessages} />
 
       <div className="config-tabs">
+        <button
+          className={`tab-button ${activeTab === 'status' ? 'active' : ''}`}
+          onClick={() => setActiveTab('status')}
+        >
+          Status
+        </button>
         {features.ibkr_integration && (
           <button
             className={`tab-button ${activeTab === 'ibkr' ? 'active' : ''}`}
@@ -71,6 +80,7 @@ const Config = () => {
       </div>
 
       <div className="config-content">
+        {activeTab === 'status' && <StatusTab setMessage={setMessage} setError={setError} />}
         {activeTab === 'ibkr' && features.ibkr_integration && (
           <IBKRConfigTab
             setMessage={setMessage}

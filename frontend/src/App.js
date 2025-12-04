@@ -13,7 +13,6 @@ import FundDetail from './pages/FundDetail';
 import Config from './pages/Config';
 import LogViewer from './pages/LogViewer';
 import IBKRInbox from './pages/IBKRInbox';
-import StatusPage from './pages/StatusPage';
 
 // Import global CSS first
 import './App.css';
@@ -37,7 +36,6 @@ import './pages/FundDetail.css';
 import './pages/Config.css';
 import './pages/LogViewer.css';
 import './pages/IBKRInbox.css';
-import './pages/StatusPage.css';
 
 /**
  * Main App component - Root application component with routing and context providers
@@ -68,7 +66,6 @@ function App() {
                   <Route path="/funds" element={<Funds />} />
                   <Route path="/funds/:id" element={<FundDetail />} />
                   <Route path="/config" element={<Config />} />
-                  <Route path="/status" element={<StatusPage />} />
                   <Route path="/ibkr/inbox" element={<IBKRInbox />} />
                   <Route path="/logs" element={<LogViewer />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
