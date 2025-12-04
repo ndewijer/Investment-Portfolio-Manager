@@ -442,31 +442,42 @@ Document the pre-commit Docker hook requirements and behavior.
 
 ### Week 1 Deliverables
 
-**STATUS: Partially complete, critical bug found and needs fixing**
+**STATUS: ✅ COMPLETE - Merged via PR #113 (2025-12-03)**
 
 #### Completed:
-- [x] `.pre-commit-config.yaml` updated with Docker integration tests (FIXED with hybrid approach)
-- [x] Pre-commit hook uses `docker compose exec` to test backend internally
-- [x] Pre-commit hook tests frontend proxy via `http://localhost/api/`
-- [x] Documentation updated in DEVELOPMENT.md
-- [x] SQLite backup strategy documented in DOCKER.md (Method 1: .backup API, Method 2: VACUUM INTO)
+- [x] `.github/workflows/docker-test.yml` - Created with hybrid testing approach
+  - Tests backend health from inside container using Python's urllib
+  - Tests frontend static content serving
+  - Tests frontend-backend proxy integration
+  - Includes custom hostname configuration test
+  - Fixed to use `.app_version` instead of `.version` in API responses
+- [x] `scripts/test-docker-integration.sh` - Created reusable test script
+  - Color-coded output for easy debugging
+  - Automatic cleanup on exit
+  - Handles spaces in JSON responses
+  - 103 lines of maintainable bash
+- [x] `.pre-commit-config.yaml` - Updated to use test script
+  - Simplified from 1-line monster to clean script call
+  - Tests backend via `docker compose exec`
+  - Tests frontend proxy via `http://localhost/api/`
+- [x] `docker-compose.yml` - Fixed to use named volumes
+  - Changed from host path to `portfolio-data` volume
+  - Ensures data persists between container restarts
+- [x] Documentation updated
+  - `docs/TESTING.md` - Added Docker testing section with hybrid approach
+  - `docs/DEVELOPMENT.md` - Updated pre-commit hooks section
+  - `docs/DOCKER.md` - SQLite backup strategies (Method 1: .backup API, Method 2: VACUUM INTO)
+- [x] `.gitignore` - Added docker-compose.override.yml entry
+- [x] All CI tests passing
 
-#### Needs Fixing:
-- [ ] `.github/workflows/docker-test.yml` - FIX localhost:5000 access bug
-  - Currently tries to access backend on `http://localhost:5000/` which CANNOT work
-  - Backend port 5000 is NOT exposed to host
-  - Must use hybrid approach: `docker compose exec` + frontend proxy
-- [ ] Update custom hostname test job - same localhost:5000 bug
-- [ ] Update `docs/TESTING.md` with correct Docker testing approach
+**Key Achievement:**
+Fixed critical bug where backend port 5000 is internal-only (not exposed to host). All tests now use the correct hybrid testing approach that matches production architecture.
 
-**Critical Bug Summary:**
-The GitHub Actions workflow attempts to access the backend directly on `localhost:5000`, but this port is not exposed to the host in docker-compose.yml. The backend is only accessible via the frontend Nginx proxy on port 80 or from inside the container network using `docker compose exec`.
-
-**Risk Mitigation**:
-- Test workflow on feature branch after fixes
-- Verify both internal backend tests and proxy tests work
-- Ensure timeout values are reasonable (60s for health checks)
-- Add detailed logging on failure for debugging
+**PR Details:**
+- **PR #113**: https://github.com/ndewijer/Investment-Portfolio-Manager/pull/113
+- **Commits**: 2 (initial implementation + version field fix)
+- **Files Changed**: 10 files, 4102 insertions, 7 deletions
+- **CI Status**: All checks passed ✅
 
 ---
 

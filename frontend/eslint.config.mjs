@@ -71,4 +71,12 @@ export default [...fixupConfigRules(compat.extends(
         "jsdoc/check-alignment": "error",
         "jsdoc/check-indentation": "off", // Can be strict, disable if too noisy
     },
+}, {
+    // Configuration for test files
+    files: ["**/__tests__/**/*.{js,jsx}", "**/*.{test,spec}.{js,jsx}", "**/setupTests.js"],
+    languageOptions: {
+        globals: {
+            ...globals.jest,
+        },
+    },
 }];
