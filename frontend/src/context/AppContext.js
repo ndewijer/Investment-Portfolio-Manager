@@ -92,6 +92,7 @@ export const AppProvider = ({ children }) => {
   const [ibkrEnabled, setIbkrEnabled] = useState(false);
   const [healthCheckFailed, setHealthCheckFailed] = useState(false);
   const [healthCheckError, setHealthCheckError] = useState(null);
+  const [healthCheckComplete, setHealthCheckComplete] = useState(false);
 
   /**
    * Fetches application and database version information from the server.
@@ -185,31 +186,43 @@ export const AppProvider = ({ children }) => {
       if (response.data.status === 'healthy') {
         setHealthCheckFailed(false);
         setHealthCheckError(null);
+        setHealthCheckComplete(true);
         return true;
       } else {
         setHealthCheckFailed(true);
         setHealthCheckError('Backend is unhealthy: ' + JSON.stringify(response.data));
+        setHealthCheckComplete(true);
         return false;
       }
     } catch (err) {
       setHealthCheckFailed(true);
       setHealthCheckError(err.message || 'Failed to connect to backend');
+      setHealthCheckComplete(true);
       return false;
     }
   }, []);
 
   useEffect(() => {
     const initializeApp = async () => {
-      const isHealthy = await checkHealth();
+      try {
+        const isHealthy = await checkHealth();
 
-      if (isHealthy) {
-        // Fetch version info only if health check passes
-        await fetchVersionInfo();
+        if (isHealthy) {
+          // Fetch version info only if health check passes
+          await fetchVersionInfo();
 
-        // Fetch IBKR config if feature is enabled
-        if (versionInfo.features.ibkr_integration) {
-          await fetchIBKRConfig();
+          // Fetch IBKR config if feature is enabled
+          if (versionInfo.features.ibkr_integration) {
+            await fetchIBKRConfig();
+          }
         }
+      } catch (error) {
+        // Suppress any uncaught errors during initialization
+        // Health check failures are handled by HealthCheckError component
+        console.debug(
+          'App initialization error (expected when backend unavailable):',
+          error.message
+        );
       }
     };
 
@@ -238,6 +251,7 @@ export const AppProvider = ({ children }) => {
   const handleRetry = useCallback(async () => {
     setHealthCheckFailed(false);
     setHealthCheckError(null);
+    setHealthCheckComplete(false);
     const isHealthy = await checkHealth();
     if (isHealthy) {
       await fetchVersionInfo();
@@ -258,7 +272,25 @@ export const AppProvider = ({ children }) => {
     checkHealth,
   };
 
-  // Show error page if health check failed
+  // Show error page if health check failed, or loading if not complete yet
+  if (!healthCheckComplete) {
+    // Health check not complete yet - show nothing to prevent other components from mounting
+    return (
+      <AppContext.Provider value={value}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}
+        >
+          Connecting to backend...
+        </div>
+      </AppContext.Provider>
+    );
+  }
+
   if (healthCheckFailed) {
     return (
       <AppContext.Provider value={value}>
