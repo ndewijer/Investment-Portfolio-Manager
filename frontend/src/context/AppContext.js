@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../utils/api';
+import HealthCheckError from '../components/HealthCheckError';
 
 /**
  * Application-level context that provides global state for version information,
@@ -89,6 +90,8 @@ export const AppProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [ibkrTransactionCount, setIbkrTransactionCount] = useState(0);
   const [ibkrEnabled, setIbkrEnabled] = useState(false);
+  const [healthCheckFailed, setHealthCheckFailed] = useState(false);
+  const [healthCheckError, setHealthCheckError] = useState(null);
 
   /**
    * Fetches application and database version information from the server.
@@ -167,9 +170,51 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Performs a health check on the backend server.
+   * Checks if the backend is reachable and the database is connected.
+   * Sets healthCheckFailed state if the check fails.
+   *
+   * @async
+   * @function checkHealth
+   * @returns {Promise<boolean>} True if health check passed, false otherwise
+   */
+  const checkHealth = useCallback(async () => {
+    try {
+      const response = await api.get('system/health');
+      if (response.data.status === 'healthy') {
+        setHealthCheckFailed(false);
+        setHealthCheckError(null);
+        return true;
+      } else {
+        setHealthCheckFailed(true);
+        setHealthCheckError('Backend is unhealthy: ' + JSON.stringify(response.data));
+        return false;
+      }
+    } catch (err) {
+      setHealthCheckFailed(true);
+      setHealthCheckError(err.message || 'Failed to connect to backend');
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
-    fetchVersionInfo();
-  }, [fetchVersionInfo]);
+    const initializeApp = async () => {
+      const isHealthy = await checkHealth();
+
+      if (isHealthy) {
+        // Fetch version info only if health check passes
+        await fetchVersionInfo();
+
+        // Fetch IBKR config if feature is enabled
+        if (versionInfo.features.ibkr_integration) {
+          await fetchIBKRConfig();
+        }
+      }
+    };
+
+    initializeApp();
+  }, [checkHealth, fetchVersionInfo, fetchIBKRConfig, versionInfo.features.ibkr_integration]);
 
   // Fetch IBKR config when IBKR integration is available
   useEffect(() => {
@@ -185,6 +230,20 @@ export const AppProvider = ({ children }) => {
     }
   }, [versionInfo.features.ibkr_integration, ibkrEnabled, fetchIBKRTransactionCount]);
 
+  /**
+   * Handles retry button click on health check error page.
+   * Resets health check state and re-checks backend health.
+   * If health check passes, initializes the app by fetching version info.
+   */
+  const handleRetry = useCallback(async () => {
+    setHealthCheckFailed(false);
+    setHealthCheckError(null);
+    const isHealthy = await checkHealth();
+    if (isHealthy) {
+      await fetchVersionInfo();
+    }
+  }, [checkHealth, fetchVersionInfo]);
+
   const value = {
     versionInfo,
     features: versionInfo.features,
@@ -195,7 +254,18 @@ export const AppProvider = ({ children }) => {
     ibkrEnabled,
     refreshIBKRTransactionCount: fetchIBKRTransactionCount,
     refreshIBKRConfig: fetchIBKRConfig,
+    healthCheckFailed,
+    checkHealth,
   };
+
+  // Show error page if health check failed
+  if (healthCheckFailed) {
+    return (
+      <AppContext.Provider value={value}>
+        <HealthCheckError error={healthCheckError} onRetry={handleRetry} />
+      </AppContext.Provider>
+    );
+  }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
