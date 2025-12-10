@@ -7,44 +7,35 @@ The application uses a multi-container setup with:
 - Shared volume for data persistence
 
 ## Environment Variables
-```bash
-# Common
-DOMAIN=your-domain.com
-USE_HTTPS=true/false  # Controls protocol for API calls
 
+No configuration required for basic setup! The frontend uses relative URLs (`/api/`) that nginx automatically proxies to the backend.
+
+Optional environment variables:
+
+```bash
 # Backend
 DB_DIR=/data/db
 LOG_DIR=/data/logs
 INTERNAL_API_KEY=your-secure-key-here  # Optional; auto-generated if not provided
 
-# Frontend
+# Frontend (Advanced)
 BACKEND_HOST=investment-portfolio-backend  # Backend container hostname (default: investment-portfolio-backend)
-# Inherits DOMAIN and USE_HTTPS
+                                          # Only needed if using custom container names
 ```
 
-## Example .env file
+## Example .env file (Optional)
 ```bash
-DOMAIN=ipm.local
-USE_HTTPS=false
+# Only needed for custom container names or specific configuration
 BACKEND_HOST=investment-portfolio-backend  # Optional: override for custom container names
-INTERNAL_API_KEY=your-secure-random-key-here
+INTERNAL_API_KEY=your-secure-random-key-here  # Optional: will auto-generate if not provided
 ```
 
 ## HTTPS Configuration
-The USE_HTTPS flag controls:
-- API call protocols
-- Frontend-to-backend communication
-- Whether to expect SSL termination at reverse proxy
-
-### With External Reverse Proxy (USE_HTTPS=true)
-- Assumes SSL termination at reverse proxy
-- Frontend makes HTTPS API calls
-- Requires valid SSL certificate at proxy
-
-### Direct HTTP Access (USE_HTTPS=false)
-- No SSL termination required
-- Frontend makes HTTP API calls
-- Suitable for local development
+HTTPS is handled at the reverse proxy level (e.g., Traefik, Caddy, nginx):
+- The Docker setup runs HTTP on port 80
+- Add a reverse proxy in front for SSL/TLS termination
+- The frontend uses relative URLs so it works with any domain/protocol
+- No rebuild required when changing domains or protocols
 
 ## Volume Management
 

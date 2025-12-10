@@ -215,6 +215,10 @@ flask db upgrade   # Creates and initializes database
 flask db downgrade base  # Reset to empty state
 flask db upgrade        # Apply all migrations
 flask seed-db           # Add sample data
+
+# Update seed price data
+flask update-seed-prices          # Fetch latest year of prices from yfinance
+flask update-seed-prices --days 730  # Fetch 2 years of historical data
 ```
 
 ### Migration Development

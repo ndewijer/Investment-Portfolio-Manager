@@ -98,6 +98,38 @@ if ! echo "$PROXY_RESPONSE" | grep -q '"status"[[:space:]]*:[[:space:]]*"healthy
 fi
 echo -e "${GREEN}✅ Frontend proxy working${NC}"
 
+# Test 5: Verify database was seeded with funds
+echo -e "${BLUE}📊 Verifying database seeding...${NC}"
+FUNDS_RESPONSE=$(curl -s http://localhost/api/funds)
+echo "Funds response: $FUNDS_RESPONSE"
+
+if ! echo "$FUNDS_RESPONSE" | grep -q "Vanguard Total Stock Market ETF"; then
+    echo -e "${RED}❌ Expected fund 'Vanguard Total Stock Market ETF' not found${NC}"
+    exit 1
+fi
+
+if ! echo "$FUNDS_RESPONSE" | grep -q "Amundi Prime All Country World UCITS ETF Acc"; then
+    echo -e "${RED}❌ Expected fund 'Amundi Prime All Country World UCITS ETF Acc' not found${NC}"
+    exit 1
+fi
+
+if ! echo "$FUNDS_RESPONSE" | grep -q "Apple Inc."; then
+    echo -e "${RED}❌ Expected fund 'Apple Inc.' not found${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Database seeded correctly with expected funds${NC}"
+
+# Test 6: Verify portfolios were seeded
+echo -e "${BLUE}💼 Verifying portfolios were seeded...${NC}"
+PORTFOLIOS_RESPONSE=$(curl -s http://localhost/api/portfolios)
+PORTFOLIO_COUNT=$(echo "$PORTFOLIOS_RESPONSE" | grep -o '"id"[[:space:]]*:' | wc -l | tr -d '[:space:]')
+
+if [ "$PORTFOLIO_COUNT" -lt 1 ]; then
+    echo -e "${RED}❌ No portfolios found in seeded database${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Portfolios seeded (found $PORTFOLIO_COUNT portfolios)${NC}"
+
 # All tests passed
 echo -e "${GREEN}✅ All Docker integration tests passed!${NC}"
 exit 0

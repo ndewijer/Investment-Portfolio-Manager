@@ -14,11 +14,14 @@ While functional for personal use, replacing my manual Excel tracking, it is not
 ```bash
 git clone https://github.com/ndewijer/investment-portfolio-manager.git
 cd investment-portfolio-manager
-# Configure .env with DOMAIN, USE_HTTPS, etc.
 docker compose up -d
-docker compose exec backend flask seed-db
 ```
 Access at http://localhost
+
+No configuration needed! On first startup:
+- Database migrations run automatically
+- Sample data is seeded automatically
+- Frontend uses relative URLs that nginx proxies to the backend
 
 ### Local Development
 **Prerequisites**: Python 3.13+, Node.js 23+, uv
