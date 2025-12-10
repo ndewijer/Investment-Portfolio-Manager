@@ -17,14 +17,8 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        - DOMAIN=${DOMAIN:-localhost}
-        - USE_HTTPS=${USE_HTTPS:-false}
-        - BACKEND_HOST=${BACKEND_HOST:-investment-portfolio-backend}
     container_name: investment-portfolio-frontend
     environment:
-      - DOMAIN=${DOMAIN:-localhost}
-      - USE_HTTPS=${USE_HTTPS:-false}
       - BACKEND_HOST=${BACKEND_HOST:-investment-portfolio-backend}
     ports:
       - "80:80"

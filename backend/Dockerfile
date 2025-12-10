@@ -39,14 +39,9 @@ ENV PYTHONUNBUFFERED=1 \
 # Create directories
 RUN mkdir -p $DB_DIR $LOG_DIR
 
-# Create entrypoint wrapper for environment setup
-RUN echo '#!/bin/sh\n\
-if [ -z "$INTERNAL_API_KEY" ]; then\n\
-    KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")\n\
-    echo "Generated INTERNAL_API_KEY: $KEY"\n\
-    export INTERNAL_API_KEY=$KEY\n\
-fi\n\
-exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
+# Copy entrypoint script
+COPY backend/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 5000
 

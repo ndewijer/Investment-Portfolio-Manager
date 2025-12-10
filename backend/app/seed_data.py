@@ -198,6 +198,9 @@ def generate_dividends(portfolio_fund_id, fund_id, fund_prices, dividend_type):
             dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
             dividend.buy_order_date = reinvestment_transaction.date
 
+            # Store transaction on dividend object for later extraction
+            dividend.reinvestment_transaction = reinvestment_transaction
+
             # Add reinvestment transaction to list
             all_transactions.append(reinvestment_transaction)
 
@@ -313,20 +316,28 @@ def seed_database():
     # Create Funds with real data
     funds = [
         Fund(
-            name="Goldman Sachs Enhanced Index Sustainable Equity",
-            isin="NL0012125736",
-            symbol="GSESA.AS",
+            name="Vanguard Total Stock Market ETF",
+            isin="US9229087690",
+            symbol="VTI",
+            currency="USD",
+            exchange="XNAS",
+            dividend_type=DividendType.CASH,
+        ),
+        Fund(
+            name="Amundi Prime All Country World UCITS ETF Acc",
+            isin="IE0003XJA0J9",
+            symbol="WEBN.DE",
             currency="EUR",
-            exchange="XAMS",
+            exchange="XETR",
             dividend_type=DividendType.STOCK,
         ),
         Fund(
-            name="Goldman Sachs Enhanced Index Sustainable EM Equity",
-            isin="NL0006311771",
-            symbol="GSEME.AS",
-            currency="EUR",
-            exchange="XAMS",
-            dividend_type=DividendType.STOCK,
+            name="Apple Inc.",
+            isin="US0378331005",
+            symbol="AAPL",
+            currency="USD",
+            exchange="XNAS",
+            dividend_type=DividendType.CASH,
         ),
     ]
     db.session.add_all(funds)
@@ -341,7 +352,7 @@ def seed_database():
 
     # Create Portfolio-Fund relationships with transactions
     portfolio_funds = []
-    transactions = []
+    reinvestment_transactions = []
     dividends = []
 
     for portfolio in portfolios[:2]:  # First 2 portfolios
@@ -356,7 +367,6 @@ def seed_database():
 
             # Generate initial transactions
             portfolio_transactions = generate_transactions(pf.id, fund_specific_prices)
-            transactions.extend(portfolio_transactions)
 
             # Add transactions to database so they're available for dividend calculation
             db.session.add_all(portfolio_transactions)
@@ -368,17 +378,17 @@ def seed_database():
             )
 
             # Extract reinvestment transactions from dividends
-            reinvestment_transactions = []
             for dividend in portfolio_dividends:
                 if hasattr(dividend, "reinvestment_transaction"):
                     reinvestment_transactions.append(dividend.reinvestment_transaction)
 
-            # Add all transactions and dividends
-            transactions.extend(reinvestment_transactions)
             dividends.extend(portfolio_dividends)
 
-    # Commit all remaining records
-    db.session.add_all(transactions)
+    # Commit reinvestment transactions first (dividends have foreign keys to these)
+    db.session.add_all(reinvestment_transactions)
+    db.session.commit()
+
+    # Now commit dividends (after their referenced transactions exist)
     db.session.add_all(dividends)
     db.session.commit()
 
