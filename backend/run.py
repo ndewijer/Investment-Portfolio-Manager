@@ -360,6 +360,11 @@ def create_app(config=None):
             seed_database()
             click.echo("Database seeded successfully!")
 
+    # Register additional CLI commands
+    from app.cli_commands import register_commands
+
+    register_commands(app)
+
     return app
 
 

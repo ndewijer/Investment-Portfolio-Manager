@@ -1,13 +1,9 @@
-// Get the domain from webpack-defined environment or use default
-const DOMAIN = process.env.DOMAIN || 'localhost';
-const USE_HTTPS = process.env.USE_HTTPS === 'true';
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+// Determine if we're in development mode (npm start)
+const IS_DEV = process.env.NODE_ENV === 'development';
 
-// Determine protocol based on USE_HTTPS
-const PROTOCOL = USE_HTTPS ? 'https' : 'http';
-
-// Determine API URL based on environment
-const API_URL = IS_PRODUCTION ? `${PROTOCOL}://${DOMAIN}/api` : 'http://localhost:5000/api';
+// In development, connect directly to backend on localhost:5000
+// In production (Docker), use relative URL - nginx will proxy to backend
+const API_URL = IS_DEV ? 'http://localhost:5000/api' : '/api';
 
 export const API_BASE_URL = API_URL;
 
@@ -21,8 +17,6 @@ export const API_CONFIG = {
 
 // Log configuration for debugging
 console.log('Config environment:', {
-  DOMAIN,
-  USE_HTTPS,
-  IS_PRODUCTION,
+  IS_DEV,
   API_BASE_URL,
 });

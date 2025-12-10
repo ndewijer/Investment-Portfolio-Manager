@@ -4,12 +4,6 @@ FROM node:24-alpine AS build
 # Set working directory
 WORKDIR /app
 
-# Add build arguments
-ARG DOMAIN=localhost \
-    USE_HTTPS=false
-ENV DOMAIN=$DOMAIN \
-    USE_HTTPS=$USE_HTTPS
-
 # Copy package files
 COPY package*.json ./
 
@@ -20,23 +14,17 @@ RUN npm ci
 COPY . .
 
 # Build the application
+# No build args needed - API URL is determined at runtime via nginx proxy
 RUN npm run build
 
 # Production stage
 FROM nginx:alpine
 
-# Re-declare the build argument and env variable in this stage
-ARG DOMAIN=localhost \
-    USE_HTTPS=false \
-    BACKEND_HOST=investment-portfolio-backend
-ENV DOMAIN=$DOMAIN \
-    USE_HTTPS=$USE_HTTPS \
-    BACKEND_HOST=$BACKEND_HOST
-
 # Copy built assets from build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy nginx configuration as template
+# BACKEND_HOST is set via environment variable at runtime
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 CMD ["nginx", "-g", "daemon off;"]
