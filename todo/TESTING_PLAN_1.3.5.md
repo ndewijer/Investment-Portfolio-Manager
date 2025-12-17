@@ -2005,6 +2005,13 @@ describe('useApiState', () => {
 
 ## Week 3: Frontend Component Tests & E2E Framework
 
+### Status (as of December 17, 2025)
+- ✅ **Task 3.1**: Shared component tests COMPLETE (6 components, all tests passing)
+- ✅ **Task 3.2**: Portfolio component tests COMPLETE (3 components, 129 tests passing, 100% coverage on PortfolioSummary/PortfolioChart)
+- 🔄 **Task 3.3**: Context provider tests IN PROGRESS (FormatContext complete with 23 tests, 93% coverage)
+- ⏳ **Task 3.4**: Playwright setup PENDING
+- ⏳ **Task 3.5**: E2E smoke tests PENDING
+
 ### Objectives
 - Write component tests for shared and portfolio components
 - Set up E2E testing framework (Playwright recommended)
