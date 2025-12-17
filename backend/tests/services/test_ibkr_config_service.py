@@ -406,3 +406,94 @@ class TestEdgeCases:
         # Verify token is NOT in status
         assert "flex_token" not in status
         assert encrypted_token not in str(status.values())
+
+
+class TestDefaultAllocationConfig:
+    """Test default allocation configuration functionality."""
+
+    def test_save_config_with_default_allocations(self, app_context, db_session, mock_encryption):
+        """Test saving config with default allocation settings."""
+        allocations_json = (
+            '[{"portfolio_id": "p1", "percentage": 60.0}, '
+            '{"portfolio_id": "p2", "percentage": 40.0}]'
+        )
+
+        config = IBKRConfigService.save_config(
+            flex_token="test_token",
+            flex_query_id="123456",
+            default_allocation_enabled=True,
+            default_allocations=allocations_json,
+        )
+
+        assert config.default_allocation_enabled is True
+        assert config.default_allocations == allocations_json
+
+    def test_get_config_status_includes_default_allocations(self, app_context, db_session):
+        """Test that status includes default allocation fields."""
+        allocations_json = '[{"portfolio_id": "p1", "percentage": 100.0}]'
+        config = IBKRConfig(
+            id=make_id(),
+            flex_token="encrypted_test_token",
+            flex_query_id="123456",
+            enabled=True,
+            default_allocation_enabled=True,
+            default_allocations=allocations_json,
+        )
+        db_session.add(config)
+        db_session.commit()
+
+        status = IBKRConfigService.get_config_status()
+
+        assert status["default_allocation_enabled"] is True
+        assert status["default_allocations"] == allocations_json
+
+    def test_update_config_default_allocations(self, app_context, db_session, mock_encryption):
+        """Test updating default allocation settings."""
+        # Create initial config
+        config = IBKRConfigService.save_config(
+            flex_token="test_token",
+            flex_query_id="123456",
+            default_allocation_enabled=False,
+            default_allocations=None,
+        )
+
+        assert config.default_allocation_enabled is False
+        assert config.default_allocations is None
+
+        # Update with default allocations
+        allocations_json = (
+            '[{"portfolio_id": "p1", "percentage": 50.0}, '
+            '{"portfolio_id": "p2", "percentage": 50.0}]'
+        )
+        updated_config = IBKRConfigService.save_config(
+            flex_token="test_token",
+            flex_query_id="123456",
+            default_allocation_enabled=True,
+            default_allocations=allocations_json,
+        )
+
+        assert updated_config.default_allocation_enabled is True
+        assert updated_config.default_allocations == allocations_json
+
+    def test_disable_default_allocation(self, app_context, db_session, mock_encryption):
+        """Test disabling default allocation while keeping preset."""
+        allocations_json = '[{"portfolio_id": "p1", "percentage": 100.0}]'
+
+        # Create with enabled
+        IBKRConfigService.save_config(
+            flex_token="test_token",
+            flex_query_id="123456",
+            default_allocation_enabled=True,
+            default_allocations=allocations_json,
+        )
+
+        # Disable allocation
+        updated_config = IBKRConfigService.save_config(
+            flex_token="test_token",
+            flex_query_id="123456",
+            default_allocation_enabled=False,
+            default_allocations=allocations_json,  # Keep preset
+        )
+
+        assert updated_config.default_allocation_enabled is False
+        assert updated_config.default_allocations == allocations_json

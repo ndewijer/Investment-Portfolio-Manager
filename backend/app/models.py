@@ -515,6 +515,8 @@ class IBKRConfig(db.Model):
         last_import_date (datetime): Last successful import timestamp
         auto_import_enabled (bool): Whether automated weekly imports are enabled
         enabled (bool): Whether IBKR integration is enabled (master toggle)
+        default_allocation_enabled (bool): Whether to automatically allocate imported transactions
+        default_allocations (str): JSON string of default allocation preset (portfolio + percentage)
         created_at (datetime): Configuration creation timestamp
         updated_at (datetime): Configuration update timestamp
     """
@@ -528,6 +530,10 @@ class IBKRConfig(db.Model):
     last_import_date = db.Column(db.DateTime, nullable=True)
     auto_import_enabled = db.Column(db.Boolean, default=False, nullable=False)
     enabled = db.Column(db.Boolean, default=True, nullable=False)
+    default_allocation_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    default_allocations = db.Column(
+        db.Text, nullable=True
+    )  # JSON: [{"portfolio_id": "...", "percentage": 60.0}, ...]
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(
         db.DateTime,

@@ -6,6 +6,7 @@ This module provides methods for:
 - Saving/updating IBKR configuration
 - Deleting IBKR configuration
 - Token expiration warnings
+- Managing default allocation presets
 """
 
 from datetime import datetime
@@ -48,6 +49,8 @@ class IBKRConfigService:
             - last_import_date (str, optional): Last import date (ISO format)
             - auto_import_enabled (bool, optional): Auto import status
             - enabled (bool, optional): Configuration enabled status
+            - default_allocation_enabled (bool, optional): Default allocation enabled status
+            - default_allocations (str, optional): JSON string of default allocation preset
             - created_at (str, optional): Configuration creation date
             - updated_at (str, optional): Last update date
         """
@@ -76,13 +79,21 @@ class IBKRConfigService:
             ),
             "auto_import_enabled": config.auto_import_enabled,
             "enabled": config.enabled,
+            "default_allocation_enabled": config.default_allocation_enabled,
+            "default_allocations": config.default_allocations,
             "created_at": config.created_at.isoformat(),
             "updated_at": config.updated_at.isoformat(),
         }
 
     @staticmethod
     def save_config(
-        flex_token, flex_query_id, token_expires_at=None, auto_import_enabled=None, enabled=None
+        flex_token,
+        flex_query_id,
+        token_expires_at=None,
+        auto_import_enabled=None,
+        enabled=None,
+        default_allocation_enabled=None,
+        default_allocations=None,
     ):
         """
         Save or update IBKR configuration.
@@ -93,6 +104,8 @@ class IBKRConfigService:
             token_expires_at (datetime, optional): Token expiration datetime
             auto_import_enabled (bool, optional): Auto import enabled flag
             enabled (bool, optional): Configuration enabled flag
+            default_allocation_enabled (bool, optional): Default allocation enabled flag
+            default_allocations (str, optional): JSON string of default allocation preset
 
         Returns:
             IBKRConfig: Created or updated config object
@@ -120,6 +133,10 @@ class IBKRConfigService:
                 config.auto_import_enabled = auto_import_enabled
             if enabled is not None:
                 config.enabled = enabled
+            if default_allocation_enabled is not None:
+                config.default_allocation_enabled = default_allocation_enabled
+            if default_allocations is not None:
+                config.default_allocations = default_allocations
             config.updated_at = datetime.now()
         else:
             # Create new
@@ -131,6 +148,10 @@ class IBKRConfigService:
                     auto_import_enabled if auto_import_enabled is not None else False
                 ),
                 enabled=enabled if enabled is not None else True,
+                default_allocation_enabled=(
+                    default_allocation_enabled if default_allocation_enabled is not None else False
+                ),
+                default_allocations=default_allocations,
             )
             db.session.add(config)
 

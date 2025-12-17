@@ -3,6 +3,7 @@ import axios from 'axios';
 import './Config.css';
 import CollapsibleInfo from '../components/CollapsibleInfo';
 import Toast from '../components/Toast';
+import Modal from '../components/Modal';
 import StatusTab from '../components/StatusTab';
 import { useFormat } from '../context/FormatContext';
 import { useTheme } from '../context/ThemeContext';
@@ -122,10 +123,15 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     token_expires_at: '',
     auto_import_enabled: false,
     enabled: true,
+    default_allocation_enabled: false,
+    default_allocations: null,
   });
   const [existingConfig, setExistingConfig] = useState(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAllocationModal, setShowAllocationModal] = useState(false);
+  const [portfolios, setPortfolios] = useState([]);
+  const [allocations, setAllocations] = useState([{ portfolio_id: '', percentage: '' }]);
 
   useEffect(() => {
     fetchConfig();
@@ -148,7 +154,27 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
               ? response.data.auto_import_enabled
               : false,
           enabled: response.data.enabled !== undefined ? response.data.enabled : true,
+          default_allocation_enabled:
+            response.data.default_allocation_enabled !== undefined
+              ? response.data.default_allocation_enabled
+              : false,
+          default_allocations: response.data.default_allocations || null,
         });
+
+        // Parse default allocations if they exist
+        if (response.data.default_allocations) {
+          try {
+            const parsedAllocations = JSON.parse(response.data.default_allocations);
+            setAllocations(
+              parsedAllocations.map((a) => ({
+                portfolio_id: a.portfolio_id,
+                percentage: a.percentage,
+              }))
+            );
+          } catch (e) {
+            console.error('Failed to parse default allocations:', e);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch IBKR config:', err);
@@ -176,6 +202,8 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
         flex_query_id: config.flex_query_id,
         auto_import_enabled: config.auto_import_enabled,
         enabled: config.enabled,
+        default_allocation_enabled: config.default_allocation_enabled,
+        default_allocations: config.default_allocations,
       };
 
       if (config.token_expires_at) {
@@ -237,9 +265,137 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
         flex_query_id: '',
         token_expires_at: '',
         auto_import_enabled: false,
+        default_allocation_enabled: false,
+        default_allocations: null,
       });
+      setAllocations([{ portfolio_id: '', percentage: '' }]);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to delete configuration');
+    }
+  };
+
+  // Fetch portfolios for allocation modal
+  const fetchPortfolios = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/ibkr/portfolios`);
+      setPortfolios(response.data);
+    } catch (err) {
+      console.error('Failed to fetch portfolios:', err);
+      setError('Failed to load portfolios');
+    }
+  };
+
+  // Open allocation modal
+  const handleConfigureAllocation = async () => {
+    await fetchPortfolios();
+    setShowAllocationModal(true);
+  };
+
+  // Close allocation modal
+  const handleCloseAllocationModal = () => {
+    setShowAllocationModal(false);
+  };
+
+  // Add allocation row
+  const handleAddAllocation = () => {
+    setAllocations([...allocations, { portfolio_id: '', percentage: '' }]);
+  };
+
+  // Remove allocation row
+  const handleRemoveAllocation = (index) => {
+    const newAllocations = allocations.filter((_, i) => i !== index);
+    setAllocations(newAllocations);
+  };
+
+  // Update allocation value
+  const handleAllocationChange = (index, field, value) => {
+    const newAllocations = [...allocations];
+    newAllocations[index][field] = field === 'percentage' ? parseFloat(value) || 0 : value;
+    setAllocations(newAllocations);
+  };
+
+  // Get total percentage
+  const getTotalPercentage = () => {
+    return allocations.reduce((sum, alloc) => sum + (parseFloat(alloc.percentage) || 0), 0);
+  };
+
+  // Equal distribution preset
+  const handleEqualDistribution = () => {
+    if (allocations.length === 0) {
+      setError('Please add at least one portfolio first');
+      return;
+    }
+
+    const equalPercentage = 100 / allocations.length;
+    const newAllocations = allocations.map((alloc) => ({
+      ...alloc,
+      percentage: parseFloat(equalPercentage.toFixed(2)),
+    }));
+
+    // Adjust last allocation to ensure exactly 100%
+    const total = newAllocations.reduce((sum, a) => sum + a.percentage, 0);
+    if (Math.abs(total - 100) > 0.01) {
+      newAllocations[newAllocations.length - 1].percentage += 100 - total;
+      newAllocations[newAllocations.length - 1].percentage = parseFloat(
+        newAllocations[newAllocations.length - 1].percentage.toFixed(2)
+      );
+    }
+
+    setAllocations(newAllocations);
+  };
+
+  // Save allocation preset
+  const handleSaveAllocationPreset = () => {
+    const total = getTotalPercentage();
+    if (Math.abs(total - 100) > 0.01) {
+      setError('Allocations must sum to exactly 100%');
+      return;
+    }
+
+    // Check for duplicate portfolios
+    const portfolioIds = allocations.map((a) => a.portfolio_id);
+    if (new Set(portfolioIds).size !== portfolioIds.length) {
+      setError('Cannot allocate the same portfolio multiple times');
+      return;
+    }
+
+    // Check for empty portfolio selections
+    if (allocations.some((a) => !a.portfolio_id)) {
+      setError('Please select a portfolio for each allocation');
+      return;
+    }
+
+    // Convert to JSON string
+    const allocationsJson = JSON.stringify(
+      allocations.map((a) => ({
+        portfolio_id: a.portfolio_id,
+        percentage: a.percentage,
+      }))
+    );
+
+    setConfig({ ...config, default_allocations: allocationsJson });
+    setMessage('Default allocation preset saved. Click "Save Configuration" to apply.');
+    setShowAllocationModal(false);
+  };
+
+  // Get summary of current allocation
+  const getAllocationSummary = () => {
+    if (!config.default_allocations) {
+      return 'No default allocation configured';
+    }
+
+    try {
+      const parsed = JSON.parse(config.default_allocations);
+      const portfolioNames = parsed
+        .map((a) => {
+          const portfolio = portfolios.find((p) => p.id === a.portfolio_id);
+          return portfolio ? `${portfolio.name} (${a.percentage.toFixed(0)}%)` : null;
+        })
+        .filter(Boolean);
+
+      return portfolioNames.length > 0 ? portfolioNames.join(', ') : 'Configured';
+    } catch {
+      return 'Configured';
     }
   };
 
@@ -402,6 +558,45 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                 Enable automated imports (Tuesday - Saturday at 06:30)
               </label>
             </div>
+
+            <div className="form-group">
+              <h3>Default Allocation on Import</h3>
+              <small className="form-help">
+                Configure default portfolio allocation for imported transactions. When enabled,
+                matching transactions will be automatically allocated using this preset.
+              </small>
+
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={config.default_allocation_enabled}
+                  onChange={(e) =>
+                    setConfig({ ...config, default_allocation_enabled: e.target.checked })
+                  }
+                />
+                Enable default allocation on import
+              </label>
+
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleConfigureAllocation}
+                style={{ marginTop: '10px' }}
+              >
+                Configure Default Allocation
+              </button>
+
+              {config.default_allocations && (
+                <div className="allocation-summary">
+                  <strong>Current preset:</strong> {getAllocationSummary()}
+                </div>
+              )}
+
+              <small className="form-help" style={{ marginTop: '10px', display: 'block' }}>
+                💡 Automatic allocation only applies to transactions where the fund exists in all
+                configured portfolios. Other transactions remain pending for manual allocation.
+              </small>
+            </div>
           </>
         )}
 
@@ -424,6 +619,112 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
           )}
         </div>
       </form>
+
+      {/* Default Allocation Modal */}
+      {showAllocationModal && (
+        <Modal
+          isOpen={true}
+          onClose={handleCloseAllocationModal}
+          title="Configure Default Allocation Preset"
+          size="medium"
+          closeOnOverlayClick={true}
+        >
+          <div className="allocation-modal">
+            <p className="modal-description">
+              Set up a default allocation preset that will be applied automatically to imported IBKR
+              transactions. Allocations must sum to exactly 100%.
+            </p>
+
+            {portfolios.length > 0 && (
+              <div className="allocations-section">
+                <h3>Portfolio Allocations</h3>
+
+                {/* Allocation Preset Buttons */}
+                <div className="allocation-presets">
+                  <button
+                    type="button"
+                    className="preset-button"
+                    onClick={handleEqualDistribution}
+                    title="Distribute 100% equally among currently selected portfolios"
+                  >
+                    📊 Equal Distribution
+                  </button>
+                </div>
+
+                {allocations.map((allocation, index) => (
+                  <div key={index} className="allocation-item">
+                    <div className="allocation-row">
+                      <select
+                        value={allocation.portfolio_id}
+                        onChange={(e) =>
+                          handleAllocationChange(index, 'portfolio_id', e.target.value)
+                        }
+                        required
+                      >
+                        <option value="">Select Portfolio...</option>
+                        {portfolios.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={allocation.percentage}
+                        onChange={(e) =>
+                          handleAllocationChange(index, 'percentage', e.target.value)
+                        }
+                        placeholder="Percentage"
+                        required
+                      />
+                      <span className="percentage-label">%</span>
+                      {allocations.length > 1 && (
+                        <button
+                          type="button"
+                          className="small-button danger"
+                          onClick={() => handleRemoveAllocation(index)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="allocation-total">
+                  <strong>Total:</strong>
+                  <span className={getTotalPercentage() === 100 ? 'valid' : 'invalid'}>
+                    {getTotalPercentage().toFixed(2)}%
+                  </span>
+                </div>
+
+                <button type="button" className="secondary-button" onClick={handleAddAllocation}>
+                  + Add Portfolio
+                </button>
+              </div>
+            )}
+
+            <div className="modal-actions">
+              {portfolios.length > 0 && (
+                <>
+                  {Math.abs(getTotalPercentage() - 100) > 0.01 && (
+                    <div className="allocation-error">Allocations must sum to exactly 100%</div>
+                  )}
+                  <button className="default-button" onClick={handleSaveAllocationPreset}>
+                    Save Preset
+                  </button>
+                </>
+              )}
+              <button className="secondary-button" onClick={handleCloseAllocationModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
