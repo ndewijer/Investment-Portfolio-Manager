@@ -5,6 +5,72 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2025-12-17
+
+### Added
+- **Default Allocation on Import** - Automated allocation of IBKR transactions
+  - Configure default portfolio allocation preset in IBKR Setup
+  - Automatically allocate imported transactions matching the preset
+  - UI shows "Current preset" vs "Updated preset" with pending save indicator
+  - Comprehensive documentation in `docs/IBKR_FEATURES.md`
+  - Only allocates when fund exists in ALL configured portfolios
+  - Failed allocations remain pending for manual processing
+  - Detailed logging and error handling
+
+- **Frontend Testing Infrastructure** - See [PR #114](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/114)
+  - Jest and React Testing Library integration
+  - 26 comprehensive component tests
+  - Tests for Modal, DataTable, FormModal, CollapsibleInfo
+  - Automated testing in CI/CD pipeline
+  - Test documentation in `backend/tests/docs/frontend/`
+
+- **Docker Integration Testing** - See [PR #113](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/113)
+  - Full Docker Compose environment tests
+  - Health check validation for frontend and backend
+  - Version endpoint verification
+  - API connectivity tests
+  - Database migration verification
+  - GitHub Actions CI integration
+
+- **Health Check and Status Pages** - See [PR #115](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/115)
+  - System status page showing application and database versions
+  - Feature availability based on database schema version
+  - Health check error page for backend connection failures
+  - Graceful error handling for network issues
+  - Status page moved to first tab in Configuration
+
+### Changed
+- **IBKR Setup UI Improvements**
+  - Grouped form fields into visual sections (Connection, Import, Allocation)
+  - Section titles with borders for clear hierarchy
+  - Improved spacing and layout
+  - Centered allocation preset displays
+  - Better visual distinction between saved and pending changes
+
+- **Test Infrastructure** - See [PR #116](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/116)
+  - Removed frontend build args from Docker
+  - Modernized seed data for testing
+  - Dynamic version detection in system service tests
+  - Tests automatically adapt to version bumps
+
+### Fixed
+- **UX Clarity**: Default allocation modal now clearly indicates changes aren't saved until form submission
+  - Button renamed: "Save Preset" → "Apply Preset"
+  - Close button: "Close" → "Cancel"
+  - Added prominent note about needing to save configuration
+  - Success message explicitly mentions "Update Configuration" button
+
+- **Bug Fixes**:
+  - Default allocation summary now displays correctly after page refresh
+  - Portfolios loaded on component mount for proper summary display
+  - Network errors suppressed to prevent uncaught runtime errors
+  - Version endpoint checks updated to use `app_version` field
+
+### Documentation
+- Added comprehensive "Default Allocation on Import" section to `IBKR_FEATURES.md`
+- Updated frontend test documentation
+- Docker integration testing documentation
+
 ## [1.3.4.1] - 2025-12-02
 
 ### Fixed

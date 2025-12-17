@@ -7,6 +7,7 @@ The SystemService handles system-level functionality including version managemen
 **Test Coverage**: 100% (79/79 statements) ✅
 **Test Count**: 32 comprehensive tests
 **Bugs Found**: 1 (IBKR integration version check logic error)
+**Updated**: Version 1.3.5 (Dynamic versioning for tests)
 
 ## Test Organization
 
@@ -23,18 +24,43 @@ Integration tests with real file system and database operations.
 
 ## Service-Specific Patterns
 
+### Dynamic Version Detection (v1.3.5)
+Tests now dynamically determine the latest migration version instead of hardcoding values:
+
+```python
+def get_latest_migration_version():
+    """Get the latest migration version from migrations directory."""
+    migrations_dir = Path(__file__).parent.parent.parent / "migrations" / "versions"
+    migration_files = list(migrations_dir.glob("[0-9]*.py"))
+    versions = [file.name.split("_")[0] for file in migration_files]
+    versions.sort(key=lambda v: [int(x) for x in v.split(".")])
+    return versions[-1]
+
+LATEST_MIGRATION_VERSION = get_latest_migration_version()
+```
+
+**Benefits**:
+- Tests automatically adapt to version bumps
+- No need to manually update hardcoded version strings
+- Reduces test maintenance overhead
+- Prevents false failures when creating new migrations
+
 ### Database Setup Pattern
 Since SystemService queries the `alembic_version` table which doesn't exist in test databases, most tests use this pattern:
 
 ```python
 def test_with_database(self, app_context, db_session):
-    # Create alembic_version table and insert test version
+    # Create alembic_version table and insert latest migration version
     db_session.execute(db.text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)"))
     db_session.execute(db.text("DELETE FROM alembic_version"))
-    db_session.execute(db.text("INSERT INTO alembic_version (version_num) VALUES ('1.3.1')"))
+    db_session.execute(
+        db.text(f"INSERT INTO alembic_version (version_num) VALUES ('{LATEST_MIGRATION_VERSION}')")
+    )
     db_session.commit()
     # Test continues...
 ```
+
+**Note**: Uses `LATEST_MIGRATION_VERSION` constant instead of hardcoded version string.
 
 ### Mock/Patch Testing Pattern
 For error conditions and edge cases, extensive mocking is used:
@@ -475,9 +501,13 @@ pytest tests/services/test_system_service.py::TestSystemService::test_check_feat
 3. Verify integration tests still pass
 4. Update documentation with new logic explanations
 
-### When Updating Migrations
-1. Update test database setup to reflect new schema version
-2. Update expected version numbers in integration tests
-3. Test both upgrade and rollback scenarios if applicable
+### When Updating Migrations (v1.3.5+)
+1. **No manual updates needed** - Tests now dynamically detect the latest migration version
+2. `LATEST_MIGRATION_VERSION` constant automatically updates based on migration files
+3. Simply create new migration files following the naming pattern: `X.Y.Z_description.py`
+4. Tests will automatically use the new version for database setup
+5. Verify tests pass with `pytest tests/services/test_system_service.py -v`
+
+**Important**: The dynamic versioning pattern eliminates the need to manually update hardcoded version strings throughout the test file when creating new migrations.
 
 This comprehensive test suite ensures the SystemService correctly handles the critical task of version management, preventing user-facing errors and providing clear guidance for database maintenance.

@@ -281,6 +281,27 @@
   padding: 1rem;
 }
 
+.allocation-modal .modal-description {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  color: #495057;
+}
+
+.allocation-modal .modal-note {
+  background-color: #e7f3ff;
+  border-left: 3px solid #007bff;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #495057;
+}
+
+.allocation-modal .modal-note strong {
+  color: #333;
+}
+
 .transaction-summary {
   background-color: #f8f9fa;
   border: 1px solid #dee2e6;
@@ -712,4 +733,18 @@
 
 [data-theme='dark'] .allocation-detail-item .value {
   color: #e0e0e0;
+}
+
+[data-theme='dark'] .allocation-modal .modal-description {
+  color: #aaa;
+}
+
+[data-theme='dark'] .allocation-modal .modal-note {
+  background-color: #1a3a52;
+  border-left-color: #5fa3ff;
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .allocation-modal .modal-note strong {
+  color: #fff;
 }

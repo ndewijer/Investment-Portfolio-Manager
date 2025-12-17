@@ -1,10 +1,11 @@
 # IBKRConfigService Test Suite Documentation
 
-**File**: `tests/test_ibkr_config_service.py`\
+**File**: `tests/services/test_ibkr_config_service.py`\
 **Service**: `app/services/ibkr_config_service.py`\
-**Tests**: 18 tests\
-**Coverage**: 100% (43 statements, 0 missed)\
-**Created**: Version 1.3.3 (Phase 3)
+**Tests**: 22 tests\
+**Coverage**: 100%\
+**Created**: Version 1.3.3 (Phase 3)\
+**Updated**: Version 1.3.5 (Default Allocation Feature)
 
 ## Overview
 
@@ -43,6 +44,13 @@ Tests edge cases and boundary conditions:
 - `test_save_config_auto_import_disabled_by_default` - Default auto_import behavior
 - `test_save_config_update_token_expires_at` - Update expiration dates
 - `test_get_config_status_excludes_token` - Security: never expose encrypted tokens
+
+#### 5. TestDefaultAllocationConfig (4 tests)
+Tests default allocation preset functionality (added in v1.3.5):
+- `test_save_config_with_default_allocations` - Save config with default allocation settings
+- `test_get_config_status_includes_default_allocations` - Status includes allocation fields
+- `test_update_config_default_allocations` - Update existing config with allocations
+- `test_disable_default_allocation` - Disable allocation while keeping preset
 
 ## Testing Strategy
 
@@ -250,6 +258,70 @@ def clean_ibkr_config(db_session):
 - **Quick Responses**: Status checks return immediately
 - **Efficient Updates**: Only updates specified fields
 
+## Default Allocation Feature (v1.3.5)
+
+### Overview
+Version 1.3.5 introduced configurable default allocations for automated IBKR imports. This feature allows users to define a preset allocation strategy that automatically applies to imported transactions.
+
+### New Configuration Fields
+```python
+config = IBKRConfig(
+    # ... existing fields ...
+    default_allocation_enabled=False,     # Toggle for default allocation feature
+    default_allocations=None             # JSON: [{"portfolio_id": "...", "percentage": 60.0}]
+)
+```
+
+### Test Coverage for Default Allocation
+
+#### Test 1: Save Config with Default Allocations
+**Purpose**: Verify saving configuration with default allocation settings
+```python
+def test_save_config_with_default_allocations():
+    allocations_json = (
+        '[{"portfolio_id": "p1", "percentage": 60.0}, '
+        '{"portfolio_id": "p2", "percentage": 40.0}]'
+    )
+    config = IBKRConfigService.save_config(
+        flex_token="test_token",
+        flex_query_id="123456",
+        default_allocation_enabled=True,
+        default_allocations=allocations_json,
+    )
+    assert config.default_allocation_enabled is True
+    assert config.default_allocations == allocations_json
+```
+
+#### Test 2: Status Includes Default Allocations
+**Purpose**: Ensure status endpoint returns default allocation fields
+```python
+def test_get_config_status_includes_default_allocations():
+    # Status response includes new fields
+    status = IBKRConfigService.get_config_status()
+    assert status["default_allocation_enabled"] is True
+    assert status["default_allocations"] == allocations_json
+```
+
+#### Test 3: Update Default Allocations
+**Purpose**: Verify updating existing config with allocation changes
+**Scenario**: Config starts with allocations disabled, then enabled
+**Validates**: Partial updates work correctly, preserving other fields
+
+#### Test 4: Disable Default Allocation
+**Purpose**: Verify disabling allocation while keeping preset
+**Scenario**: Enable allocations, configure preset, then disable
+**Validates**: Preset is preserved when disabled (can re-enable without reconfiguring)
+
+### Integration with Automated Import
+The default allocation feature integrates with the automated IBKR import task:
+1. Import completes successfully
+2. If `default_allocation_enabled` is True and `default_allocations` is set
+3. System automatically applies allocations to all pending transactions
+4. Transactions are allocated using the configured percentages
+5. Failed allocations are logged but don't stop other transactions
+
+See `app/tasks/ibkr_import.py` for implementation details.
+
 ## Future Enhancements
 
 1. **Token Rotation**: Automated token refresh before expiration
@@ -257,6 +329,7 @@ def clean_ibkr_config(db_session):
 3. **Backup Config**: Support for configuration backup/restore
 4. **Health Monitoring**: Integration with system monitoring
 5. **Multi-Environment**: Support for different environments
+6. **Allocation Validation**: Validate that portfolios exist before saving preset
 
 ## Bug Prevention
 

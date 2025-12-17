@@ -7,6 +7,7 @@ This document describes the features available for processing IBKR transactions 
 - [Single Transaction Processing](#single-transaction-processing)
 - [Bulk Transaction Processing](#bulk-transaction-processing)
 - [Allocation Presets](#allocation-presets)
+- [Default Allocation on Import](#default-allocation-on-import)
 - [Transaction Lifecycle](#transaction-lifecycle)
 - [Best Practices](#best-practices)
 
@@ -202,6 +203,198 @@ Steps:
 5. Click "Distribute Remaining"
 6. Result: Growth 60%, Income 20%, Balanced 20%
 7. Click "Process Transaction"
+
+---
+
+## Default Allocation on Import
+
+### Overview
+
+Automatically allocate imported IBKR transactions to your portfolios using a configured default preset. This feature eliminates the need to manually allocate transactions that follow the same portfolio distribution pattern.
+
+**Added in**: Version 1.3.5
+
+### How It Works
+
+1. **Configure Once**: Set up your default allocation preset in Configuration → IBKR Setup
+2. **Enable Auto-Allocation**: Toggle "Enable default allocation on import"
+3. **Automatic Processing**: When automated imports run (Tuesday-Saturday at 06:30), matching transactions are automatically allocated
+4. **Manual Fallback**: Transactions that can't be auto-allocated remain in "Pending" for manual processing
+
+### Setup Instructions
+
+1. Navigate to **Configuration** → **IBKR Setup** tab
+2. Scroll to **Default Allocation on Import** section
+3. Check **Enable default allocation on import**
+4. Click **Configure Default Allocation** button
+5. Select portfolios and enter allocation percentages (must sum to 100%)
+6. Click **Apply Preset**
+7. Click **Update Configuration** to save
+
+### Configuration States
+
+The UI shows two distinct states:
+
+- **Current preset**: The saved configuration in the database
+- **Updated preset** (with "Pending save" badge): Changes staged but not yet saved
+
+This makes it clear when you need to click "Update Configuration" to persist changes.
+
+### Eligibility Requirements
+
+For a transaction to be automatically allocated, it must meet ALL these conditions:
+
+✅ **Fund Exists**: Transaction's fund (by ISIN or symbol) must exist in the system
+✅ **Fund in ALL Portfolios**: The fund must be present in ALL configured portfolios in your default preset
+✅ **No Errors**: Transaction import must complete without errors
+
+### What Happens During Auto-Allocation
+
+**Successful Auto-Allocation**:
+1. System checks if fund exists in all configured portfolios
+2. Transaction is allocated using your default percentages
+3. Status changes from "pending" to "processed"
+4. Appears in **Processed** tab with allocation details
+5. Logged with ✅ success message
+
+**Failed Auto-Allocation** (transaction stays pending):
+- ❌ Fund not found in system
+- ❌ Fund missing from one or more configured portfolios
+- ❌ System error during allocation
+
+Failed transactions remain in "Pending" tab for manual processing.
+
+### Import Logging
+
+Check **Configuration** → **System Settings** → **Logs** to see auto-allocation activity:
+
+```
+ℹ️ Starting automated IBKR import
+ℹ️ Applying default allocations to newly imported transactions
+✅ Auto-allocated transaction VWCE (iShares Core MSCI World)
+ℹ️ Auto-allocated 5 transaction(s) using default preset
+✅ Automated IBKR import completed: 8 imported, 2 skipped, 0 errors, 5 auto-allocated
+```
+
+### Use Cases
+
+**Scenario 1: Regular Investment Plan**
+- You import the same fund monthly
+- Always allocate 60% Portfolio A, 40% Portfolio B
+- Set default allocation → All future imports auto-allocate
+
+**Scenario 2: Multi-Portfolio Strategy**
+- You have 3 portfolios with same funds
+- Always split 33.33% / 33.33% / 33.34%
+- Configure once → No more manual allocation
+
+**Scenario 3: Mixed Strategy**
+- Most transactions follow standard allocation
+- Some need special handling
+- Default allocation handles 80% automatically
+- Manually allocate the 20% that need custom treatment
+
+### Modifying Default Allocations
+
+To change your default allocation:
+
+1. Go to **Configuration** → **IBKR Setup**
+2. Click **Configure Default Allocation**
+3. Modify portfolios or percentages
+4. Click **Apply Preset**
+5. Click **Update Configuration**
+
+The UI shows both old and new presets until you save, making it clear what will change.
+
+### Disabling Auto-Allocation
+
+To stop auto-allocating but keep your preset:
+
+1. Uncheck **Enable default allocation on import**
+2. Click **Update Configuration**
+3. Your preset is saved but not applied
+
+To completely remove the preset:
+
+1. Uncheck **Enable default allocation on import**
+2. Click **Configure Default Allocation**
+3. Clear all allocations (the system will prompt)
+4. Click **Update Configuration**
+
+### Important Notes
+
+⚠️ **No Retroactive Application**
+- Default allocations only apply to NEW imports
+- Existing pending transactions are NOT automatically processed
+- Use Bulk Allocate for existing pending transactions
+
+⚠️ **Fund Must Exist in ALL Portfolios**
+- If fund is in Portfolio A but not Portfolio B, transaction stays pending
+- This prevents partial allocations or errors
+- Add fund to all portfolios first, then transaction auto-allocates on next import
+
+ℹ️ **Import Summary**
+- Each import shows auto-allocation count in success message
+- Check logs for detailed per-transaction results
+- Errors don't stop other transactions from processing
+
+### Best Practices
+
+**✅ Do**:
+- Use default allocation for recurring, standard investments
+- Keep funds synchronized across configured portfolios
+- Monitor logs to ensure auto-allocation is working
+- Test with 1-2 imports before enabling for large volumes
+
+**❌ Don't**:
+- Configure portfolios that don't contain the same funds
+- Expect pending transactions to be retroactively processed
+- Use for funds that frequently need custom allocations
+- Forget to click "Update Configuration" after changing preset
+
+### Troubleshooting
+
+**"Transactions aren't auto-allocating"**
+
+Check:
+1. ✅ Is "Enable default allocation on import" checked?
+2. ✅ Did you click "Update Configuration" after setting preset?
+3. ✅ Does the fund exist in ALL configured portfolios?
+4. ✅ Is automated import enabled?
+5. ✅ Check logs for specific error messages
+
+**"Some transactions auto-allocate, others don't"**
+
+Likely cause: Funds not present in all portfolios
+- Check which fund failed in logs
+- Add missing fund to all portfolios in default preset
+- Next import will auto-allocate that fund
+
+**"I see 'Updated preset' but it's not working"**
+
+You need to save the configuration:
+- "Updated preset" with "Pending save" badge means NOT saved
+- Click "Update Configuration" button to persist changes
+- "Current preset" shows what's actually being used
+
+### Technical Details
+
+**Processing Order**:
+1. Automated import runs (06:30, Tue-Sat)
+2. Transactions imported to inbox
+3. Import status: "imported"
+4. Default allocation check runs
+5. Eligible transactions allocated
+6. Status changes: "pending" → "processed"
+
+**Performance**:
+- Auto-allocation adds ~50ms per transaction
+- Failures are logged but don't stop other allocations
+- Each transaction processed independently
+
+**API Endpoints**:
+- Configuration: `GET/POST /api/ibkr/config`
+- Fields: `default_allocation_enabled`, `default_allocations`
 
 ---
 
@@ -408,6 +601,7 @@ Deleted (if imported incorrectly)
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.3.5 | 2025-12 | Added default allocation on import feature |
 | 1.3.1 | 2025-11 | Added bulk processing and allocation presets |
 | 1.3.0 | 2025-11 | Initial IBKR transaction processing |
 
