@@ -133,11 +133,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
   const [portfolios, setPortfolios] = useState([]);
   const [allocations, setAllocations] = useState([{ portfolio_id: '', percentage: '' }]);
 
-  useEffect(() => {
-    fetchConfig();
-  }, []);
-
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await axios.get(`${API_BASE_URL}/ibkr/config`);
@@ -181,7 +177,27 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch portfolios for allocation modal
+  const fetchPortfolios = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/ibkr/portfolios`);
+      setPortfolios(response.data);
+    } catch (err) {
+      console.error('Failed to fetch portfolios:', err);
+      setError('Failed to load portfolios');
+    }
+  }, [setError]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      await fetchConfig();
+      // Fetch portfolios to display portfolio names in the allocation summary
+      await fetchPortfolios();
+    };
+    loadData();
+  }, [fetchConfig, fetchPortfolios]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -274,17 +290,6 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     }
   };
 
-  // Fetch portfolios for allocation modal
-  const fetchPortfolios = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/ibkr/portfolios`);
-      setPortfolios(response.data);
-    } catch (err) {
-      console.error('Failed to fetch portfolios:', err);
-      setError('Failed to load portfolios');
-    }
-  };
-
   // Open allocation modal
   const handleConfigureAllocation = async () => {
     await fetchPortfolios();
@@ -374,18 +379,20 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     );
 
     setConfig({ ...config, default_allocations: allocationsJson });
-    setMessage('Default allocation preset saved. Click "Save Configuration" to apply.');
+    setMessage(
+      'Default allocation preset configured. Click "Update Configuration" below to save these changes.'
+    );
     setShowAllocationModal(false);
   };
 
   // Get summary of current allocation
-  const getAllocationSummary = () => {
-    if (!config.default_allocations) {
+  const getAllocationSummary = (allocationsJson) => {
+    if (!allocationsJson) {
       return 'No default allocation configured';
     }
 
     try {
-      const parsed = JSON.parse(config.default_allocations);
+      const parsed = JSON.parse(allocationsJson);
       const portfolioNames = parsed
         .map((a) => {
           const portfolio = portfolios.find((p) => p.id === a.portfolio_id);
@@ -499,103 +506,130 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
 
         {config.enabled && (
           <>
-            <div className="form-group">
-              <label>
-                Flex Token:
-                <span className="required">*</span>
-              </label>
-              <input
-                type="password"
-                value={config.flex_token}
-                onChange={(e) => setConfig({ ...config, flex_token: e.target.value })}
-                placeholder={
-                  existingConfig
-                    ? '*** Token Set *** (enter new token to update)'
-                    : 'Enter Flex Token'
-                }
-                required={!existingConfig}
-              />
-              <small className="form-help">
-                Token is encrypted and stored securely. It will never be displayed after saving.
-              </small>
-            </div>
+            {/* Connection Settings Section */}
+            <div className="config-section">
+              <h3 className="section-title">Connection Settings</h3>
 
-            <div className="form-group">
-              <label>
-                Flex Query ID:
-                <span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                value={config.flex_query_id}
-                onChange={(e) => setConfig({ ...config, flex_query_id: e.target.value })}
-                placeholder="Enter Query ID (e.g., 123456)"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Token Expiration Date:</label>
-              <input
-                type="date"
-                value={config.token_expires_at}
-                onChange={(e) => setConfig({ ...config, token_expires_at: e.target.value })}
-                min={new Date().toISOString().split('T')[0]}
-              />
-              <small className="form-help">
-                IBKR tokens expire after max 1 year. You&apos;ll receive a warning 30 days before
-                expiration.
-              </small>
-            </div>
-
-            <div className="form-group">
-              <label className="checkbox-label">
+              <div className="form-group">
+                <label>
+                  Flex Token:
+                  <span className="required">*</span>
+                </label>
                 <input
-                  type="checkbox"
-                  checked={config.auto_import_enabled}
-                  onChange={(e) => setConfig({ ...config, auto_import_enabled: e.target.checked })}
+                  type="password"
+                  value={config.flex_token}
+                  onChange={(e) => setConfig({ ...config, flex_token: e.target.value })}
+                  placeholder={
+                    existingConfig
+                      ? '*** Token Set *** (enter new token to update)'
+                      : 'Enter Flex Token'
+                  }
+                  required={!existingConfig}
                 />
-                Enable automated imports (Tuesday - Saturday at 06:30)
-              </label>
+                <small className="form-help">
+                  Token is encrypted and stored securely. It will never be displayed after saving.
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>
+                  Flex Query ID:
+                  <span className="required">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={config.flex_query_id}
+                  onChange={(e) => setConfig({ ...config, flex_query_id: e.target.value })}
+                  placeholder="Enter Query ID (e.g., 123456)"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Token Expiration Date:</label>
+                <input
+                  type="date"
+                  value={config.token_expires_at}
+                  onChange={(e) => setConfig({ ...config, token_expires_at: e.target.value })}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+                <small className="form-help">
+                  IBKR tokens expire after max 1 year. You&apos;ll receive a warning 30 days before
+                  expiration.
+                </small>
+              </div>
             </div>
 
-            <div className="form-group">
-              <h3>Default Allocation on Import</h3>
-              <small className="form-help">
+            {/* Import Settings Section */}
+            <div className="config-section">
+              <h3 className="section-title">Import Settings</h3>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={config.auto_import_enabled}
+                    onChange={(e) =>
+                      setConfig({ ...config, auto_import_enabled: e.target.checked })
+                    }
+                  />
+                  Enable automated imports (Tuesday - Saturday at 06:30)
+                </label>
+              </div>
+            </div>
+
+            {/* Default Allocation Section */}
+            <div className="config-section">
+              <h3 className="section-title">Default Allocation on Import</h3>
+              <small className="form-help section-description">
                 Configure default portfolio allocation for imported transactions. When enabled,
                 matching transactions will be automatically allocated using this preset.
               </small>
 
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={config.default_allocation_enabled}
-                  onChange={(e) =>
-                    setConfig({ ...config, default_allocation_enabled: e.target.checked })
-                  }
-                />
-                Enable default allocation on import
-              </label>
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={config.default_allocation_enabled}
+                    onChange={(e) =>
+                      setConfig({ ...config, default_allocation_enabled: e.target.checked })
+                    }
+                  />
+                  Enable default allocation on import
+                </label>
+              </div>
 
               <button
                 type="button"
                 className="secondary-button"
                 onClick={handleConfigureAllocation}
-                style={{ marginTop: '10px' }}
               >
                 Configure Default Allocation
               </button>
 
-              {config.default_allocations && (
+              {(existingConfig?.default_allocations || config.default_allocations) && (
                 <div className="allocation-summary">
-                  <strong>Current preset:</strong> {getAllocationSummary()}
+                  {existingConfig?.default_allocations && (
+                    <div>
+                      <strong>Current preset:</strong>{' '}
+                      {getAllocationSummary(existingConfig.default_allocations)}
+                    </div>
+                  )}
+                  {config.default_allocations &&
+                    config.default_allocations !== existingConfig?.default_allocations && (
+                      <div className="allocation-pending">
+                        <strong>Updated preset:</strong>{' '}
+                        {getAllocationSummary(config.default_allocations)}
+                        <span className="pending-badge">Pending save</span>
+                      </div>
+                    )}
                 </div>
               )}
 
-              <small className="form-help" style={{ marginTop: '10px', display: 'block' }}>
+              <div className="form-help-note">
                 💡 Automatic allocation only applies to transactions where the fund exists in all
                 configured portfolios. Other transactions remain pending for manual allocation.
-              </small>
+              </div>
             </div>
           </>
         )}
@@ -634,6 +668,11 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
               Set up a default allocation preset that will be applied automatically to imported IBKR
               transactions. Allocations must sum to exactly 100%.
             </p>
+
+            <div className="modal-note">
+              ℹ️ <strong>Note:</strong> Changes made here are not saved until you click &quot;Update
+              Configuration&quot; on the main form.
+            </div>
 
             {portfolios.length > 0 && (
               <div className="allocations-section">
@@ -714,12 +753,12 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                     <div className="allocation-error">Allocations must sum to exactly 100%</div>
                   )}
                   <button className="default-button" onClick={handleSaveAllocationPreset}>
-                    Save Preset
+                    Apply Preset
                   </button>
                 </>
               )}
               <button className="secondary-button" onClick={handleCloseAllocationModal}>
-                Close
+                Cancel
               </button>
             </div>
           </div>
