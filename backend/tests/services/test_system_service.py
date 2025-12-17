@@ -25,7 +25,31 @@ def get_expected_version():
     return version_file.read_text().strip()
 
 
+def get_latest_migration_version():
+    """Get the latest migration version from migrations directory."""
+    migrations_dir = Path(__file__).parent.parent.parent / "migrations" / "versions"
+    if not migrations_dir.exists():
+        return "1.3.1"  # Fallback if migrations dir doesn't exist
+
+    # Get all migration files that start with version number (X.Y.Z_...)
+    migration_files = list(migrations_dir.glob("[0-9]*.py"))
+    if not migration_files:
+        return "1.3.1"  # Fallback if no migrations found
+
+    # Extract version numbers and sort
+    versions = []
+    for file in migration_files:
+        # Extract version from filename (e.g., "1.3.5_description.py" -> "1.3.5")
+        version_str = file.name.split("_")[0]
+        versions.append(version_str)
+
+    # Sort versions and return the latest
+    versions.sort(key=lambda v: [int(x) for x in v.split(".")])
+    return versions[-1]
+
+
 EXPECTED_VERSION = get_expected_version()
+LATEST_MIGRATION_VERSION = get_latest_migration_version()
 
 
 class TestSystemService:
@@ -61,7 +85,11 @@ class TestSystemService:
             db.text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)")
         )
         db_session.execute(db.text("DELETE FROM alembic_version"))  # Clear any existing
-        db_session.execute(db.text("INSERT INTO alembic_version (version_num) VALUES ('1.3.1')"))
+        db_session.execute(
+            db.text(
+                f"INSERT INTO alembic_version (version_num) VALUES ('{LATEST_MIGRATION_VERSION}')"
+            )
+        )
         db_session.commit()
 
         version = SystemService.get_db_version()
@@ -69,7 +97,7 @@ class TestSystemService:
         assert version != "unknown"
         assert isinstance(version, str)
         # Should be the version we inserted
-        assert version == "1.3.1"
+        assert version == LATEST_MIGRATION_VERSION
 
     def test_get_db_version_no_table(self, app_context):
         """Test database version retrieval when alembic_version table doesn't exist."""
@@ -92,7 +120,11 @@ class TestSystemService:
             db.text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)")
         )
         db_session.execute(db.text("DELETE FROM alembic_version"))
-        db_session.execute(db.text("INSERT INTO alembic_version (version_num) VALUES ('1.3.1')"))
+        db_session.execute(
+            db.text(
+                f"INSERT INTO alembic_version (version_num) VALUES ('{LATEST_MIGRATION_VERSION}')"
+            )
+        )
         db_session.commit()
 
         has_pending, error = SystemService.check_pending_migrations()
@@ -117,7 +149,9 @@ class TestSystemService:
                 # Mock ScriptDirectory to return newer head
                 with patch("alembic.script.ScriptDirectory.from_config") as mock_script_dir:
                     mock_script = Mock()
-                    mock_script.get_current_head.return_value = "1.3.1"  # Newer head
+                    mock_script.get_current_head.return_value = (
+                        LATEST_MIGRATION_VERSION  # Newer head
+                    )
                     mock_script_dir.return_value = mock_script
 
                     has_pending, error = SystemService.check_pending_migrations()
@@ -207,9 +241,9 @@ class TestSystemService:
         }
         assert features == expected_features
 
-    def test_check_feature_availability_version_1_3_1(self, app_context):
-        """Test feature availability for current version 1.3.1."""
-        features = SystemService.check_feature_availability("1.3.1")
+    def test_check_feature_availability_version_latest(self, app_context):
+        """Test feature availability for latest migration version."""
+        features = SystemService.check_feature_availability(LATEST_MIGRATION_VERSION)
 
         expected_features = {
             "basic_portfolio_management": True,
@@ -220,7 +254,7 @@ class TestSystemService:
 
     def test_check_feature_availability_version_with_v_prefix(self, app_context):
         """Test feature availability for version with 'v' prefix."""
-        features = SystemService.check_feature_availability("v1.3.1")
+        features = SystemService.check_feature_availability(f"v{LATEST_MIGRATION_VERSION}")
 
         expected_features = {
             "basic_portfolio_management": True,
@@ -259,7 +293,11 @@ class TestSystemService:
             db.text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)")
         )
         db_session.execute(db.text("DELETE FROM alembic_version"))
-        db_session.execute(db.text("INSERT INTO alembic_version (version_num) VALUES ('1.3.1')"))
+        db_session.execute(
+            db.text(
+                f"INSERT INTO alembic_version (version_num) VALUES ('{LATEST_MIGRATION_VERSION}')"
+            )
+        )
         db_session.commit()
 
         version_info = SystemService.get_version_info()
@@ -274,13 +312,13 @@ class TestSystemService:
         }
         assert set(version_info.keys()) == required_keys
 
-        # Verify current state (app version from VERSION file, db 1.3.1, no migrations needed)
+        # Verify current state: app version from VERSION file, db at latest migration
         assert version_info["app_version"] == EXPECTED_VERSION
-        assert version_info["db_version"] == "1.3.1"
+        assert version_info["db_version"] == LATEST_MIGRATION_VERSION
         assert version_info["migration_needed"] is False
         assert version_info["migration_message"] is None
 
-        # Verify features for 1.3.1
+        # Verify features for latest migration version
         expected_features = {
             "basic_portfolio_management": True,
             "realized_gain_loss": True,
@@ -415,7 +453,11 @@ class TestSystemServiceLogging:
             db.text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)")
         )
         db_session.execute(db.text("DELETE FROM alembic_version"))
-        db_session.execute(db.text("INSERT INTO alembic_version (version_num) VALUES ('1.3.1')"))
+        db_session.execute(
+            db.text(
+                f"INSERT INTO alembic_version (version_num) VALUES ('{LATEST_MIGRATION_VERSION}')"
+            )
+        )
         db_session.commit()
 
         with patch("app.services.logging_service.logger.log") as mock_log:
@@ -428,7 +470,7 @@ class TestSystemServiceLogging:
                 message="Version check requested",
                 details={
                     "app_version": EXPECTED_VERSION,
-                    "db_version": "1.3.1",
+                    "db_version": LATEST_MIGRATION_VERSION,
                     "migration_needed": False,
                 },
             )
@@ -444,14 +486,18 @@ class TestSystemServiceIntegration:
             db.text("CREATE TABLE IF NOT EXISTS alembic_version (version_num VARCHAR(32) NOT NULL)")
         )
         db_session.execute(db.text("DELETE FROM alembic_version"))
-        db_session.execute(db.text("INSERT INTO alembic_version (version_num) VALUES ('1.3.1')"))
+        db_session.execute(
+            db.text(
+                f"INSERT INTO alembic_version (version_num) VALUES ('{LATEST_MIGRATION_VERSION}')"
+            )
+        )
         db_session.commit()
 
         version_info = SystemService.get_version_info()
 
         # Verify we get real, expected values
         assert version_info["app_version"] == EXPECTED_VERSION
-        assert version_info["db_version"] == "1.3.1"
+        assert version_info["db_version"] == LATEST_MIGRATION_VERSION
         assert version_info["migration_needed"] is False  # No migrations pending
         assert version_info["migration_message"] is None
 

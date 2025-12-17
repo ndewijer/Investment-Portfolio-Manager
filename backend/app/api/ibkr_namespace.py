@@ -34,6 +34,10 @@ ibkr_config_model = ns.model(
         "last_import_date": fields.String(description="Last import date"),
         "auto_import_enabled": fields.Boolean(description="Auto import enabled"),
         "enabled": fields.Boolean(description="Configuration enabled"),
+        "default_allocation_enabled": fields.Boolean(description="Default allocation enabled"),
+        "default_allocations": fields.String(
+            description="JSON string of default allocation preset"
+        ),
         "created_at": fields.String(description="Configuration creation date"),
         "updated_at": fields.String(description="Last update date"),
     },
@@ -51,6 +55,13 @@ ibkr_config_create_model = ns.model(
         "token_expires_at": fields.String(description="Token expiration date (ISO format)"),
         "auto_import_enabled": fields.Boolean(description="Enable automatic import", default=False),
         "enabled": fields.Boolean(description="Enable configuration", default=True),
+        "default_allocation_enabled": fields.Boolean(
+            description="Enable default allocation on import", default=False
+        ),
+        "default_allocations": fields.String(
+            description="JSON string of default allocation preset "
+            '(e.g., [{"portfolio_id": "...", "percentage": 60.0}])'
+        ),
     },
 )
 
@@ -167,6 +178,8 @@ class IBKRConfig(Resource):
                 token_expires_at=token_expires_at,
                 auto_import_enabled=data.get("auto_import_enabled"),
                 enabled=data.get("enabled"),
+                default_allocation_enabled=data.get("default_allocation_enabled"),
+                default_allocations=data.get("default_allocations"),
             )
 
             logger.log(
