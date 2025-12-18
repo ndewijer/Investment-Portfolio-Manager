@@ -1,10 +1,6 @@
 # Testing Framework Guide
 
-**Version**: 1.3.5+
-**Last Updated**: 2025-12-03
-**Status**: Foundation established, expanding coverage
-
-This guide documents the pytest testing framework introduced in version 1.3.2 and provides guidance for adding new tests.
+This guide documents the pytest testing framework and provides guidance for adding new tests.
 
 ---
 
@@ -30,7 +26,7 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 - **Great ecosystem**: Extensive plugin support
 - **Clear output**: Readable test results
 
-### Current Coverage
+### Coverage
 
 - **Service Tests**: Comprehensive coverage across all major services
   - **Excellent Coverage Services** (95%+):
@@ -59,7 +55,7 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
   - `fund_routes.py`: 96% ✅
   - `developer_routes.py`: 91% ✅
 
-- **Critical Bugs Found**: 5 bugs discovered and fixed during testing
+- **Critical Bugs Fixed Through Testing**: 5 bugs
   - ReinvestmentStatus enum vs string mismatch
   - Dividend share calculation error
   - Cost basis calculation error
@@ -73,7 +69,7 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 - **Prevent regressions**: Catch performance/functionality regressions early
 - **Document behavior**: Tests serve as executable documentation
 - **Enable refactoring**: Confidence to improve code
-- **Future expansion**: Foundation for comprehensive coverage
+- **Comprehensive coverage**: Maintain high test coverage across the codebase
 
 ---
 
@@ -347,13 +343,13 @@ pytest --cov=app --cov-report=term-missing
 ### Markers
 
 ```bash
-# Run only performance tests (future)
+# Run only performance tests
 pytest -m performance
 
-# Run only unit tests (future)
+# Run only unit tests
 pytest -m unit
 
-# Run only integration tests (future)
+# Run only integration tests
 pytest -m integration
 ```
 
@@ -639,79 +635,43 @@ def test_portfolio_history_endpoint(client):
 
 ---
 
-## Future Expansion
-
-### Planned Test Types
-
-1. **Unit Tests**: Test individual functions in isolation
-2. **Integration Tests**: Test API endpoints end-to-end
-3. **Fixture Data**: Create reusable test portfolios/transactions
-4. **Mock Objects**: Mock external services (yfinance, IBKR)
-5. **Test Database**: Separate database for testing
-
-### Areas to Cover
-
-- **Service Layer**: All service methods
-- **Routes**: All API endpoints
-- **Models**: Database operations
-- **Utilities**: Helper functions
-- **IBKR Integration**: Import and processing logic
-- **Price Updates**: yfinance integration
-- **Error Handling**: Exception cases
-
-### Test Markers (Future)
-
-```python
-@pytest.mark.unit
-def test_calculation():
-    pass
-
-@pytest.mark.integration
-def test_api_endpoint():
-    pass
-
-@pytest.mark.performance
-def test_query_count():
-    pass
-
-@pytest.mark.slow
-def test_full_import():
-    pass
-```
-
----
-
 ## Frontend Testing
 
 ### Overview
 
-**Added in**: Version 1.3.5
 **Framework**: Jest + React Testing Library
-**Purpose**: Ensure frontend code quality, prevent regressions, and document component behavior
 
 The frontend uses **Jest** with **React Testing Library** for testing React components, hooks, and utility functions.
 
-### Current Coverage
+### Coverage
 
+**Overall** (Business Logic Only): 93.11% lines, 90.74% statements
+
+**By Category**:
 - **Utility Functions**: 100% coverage
-  - `src/utils/currency.js`: 27 tests (getCurrencySymbol, formatCurrency)
-  - `src/utils/numberFormat.js`: 30 tests (formatCurrency, formatNumber, formatPercentage)
-  - `src/utils/portfolio/portfolioCalculations.js`: 75 tests (calculateTransactionTotal, getFundColor, sortTransactions, filterTransactions, getUniqueFundNames)
-  - `src/utils/portfolio/transactionValidation.js`: 80+ tests (validateTransaction, validateDividend, validateDateRange, canRemoveFund)
+- **Hooks**: 89-94% coverage (target exceeded)
+- **Context Providers**: 87% coverage
+- **Shared Components**: 79% coverage
 
-- **Custom Hooks**: High coverage
-  - `src/hooks/useApiState.js`: 94.59% (18 tests, 3 skipped due to React 19 timing)
-  - `src/hooks/useNumericInput.js`: 100% (17 tests)
+**Tests**: 584 tests (575 passing, 9 skipped)
 
-**Total**: 160+ tests passing, 3 skipped
+### Coverage Thresholds (Mandatory)
+
+Tests will **fail** if coverage drops below:
+- Lines: 90%
+- Statements: 90%
+- Branches: 84%
+- Functions: 80%
+
+These thresholds are enforced in pre-commit hooks and CI/CD pipelines.
 
 ### Running Frontend Tests
 
-**From frontend directory:**
+**Unit Tests (Jest + React Testing Library):**
 ```bash
 cd frontend
 
-# Run all tests
+# Run all unit tests with coverage
 npm test
 
 # Run tests in watch mode (interactive)
@@ -722,12 +682,26 @@ npm run test:coverage
 
 # Run tests in CI mode (non-interactive)
 npm run test:ci
+
+# View HTML coverage report
+npm run test:coverage && open coverage/index.html
 ```
 
-**View coverage report:**
+**E2E Tests (Playwright):**
 ```bash
-npm run test:coverage
-open coverage/lcov-report/index.html
+cd frontend
+
+# Run all E2E tests (headless)
+npm run test:e2e
+
+# Run with interactive UI
+npm run test:e2e:ui
+
+# Run in headed mode (see browser)
+npm run test:e2e:headed
+
+# Debug mode (step through tests)
+npm run test:e2e:debug
 ```
 
 ### Test Structure
@@ -759,41 +733,34 @@ frontend/src/
 
 ### Configuration
 
-**Jest Configuration** (`frontend/package.json`):
+**Jest Configuration** is in `frontend/package.json`. Key settings:
+- **Test Environment**: jsdom (simulates browser DOM)
+- **Setup**: `setupTests.js` configures @testing-library/jest-dom matchers
+- **Transforms**: babel-jest for JSX/modern JavaScript
+- **Coverage Collection**: Focused on business logic only (UI components excluded)
+- **Coverage Thresholds**: Mandatory minimums enforced in CI/CD
+
+**Mandatory Coverage Thresholds:**
 ```json
 {
-  "jest": {
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["<rootDir>/src/setupTests.js"],
-    "moduleNameMapper": {
-      "\\.(css|less|scss|sass)$": "identity-obj-proxy",
-      "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/__mocks__/fileMock.js"
-    },
-    "transform": {
-      "^.+\\.(js|jsx)$": "babel-jest"
-    },
-    "collectCoverageFrom": [
-      "src/**/*.{js,jsx}",
-      "!src/index.js",
-      "!src/reportWebVitals.js",
-      "!src/setupTests.js"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 0,
-        "functions": 0,
-        "lines": 0,
-        "statements": 0
-      }
+  "coverageThreshold": {
+    "global": {
+      "branches": 84,
+      "functions": 80,
+      "lines": 90,
+      "statements": 90
     }
   }
 }
 ```
 
-**Coverage Thresholds** (Future targets):
-- Utilities: 80%+
-- Hooks: 80%+
-- Components: 70%+
+Tests will **fail** if coverage drops below these thresholds. See [Coverage Monitoring Guide](../frontend/tests/docs/infrastructure/COVERAGE_MONITORING.md) for details.
+
+**Actual Coverage Achieved:**
+- **Utilities**: 100% coverage
+- **Hooks**: 89-94% coverage
+- **Context Providers**: 87% coverage
+- **Shared Components**: 79% coverage
 
 ### Writing Frontend Tests
 
@@ -1070,7 +1037,7 @@ Frontend tests run automatically in GitHub Actions (`.github/workflows/frontend-
 2. Using different `act()` patterns - same issue with edge cases
 3. Updating to latest React Testing Library v16.3.0 - already using latest
 
-**Workaround**: Tests are marked with `test.skip()` and documented in JSDoc. These will be revisited when React Testing Library v17 is released with improved React 19 support.
+**Workaround**: Tests are marked with `test.skip()` and documented in JSDoc with references to equivalent passing tests.
 
 **Example**:
 ```javascript
@@ -1110,12 +1077,27 @@ test.skip('clearError clears error state', async () => {
 - ESLint recognizes Jest globals (`describe`, `test`, `expect`)
 - Check `eslint.config.mjs` has test file configuration
 
+### Detailed Frontend Test Documentation
+
+For comprehensive information about frontend testing, including:
+- Complete test file inventory (29 test files, 584+ unit tests, 40+ E2E tests)
+- Coverage breakdown by category
+- Testing patterns and best practices
+- Known issues (React 19 async timing)
+- Coverage monitoring and alerting setup
+- Troubleshooting guides
+
+**See**: [frontend/tests/docs/README.md](../frontend/tests/docs/README.md)
+
 ### Related Documentation
 
-- [Jest Documentation](https://jestjs.io/docs/getting-started)
-- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
-- [Testing Library Queries](https://testing-library.com/docs/queries/about/)
-- [Jest DOM Matchers](https://github.com/testing-library/jest-dom)
+- **Internal**: [Frontend Test Coverage Summary](../frontend/tests/docs/UNIT_TEST_COVERAGE_SUMMARY.md)
+- **Internal**: [Coverage Monitoring Guide](../frontend/tests/docs/infrastructure/COVERAGE_MONITORING.md)
+- **External**: [Jest Documentation](https://jestjs.io/docs/getting-started)
+- **External**: [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
+- **External**: [Testing Library Queries](https://testing-library.com/docs/queries/about/)
+- **External**: [Jest DOM Matchers](https://github.com/testing-library/jest-dom)
+- **External**: [Playwright Documentation](https://playwright.dev/docs/intro)
 
 ---
 
@@ -1123,7 +1105,6 @@ test.skip('clearError clears error state', async () => {
 
 ### Overview
 
-**Added in**: Version 1.3.5
 **Purpose**: Prevent production deployment failures by testing Docker container builds, startup, and integration
 
 The Docker integration test workflow validates:
@@ -1398,5 +1379,5 @@ When adding new features:
 ---
 
 **Version**: 1.3.5+
-**Last Updated**: 2025-12-03
+**Last Updated**: 2025-12-18
 **Maintainer**: @ndewijer

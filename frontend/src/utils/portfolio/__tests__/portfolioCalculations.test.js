@@ -7,11 +7,13 @@
  * - sortTransactions: Multi-field sorting (date, shares, cost, strings) with asc/desc
  * - filterTransactions: Filters by date range, fund names, and transaction type
  * - getUniqueFundNames: Extracts and deduplicates fund names from portfolio data
+ * - formatChartData: Transforms fund history into chart-ready data with calculated metrics
+ * - getChartLines: Generates chart line configurations based on visible metrics
  *
  * Edge cases covered: zero values, negatives, large numbers, decimals, empty arrays,
  * null/undefined, combinations of multiple filters
  *
- * Total: 75 tests
+ * Total: 115+ tests
  */
 import {
   calculateTransactionTotal,
@@ -19,6 +21,8 @@ import {
   sortTransactions,
   filterTransactions,
   getUniqueFundNames,
+  formatChartData,
+  getChartLines,
 } from '../portfolioCalculations';
 
 describe('Portfolio Calculations', () => {
@@ -346,6 +350,564 @@ describe('Portfolio Calculations', () => {
       expect(unique[0]).toBe('Fund C');
       expect(unique[1]).toBe('Fund A');
       expect(unique[2]).toBe('Fund B');
+    });
+  });
+
+  describe('formatChartData', () => {
+    test('returns empty array for empty input', () => {
+      expect(formatChartData([])).toEqual([]);
+    });
+
+    test('formats single day with single fund', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 50 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        date: '2024-01-15',
+        totalValue: 1000,
+        totalCost: 900,
+        realizedGain: 50,
+        unrealizedGain: 100,
+        totalGain: 150,
+        fund_1_value: 1000,
+        fund_1_cost: 900,
+        fund_1_realized: 50,
+        fund_1_unrealized: 100,
+      });
+    });
+
+    test('formats single day with multiple funds', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [
+            { portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 50 },
+            { portfolio_fund_id: 2, value: 2000, cost: 1800, realized_gain: 100 },
+          ],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        date: '2024-01-15',
+        totalValue: 3000,
+        totalCost: 2700,
+        realizedGain: 150,
+        unrealizedGain: 300,
+        totalGain: 450,
+        fund_1_value: 1000,
+        fund_1_cost: 900,
+        fund_2_value: 2000,
+        fund_2_cost: 1800,
+      });
+    });
+
+    test('formats multiple days', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 0 }],
+        },
+        {
+          date: '2024-01-16',
+          funds: [{ portfolio_fund_id: 1, value: 1100, cost: 900, realized_gain: 0 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].date).toBe('2024-01-15');
+      expect(result[0].totalValue).toBe(1000);
+      expect(result[1].date).toBe('2024-01-16');
+      expect(result[1].totalValue).toBe(1100);
+    });
+
+    test('handles funds with zero realized gain', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].realizedGain).toBe(0);
+      expect(result[0].fund_1_realized).toBe(0);
+    });
+
+    test('handles funds with null realized gain', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: null }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].realizedGain).toBe(0);
+      expect(result[0].fund_1_realized).toBe(0);
+    });
+
+    test('handles funds with undefined realized gain', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: undefined }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].realizedGain).toBe(0);
+      expect(result[0].fund_1_realized).toBe(0);
+    });
+
+    test('calculates unrealized gain correctly', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [
+            { portfolio_fund_id: 1, value: 1200, cost: 1000, realized_gain: 0 },
+            { portfolio_fund_id: 2, value: 800, cost: 1000, realized_gain: 0 },
+          ],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].unrealizedGain).toBe(0);
+      expect(result[0].fund_1_unrealized).toBe(200);
+      expect(result[0].fund_2_unrealized).toBe(-200);
+    });
+
+    test('calculates total gain correctly', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1200, cost: 1000, realized_gain: 50 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].totalGain).toBe(250);
+    });
+
+    test('handles negative values', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 800, cost: 1000, realized_gain: -50 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].totalValue).toBe(800);
+      expect(result[0].totalCost).toBe(1000);
+      expect(result[0].realizedGain).toBe(-50);
+      expect(result[0].unrealizedGain).toBe(-200);
+      expect(result[0].totalGain).toBe(-250);
+    });
+
+    test('handles zero values', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 0, cost: 0, realized_gain: 0 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].totalValue).toBe(0);
+      expect(result[0].totalCost).toBe(0);
+      expect(result[0].realizedGain).toBe(0);
+      expect(result[0].unrealizedGain).toBe(0);
+      expect(result[0].totalGain).toBe(0);
+    });
+
+    test('uses portfolio_fund_id for fund keys', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [
+            { portfolio_fund_id: 5, value: 1000, cost: 900, realized_gain: 0 },
+            { portfolio_fund_id: 10, value: 2000, cost: 1800, realized_gain: 0 },
+          ],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0]).toHaveProperty('fund_5_value');
+      expect(result[0]).toHaveProperty('fund_5_cost');
+      expect(result[0]).toHaveProperty('fund_10_value');
+      expect(result[0]).toHaveProperty('fund_10_cost');
+    });
+
+    test('handles large numbers correctly', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1000000, cost: 900000, realized_gain: 50000 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].totalValue).toBe(1000000);
+      expect(result[0].totalCost).toBe(900000);
+      expect(result[0].unrealizedGain).toBe(100000);
+      expect(result[0].totalGain).toBe(150000);
+    });
+
+    test('handles decimal values correctly', () => {
+      const fundHistory = [
+        {
+          date: '2024-01-15',
+          funds: [{ portfolio_fund_id: 1, value: 1000.5, cost: 900.25, realized_gain: 50.75 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].totalValue).toBeCloseTo(1000.5, 2);
+      expect(result[0].totalCost).toBeCloseTo(900.25, 2);
+      expect(result[0].unrealizedGain).toBeCloseTo(100.25, 2);
+      expect(result[0].totalGain).toBeCloseTo(151, 2);
+    });
+
+    test('preserves date format (YYYY-MM-DD)', () => {
+      const fundHistory = [
+        {
+          date: '2024-12-31',
+          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 0 }],
+        },
+      ];
+
+      const result = formatChartData(fundHistory);
+
+      expect(result[0].date).toBe('2024-12-31');
+    });
+  });
+
+  describe('getChartLines', () => {
+    const mockPortfolioFunds = [
+      { id: 1, fund_name: 'Fund A' },
+      { id: 2, fund_name: 'Fund B' },
+    ];
+
+    test('returns empty array when no metrics visible', () => {
+      const visibleMetrics = {
+        value: false,
+        cost: false,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      expect(result).toEqual([]);
+    });
+
+    test('includes total value line when value metric is visible', () => {
+      const visibleMetrics = {
+        value: true,
+        cost: false,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const totalValueLine = result.find((line) => line.dataKey === 'totalValue');
+      expect(totalValueLine).toBeDefined();
+      expect(totalValueLine).toMatchObject({
+        dataKey: 'totalValue',
+        name: 'Total Value',
+        color: '#8884d8',
+        strokeWidth: 2,
+        connectNulls: true,
+      });
+    });
+
+    test('includes total cost line when cost metric is visible', () => {
+      const visibleMetrics = {
+        value: false,
+        cost: true,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const totalCostLine = result.find((line) => line.dataKey === 'totalCost');
+      expect(totalCostLine).toBeDefined();
+      expect(totalCostLine).toMatchObject({
+        dataKey: 'totalCost',
+        name: 'Total Cost',
+        color: '#82ca9d',
+        strokeWidth: 2,
+        connectNulls: true,
+      });
+    });
+
+    test('includes realized gain line when metric is visible', () => {
+      const visibleMetrics = {
+        value: false,
+        cost: false,
+        realizedGain: true,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const realizedGainLine = result.find((line) => line.dataKey === 'realizedGain');
+      expect(realizedGainLine).toBeDefined();
+      expect(realizedGainLine).toMatchObject({
+        dataKey: 'realizedGain',
+        name: 'Realized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+        connectNulls: true,
+      });
+    });
+
+    test('includes unrealized gain line with dashed stroke', () => {
+      const visibleMetrics = {
+        value: false,
+        cost: false,
+        realizedGain: false,
+        unrealizedGain: true,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const unrealizedGainLine = result.find((line) => line.dataKey === 'unrealizedGain');
+      expect(unrealizedGainLine).toBeDefined();
+      expect(unrealizedGainLine).toMatchObject({
+        dataKey: 'unrealizedGain',
+        name: 'Unrealized Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 2,
+        strokeDasharray: '5 5',
+        connectNulls: true,
+      });
+    });
+
+    test('includes total gain line with thicker stroke', () => {
+      const visibleMetrics = {
+        value: false,
+        cost: false,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: true,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const totalGainLine = result.find((line) => line.dataKey === 'totalGain');
+      expect(totalGainLine).toBeDefined();
+      expect(totalGainLine).toMatchObject({
+        dataKey: 'totalGain',
+        name: 'Total Gain/Loss',
+        color: '#00C49F',
+        strokeWidth: 3,
+        connectNulls: true,
+      });
+    });
+
+    test('includes individual fund value lines when value metric is visible', () => {
+      const visibleMetrics = {
+        value: true,
+        cost: false,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const fund1ValueLine = result.find((line) => line.dataKey === 'fund_1_value');
+      const fund2ValueLine = result.find((line) => line.dataKey === 'fund_2_value');
+
+      expect(fund1ValueLine).toBeDefined();
+      expect(fund1ValueLine).toMatchObject({
+        dataKey: 'fund_1_value',
+        name: 'Fund A Value',
+        strokeWidth: 1,
+        strokeDasharray: '5 5',
+        connectNulls: true,
+      });
+
+      expect(fund2ValueLine).toBeDefined();
+      expect(fund2ValueLine).toMatchObject({
+        dataKey: 'fund_2_value',
+        name: 'Fund B Value',
+        strokeWidth: 1,
+        strokeDasharray: '5 5',
+        connectNulls: true,
+      });
+    });
+
+    test('includes individual fund cost lines when cost metric is visible', () => {
+      const visibleMetrics = {
+        value: false,
+        cost: true,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const fund1CostLine = result.find((line) => line.dataKey === 'fund_1_cost');
+      const fund2CostLine = result.find((line) => line.dataKey === 'fund_2_cost');
+
+      expect(fund1CostLine).toBeDefined();
+      expect(fund1CostLine).toMatchObject({
+        dataKey: 'fund_1_cost',
+        name: 'Fund A Cost',
+        strokeWidth: 1,
+        strokeDasharray: '2 2',
+        opacity: 0.7,
+        connectNulls: true,
+      });
+
+      expect(fund2CostLine).toBeDefined();
+    });
+
+    test('uses portfolio_fund_id for fund line keys', () => {
+      const fundsWithIds = [
+        { id: 5, fund_name: 'Fund X' },
+        { id: 10, fund_name: 'Fund Y' },
+      ];
+
+      const visibleMetrics = {
+        value: true,
+        cost: false,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(fundsWithIds, visibleMetrics);
+
+      const fund5Line = result.find((line) => line.dataKey === 'fund_5_value');
+      const fund10Line = result.find((line) => line.dataKey === 'fund_10_value');
+
+      expect(fund5Line).toBeDefined();
+      expect(fund10Line).toBeDefined();
+    });
+
+    test('uses getFundColor for individual fund colors', () => {
+      const visibleMetrics = {
+        value: true,
+        cost: false,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      const fund1Line = result.find((line) => line.dataKey === 'fund_1_value');
+      const fund2Line = result.find((line) => line.dataKey === 'fund_2_value');
+
+      expect(fund1Line.color).toBe(getFundColor(0));
+      expect(fund2Line.color).toBe(getFundColor(1));
+    });
+
+    test('combines multiple visible metrics', () => {
+      const visibleMetrics = {
+        value: true,
+        cost: true,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      expect(result.find((line) => line.dataKey === 'totalValue')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'totalCost')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'fund_1_value')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'fund_1_cost')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'fund_2_value')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'fund_2_cost')).toBeDefined();
+    });
+
+    test('handles empty portfolio funds array', () => {
+      const visibleMetrics = {
+        value: true,
+        cost: true,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines([], visibleMetrics);
+
+      expect(result.find((line) => line.dataKey === 'totalValue')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'totalCost')).toBeDefined();
+      expect(result.filter((line) => line.dataKey.startsWith('fund_'))).toHaveLength(0);
+    });
+
+    test('handles all metrics visible', () => {
+      const visibleMetrics = {
+        value: true,
+        cost: true,
+        realizedGain: true,
+        unrealizedGain: true,
+        totalGain: true,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      expect(result.find((line) => line.dataKey === 'totalValue')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'totalCost')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'realizedGain')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'unrealizedGain')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'totalGain')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'fund_1_value')).toBeDefined();
+      expect(result.find((line) => line.dataKey === 'fund_1_cost')).toBeDefined();
+    });
+
+    test('maintains line order (totals first, then individual funds)', () => {
+      const visibleMetrics = {
+        value: true,
+        cost: true,
+        realizedGain: false,
+        unrealizedGain: false,
+        totalGain: false,
+      };
+
+      const result = getChartLines(mockPortfolioFunds, visibleMetrics);
+
+      expect(result[0].dataKey).toBe('totalValue');
+      expect(result[1].dataKey).toBe('totalCost');
+      expect(result[2].dataKey).toBe('fund_1_value');
+      expect(result[3].dataKey).toBe('fund_1_cost');
+      expect(result[4].dataKey).toBe('fund_2_value');
+      expect(result[5].dataKey).toBe('fund_2_cost');
     });
   });
 });
