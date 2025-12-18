@@ -5,10 +5,10 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.5] - 2025-12-17
+## [1.3.5] - 2025-12-18
 
 ### Added
-- **Default Allocation on Import** - Automated allocation of IBKR transactions
+- **Default Allocation on Import** - See [PR #117](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/117)
   - Configure default portfolio allocation preset in IBKR Setup
   - Automatically allocate imported transactions matching the preset
   - UI shows "Current preset" vs "Updated preset" with pending save indicator
@@ -17,12 +17,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Failed allocations remain pending for manual processing
   - Detailed logging and error handling
 
-- **Frontend Testing Infrastructure** - See [PR #114](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/114)
-  - Jest and React Testing Library integration
-  - 26 comprehensive component tests
-  - Tests for Modal, DataTable, FormModal, CollapsibleInfo
-  - Automated testing in CI/CD pipeline
-  - Test documentation in `backend/tests/docs/frontend/`
+- **Comprehensive Frontend Testing** - 93.11% coverage achieved
+  - **Week 2**: Utilities and Basic Hooks - See [PR #114](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/114)
+    - Jest and React Testing Library integration
+    - 160 tests for utilities and basic hooks (currency, numberFormat, useApiState, useNumericInput)
+    - 100% coverage on utility functions
+    - Automated testing in CI/CD pipeline
+  - **Week 3**: Components and Context - See [PR #118](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/118)
+    - 172 tests for shared/portfolio components and context providers
+    - Tests for Modal, DataTable, FormModal, PortfolioSummary, FundsTable, etc.
+    - FormatContext and AppContext comprehensive testing
+    - 79% shared components, 87% context providers coverage
+  - **Week 4**: Advanced Hooks and Documentation - See [PR #120](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/120)
+    - 143 tests for advanced hooks (useChartData, useDividendManagement, useFundPricing, etc.)
+    - API client and date helper utility tests
+    - 89-94% hooks coverage
+    - **584 total unit tests** (575 passing, 9 skipped)
+    - Organized test documentation in `frontend/tests/docs/`
+    - Mandatory coverage thresholds: 90% lines, 90% statements, 84% branches, 80% functions
+
+- **End-to-End Testing Framework** - See [PR #119](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/119)
+  - Playwright E2E testing setup
+  - 18 smoke tests for critical user journeys
+  - Navigation, health check, and UI flow validation
+  - 40+ total E2E tests including portfolio, transaction, and dividend workflows
+  - Automated E2E tests in CI/CD pipeline
 
 - **Docker Integration Testing** - See [PR #113](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/113)
   - Full Docker Compose environment tests
@@ -68,7 +87,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 - Added comprehensive "Default Allocation on Import" section to `IBKR_FEATURES.md`
-- Updated frontend test documentation
+- Created `frontend/tests/docs/` structure mirroring backend pattern
+  - Complete test documentation with navigation index
+  - Coverage monitoring and alerting guide
+  - Testing patterns and best practices
+- Updated `docs/TESTING.md` with evergreen documentation standards
 - Docker integration testing documentation
 
 ## [1.3.4.1] - 2025-12-02
