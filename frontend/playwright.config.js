@@ -13,7 +13,8 @@ export default defineConfig({
   reporter: [['html'], ['list'], process.env.CI ? ['github'] : null].filter(Boolean),
 
   use: {
-    baseURL: 'http://localhost:3000',
+    // Use PLAYWRIGHT_BASE_URL env var if set (for Docker testing), otherwise default to dev server
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -35,11 +36,13 @@ export default defineConfig({
     // },
   ],
 
-  // Run dev server before starting tests
-  webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // Run dev server before starting tests (disabled when PLAYWRIGHT_BASE_URL is set for Docker testing)
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: 'npm run start',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+      },
 });

@@ -130,6 +130,32 @@ if [ "$PORTFOLIO_COUNT" -lt 1 ]; then
 fi
 echo -e "${GREEN}✅ Portfolios seeded (found $PORTFOLIO_COUNT portfolios)${NC}"
 
+# Test 7 (Optional): Run E2E tests against Docker stack
+if [ "${RUN_E2E_TESTS}" = "true" ]; then
+    echo -e "${BLUE}🎭 Running Playwright E2E tests against Docker stack...${NC}"
+
+    # Check if Playwright is available
+    if ! command -v npx &> /dev/null; then
+        echo -e "${YELLOW}⚠️  npm/npx not available - skipping E2E tests${NC}"
+    else
+        # Install Playwright browsers if needed (will skip if already installed)
+        echo -e "${BLUE}📦 Ensuring Playwright browsers are installed...${NC}"
+        cd frontend && npx playwright install chromium --with-deps > /dev/null 2>&1
+
+        # Run E2E tests against Docker stack (port 80, not 3000)
+        if PLAYWRIGHT_BASE_URL=http://localhost npm run test:e2e; then
+            echo -e "${GREEN}✅ E2E tests passed${NC}"
+        else
+            echo -e "${RED}❌ E2E tests failed${NC}"
+            cd ..
+            exit 1
+        fi
+        cd ..
+    fi
+else
+    echo -e "${YELLOW}ℹ️  Skipping E2E tests (set RUN_E2E_TESTS=true to run them)${NC}"
+fi
+
 # All tests passed
 echo -e "${GREEN}✅ All Docker integration tests passed!${NC}"
 exit 0

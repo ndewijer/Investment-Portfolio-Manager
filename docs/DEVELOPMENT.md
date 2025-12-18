@@ -39,6 +39,42 @@ npm install
 npm start
 ```
 
+### Playwright E2E Tests
+E2E tests require both backend and frontend servers to be running.
+
+**Recommended: Run E2E tests with Docker (easiest):**
+```bash
+# Run Docker integration tests with E2E tests included
+RUN_E2E_TESTS=true ./scripts/test-docker-integration.sh
+```
+
+This will:
+1. Build and start the full Docker stack
+2. Wait for services to be healthy
+3. Run API integration tests
+4. Run Playwright E2E tests against the Docker stack
+5. Clean up containers when done
+
+**Alternative: Run E2E tests against local services:**
+```bash
+# Terminal 1: Start backend
+cd backend
+uv run python run.py
+
+# Terminal 2: Start frontend
+cd frontend
+npm start
+
+# Terminal 3: Install Playwright browsers (first time only)
+cd frontend
+npx playwright install chromium
+
+# Terminal 3: Run E2E tests
+npm run test:e2e
+```
+
+**Note**: E2E tests are **NOT** run in pre-commit hooks by default (too slow). They run in CI automatically.
+
 ## Development Tools
 - ESLint and Prettier for frontend
 - Ruff for backend (linting and formatting)
