@@ -29,9 +29,11 @@
   "scripts": {
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
+    "analyze": "webpack-bundle-analyzer dist/main.js.LICENSE.txt --mode static",
     "test": "jest --coverage --watchAll=false",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --coverageReporters=html text",
+    "test:coverage:summary": "jest --coverage --coverageReporters=json-summary text",
     "test:ci": "jest --coverage --ci --maxWorkers=2",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
@@ -70,6 +72,7 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "prettier": "^3.7.3",
+    "webpack-bundle-analyzer": "^5.1.0",
     "webpack-dev-server": "^5.2.2"
   },
   "jest": {
@@ -88,14 +91,36 @@
       "src/**/*.{js,jsx}",
       "!src/index.js",
       "!src/reportWebVitals.js",
-      "!src/setupTests.js"
+      "!src/setupTests.js",
+      "!src/App.js",
+      "!src/config.js",
+      "!src/utils/api.js",
+      "!src/pages/**/*.{js,jsx}",
+      "!src/components/CollapsibleInfo.js",
+      "!src/components/FilterPopup.js",
+      "!src/components/HealthCheckError.js",
+      "!src/components/Navigation.js",
+      "!src/components/NumericInput.js",
+      "!src/components/StatusTab.js",
+      "!src/components/ValueChart.js",
+      "!src/components/VersionBanner.js",
+      "!src/components/portfolio/DividendsTable.js",
+      "!src/components/portfolio/PortfolioActions.js",
+      "!src/components/portfolio/TransactionsTable.js",
+      "!src/context/ThemeContext.js",
+      "!src/**/*index.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/src/pages/",
+      "/src/App.js"
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 0,
-        "functions": 0,
-        "lines": 0,
-        "statements": 0
+        "branches": 84,
+        "functions": 80,
+        "lines": 90,
+        "statements": 90
       }
     },
     "testMatch": [

@@ -115,7 +115,9 @@ module.exports = (env, argv) => {
     },
     devtool: isProduction ? 'source-map' : 'eval-source-map',
     performance: {
-      hints: false,
+      maxAssetSize: 1000000, // 1MB per asset
+      maxEntrypointSize: 1700000, // 1.7MB total entrypoint (with some buffer)
+      hints: 'warning', // Warn but don't fail build - bundle analyzer available for debugging
     },
     optimization: {
       concatenateModules: false,

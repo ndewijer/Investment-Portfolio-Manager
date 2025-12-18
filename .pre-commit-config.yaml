@@ -30,13 +30,25 @@ repos:
         pass_filenames: false
         always_run: false
 
-      - id: docker-integration-test
-        name: docker-integration-test
-        entry: scripts/test-docker-integration.sh
+      # Backend/Docker changes → Integration tests only (no E2E for speed)
+      - id: docker-integration-test-backend
+        name: docker-integration-test (backend changes)
+        entry: bash -c './scripts/test-docker-integration.sh'
         language: system
         pass_filenames: false
         always_run: false
-        files: ^(backend/Dockerfile|frontend/Dockerfile|docker-compose\.yml|pyproject\.toml|uv\.lock|frontend/nginx\.conf)$
+        files: ^(backend/|docker-compose\.yml|pyproject\.toml|uv\.lock|backend/Dockerfile)$
+        exclude: ^frontend/
+
+      # Frontend changes → Integration tests + E2E tests (comprehensive)
+      - id: docker-integration-test-e2e
+        name: docker-integration-test + E2E (frontend changes)
+        entry: bash -c 'RUN_E2E_TESTS=true ./scripts/test-docker-integration.sh'
+        language: system
+        pass_filenames: false
+        always_run: false
+        files: ^(frontend/src/|frontend/e2e/|frontend/Dockerfile|frontend/nginx\.conf)
+        exclude: ^backend/
 
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v9.39.1
@@ -60,3 +72,17 @@ repos:
     hooks:
       - id: prettier
         files: ^frontend/.*\.(js|jsx|ts|tsx|css|scss|json|yaml)$
+
+  # Frontend unit testing
+  # Note: E2E tests (Playwright) run automatically in pre-commit when frontend files change.
+  # They run against Docker stack along with integration tests.
+  - repo: local
+    hooks:
+      - id: jest-frontend
+        name: jest-frontend
+        entry: bash -c 'cd frontend && npm run test:ci'
+        language: system
+        types: [javascript]
+        files: ^frontend/src/.*\.(js|jsx)$
+        pass_filenames: false
+        always_run: false
