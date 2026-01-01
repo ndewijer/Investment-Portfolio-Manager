@@ -14,6 +14,6 @@ Flask-SQLAlchemy==3.1.1
 python-dotenv==1.2.1
 SQLAlchemy==2.0.44
 Werkzeug==3.1.4
-yfinance==0.2.66
+yfinance==1.0
 cryptography==46.0.3
 requests==2.32.5
