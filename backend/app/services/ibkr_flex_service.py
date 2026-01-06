@@ -10,6 +10,7 @@ This module handles:
 
 import json
 import os
+import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 
@@ -47,6 +48,23 @@ class IBKRFlexService:
 
         # Debug XML saving (disabled by default for security)
         self.save_debug_xml = os.environ.get("IBKR_DEBUG_SAVE_XML", "false").lower() == "true"
+
+        # Set User-Agent header (required by IBKR Flex Web Service for programmatic access)
+        python_version = (
+            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
+        self.headers = {"User-Agent": f"Python/{python_version}"}
+
+        logger.log(
+            level=LogLevel.DEBUG,
+            category=LogCategory.IBKR,
+            message="IBKRFlexService initialized",
+            details={
+                "python_version": python_version,
+                "headers": self.headers,
+                "save_debug_xml": self.save_debug_xml,
+            },
+        )
 
         if not self.encryption_key:
             logger.log(
@@ -131,6 +149,8 @@ class IBKRFlexService:
         if not self.encryption_key:
             raise ValueError("Encryption key not available")
 
+        # Strip whitespace from token before encrypting
+        token = token.strip()
         f = Fernet(self.encryption_key.encode())
         return f.encrypt(token.encode()).decode()
 
@@ -148,7 +168,8 @@ class IBKRFlexService:
             raise ValueError("Encryption key not available")
 
         f = Fernet(self.encryption_key.encode())
-        return f.decrypt(encrypted_token.encode()).decode()
+        # Strip whitespace from decrypted token
+        return f.decrypt(encrypted_token.encode()).decode().strip()
 
     def _get_cache_key(self, query_id: str) -> str:
         """
@@ -303,11 +324,31 @@ class IBKRFlexService:
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
                 message="Requesting Flex statement from IBKR",
-                details={"query_id": query_id},
+                details={
+                    "query_id": query_id,
+                    "url": FLEX_SEND_REQUEST_URL,
+                    "headers": self.headers,
+                    "params": {"q": query_id, "v": "3", "t": "***"},
+                },
             )
 
             response = requests.get(
-                FLEX_SEND_REQUEST_URL, params={"t": token, "q": query_id, "v": "3"}, timeout=30
+                FLEX_SEND_REQUEST_URL,
+                params={"t": token, "q": query_id, "v": "3"},
+                headers=self.headers,
+                timeout=30,
+            )
+
+            # Debug: Log response details
+            logger.log(
+                level=LogLevel.DEBUG,
+                category=LogCategory.IBKR,
+                message="IBKR SendRequest response received",
+                details={
+                    "status_code": response.status_code,
+                    "response_headers": dict(response.headers),
+                    "request_headers": dict(response.request.headers),
+                },
             )
 
             if response.status_code != 200:
@@ -357,6 +398,7 @@ class IBKRFlexService:
                 statement_response = requests.get(
                     FLEX_GET_STATEMENT_URL,
                     params={"q": reference_code, "t": token, "v": "3"},
+                    headers=self.headers,
                     timeout=30,
                 )
 
@@ -963,7 +1005,10 @@ class IBKRFlexService:
         try:
             # Step 1: Test the initial request
             response = requests.get(
-                FLEX_SEND_REQUEST_URL, params={"t": token, "q": query_id, "v": "3"}, timeout=30
+                FLEX_SEND_REQUEST_URL,
+                params={"t": token, "q": query_id, "v": "3"},
+                headers=self.headers,
+                timeout=30,
             )
 
             if response.status_code != 200:
@@ -1036,6 +1081,10 @@ class IBKRFlexService:
             Dictionary with test results including appropriate HTTP status code
         """
         try:
+            # Strip whitespace from token for consistency
+            token = token.strip()
+            query_id = query_id.strip()
+
             # Use the detailed connection test
             result = self._test_connection_request(token, query_id)
 
