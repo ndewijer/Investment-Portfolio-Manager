@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#b8d4d8"/>
+
+  <!-- Briefcase body -->
+  <rect x="35" y="55" width="130" height="105" rx="8" ry="8" fill="#34495e"/>
+
+  <!-- Briefcase handle attachments -->
+  <rect x="55" y="45" width="15" height="20" fill="#34495e"/>
+  <rect x="130" y="45" width="15" height="20" fill="#34495e"/>
+
+  <!-- Briefcase handle -->
+  <path d="M60 45 L60 35 Q60 25 70 25 L130 25 Q140 25 140 35 L140 45"
+        fill="none" stroke="#34495e" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- White display area -->
+  <rect x="50" y="70" width="100" height="75" rx="3" ry="3" fill="white"/>
+
+  <!-- Pie chart -->
+  <circle cx="72" cy="92" r="15" fill="#1abc9c"/>
+  <path d="M72 92 L72 77 A15 15 0 0 1 87 92 Z" fill="#3498db"/>
+
+  <!-- Bar chart bars -->
+  <!-- Teal bars -->
+  <rect x="62" y="120" width="8" height="20" fill="#1abc9c"/>
+  <rect x="82" y="125" width="8" height="15" fill="#1abc9c"/>
+  <rect x="102" y="110" width="8" height="30" fill="#1abc9c"/>
+  <rect x="122" y="105" width="8" height="35" fill="#1abc9c"/>
+
+  <!-- Blue bars -->
+  <rect x="71" y="115" width="8" height="25" fill="#3498db"/>
+  <rect x="91" y="120" width="8" height="20" fill="#3498db"/>
+  <rect x="111" y="108" width="8" height="32" fill="#3498db"/>
+  <rect x="131" y="100" width="8" height="40" fill="#3498db"/>
+
+  <!-- Trend line with arrow -->
+  <polyline points="58,135 78,125 98,128 118,115 138,95"
+            fill="none" stroke="#2c3e50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Arrow head -->
+  <polygon points="145,87 134,90 142,100" fill="#2c3e50"/>
+
+
+</svg>
