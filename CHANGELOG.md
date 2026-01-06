@@ -5,6 +5,28 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.6] - 2026-01-06
+
+### Fixed
+- **IBKR Flex API Integration** - Fixed error 1020 "Invalid request or unable to validate request"
+  - Added required `User-Agent` header to all IBKR API requests (per IBKR documentation requirement)
+  - Fixed token encryption/decryption to strip whitespace, preventing authentication failures
+  - Enhanced debug logging for troubleshooting IBKR connection issues
+  - Added VSCode debug configuration for IBKR import testing
+
+### Improved
+- **Frontend Build Optimization** - Dramatically reduced bundle sizes
+  - Disabled source maps in production builds (was adding ~14 MiB to bundles)
+  - Improved webpack code splitting with proper cache groups
+  - Separated vendor and datepicker bundles for better caching
+  - Total bundle size reduced from ~17 MiB to 1.3 MiB (-92.4%)
+  - Main bundle: 3.16 MiB → 396 KiB (-87.5%)
+  - Vendor bundle: 14.2 MiB → 760 KiB (-94.6%)
+  - Suppressed harmless react-datepicker locale warning
+
+### Changed
+- Updated frontend icon from ICO to SVG format for better scalability
+
 ## [1.3.5] - 2025-12-18
 
 ### Added

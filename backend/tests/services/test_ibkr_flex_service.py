@@ -66,11 +66,18 @@ class TestEncryption:
         ):
             IBKRFlexService()
 
-            # Should log error about missing encryption key
-            mock_logger.log.assert_called_once()
-            call_kwargs = mock_logger.log.call_args.kwargs
-            assert "ERROR" in str(call_kwargs.get("level"))
-            assert "encryption key not available" in call_kwargs.get("message").lower()
+            # Should log DEBUG initialization and ERROR about missing encryption key
+            assert mock_logger.log.call_count == 2
+
+            # First call: DEBUG initialization log
+            first_call_kwargs = mock_logger.log.call_args_list[0].kwargs
+            assert "DEBUG" in str(first_call_kwargs.get("level"))
+            assert "initialized" in first_call_kwargs.get("message").lower()
+
+            # Second call: ERROR missing encryption key
+            second_call_kwargs = mock_logger.log.call_args_list[1].kwargs
+            assert "ERROR" in str(second_call_kwargs.get("level"))
+            assert "encryption key not available" in second_call_kwargs.get("message").lower()
 
     def test_encrypt_decrypt_token(self, ibkr_service, test_token):
         """Test that encryption and decryption work correctly."""

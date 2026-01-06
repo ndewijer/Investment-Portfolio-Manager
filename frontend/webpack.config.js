@@ -78,6 +78,12 @@ module.exports = (env, argv) => {
         inject: true,
       }),
       new webpack.DefinePlugin(stringifiedEnv),
+      // Suppress date-fns locale warning from react-datepicker (dynamic require for locales)
+      // This is safe - we only use English locale
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^\.\/locale$/,
+        contextRegExp: /date-fns$/,
+      }),
     ],
     resolve: {
       extensions: ['.js', '.jsx'],
@@ -113,18 +119,42 @@ module.exports = (env, argv) => {
         },
       ],
     },
-    devtool: isProduction ? 'source-map' : 'eval-source-map',
+    devtool: isProduction ? false : 'eval-source-map', // Disable source maps in production
     performance: {
       maxAssetSize: 1000000, // 1MB per asset
       maxEntrypointSize: 1700000, // 1.7MB total entrypoint (with some buffer)
       hints: 'warning', // Warn but don't fail build - bundle analyzer available for debugging
     },
+    ignoreWarnings: [
+      // Suppress react-datepicker's dynamic locale loading warning (harmless)
+      /Critical dependency: the request of a dependency is an expression/,
+      /react-datepicker/,
+    ],
     optimization: {
-      concatenateModules: false,
+      moduleIds: 'deterministic', // Better for caching
       minimize: isProduction,
       splitChunks: {
         chunks: 'all',
-        name: false,
+        cacheGroups: {
+          // Separate vendor bundle for better caching
+          vendors: {
+            test: /[\\/]node_modules[\\/]/,
+            priority: -10,
+            reuseExistingChunk: true,
+          },
+          // Separate bundle for react-datepicker and date-fns (if used)
+          datepicker: {
+            test: /[\\/]node_modules[\\/](react-datepicker|date-fns)[\\/]/,
+            name: 'datepicker',
+            priority: 10,
+            reuseExistingChunk: true,
+          },
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+        },
       },
     },
   };
