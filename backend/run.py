@@ -242,10 +242,6 @@ def create_app(config=None):
                 "allow_headers": [
                     "Content-Type",
                     "Authorization",
-                    "Access-Control-Allow-Methods",
-                    "Access-Control-Allow-Headers",
-                    "Access-Control-Allow-Origin",
-                    "Access-Control-Allow-Credentials",
                 ],
                 "expose_headers": ["Content-Type"],
                 "supports_credentials": True,
