@@ -22,7 +22,7 @@ test.describe('Application Smoke Tests', () => {
     await page.click('text=Portfolios');
 
     // Check URL changed
-    await expect(page).toHaveURL(/.*portfolios/);
+    await expect(page).toHaveURL(/.*portfolio/);
 
     // Check page content
     await expect(page.locator('h1')).toContainText('Portfolios');
@@ -33,7 +33,7 @@ test.describe('Application Smoke Tests', () => {
 
     await page.click('text=Funds');
 
-    await expect(page).toHaveURL(/.*funds/);
+    await expect(page).toHaveURL(/.*fund/);
     await expect(page.locator('h1')).toContainText('Funds');
   });
 

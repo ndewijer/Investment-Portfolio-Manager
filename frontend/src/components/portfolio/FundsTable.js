@@ -67,7 +67,7 @@ const FundsTable = ({
 
   // Handle fund click navigation
   const handleFundClick = (fundId) => {
-    navigate(`/funds/${fundId}`);
+    navigate(`/fund/${fundId}`);
   };
 
   // Handle add fundstock modal

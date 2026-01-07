@@ -62,9 +62,9 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Overview />} />
                   <Route path="/portfolios" element={<Portfolios />} />
-                  <Route path="/portfolios/:id" element={<PortfolioDetail />} />
+                  <Route path="/portfolio/:id" element={<PortfolioDetail />} />
                   <Route path="/funds" element={<Funds />} />
-                  <Route path="/funds/:id" element={<FundDetail />} />
+                  <Route path="/fund/:id" element={<FundDetail />} />
                   <Route path="/config" element={<Config />} />
                   <Route path="/ibkr/inbox" element={<IBKRInbox />} />
                   <Route path="/logs" element={<LogViewer />} />

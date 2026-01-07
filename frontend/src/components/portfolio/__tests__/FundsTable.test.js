@@ -195,7 +195,7 @@ describe('FundsTable Component', () => {
       const fundName = screen.getByText('Vanguard Total Stock Market ETF');
       fireEvent.click(fundName);
 
-      expect(mockNavigate).toHaveBeenCalledWith('/funds/101');
+      expect(mockNavigate).toHaveBeenCalledWith('/fund/101');
     });
 
     test('calls onAddTransaction when Add Transaction button is clicked', () => {

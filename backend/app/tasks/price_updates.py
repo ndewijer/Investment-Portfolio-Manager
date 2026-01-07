@@ -38,7 +38,7 @@ def update_all_fund_prices():
 
         # Make the API call with headers
         response = requests.post(
-            "http://localhost:5000/api/funds/update-all-prices", headers=headers
+            "http://localhost:5000/api/fund/update-all-prices", headers=headers
         )
 
         if response.status_code == 200:

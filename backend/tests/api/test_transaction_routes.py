@@ -2,11 +2,11 @@
 Integration tests for transaction routes (transaction_routes.py).
 
 Tests all Transaction API endpoints:
-- GET /transactions - List all transactions (optionally filtered by portfolio)
-- POST /transactions - Create transaction
-- GET /transactions/<id> - Get transaction detail
-- PUT /transactions/<id> - Update transaction
-- DELETE /transactions/<id> - Delete transaction
+- GET /transaction - List all transactions (optionally filtered by portfolio)
+- POST /transaction - Create transaction
+- GET /transaction/<id> - Get transaction detail
+- PUT /transaction/<id> - Update transaction
+- DELETE /transaction/<id> - Delete transaction
 """
 
 from datetime import datetime, timedelta
@@ -40,7 +40,7 @@ class TestTransactionList:
         a portfolio before adding transactions. Prevents confusion with 404 errors and
         provides a consistent API contract that clients can rely on.
         """
-        response = client.get("/api/transactions")
+        response = client.get("/api/transaction")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -83,7 +83,7 @@ class TestTransactionList:
         db_session.add_all([txn1, txn2])
         db_session.commit()
 
-        response = client.get("/api/transactions")
+        response = client.get("/api/transaction")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -123,7 +123,7 @@ class TestTransactionList:
         db_session.add(txn1)
         db_session.commit()
 
-        response = client.get(f"/api/transactions?portfolio_id={p1.id}")
+        response = client.get(f"/api/transaction?portfolio_id={p1.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -159,7 +159,7 @@ class TestTransactionCreate:
             "cost_per_share": 120.50,
         }
 
-        response = client.post("/api/transactions", json=payload)
+        response = client.post("/api/transaction", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -209,7 +209,7 @@ class TestTransactionCreate:
             "cost_per_share": 250.00,
         }
 
-        response = client.post("/api/transactions", json=payload)
+        response = client.post("/api/transaction", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -241,7 +241,7 @@ class TestTransactionCreate:
             "cost_per_share": 50.00,
         }
 
-        response = client.post("/api/transactions", json=payload)
+        response = client.post("/api/transaction", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -278,7 +278,7 @@ class TestTransactionRetrieveUpdateDelete:
         db_session.add(txn)
         db_session.commit()
 
-        response = client.get(f"/api/transactions/{txn.id}")
+        response = client.get(f"/api/transaction/{txn.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -295,7 +295,7 @@ class TestTransactionRetrieveUpdateDelete:
         of confusing 500 errors, improving user experience and debugging.
         """
         fake_id = make_id()
-        response = client.get(f"/api/transactions/{fake_id}")
+        response = client.get(f"/api/transaction/{fake_id}")
 
         assert response.status_code == 404
 
@@ -334,7 +334,7 @@ class TestTransactionRetrieveUpdateDelete:
             "cost_per_share": 47.00,  # Changed
         }
 
-        response = client.put(f"/api/transactions/{txn.id}", json=payload)
+        response = client.put(f"/api/transaction/{txn.id}", json=payload)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -362,7 +362,7 @@ class TestTransactionRetrieveUpdateDelete:
             "cost_per_share": 100.00,
         }
 
-        response = client.put(f"/api/transactions/{fake_id}", json=payload)
+        response = client.put(f"/api/transaction/{fake_id}", json=payload)
 
         assert response.status_code == 404
 
@@ -394,7 +394,7 @@ class TestTransactionRetrieveUpdateDelete:
         db_session.commit()
         txn_id = txn.id
 
-        response = client.delete(f"/api/transactions/{txn_id}")
+        response = client.delete(f"/api/transaction/{txn_id}")
 
         assert response.status_code == 200
 
@@ -411,7 +411,7 @@ class TestTransactionRetrieveUpdateDelete:
         provides clear feedback about the operation failure.
         """
         fake_id = make_id()
-        response = client.delete(f"/api/transactions/{fake_id}")
+        response = client.delete(f"/api/transaction/{fake_id}")
 
         # API returns 404 for transaction not found
         assert response.status_code == 404
@@ -436,7 +436,7 @@ class TestTransactionErrors:
         ) as mock_get_all:
             mock_get_all.side_effect = Exception("Database query failed")
 
-            response = client.get("/api/transactions")
+            response = client.get("/api/transaction")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -475,7 +475,7 @@ class TestTransactionErrors:
                 "cost_per_share": 100.00,
             }
 
-            response = client.post("/api/transactions", json=payload)
+            response = client.post("/api/transaction", json=payload)
 
             assert response.status_code == 500
             data = response.get_json()
@@ -496,7 +496,7 @@ class TestTransactionErrors:
             mock_get.side_effect = Exception("Transaction not found")
 
             fake_id = make_id()
-            response = client.get(f"/api/transactions/{fake_id}")
+            response = client.get(f"/api/transaction/{fake_id}")
 
             assert response.status_code == 404
             data = response.get_json()
@@ -545,7 +545,7 @@ class TestTransactionErrors:
                 "cost_per_share": 100.00,
             }
 
-            response = client.put(f"/api/transactions/{txn.id}", json=payload)
+            response = client.put(f"/api/transaction/{txn.id}", json=payload)
 
             assert response.status_code == 400
             data = response.get_json()
@@ -599,7 +599,7 @@ class TestTransactionErrors:
             "cost_per_share": 65.00,  # Changed
         }
 
-        response = client.put(f"/api/transactions/{sell_txn.id}", json=payload)
+        response = client.put(f"/api/transaction/{sell_txn.id}", json=payload)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -623,7 +623,7 @@ class TestTransactionErrors:
             mock_delete.side_effect = Exception("Unexpected database error")
 
             fake_id = make_id()
-            response = client.delete(f"/api/transactions/{fake_id}")
+            response = client.delete(f"/api/transaction/{fake_id}")
 
             assert response.status_code == 500
             data = response.get_json()

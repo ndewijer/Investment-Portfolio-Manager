@@ -1108,7 +1108,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
     setSelectedFundId('');
     if (selectedId) {
       fetchPortfolioFunds(() =>
-        axios.get(`${API_BASE_URL}/portfolio-funds?portfolio_id=${selectedId}`)
+        axios.get(`${API_BASE_URL}/portfolio/funds?portfolio_id=${selectedId}`)
       );
     } else {
       fetchPortfolioFunds(() => Promise.resolve({ data: [] }));

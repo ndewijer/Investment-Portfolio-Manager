@@ -21,7 +21,7 @@ from ..services.symbol_lookup_service import SymbolLookupService
 from ..utils.security import require_api_key_restx
 
 # Create namespace
-ns = Namespace("funds", description="Fund and stock management operations")
+ns = Namespace("fund", description="Fund and stock management operations")
 
 # Define models for documentation
 fund_model = ns.model(

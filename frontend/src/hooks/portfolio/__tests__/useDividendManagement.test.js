@@ -135,7 +135,7 @@ describe('useDividendManagement', () => {
         await result.current.handleAddDividend(mockFund);
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
       expect(result.current.isDividendModalOpen).toBe(true);
       expect(result.current.selectedFund).toEqual(mockFundData);
       expect(result.current.newDividend.portfolio_fund_id).toBe('pf-1');
@@ -386,7 +386,7 @@ describe('useDividendManagement', () => {
         await result.current.handleEditDividend(mockDividend);
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
       expect(result.current.isDividendEditModalOpen).toBe(true);
       expect(result.current.selectedFund).toEqual(mockFundData);
       expect(result.current.editingDividend).toMatchObject({
@@ -418,8 +418,8 @@ describe('useDividendManagement', () => {
         await result.current.handleEditDividend(mockDividend);
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-123');
-      expect(api.get).toHaveBeenCalledWith('/transactions/txn-456');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/transaction/txn-456');
       expect(result.current.editingDividend.reinvestment_shares).toBe(10);
       expect(result.current.editingDividend.reinvestment_price).toBe(50);
     });

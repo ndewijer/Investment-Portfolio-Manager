@@ -19,16 +19,16 @@ Integration tests for fund management API endpoints, verifying CRUD operations, 
 
 ### Endpoints Tested
 
-1. **GET /api/funds** - List all funds
-2. **POST /api/funds** - Create fund
-3. **GET /api/funds/<fund_id>** - Get fund detail (uses FundService)
-4. **PUT /api/funds/<fund_id>** - Update fund
-5. **DELETE /api/funds/<fund_id>** - Delete fund
-6. **GET /api/funds/<fund_id>/check-usage** - Check fund usage
+1. **GET /api/fund** - List all funds
+2. **POST /api/fund** - Create fund
+3. **GET /api/fund/<fund_id>** - Get fund detail (uses FundService)
+4. **PUT /api/fund/<fund_id>** - Update fund
+5. **DELETE /api/fund/<fund_id>** - Delete fund
+6. **GET /api/fund/<fund_id>/check-usage** - Check fund usage
 7. **GET /api/lookup-symbol-info/<symbol>** - Lookup symbol info
 8. **GET /api/fund-prices/<fund_id>** - Get fund prices (uses FundService)
 9. **POST /api/fund-prices/<fund_id>/update** - Update fund prices
-10. **POST /api/funds/update-all-prices** - Update all fund prices
+10. **POST /api/fund/update-all-prices** - Update all fund prices
 
 **Phase 1 Refactoring**: Endpoints #3 and #8 refactored to use service layer (`FundService.get_fund()`, `FundService.get_latest_fund_price()`, `FundService.get_fund_price_history()`) instead of `Query.get_or_404()`.
 
@@ -92,7 +92,7 @@ Integration tests for fund management API endpoints, verifying CRUD operations, 
 - **Service Layer**: Tests verify routes delegate to service methods properly
 
 ### Authentication Pattern
-Protected endpoints (`/funds/update-all-prices`) require:
+Protected endpoints (`/fund/update-all-prices`) require:
 - `X-API-Key` header matching `INTERNAL_API_KEY` env variable
 - `X-Time-Token` header with SHA256(`{api_key}{YYYY-MM-DD-HH}`)
 - Tests set env variable and calculate token for full integration testing

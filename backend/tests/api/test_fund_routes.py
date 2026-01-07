@@ -4,14 +4,14 @@ Integration tests for fund routes (fund_routes.py).
 Tests all Fund API endpoints:
 - GET /funds - List all funds ✅
 - POST /funds - Create fund ✅
-- GET /funds/<fund_id> - Get fund detail (SKIPPED - requires route refactoring)
-- PUT /funds/<fund_id> - Update fund ✅
-- DELETE /funds/<fund_id> - Delete fund ✅
-- GET /funds/<fund_id>/check-usage - Check fund usage ✅
-- GET /funds/symbol/<symbol> - Lookup symbol info ✅
+- GET /fund/<fund_id> - Get fund detail (SKIPPED - requires route refactoring)
+- PUT /fund/<fund_id> - Update fund ✅
+- DELETE /fund/<fund_id> - Delete fund ✅
+- GET /fund/<fund_id>/check-usage - Check fund usage ✅
+- GET /fund/symbol/<symbol> - Lookup symbol info ✅
 - GET /fund-prices/<fund_id> - Get fund prices (SKIPPED - requires route refactoring)
 - POST /fund-prices/<fund_id>/update - Update fund prices ✅
-- POST /funds/update-all-prices - Update all fund prices ✅
+- POST /fund/update-all-prices - Update all fund prices ✅
 
 Test Summary: 15 passing, 4 skipped
 
@@ -59,7 +59,7 @@ class TestFundListAndCreate:
         dropdown. If it doesn't return a valid list structure (even when empty),
         the UI will crash preventing users from accessing any portfolio functionality.
         """
-        response = client.get("/api/funds")
+        response = client.get("/api/fund")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -80,7 +80,7 @@ class TestFundListAndCreate:
         db_session.add_all([fund1, fund2])
         db_session.commit()
 
-        response = client.get("/api/funds")
+        response = client.get("/api/fund")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -105,7 +105,7 @@ class TestFundListAndCreate:
             "exchange": "NYSE",
         }
 
-        response = client.post("/api/funds", json=payload)
+        response = client.post("/api/fund", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -140,7 +140,7 @@ class TestFundListAndCreate:
             "exchange": "NYSE",
         }
 
-        response = client.post("/api/funds", json=payload)
+        response = client.post("/api/fund", json=payload)
 
         assert response.status_code == 400
         data = response.get_json()
@@ -152,7 +152,7 @@ class TestFundRetrieveUpdateDelete:
 
     def test_get_fund_detail(self, app_context, client, db_session):
         """
-        Verify GET /funds/<fund_id> returns complete fund information.
+        Verify GET /fund/<fund_id> returns complete fund information.
 
         WHY: Users need detailed fund information to make informed investment decisions
         and verify they're tracking the correct security. Missing data could lead to
@@ -162,7 +162,7 @@ class TestFundRetrieveUpdateDelete:
         db_session.add(fund)
         db_session.commit()
 
-        response = client.get(f"/api/funds/{fund.id}")
+        response = client.get(f"/api/fund/{fund.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -173,7 +173,7 @@ class TestFundRetrieveUpdateDelete:
 
     def test_get_fund_with_latest_price(self, app_context, client, db_session):
         """
-        Verify GET /funds/<fund_id> includes the most recent price data.
+        Verify GET /fund/<fund_id> includes the most recent price data.
 
         WHY: Current price is essential for portfolio valuation and performance tracking.
         Users expect to see up-to-date valuations; missing or stale prices would make
@@ -192,7 +192,7 @@ class TestFundRetrieveUpdateDelete:
         db_session.add(price)
         db_session.commit()
 
-        response = client.get(f"/api/funds/{fund.id}")
+        response = client.get(f"/api/fund/{fund.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -201,20 +201,20 @@ class TestFundRetrieveUpdateDelete:
 
     def test_get_fund_not_found(self, app_context, client):
         """
-        Verify GET /funds/<fund_id> returns 404 for non-existent funds.
+        Verify GET /fund/<fund_id> returns 404 for non-existent funds.
 
         WHY: Proper error handling prevents the UI from crashing when users access
         invalid fund IDs (deleted funds, bookmarked URLs, stale data). Clear 404
         responses allow graceful error messages instead of application failures.
         """
         fake_id = make_id()
-        response = client.get(f"/api/funds/{fake_id}")
+        response = client.get(f"/api/fund/{fake_id}")
 
         assert response.status_code == 404
 
     def test_update_fund(self, app_context, client, db_session):
         """
-        Verify PUT /funds/<fund_id> successfully updates fund attributes.
+        Verify PUT /fund/<fund_id> successfully updates fund attributes.
 
         WHY: Fund information changes over time (ticker symbol changes, exchange
         listings, corrections to initial data). Users need to update funds to
@@ -232,7 +232,7 @@ class TestFundRetrieveUpdateDelete:
             "exchange": "NASDAQ",
         }
 
-        response = client.put(f"/api/funds/{fund.id}", json=payload)
+        response = client.put(f"/api/fund/{fund.id}", json=payload)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -247,7 +247,7 @@ class TestFundRetrieveUpdateDelete:
 
     def test_update_fund_not_found(self, app_context, client):
         """
-        Verify PUT /funds/<fund_id> returns error for non-existent funds.
+        Verify PUT /fund/<fund_id> returns error for non-existent funds.
 
         WHY: Attempting to update deleted or invalid funds should fail gracefully
         with clear feedback. This prevents data corruption and provides users with
@@ -261,13 +261,13 @@ class TestFundRetrieveUpdateDelete:
             "exchange": "NYSE",
         }
 
-        response = client.put(f"/api/funds/{fake_id}", json=payload)
+        response = client.put(f"/api/fund/{fake_id}", json=payload)
 
         assert response.status_code in [400, 404]
 
     def test_delete_fund(self, app_context, client, db_session):
         """
-        Verify DELETE /funds/<fund_id> successfully removes unused funds.
+        Verify DELETE /fund/<fund_id> successfully removes unused funds.
 
         WHY: Users need to clean up incorrect entries or funds no longer tracked.
         Inability to delete would lead to cluttered fund lists making it harder
@@ -278,7 +278,7 @@ class TestFundRetrieveUpdateDelete:
         db_session.commit()
         fund_id = fund.id
 
-        response = client.delete(f"/api/funds/{fund_id}")
+        response = client.delete(f"/api/fund/{fund_id}")
 
         assert response.status_code == 200
 
@@ -288,7 +288,7 @@ class TestFundRetrieveUpdateDelete:
 
     def test_delete_fund_in_use(self, app_context, client, db_session):
         """
-        Verify DELETE /funds/<fund_id> prevents deletion of funds in active portfolios.
+        Verify DELETE /fund/<fund_id> prevents deletion of funds in active portfolios.
 
         WHY: Deleting a fund that has transactions would orphan transaction data,
         corrupt portfolio valuations, and cause data integrity violations. This
@@ -304,7 +304,7 @@ class TestFundRetrieveUpdateDelete:
         db_session.add(pf)
         db_session.commit()
 
-        response = client.delete(f"/api/funds/{fund.id}")
+        response = client.delete(f"/api/fund/{fund.id}")
 
         assert response.status_code == 409  # Conflict
         data = response.get_json()
@@ -320,7 +320,7 @@ class TestFundUsage:
 
     def test_check_fund_usage_in_use(self, app_context, client, db_session):
         """
-        Verify GET /funds/<fund_id>/check-usage correctly identifies funds with transactions.
+        Verify GET /fund/<fund_id>/check-usage correctly identifies funds with transactions.
 
         WHY: Before deletion, users must know which portfolios use a fund to avoid
         data loss. This check prevents accidental deletion of funds with transaction
@@ -346,7 +346,7 @@ class TestFundUsage:
         db_session.add(txn)
         db_session.commit()
 
-        response = client.get(f"/api/funds/{fund.id}/check-usage")
+        response = client.get(f"/api/fund/{fund.id}/check-usage")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -356,7 +356,7 @@ class TestFundUsage:
 
     def test_check_fund_usage_not_in_use(self, app_context, client, db_session):
         """
-        Verify GET /funds/<fund_id>/check-usage correctly identifies unused funds.
+        Verify GET /fund/<fund_id>/check-usage correctly identifies unused funds.
 
         WHY: Users should know when funds are safe to delete. Incorrectly reporting
         a fund as in-use would prevent legitimate deletions, while false negatives
@@ -366,7 +366,7 @@ class TestFundUsage:
         db_session.add(fund)
         db_session.commit()
 
-        response = client.get(f"/api/funds/{fund.id}/check-usage")
+        response = client.get(f"/api/fund/{fund.id}/check-usage")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -380,7 +380,7 @@ class TestSymbolLookup:
 
     def test_lookup_symbol_info_mock(self, app_context, client):
         """
-        Verify GET /funds/symbol/<symbol> returns symbol metadata from lookup service.
+        Verify GET /fund/symbol/<symbol> returns symbol metadata from lookup service.
 
         WHY: Users need to quickly find and verify fund information when creating new
         funds. Auto-populated data (name, currency, exchange) reduces manual entry
@@ -405,7 +405,7 @@ class TestSymbolLookup:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/funds/symbol/VTI")
+            response = client.get("/api/fund/symbol/VTI")
 
             assert response.status_code == 200
             data = response.get_json()
@@ -414,7 +414,7 @@ class TestSymbolLookup:
 
     def test_lookup_symbol_not_found(self, app_context, client):
         """
-        Verify GET /funds/symbol/<symbol> returns 404 for invalid symbols.
+        Verify GET /fund/symbol/<symbol> returns 404 for invalid symbols.
 
         WHY: Users may mistype symbols or try non-existent tickers. Proper 404 handling
         allows the UI to show clear "symbol not found" messages instead of crashing,
@@ -432,7 +432,7 @@ class TestSymbolLookup:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/funds/symbol/INVALID")
+            response = client.get("/api/fund/symbol/INVALID")
 
             assert response.status_code == 404
 
@@ -466,7 +466,7 @@ class TestFundPrices:
         db_session.add_all([price1, price2])
         db_session.commit()
 
-        response = client.get(f"/api/funds/fund-prices/{fund.id}")
+        response = client.get(f"/api/fund/fund-prices/{fund.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -498,7 +498,7 @@ class TestFundPrices:
             "update_todays_price",
             staticmethod(mock_update_todays_price),
         ):
-            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=today")
+            response = client.post(f"/api/fund/fund-prices/{fund.id}/update?type=today")
 
             assert response.status_code == 200
             data = response.get_json()
@@ -506,7 +506,7 @@ class TestFundPrices:
 
     def test_update_historical_prices(self, app_context, client, db_session):
         """
-        Verify POST /funds/fund-prices/<fund_id>/update?type=historical backfills price history.
+        Verify POST /fund/fund-prices/<fund_id>/update?type=historical backfills price history.
 
         WHY: Historical prices are needed for performance calculations, charts, and
         accurate portfolio valuations at past dates. This backfill is essential when
@@ -527,7 +527,7 @@ class TestFundPrices:
             "update_historical_prices",
             staticmethod(mock_update_historical_prices),
         ):
-            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=historical")
+            response = client.post(f"/api/fund/fund-prices/{fund.id}/update?type=historical")
 
             assert response.status_code == 200
             data = response.get_json()
@@ -539,7 +539,7 @@ class TestUpdateAllPrices:
 
     def test_update_all_fund_prices(self, app_context, client, db_session):
         """
-        Verify POST /funds/update-all-prices bulk updates all funds via cron job.
+        Verify POST /fund/update-all-prices bulk updates all funds via cron job.
 
         WHY: Automated batch updates keep all portfolio valuations current without
         manual intervention. This scheduled job is critical for maintaining accurate
@@ -577,7 +577,7 @@ class TestUpdateAllPrices:
             ),
             patch.dict(os.environ, {"INTERNAL_API_KEY": api_key}),
         ):
-            response = client.post("/api/funds/update-all-prices", headers=headers)
+            response = client.post("/api/fund/update-all-prices", headers=headers)
 
             assert response.status_code == 200
             data = response.get_json()
@@ -604,7 +604,7 @@ class TestFundCRUDErrors:
             "exchange": "NYSE",
         }
 
-        response = client.post("/api/funds", json=payload)
+        response = client.post("/api/fund", json=payload)
 
         assert response.status_code in [400, 500]
 
@@ -623,7 +623,7 @@ class TestFundCRUDErrors:
             "exchange": "NYSE",
         }
 
-        response = client.post("/api/funds", json=payload)
+        response = client.post("/api/fund", json=payload)
 
         assert response.status_code in [400, 500]
 
@@ -642,7 +642,7 @@ class TestFundCRUDErrors:
             "exchange": "NYSE",
         }
 
-        response = client.post("/api/funds", json=payload)
+        response = client.post("/api/fund", json=payload)
 
         assert response.status_code in [400, 500]
 
@@ -668,7 +668,7 @@ class TestFundCRUDErrors:
                 "exchange": "NYSE",
             }
 
-            response = client.post("/api/funds", json=payload)
+            response = client.post("/api/fund", json=payload)
 
             assert response.status_code == 500
             data = response.get_json()
@@ -676,7 +676,7 @@ class TestFundCRUDErrors:
 
     def test_update_fund_missing_isin(self, app_context, client, db_session):
         """
-        Verify PUT /funds/<fund_id> rejects updates without ISIN.
+        Verify PUT /fund/<fund_id> rejects updates without ISIN.
 
         WHY: ISIN must remain consistent for fund identity. Allowing ISIN to be
         removed would break fund tracking, price updates, and regulatory compliance.
@@ -692,13 +692,13 @@ class TestFundCRUDErrors:
             "exchange": "NYSE",
         }
 
-        response = client.put(f"/api/funds/{fund.id}", json=payload)
+        response = client.put(f"/api/fund/{fund.id}", json=payload)
 
         assert response.status_code in [400, 500]
 
     def test_update_fund_database_error(self, app_context, client, db_session):
         """
-        Verify PUT /funds/<fund_id> returns 400 with error message on database failures.
+        Verify PUT /fund/<fund_id> returns 400 with error message on database failures.
 
         WHY: Database errors during updates should be caught and reported clearly
         to prevent partial updates and silent failures. Users need to know if their
@@ -720,7 +720,7 @@ class TestFundCRUDErrors:
                 "exchange": "NYSE",
             }
 
-            response = client.put(f"/api/funds/{fund.id}", json=payload)
+            response = client.put(f"/api/fund/{fund.id}", json=payload)
 
             assert response.status_code == 500
             data = response.get_json()
@@ -728,14 +728,14 @@ class TestFundCRUDErrors:
 
     def test_delete_fund_not_found(self, app_context, client):
         """
-        Verify DELETE /funds/<fund_id> returns 404 for non-existent funds.
+        Verify DELETE /fund/<fund_id> returns 404 for non-existent funds.
 
         WHY: Attempting to delete already-deleted or invalid funds should return
         clear 404 errors. This prevents confusion and helps users understand the
         current state of their data.
         """
         fake_id = make_id()
-        response = client.delete(f"/api/funds/{fake_id}")
+        response = client.delete(f"/api/fund/{fake_id}")
 
         assert response.status_code == 404
         data = response.get_json()
@@ -743,7 +743,7 @@ class TestFundCRUDErrors:
 
     def test_delete_fund_database_error(self, app_context, client, db_session):
         """
-        Verify DELETE /funds/<fund_id> returns 500 on database failures.
+        Verify DELETE /fund/<fund_id> returns 500 on database failures.
 
         WHY: Database errors during deletion should be reported, not silently fail.
         Users need to know if deletion didn't complete so they can verify data
@@ -758,7 +758,7 @@ class TestFundCRUDErrors:
             raise Exception("Database error")
 
         with patch("app.api.fund_namespace.FundService.delete_fund", mock_delete_fund):
-            response = client.delete(f"/api/funds/{fund.id}")
+            response = client.delete(f"/api/fund/{fund.id}")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -766,7 +766,7 @@ class TestFundCRUDErrors:
 
     def test_check_fund_usage_fund_not_found(self, app_context, client):
         """
-        Verify GET /funds/<fund_id>/check-usage handles non-existent funds.
+        Verify GET /fund/<fund_id>/check-usage handles non-existent funds.
 
         WHY: Users may check usage of deleted funds (via stale bookmarks or race
         conditions). Proper error handling prevents crashes and provides clear
@@ -779,13 +779,13 @@ class TestFundCRUDErrors:
 
         with patch("app.api.fund_namespace.FundService.check_fund_usage", mock_check_usage):
             fake_id = make_id()
-            response = client.get(f"/api/funds/{fake_id}/check-usage")
+            response = client.get(f"/api/fund/{fake_id}/check-usage")
 
             assert response.status_code == 500  # Routes wraps ValueError in 500
 
     def test_check_fund_usage_database_error(self, app_context, client):
         """
-        Verify GET /funds/<fund_id>/check-usage returns 500 on database failures.
+        Verify GET /fund/<fund_id>/check-usage returns 500 on database failures.
 
         WHY: Usage checks are critical before deletion to prevent data loss. Database
         errors must be surfaced clearly so users know the check failed and don't
@@ -798,7 +798,7 @@ class TestFundCRUDErrors:
 
         with patch("app.api.fund_namespace.FundService.check_fund_usage", mock_check_usage):
             fake_id = make_id()
-            response = client.get(f"/api/funds/{fake_id}/check-usage")
+            response = client.get(f"/api/fund/{fake_id}/check-usage")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -806,7 +806,7 @@ class TestFundCRUDErrors:
 
     def test_get_fund_database_error(self, app_context, client):
         """
-        Verify GET /funds/<fund_id> returns 500 with error message on database failures.
+        Verify GET /fund/<fund_id> returns 500 with error message on database failures.
 
         WHY: Database connectivity issues should be reported clearly rather than
         causing application crashes. Users need to know when data retrieval fails
@@ -819,7 +819,7 @@ class TestFundCRUDErrors:
 
         with patch("app.api.fund_namespace.FundService.get_fund", mock_get_fund):
             fake_id = make_id()
-            response = client.get(f"/api/funds/{fake_id}")
+            response = client.get(f"/api/fund/{fake_id}")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -839,7 +839,7 @@ class TestFundCRUDErrors:
         with patch("app.api.fund_namespace.FundService.get_all_funds") as mock_get:
             mock_get.side_effect = Exception("Database query failed")
 
-            response = client.get("/api/funds")
+            response = client.get("/api/fund")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -851,7 +851,7 @@ class TestSymbolLookupErrors:
 
     def test_lookup_symbol_external_api_failure(self, app_context, client):
         """
-        Verify GET /funds/symbol/<symbol> returns 500 on external API failures.
+        Verify GET /fund/symbol/<symbol> returns 500 on external API failures.
 
         WHY: Third-party APIs (yfinance) may be down or rate-limited. Proper error
         handling allows the UI to show appropriate error messages and lets users
@@ -869,7 +869,7 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/funds/symbol/VTI")
+            response = client.get("/api/fund/symbol/VTI")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -877,7 +877,7 @@ class TestSymbolLookupErrors:
 
     def test_lookup_symbol_force_refresh_failure(self, app_context, client):
         """
-        Verify GET /funds/symbol/<symbol> with force_refresh handles API failures.
+        Verify GET /fund/symbol/<symbol> with force_refresh handles API failures.
 
         WHY: Force refresh bypasses cache and hits external APIs directly. Rate
         limits or API outages must be handled gracefully with clear error messages
@@ -897,7 +897,7 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/funds/symbol/VTI?force_refresh=true")
+            response = client.get("/api/fund/symbol/VTI?force_refresh=true")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -905,7 +905,7 @@ class TestSymbolLookupErrors:
 
     def test_lookup_symbol_empty_symbol(self, app_context, client):
         """
-        Verify GET /funds/symbol/<symbol> handles empty/missing symbol parameter.
+        Verify GET /fund/symbol/<symbol> handles empty/missing symbol parameter.
 
         WHY: URL routing edge cases (trailing slashes, empty params) should be
         handled gracefully. Prevents server errors from user input mistakes or
@@ -925,14 +925,14 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/funds/symbol/")
+            response = client.get("/api/fund/symbol/")
 
             # May get 404 from Flask routing or 404 from our handler
             assert response.status_code in [404, 308]  # 308 is redirect
 
     def test_lookup_symbol_cache_error(self, app_context, client):
         """
-        Verify GET /funds/symbol/<symbol> returns 500 on cache read/write failures.
+        Verify GET /fund/symbol/<symbol> returns 500 on cache read/write failures.
 
         WHY: Redis or file cache failures shouldn't break symbol lookup entirely.
         Proper error handling ensures users get feedback about cache issues rather
@@ -950,7 +950,7 @@ class TestSymbolLookupErrors:
             "get_symbol_info",
             staticmethod(mock_get_symbol_info),
         ):
-            response = client.get("/api/funds/symbol/AAPL")
+            response = client.get("/api/fund/symbol/AAPL")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -976,7 +976,7 @@ class TestPriceUpdateErrors:
 
         with patch("app.api.fund_namespace.FundService.get_fund", mock_get_fund):
             fake_id = make_id()
-            response = client.get(f"/api/funds/fund-prices/{fake_id}")
+            response = client.get(f"/api/fund/fund-prices/{fake_id}")
 
             assert response.status_code == 404
 
@@ -1000,7 +1000,7 @@ class TestPriceUpdateErrors:
             "app.api.fund_namespace.FundService.get_fund_price_history",
             mock_get_price_history,
         ):
-            response = client.get(f"/api/funds/fund-prices/{fund.id}")
+            response = client.get(f"/api/fund/fund-prices/{fund.id}")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -1029,7 +1029,7 @@ class TestPriceUpdateErrors:
             "update_todays_price",
             staticmethod(mock_update_todays_price),
         ):
-            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=today")
+            response = client.post(f"/api/fund/fund-prices/{fund.id}/update?type=today")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -1058,7 +1058,7 @@ class TestPriceUpdateErrors:
             "update_historical_prices",
             staticmethod(mock_update_historical_prices),
         ):
-            response = client.post(f"/api/funds/fund-prices/{fund.id}/update?type=historical")
+            response = client.post(f"/api/fund/fund-prices/{fund.id}/update?type=historical")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -1066,7 +1066,7 @@ class TestPriceUpdateErrors:
 
     def test_update_all_prices_missing_api_key(self, app_context, client):
         """
-        Verify POST /funds/update-all-prices requires valid API key authentication.
+        Verify POST /fund/update-all-prices requires valid API key authentication.
 
         WHY: This endpoint is designed for cron jobs only and could be abused to
         trigger expensive API calls. API key authentication prevents unauthorized
@@ -1075,7 +1075,7 @@ class TestPriceUpdateErrors:
         # Ensure INTERNAL_API_KEY is set
         with patch.dict(os.environ, {"INTERNAL_API_KEY": "test_key"}):
             # Make request without authentication headers
-            response = client.post("/api/funds/update-all-prices")
+            response = client.post("/api/fund/update-all-prices")
 
             assert response.status_code == 401
             data = response.get_json()
@@ -1083,7 +1083,7 @@ class TestPriceUpdateErrors:
 
     def test_update_all_prices_invalid_time_token(self, app_context, client):
         """
-        Verify POST /funds/update-all-prices validates time-based token freshness.
+        Verify POST /fund/update-all-prices validates time-based token freshness.
 
         WHY: Time tokens prevent replay attacks and stolen credentials from being
         reused. This security layer ensures that even if an API key leaks, it can
@@ -1095,13 +1095,13 @@ class TestPriceUpdateErrors:
         headers = {"X-API-Key": api_key, "X-Time-Token": "invalid_token"}
 
         with patch.dict(os.environ, {"INTERNAL_API_KEY": api_key}):
-            response = client.post("/api/funds/update-all-prices", headers=headers)
+            response = client.post("/api/fund/update-all-prices", headers=headers)
 
             assert response.status_code == 401
 
     def test_update_all_prices_database_error(self, app_context, client):
         """
-        Verify POST /funds/update-all-prices returns 500 on database failures.
+        Verify POST /fund/update-all-prices returns 500 on database failures.
 
         WHY: The batch price update job must handle database errors gracefully to
         avoid silent failures in scheduled tasks. Clear error responses enable
@@ -1123,7 +1123,7 @@ class TestPriceUpdateErrors:
             headers = {"X-API-Key": api_key, "X-Time-Token": time_token}
 
             with patch.dict(os.environ, {"INTERNAL_API_KEY": api_key}):
-                response = client.post("/api/funds/update-all-prices", headers=headers)
+                response = client.post("/api/fund/update-all-prices", headers=headers)
 
                 assert response.status_code == 500
                 data = response.get_json()

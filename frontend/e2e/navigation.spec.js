@@ -32,12 +32,12 @@ test.describe('Navigation', () => {
 
     // Test Portfolios link
     await page.click('text=Portfolios');
-    await expect(page).toHaveURL(/.*portfolios/);
+    await expect(page).toHaveURL(/.*portfolio/);
     await expect(page.locator('h1')).toContainText('Portfolios');
 
     // Test Funds link
     await page.click('text=Funds');
-    await expect(page).toHaveURL(/.*funds/);
+    await expect(page).toHaveURL(/.*fund/);
     await expect(page.locator('h1')).toContainText('Funds');
 
     // Test Config link
@@ -52,7 +52,7 @@ test.describe('Navigation', () => {
 
     // Go back
     await page.goBack();
-    await expect(page).toHaveURL(/.*portfolios/);
+    await expect(page).toHaveURL(/.*portfolio/);
 
     // Go back again
     await page.goBack();
@@ -70,11 +70,11 @@ test.describe('Navigation', () => {
 
     // Go forward
     await page.goForward();
-    await expect(page).toHaveURL(/.*portfolios/);
+    await expect(page).toHaveURL(/.*portfolio/);
 
     // Go forward again
     await page.goForward();
-    await expect(page).toHaveURL(/.*funds/);
+    await expect(page).toHaveURL(/.*fund/);
   });
 
   test('direct URL navigation works', async ({ page }) => {

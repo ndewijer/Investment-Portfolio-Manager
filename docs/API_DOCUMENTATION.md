@@ -63,7 +63,7 @@ System health and version information.
 - Checking version compatibility
 - Detecting pending database migrations
 
-### 2. Portfolio (`/api/portfolios`)
+### 2. Portfolio (`/api/portfolio`)
 
 Portfolio management and analytics.
 
@@ -80,7 +80,7 @@ Portfolio management and analytics.
 - Adding/removing funds from portfolios
 - Archiving inactive portfolios
 
-### 3. Fund (`/api/funds`)
+### 3. Fund (`/api/fund`)
 
 Investment fund and stock management.
 
@@ -326,7 +326,7 @@ The API currently implements:
 Endpoints marked with `security='apikey'` require an API key:
 
 ```http
-GET /api/funds/update-all-prices
+GET /api/fund/update-all-prices
 X-API-Key: your-api-key-here
 ```
 
@@ -347,7 +347,7 @@ API_KEY=your-secure-api-key
 
 1. **Create Portfolio**:
 ```http
-POST /api/portfolios
+POST /api/portfolio
 Content-Type: application/json
 
 {
@@ -360,13 +360,13 @@ Response: `{ "id": "portfolio-uuid", ... }`
 
 2. **Create or Find Fund**:
 ```http
-GET /api/funds/symbol/AAPL
+GET /api/fund/symbol/AAPL
 ```
 
 Response: `{ "symbol": "AAPL", "name": "Apple Inc.", ... }`
 
 ```http
-POST /api/funds
+POST /api/fund
 Content-Type: application/json
 
 {
@@ -384,7 +384,7 @@ Response: `{ "id": "fund-uuid", ... }`
 
 3. **Add Fund to Portfolio**:
 ```http
-POST /api/portfolios-funds
+POST /api/portfolio/funds
 Content-Type: application/json
 
 {
@@ -401,7 +401,7 @@ Content-Type: application/json
 
 1. **Get Portfolio-Fund Relationship ID**:
 ```http
-GET /api/portfolios-funds?portfolio_id=portfolio-uuid
+GET /api/portfolio/funds?portfolio_id=portfolio-uuid
 ```
 
 Response: `[{ "id": "portfolio-fund-uuid", ... }]`
@@ -483,7 +483,7 @@ Content-Type: application/json
 The Swagger API coexists with the legacy Blueprint routes during the transition period:
 
 - **Legacy Routes**: Continue to work at their original paths (e.g., `/portfolios`)
-- **Swagger Routes**: Available with `/api` prefix (e.g., `/api/portfolios`)
+- **Swagger Routes**: Available with `/api` prefix (e.g., `/api/portfolio`)
 
 ### Key Differences
 
@@ -547,7 +547,7 @@ Currently, the API does not implement pagination. All collection endpoints retur
 
 The API does not currently implement rate limiting.
 
-**Note**: The `/api/funds/update-all-prices` endpoint requires an API key and should be called sparingly (typically once per day) to avoid overwhelming external price data providers.
+**Note**: The `/api/fund/update-all-prices` endpoint requires an API key and should be called sparingly (typically once per day) to avoid overwhelming external price data providers.
 
 ---
 
@@ -571,7 +571,7 @@ Always check HTTP status codes and handle errors:
 
 ```javascript
 try {
-  const response = await fetch('/api/portfolios', {
+  const response = await fetch('/api/portfolio', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(portfolioData)
@@ -618,7 +618,7 @@ Some destructive operations require confirmation:
 
 ```javascript
 // First attempt may require confirmation
-const response = await fetch(`/api/portfolios-funds/${id}`, {
+const response = await fetch(`/api/portfolio/fund/${id}`, {
   method: 'DELETE'
 });
 
@@ -627,7 +627,7 @@ if (response.status === 409) {
   if (data.requires_confirmation) {
     // Show user the impact (transaction_count, dividend_count)
     // If confirmed:
-    await fetch(`/api/portfolios-funds/${id}?confirm=true`, {
+    await fetch(`/api/portfolio/fund/${id}?confirm=true`, {
       method: 'DELETE'
     });
   }
@@ -651,15 +651,15 @@ if (response.status === 409) {
 
 ```bash
 # GET request
-curl http://localhost:5001/api/portfolios
+curl http://localhost:5001/api/portfolio
 
 # POST request
-curl -X POST http://localhost:5001/api/portfolios \
+curl -X POST http://localhost:5001/api/portfolio \
   -H "Content-Type: application/json" \
   -d '{"name": "Test Portfolio", "description": "Testing"}'
 
 # With authentication
-curl http://localhost:5001/api/funds/update-all-prices \
+curl http://localhost:5001/api/fund/update-all-prices \
   -H "X-API-Key: your-api-key"
 ```
 
@@ -681,7 +681,7 @@ curl http://localhost:5001/api/funds/update-all-prices \
 
 ```bash
 # List all portfolios to verify UUIDs
-curl http://localhost:5001/api/portfolios
+curl http://localhost:5001/api/portfolio
 ```
 
 ### Issue: "Validation error" (400)

@@ -4,17 +4,17 @@ Integration tests for portfolio routes (portfolio_routes.py).
 Tests all Portfolio API endpoints:
 - GET /portfolios - List all portfolios
 - POST /portfolios - Create portfolio
-- GET /portfolios/<id> - Get portfolio detail with metrics
-- PUT /portfolios/<id> - Update portfolio
-- DELETE /portfolios/<id> - Delete portfolio
-- POST /portfolios/<id>/archive - Archive portfolio
-- POST /portfolios/<id>/unarchive - Unarchive portfolio
-- GET /portfolios-summary - Get portfolio summary (overview)
-- GET /portfolios-history - Get portfolio historical performance
-- GET /portfolios-funds - List portfolio funds (optional filter by portfolio_id)
-- POST /portfolios-funds - Add fund to portfolio
-- DELETE /portfolios-funds/<id> - Remove fund from portfolio
-- GET /portfolios/<id>/fund-history - Get fund-specific history for portfolio
+- GET /portfolio/<id> - Get portfolio detail with metrics
+- PUT /portfolio/<id> - Update portfolio
+- DELETE /portfolio/<id> - Delete portfolio
+- POST /portfolio/<id>/archive - Archive portfolio
+- POST /portfolio/<id>/unarchive - Unarchive portfolio
+- GET /portfolio/summary - Get portfolio summary (overview)
+- GET /portfolio/history - Get portfolio historical performance
+- GET /portfolio/funds - List portfolio funds (optional filter by portfolio_id)
+- POST /portfolio/funds - Add fund to portfolio
+- DELETE /portfolio/fund/<id> - Remove fund from portfolio
+- GET /portfolio/<id>/fund-history - Get fund-specific history for portfolio
 """
 
 from datetime import datetime, timedelta
@@ -48,7 +48,7 @@ class TestPortfolioListAndCreate:
         WHY: Users need to see an empty state when they first start using the application,
         ensuring the UI can handle the initial condition gracefully without errors.
         """
-        response = client.get("/api/portfolios")
+        response = client.get("/api/portfolio")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -69,7 +69,7 @@ class TestPortfolioListAndCreate:
         db_session.add_all([p1, p2, p3])
         db_session.commit()
 
-        response = client.get("/api/portfolios")
+        response = client.get("/api/portfolio")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -92,7 +92,7 @@ class TestPortfolioListAndCreate:
         """
         payload = {"name": "My New Portfolio", "description": "Test portfolio"}
 
-        response = client.post("/api/portfolios", json=payload)
+        response = client.post("/api/portfolio", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -117,7 +117,7 @@ class TestPortfolioListAndCreate:
         """
         payload = {"name": "Minimal Portfolio"}
 
-        response = client.post("/api/portfolios", json=payload)
+        response = client.post("/api/portfolio", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -130,7 +130,7 @@ class TestPortfolioRetrieveUpdateDelete:
 
     def test_get_portfolio_detail(self, app_context, client, db_session):
         """
-        Verify GET /portfolios/<id> returns portfolio with complete performance metrics.
+        Verify GET /portfolio/<id> returns portfolio with complete performance metrics.
 
         WHY: Users need to see their portfolio's current value, costs, gains/losses, and dividends
         to make informed investment decisions. This ensures all critical financial metrics are
@@ -157,7 +157,7 @@ class TestPortfolioRetrieveUpdateDelete:
         db_session.add(txn)
         db_session.commit()
 
-        response = client.get(f"/api/portfolios/{portfolio.id}")
+        response = client.get(f"/api/portfolio/{portfolio.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -172,20 +172,20 @@ class TestPortfolioRetrieveUpdateDelete:
 
     def test_get_portfolio_not_found(self, app_context, client):
         """
-        Verify GET /portfolios/<id> returns 404 for non-existent portfolio.
+        Verify GET /portfolio/<id> returns 404 for non-existent portfolio.
 
         WHY: Attempting to access a deleted or invalid portfolio ID should fail gracefully with
         a proper error code, preventing users from seeing incorrect data or experiencing crashes
         when following stale links or bookmarks.
         """
         fake_id = make_id()
-        response = client.get(f"/api/portfolios/{fake_id}")
+        response = client.get(f"/api/portfolio/{fake_id}")
 
         assert response.status_code == 404
 
     def test_get_archived_portfolio_returns_404(self, app_context, client, db_session):
         """
-        Verify GET /portfolios/<id> returns 404 for archived portfolio.
+        Verify GET /portfolio/<id> returns 404 for archived portfolio.
 
         WHY: Archived portfolios should not be accessible via standard detail endpoints to prevent
         users from accidentally modifying or viewing stale investment data. This enforces the
@@ -195,7 +195,7 @@ class TestPortfolioRetrieveUpdateDelete:
         db_session.add(portfolio)
         db_session.commit()
 
-        response = client.get(f"/api/portfolios/{portfolio.id}")
+        response = client.get(f"/api/portfolio/{portfolio.id}")
 
         assert response.status_code == 404
         data = response.get_json()
@@ -204,7 +204,7 @@ class TestPortfolioRetrieveUpdateDelete:
 
     def test_update_portfolio(self, app_context, client, db_session):
         """
-        Verify PUT /portfolios/<id> successfully updates portfolio fields.
+        Verify PUT /portfolio/<id> successfully updates portfolio fields.
 
         WHY: Users need to rename portfolios, update descriptions, and change settings like
         exclude_from_overview as their investment strategies evolve. This ensures changes are
@@ -220,7 +220,7 @@ class TestPortfolioRetrieveUpdateDelete:
             "exclude_from_overview": True,
         }
 
-        response = client.put(f"/api/portfolios/{portfolio.id}", json=payload)
+        response = client.put(f"/api/portfolio/{portfolio.id}", json=payload)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -235,7 +235,7 @@ class TestPortfolioRetrieveUpdateDelete:
 
     def test_update_portfolio_not_found(self, app_context, client):
         """
-        Verify PUT /portfolios/<id> returns 404 for non-existent portfolio.
+        Verify PUT /portfolio/<id> returns 404 for non-existent portfolio.
 
         WHY: Update operations on invalid portfolio IDs should fail gracefully to prevent
         creating orphaned data or confusing users with success messages when nothing was updated.
@@ -243,13 +243,13 @@ class TestPortfolioRetrieveUpdateDelete:
         fake_id = make_id()
         payload = {"name": "Test"}
 
-        response = client.put(f"/api/portfolios/{fake_id}", json=payload)
+        response = client.put(f"/api/portfolio/{fake_id}", json=payload)
 
         assert response.status_code == 404
 
     def test_delete_portfolio(self, app_context, client, db_session):
         """
-        Verify DELETE /portfolios/<id> permanently removes portfolio from database.
+        Verify DELETE /portfolio/<id> permanently removes portfolio from database.
 
         WHY: Users need the ability to permanently delete portfolios they no longer need, cleaning
         up their workspace. This ensures complete removal from the database to prevent clutter
@@ -260,7 +260,7 @@ class TestPortfolioRetrieveUpdateDelete:
         db_session.commit()
         portfolio_id = portfolio.id
 
-        response = client.delete(f"/api/portfolios/{portfolio_id}")
+        response = client.delete(f"/api/portfolio/{portfolio_id}")
 
         assert response.status_code == 200
 
@@ -270,14 +270,14 @@ class TestPortfolioRetrieveUpdateDelete:
 
     def test_delete_portfolio_not_found(self, app_context, client):
         """
-        Verify DELETE /portfolios/<id> returns 404 for non-existent portfolio.
+        Verify DELETE /portfolio/<id> returns 404 for non-existent portfolio.
 
         WHY: Delete operations on invalid IDs should fail with proper error codes to prevent
         users from thinking a deletion succeeded when nothing happened, avoiding confusion
         about data state.
         """
         fake_id = make_id()
-        response = client.delete(f"/api/portfolios/{fake_id}")
+        response = client.delete(f"/api/portfolio/{fake_id}")
 
         assert response.status_code == 404
 
@@ -287,7 +287,7 @@ class TestPortfolioArchiving:
 
     def test_archive_portfolio(self, app_context, client, db_session):
         """
-        Verify POST /portfolios/<id>/archive sets portfolio to archived state.
+        Verify POST /portfolio/<id>/archive sets portfolio to archived state.
 
         WHY: Users need to archive old or inactive portfolios without permanently deleting them,
         preserving historical data while decluttering their active workspace. This supports data
@@ -297,7 +297,7 @@ class TestPortfolioArchiving:
         db_session.add(portfolio)
         db_session.commit()
 
-        response = client.post(f"/api/portfolios/{portfolio.id}/archive")
+        response = client.post(f"/api/portfolio/{portfolio.id}/archive")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -309,7 +309,7 @@ class TestPortfolioArchiving:
 
     def test_unarchive_portfolio(self, app_context, client, db_session):
         """
-        Verify POST /portfolios/<id>/unarchive restores archived portfolio to active state.
+        Verify POST /portfolio/<id>/unarchive restores archived portfolio to active state.
 
         WHY: Users may need to reactivate previously archived portfolios when resuming investment
         tracking or correcting accidental archives. This ensures the unarchive operation properly
@@ -319,7 +319,7 @@ class TestPortfolioArchiving:
         db_session.add(portfolio)
         db_session.commit()
 
-        response = client.post(f"/api/portfolios/{portfolio.id}/unarchive")
+        response = client.post(f"/api/portfolio/{portfolio.id}/unarchive")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -361,7 +361,7 @@ class TestPortfolioSummaryAndHistory:
         db_session.add(txn)
         db_session.commit()
 
-        response = client.get("/api/portfolios-summary")
+        response = client.get("/api/portfolio/summary")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -385,7 +385,7 @@ class TestPortfolioSummaryAndHistory:
         db_session.add_all([p1, p2])
         db_session.commit()
 
-        response = client.get("/api/portfolios-summary")
+        response = client.get("/api/portfolio/summary")
 
         assert response.status_code == 200
         # Should only include active portfolio data
@@ -430,7 +430,7 @@ class TestPortfolioSummaryAndHistory:
             db_session.add(fund_price)
         db_session.commit()
 
-        response = client.get("/api/portfolios-history")
+        response = client.get("/api/portfolio/history")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -443,7 +443,7 @@ class TestPortfolioFunds:
 
     def test_list_portfolio_funds_all(self, app_context, client, db_session):
         """
-        Verify GET /portfolio-funds returns all portfolio-fund relationships.
+        Verify GET /portfolio/funds returns all portfolio-fund relationships.
 
         WHY: Users need to see which funds are held across all portfolios to manage their
         holdings and understand asset distribution. This enables bulk operations and provides
@@ -460,7 +460,7 @@ class TestPortfolioFunds:
         db_session.add_all([pf1, pf2])
         db_session.commit()
 
-        response = client.get("/api/portfolios-funds")
+        response = client.get("/api/portfolio/funds")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -469,7 +469,7 @@ class TestPortfolioFunds:
 
     def test_list_portfolio_funds_filtered(self, app_context, client, db_session):
         """
-        Verify GET /portfolio-funds?portfolio_id=<id> filters results to specific portfolio.
+        Verify GET /portfolio/funds?portfolio_id=<id> filters results to specific portfolio.
 
         WHY: Users often need to see funds for a single portfolio without noise from other
         portfolios, enabling focused portfolio management and efficient data retrieval for
@@ -486,7 +486,7 @@ class TestPortfolioFunds:
         db_session.add_all([pf1, pf2])
         db_session.commit()
 
-        response = client.get(f"/api/portfolios-funds?portfolio_id={p1.id}")
+        response = client.get(f"/api/portfolio/funds?portfolio_id={p1.id}")
 
         assert response.status_code == 200
         # Should only return funds for p1
@@ -494,7 +494,7 @@ class TestPortfolioFunds:
 
     def test_create_portfolio_fund(self, app_context, client, db_session):
         """
-        Verify POST /portfolio-funds successfully adds a fund to a portfolio.
+        Verify POST /portfolio/funds successfully adds a fund to a portfolio.
 
         WHY: Users need to add new funds to their portfolios to expand their investments and
         track additional holdings. This is a core operation for portfolio construction and
@@ -507,7 +507,7 @@ class TestPortfolioFunds:
 
         payload = {"portfolio_id": portfolio.id, "fund_id": fund.id}
 
-        response = client.post("/api/portfolios-funds", json=payload)
+        response = client.post("/api/portfolio/funds", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -521,7 +521,7 @@ class TestPortfolioFunds:
 
     def test_delete_portfolio_fund_without_transactions(self, app_context, client, db_session):
         """
-        Verify DELETE /portfolio-funds/<id> removes fund when no transactions exist.
+        Verify DELETE /portfolio/fund/<id> removes fund when no transactions exist.
 
         WHY: Users should be able to remove funds they no longer want to track when there's no
         transaction history. This cleanup operation prevents database clutter and allows users
@@ -537,7 +537,7 @@ class TestPortfolioFunds:
         db_session.commit()
         pf_id = pf.id
 
-        response = client.delete(f"/api/portfolios-funds/{pf_id}?confirm=true")
+        response = client.delete(f"/api/portfolio/fund/{pf_id}?confirm=true")
 
         assert response.status_code == 204
 
@@ -549,7 +549,7 @@ class TestPortfolioFunds:
         self, app_context, client, db_session
     ):
         """
-        Verify DELETE /portfolio-funds/<id> requires confirmation when transactions exist.
+        Verify DELETE /portfolio/fund/<id> requires confirmation when transactions exist.
 
         WHY: Deleting a fund with transaction history could result in significant data loss and
         financial record corruption. Requiring confirmation prevents accidental deletion of
@@ -576,7 +576,7 @@ class TestPortfolioFunds:
         db_session.commit()
 
         # Try delete without confirmation
-        response = client.delete(f"/api/portfolios-funds/{pf.id}")
+        response = client.delete(f"/api/portfolio/fund/{pf.id}")
 
         assert response.status_code == 409  # Conflict - requires confirmation
         data = response.get_json()
@@ -585,7 +585,7 @@ class TestPortfolioFunds:
 
     def test_get_fund_history_for_portfolio(self, app_context, client, db_session):
         """
-        Verify GET /portfolios/<id>/fund-history returns fund-specific historical performance.
+        Verify GET /portfolio/<id>/fund-history returns fund-specific historical performance.
 
         WHY: Users need to analyze individual fund performance within a portfolio to identify
         top performers, underperformers, and make informed buy/sell decisions. Fund-level
@@ -619,7 +619,7 @@ class TestPortfolioFunds:
             db_session.add(fund_price)
         db_session.commit()
 
-        response = client.get(f"/api/portfolios/{portfolio.id}/fund-history")
+        response = client.get(f"/api/portfolio/{portfolio.id}/fund-history")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -632,14 +632,14 @@ class TestPortfolioErrors:
 
     def test_archive_portfolio_not_found(self, app_context, client):
         """
-        Verify POST /portfolios/<id>/archive returns 404 for non-existent portfolio.
+        Verify POST /portfolio/<id>/archive returns 404 for non-existent portfolio.
 
         WHY: Archive operations on invalid portfolio IDs should fail gracefully with proper
         error codes, preventing users from thinking an archive succeeded when no portfolio
         exists, which could lead to confusion about data state.
         """
         fake_id = make_id()
-        response = client.post(f"/api/portfolios/{fake_id}/archive")
+        response = client.post(f"/api/portfolio/{fake_id}/archive")
 
         assert response.status_code == 404
         data = response.get_json()
@@ -647,14 +647,14 @@ class TestPortfolioErrors:
 
     def test_unarchive_portfolio_not_found(self, app_context, client):
         """
-        Verify POST /portfolios/<id>/unarchive returns 404 for non-existent portfolio.
+        Verify POST /portfolio/<id>/unarchive returns 404 for non-existent portfolio.
 
         WHY: Unarchive operations on invalid portfolio IDs should fail with clear error messages
         to prevent users from being misled about restoration success when no portfolio exists
         to restore.
         """
         fake_id = make_id()
-        response = client.post(f"/api/portfolios/{fake_id}/unarchive")
+        response = client.post(f"/api/portfolio/{fake_id}/unarchive")
 
         assert response.status_code == 404
         data = response.get_json()
@@ -662,7 +662,7 @@ class TestPortfolioErrors:
 
     def test_create_portfolio_fund_invalid_portfolio(self, app_context, client, db_session):
         """
-        Verify POST /portfolio-funds rejects attempts to link fund to non-existent portfolio.
+        Verify POST /portfolio/funds rejects attempts to link fund to non-existent portfolio.
 
         WHY: Creating portfolio-fund relationships with invalid portfolio IDs would create orphaned
         data and corrupt database referential integrity. This validation protects against data
@@ -674,7 +674,7 @@ class TestPortfolioErrors:
 
         payload = {"portfolio_id": make_id(), "fund_id": fund.id}
 
-        response = client.post("/api/portfolios-funds", json=payload)
+        response = client.post("/api/portfolio/funds", json=payload)
 
         assert response.status_code == 404
         data = response.get_json()
@@ -682,7 +682,7 @@ class TestPortfolioErrors:
 
     def test_create_portfolio_fund_invalid_fund(self, app_context, client, db_session):
         """
-        Verify POST /portfolio-funds rejects attempts to link non-existent fund to portfolio.
+        Verify POST /portfolio/funds rejects attempts to link non-existent fund to portfolio.
 
         WHY: Creating portfolio-fund relationships with invalid fund IDs would create orphaned
         records and prevent proper transaction tracking. This validation ensures data integrity
@@ -694,7 +694,7 @@ class TestPortfolioErrors:
 
         payload = {"portfolio_id": portfolio.id, "fund_id": make_id()}
 
-        response = client.post("/api/portfolios-funds", json=payload)
+        response = client.post("/api/portfolio/funds", json=payload)
 
         assert response.status_code == 404
         data = response.get_json()
@@ -702,14 +702,14 @@ class TestPortfolioErrors:
 
     def test_delete_portfolio_fund_not_found(self, app_context, client):
         """
-        Verify DELETE /portfolio-funds/<id> returns 404 for non-existent portfolio-fund.
+        Verify DELETE /portfolio/fund/<id> returns 404 for non-existent portfolio-fund.
 
         WHY: Delete operations on invalid portfolio-fund IDs should fail with proper error codes
         to prevent users from thinking a deletion succeeded when nothing existed, maintaining
         accurate expectations about system state.
         """
         fake_id = make_id()
-        response = client.delete(f"/api/portfolios-funds/{fake_id}?confirm=true")
+        response = client.delete(f"/api/portfolio/fund/{fake_id}?confirm=true")
 
         assert response.status_code == 404
         data = response.get_json()
@@ -717,7 +717,7 @@ class TestPortfolioErrors:
 
     def test_delete_portfolio_fund_database_error(self, app_context, client, db_session):
         """
-        Verify DELETE /portfolio-funds/<id> handles unexpected database errors gracefully.
+        Verify DELETE /portfolio/fund/<id> handles unexpected database errors gracefully.
 
         WHY: Database failures during deletion could leave the system in an inconsistent state
         or expose stack traces to users. Proper error handling ensures the API returns safe,
@@ -740,7 +740,7 @@ class TestPortfolioErrors:
             "app.api.portfolio_namespace.PortfolioService.delete_portfolio_fund",
             mock_delete_pf,
         ):
-            response = client.delete(f"/api/portfolios-funds/{pf.id}?confirm=true")
+            response = client.delete(f"/api/portfolio/fund/{pf.id}?confirm=true")
 
             assert response.status_code == 400
             data = response.get_json()
@@ -759,7 +759,7 @@ class TestPortfolioErrors:
         db_session.add_all([p1, p2])
         db_session.commit()
 
-        response = client.get("/api/portfolios?include_excluded=true")
+        response = client.get("/api/portfolio?include_excluded=true")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -780,7 +780,7 @@ class TestPortfolioErrors:
         db_session.add_all([p1, p2])
         db_session.commit()
 
-        response = client.get("/api/portfolios")
+        response = client.get("/api/portfolio")
 
         assert response.status_code == 200
         data = response.get_json()

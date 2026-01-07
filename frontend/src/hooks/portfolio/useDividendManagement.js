@@ -98,7 +98,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   // Add dividend for a specific fund
   const handleAddDividend = useCallback(async (fund) => {
     try {
-      const response = await api.get(`/funds/${fund.fund_id}`);
+      const response = await api.get(`/fund/${fund.fund_id}`);
       const fundData = response.data;
 
       setSelectedFund(fundData);
@@ -191,7 +191,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   // Edit dividend
   const handleEditDividend = useCallback(async (dividend) => {
     try {
-      const fundResponse = await api.get(`/funds/${dividend.fund_id}`);
+      const fundResponse = await api.get(`/fund/${dividend.fund_id}`);
       const fundData = fundResponse.data;
       setSelectedFund(fundData);
 
@@ -204,7 +204,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
       if (fundData.dividend_type === 'stock' && dividend.reinvestment_transaction_id) {
         try {
           const transactionResponse = await api.get(
-            `/transactions/${dividend.reinvestment_transaction_id}`
+            `/transaction/${dividend.reinvestment_transaction_id}`
           );
           const transactionData = transactionResponse.data;
           editData.reinvestment_shares = transactionData.shares;
