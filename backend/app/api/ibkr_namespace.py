@@ -475,7 +475,7 @@ class IBKRPortfolios(Resource):
         return [{"id": p.id, "name": p.name, "description": p.description} for p in portfolios], 200
 
 
-@ns.route("/dividends/pending")
+@ns.route("/dividend/pending")
 class IBKRPendingDividends(Resource):
     """IBKR pending dividends endpoint."""
 

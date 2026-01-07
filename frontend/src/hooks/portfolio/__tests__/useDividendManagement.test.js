@@ -199,7 +199,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.post).toHaveBeenCalledWith(
-        '/dividends',
+        '/dividend',
         expect.objectContaining({
           portfolio_fund_id: 'pf-1',
           dividend_per_share: '1.50',
@@ -261,7 +261,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.post).toHaveBeenCalledWith(
-        '/dividends',
+        '/dividend',
         expect.objectContaining({
           buy_order_date: '2024-02-01',
           reinvestment_shares: undefined,
@@ -327,7 +327,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.post).toHaveBeenCalledWith(
-        '/dividends',
+        '/dividend',
         expect.objectContaining({
           buy_order_date: '2024-01-10',
           reinvestment_shares: '10',
@@ -486,7 +486,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.put).toHaveBeenCalledWith(
-        '/dividends/1',
+        '/dividend/1',
         expect.objectContaining({ id: 1, dividend_per_share: '2.00' })
       );
       expect(mockOnDataChange).toHaveBeenCalled();
@@ -569,7 +569,7 @@ describe('useDividendManagement', () => {
       expect(global.window.confirm).toHaveBeenCalledWith(
         'Are you sure you want to delete this dividend?'
       );
-      expect(api.delete).toHaveBeenCalledWith('/dividends/1');
+      expect(api.delete).toHaveBeenCalledWith('/dividend/1');
       expect(mockOnDataChange).toHaveBeenCalled();
     });
 

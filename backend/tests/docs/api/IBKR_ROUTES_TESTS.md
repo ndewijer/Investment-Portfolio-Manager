@@ -33,7 +33,7 @@ Integration tests for Interactive Brokers (IBKR) transaction processing API endp
 - **GET /api/ibkr/inbox/<id>/allocations** - Get allocation details
 - **PUT /api/ibkr/inbox/<id>/allocations** - Update existing allocations
 - **POST /api/ibkr/inbox/<id>/unallocate** - Remove allocations
-- **GET /api/ibkr/dividends/pending** - Get pending dividends for matching
+- **GET /api/ibkr/dividend/pending** - Get pending dividends for matching
 - **POST /api/ibkr/inbox/<id>/match-dividend** - Match dividend to existing records
 - **POST /api/ibkr/inbox/bulk-allocate** - Bulk allocate multiple transactions
 
@@ -62,7 +62,7 @@ Integration tests for Interactive Brokers (IBKR) transaction processing API endp
 ### TestIBKRAllocation (12 tests)
 - `test_get_portfolios` - Verify portfolios endpoint returns active portfolios
 - `test_allocate_transaction` - Allocate transaction 100% to single portfolio
-- `test_get_pending_dividends` - GET /ibkr/dividends/pending returns unmatched dividends
+- `test_get_pending_dividends` - GET /ibkr/dividend/pending returns unmatched dividends
 - `test_match_dividend` - Match IBKR dividend transaction to existing dividend records
 - `test_unallocate_transaction` - Remove all allocations from processed transaction
 - `test_get_transaction_allocations` - GET /ibkr/inbox/<id>/allocations returns allocation details

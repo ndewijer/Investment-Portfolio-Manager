@@ -16,7 +16,7 @@ from ..services.dividend_service import DividendService
 from ..services.logging_service import logger
 
 # Create namespace
-ns = Namespace("dividends", description="Dividend management operations")
+ns = Namespace("dividend", description="Dividend management operations")
 
 # Define models
 dividend_model = ns.model(

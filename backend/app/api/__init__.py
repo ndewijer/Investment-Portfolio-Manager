@@ -32,6 +32,6 @@ def init_api(flask_api_instance):
     api.add_namespace(portfolio_ns, path="/portfolio")
     api.add_namespace(fund_ns, path="/fund")
     api.add_namespace(transaction_ns, path="/transaction")
-    api.add_namespace(dividend_ns, path="/dividends")
+    api.add_namespace(dividend_ns, path="/dividend")
     api.add_namespace(ibkr_ns, path="/ibkr")
     api.add_namespace(developer_ns, path="/developer")
