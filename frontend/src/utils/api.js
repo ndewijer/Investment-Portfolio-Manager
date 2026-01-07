@@ -39,8 +39,6 @@ const api = axios.create({
   baseURL: API_BASE_URL.replace(/\/+$/, ''),
   headers: {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS',
   },
   withCredentials: false,
 });

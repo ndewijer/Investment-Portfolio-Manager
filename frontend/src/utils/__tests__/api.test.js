@@ -55,12 +55,6 @@ describe('API Client', () => {
         headers.post?.['Content-Type'];
 
       expect(contentType).toBe('application/json');
-      expect(
-        headers.common?.['Access-Control-Allow-Origin'] || headers['Access-Control-Allow-Origin']
-      ).toBe('*');
-      expect(
-        headers.common?.['Access-Control-Allow-Methods'] || headers['Access-Control-Allow-Methods']
-      ).toBe('GET,PUT,POST,DELETE,PATCH,OPTIONS');
     });
 
     it('has withCredentials set to false', () => {
