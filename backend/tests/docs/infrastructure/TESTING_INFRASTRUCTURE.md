@@ -217,7 +217,7 @@ def client(app):
 **Usage**:
 ```python
 def test_endpoint(client):
-    response = client.get('/api/portfolios')
+    response = client.get('/api/portfolio')
     assert response.status_code == 200
 ```
 

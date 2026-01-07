@@ -19,11 +19,11 @@ All test functions include detailed docstrings explaining their purpose. Refer t
 Integration tests for transaction management API endpoints. Tests verify transaction CRUD operations, filtering, and interaction with the transaction service layer.
 
 **Endpoints Tested**:
-- GET /api/transactions - List/filter transactions
-- POST /api/transactions - Create transaction
-- GET /api/transactions/<id> - Get transaction detail
-- PUT /api/transactions/<id> - Update transaction
-- DELETE /api/transactions/<id> - Delete transaction
+- GET /api/transaction - List/filter transactions
+- POST /api/transaction - Create transaction
+- GET /api/transaction/<id> - Get transaction detail
+- PUT /api/transaction/<id> - Update transaction
+- DELETE /api/transaction/<id> - Delete transaction
 
 **Transaction Types**: buy, sell, dividend, fee
 

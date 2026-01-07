@@ -16,7 +16,7 @@ from ..services.logging_service import logger
 from ..services.transaction_service import TransactionService
 
 # Create namespace
-ns = Namespace("transactions", description="Transaction management operations")
+ns = Namespace("transaction", description="Transaction management operations")
 
 # Define models
 transaction_model = ns.model(

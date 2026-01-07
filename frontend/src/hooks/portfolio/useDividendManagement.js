@@ -92,13 +92,13 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   // Fetch dividends for portfolio
   const loadDividends = useCallback(async () => {
     if (!portfolioId) return;
-    await fetchDividends(() => api.get(`/dividends/portfolio/${portfolioId}`));
+    await fetchDividends(() => api.get(`/dividend/portfolio/${portfolioId}`));
   }, [portfolioId, fetchDividends]);
 
   // Add dividend for a specific fund
   const handleAddDividend = useCallback(async (fund) => {
     try {
-      const response = await api.get(`/funds/${fund.fund_id}`);
+      const response = await api.get(`/fund/${fund.fund_id}`);
       const fundData = response.data;
 
       setSelectedFund(fundData);
@@ -155,7 +155,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
             selectedFund?.dividend_type === 'stock' ? newDividend.buy_order_date : undefined,
         };
 
-        const response = await api.post('/dividends', dividendData);
+        const response = await api.post('/dividend', dividendData);
 
         // Update dividends state incrementally
         fetchDividends(() => Promise.resolve({ data: [...dividends, response.data] }));
@@ -191,7 +191,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   // Edit dividend
   const handleEditDividend = useCallback(async (dividend) => {
     try {
-      const fundResponse = await api.get(`/funds/${dividend.fund_id}`);
+      const fundResponse = await api.get(`/fund/${dividend.fund_id}`);
       const fundData = fundResponse.data;
       setSelectedFund(fundData);
 
@@ -204,7 +204,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
       if (fundData.dividend_type === 'stock' && dividend.reinvestment_transaction_id) {
         try {
           const transactionResponse = await api.get(
-            `/transactions/${dividend.reinvestment_transaction_id}`
+            `/transaction/${dividend.reinvestment_transaction_id}`
           );
           const transactionData = transactionResponse.data;
           editData.reinvestment_shares = transactionData.shares;
@@ -235,7 +235,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
           return;
         }
 
-        const response = await api.put(`/dividends/${editingDividend.id}`, {
+        const response = await api.put(`/dividend/${editingDividend.id}`, {
           ...editingDividend,
           reinvestment_transaction_id: editingDividend.reinvestment_transaction_id,
         });
@@ -271,7 +271,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
     async (dividendId) => {
       if (window.confirm('Are you sure you want to delete this dividend?')) {
         try {
-          await api.delete(`/dividends/${dividendId}`);
+          await api.delete(`/dividend/${dividendId}`);
 
           // Update dividends state incrementally
           const updatedDividends = dividends.filter((d) => d.id !== dividendId);

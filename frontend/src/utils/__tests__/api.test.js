@@ -66,10 +66,10 @@ describe('API Client', () => {
     // Test the URL transformation logic that's in the interceptor
     it('removes trailing slashes correctly', () => {
       const testUrls = [
-        { input: '/portfolios/', expected: 'portfolios' },
-        { input: '/portfolios', expected: 'portfolios' },
-        { input: 'portfolios/', expected: 'portfolios' },
-        { input: 'portfolios', expected: 'portfolios' },
+        { input: '/portfolio/', expected: 'portfolio' },
+        { input: '/portfolio', expected: 'portfolio' },
+        { input: 'portfolio/', expected: 'portfolio' },
+        { input: 'portfolio', expected: 'portfolio' },
         { input: '/', expected: '' },
         { input: '', expected: '' },
       ];
@@ -88,9 +88,9 @@ describe('API Client', () => {
 
     it('handles complex URL patterns', () => {
       const complexUrls = [
-        { input: '/api/portfolios/', expected: 'api/portfolios' },
-        { input: '//portfolios//', expected: '/portfolios' },
-        { input: '/portfolios/123/', expected: 'portfolios/123' },
+        { input: '/api/portfolio/', expected: 'api/portfolio' },
+        { input: '//portfolio//', expected: '/portfolio' },
+        { input: '/portfolio/123/', expected: 'portfolio/123' },
       ];
 
       complexUrls.forEach(({ input, expected }) => {
@@ -109,8 +109,8 @@ describe('API Client', () => {
         { url: '/api/system/health', isHealthCheck: true },
         { url: 'system/health', isHealthCheck: true },
         { url: '/system/health/status', isHealthCheck: true },
-        { url: '/api/portfolios', isHealthCheck: false },
-        { url: '/portfolios/health', isHealthCheck: false },
+        { url: '/api/portfolio', isHealthCheck: false },
+        { url: '/portfolio/health', isHealthCheck: false },
         { url: undefined, isHealthCheck: false },
       ];
 
@@ -188,7 +188,7 @@ describe('API Client', () => {
 
     it('can create log objects for requests', () => {
       const request = {
-        url: '/portfolios',
+        url: '/portfolio',
         method: 'GET',
         data: { test: true },
         headers: { Authorization: 'Bearer token' },
@@ -202,7 +202,7 @@ describe('API Client', () => {
       };
 
       expect(logObject).toMatchObject({
-        url: '/portfolios',
+        url: '/portfolio',
         method: 'GET',
         data: { test: true },
       });
@@ -271,7 +271,7 @@ describe('API Client', () => {
         },
         {
           error: {
-            config: { url: 'portfolios' },
+            config: { url: 'portfolio' },
             request: {},
             response: undefined,
           },

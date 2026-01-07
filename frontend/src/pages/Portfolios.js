@@ -35,7 +35,7 @@ const Portfolios = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchPortfolios(() => api.get('/portfolios'));
+    fetchPortfolios(() => api.get('/portfolio'));
   }, [fetchPortfolios]);
 
   const handleSubmit = async (e) => {
@@ -45,7 +45,7 @@ const Portfolios = () => {
     try {
       if (editingPortfolio) {
         await fetchPortfolios(
-          () => api.put(`/portfolios/${editingPortfolio.id}`, editingPortfolio),
+          () => api.put(`/portfolio/${editingPortfolio.id}`, editingPortfolio),
           {
             onSuccess: () => {
               setIsModalOpen(false);
@@ -54,7 +54,7 @@ const Portfolios = () => {
           }
         );
       } else {
-        await fetchPortfolios(() => api.post('/portfolios', newPortfolio), {
+        await fetchPortfolios(() => api.post('/portfolio', newPortfolio), {
           onSuccess: () => {
             setIsModalOpen(false);
             setNewPortfolio({ name: '', description: '', exclude_from_overview: false });
@@ -71,8 +71,8 @@ const Portfolios = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this portfolio?')) {
       try {
-        await api.delete(`/portfolios/${id}`);
-        fetchPortfolios(() => api.get('/portfolios'));
+        await api.delete(`/portfolio/${id}`);
+        fetchPortfolios(() => api.get('/portfolio'));
       } catch (error) {
         console.error('Error deleting portfolio:', error);
       }
@@ -80,13 +80,13 @@ const Portfolios = () => {
   };
 
   const handleViewPortfolio = (portfolioId) => {
-    navigate(`/portfolios/${portfolioId}`);
+    navigate(`/portfolio/${portfolioId}`);
   };
 
   const handleArchive = async (portfolioId) => {
     try {
-      await api.post(`/portfolios/${portfolioId}/archive`);
-      fetchPortfolios(() => api.get('/portfolios'));
+      await api.post(`/portfolio/${portfolioId}/archive`);
+      fetchPortfolios(() => api.get('/portfolio'));
     } catch (error) {
       console.error('Error archiving portfolio:', error);
     }
@@ -94,8 +94,8 @@ const Portfolios = () => {
 
   const handleUnarchive = async (portfolioId) => {
     try {
-      await api.post(`/portfolios/${portfolioId}/unarchive`);
-      fetchPortfolios(() => api.get('/portfolios'));
+      await api.post(`/portfolio/${portfolioId}/unarchive`);
+      fetchPortfolios(() => api.get('/portfolio'));
     } catch (error) {
       console.error('Error unarchiving portfolio:', error);
     }
@@ -104,7 +104,7 @@ const Portfolios = () => {
   if (loading) return <LoadingSpinner message="Loading portfolios..." />;
   if (error)
     return (
-      <ErrorMessage error={error} onRetry={() => fetchPortfolios(() => api.get('/portfolios'))} />
+      <ErrorMessage error={error} onRetry={() => fetchPortfolios(() => api.get('/portfolio'))} />
     );
 
   return (

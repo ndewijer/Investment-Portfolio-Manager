@@ -55,8 +55,8 @@ const FundDetail = () => {
         setLoadingPrices(true);
 
         const [fundResponse, pricesResponse] = await Promise.all([
-          api.get(`/funds/${id}`),
-          api.get(`/funds/fund-prices/${id}`),
+          api.get(`/fund/${id}`),
+          api.get(`/fund/fund-prices/${id}`),
         ]);
 
         if (mounted) {
@@ -141,13 +141,13 @@ const FundDetail = () => {
   const handleUpdateHistoricalPrices = async () => {
     try {
       setUpdating(true);
-      const response = await api.post(`/funds/fund-prices/${id}/update?type=historical`);
+      const response = await api.post(`/fund/fund-prices/${id}/update?type=historical`);
 
       // Check if new prices were added
       if (response.data && response.data.new_prices) {
         // Only fetch new data if prices were actually updated
         try {
-          const pricesRes = await api.get(`/funds/fund-prices/${id}`);
+          const pricesRes = await api.get(`/fund/fund-prices/${id}`);
           const sortedPrices = pricesRes.data.sort((a, b) => new Date(b.date) - new Date(a.date));
           setPriceHistory(sortedPrices);
           setFilteredPriceHistory(sortedPrices);

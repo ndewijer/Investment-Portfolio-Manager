@@ -2,11 +2,11 @@
 Integration tests for dividend routes (dividend_routes.py).
 
 Tests all Dividend API endpoints:
-- POST /dividends - Create dividend
-- GET /dividends/fund/<fund_id> - Get dividends by fund
-- GET /dividends/portfolio/<portfolio_id> - Get dividends by portfolio
-- PUT /dividends/<dividend_id> - Update dividend
-- DELETE /dividends/<dividend_id> - Delete dividend
+- POST /dividend - Create dividend
+- GET /dividend/fund/<fund_id> - Get dividends by fund
+- GET /dividend/portfolio/<portfolio_id> - Get dividends by portfolio
+- PUT /dividend/<dividend_id> - Update dividend
+- DELETE /dividend/<dividend_id> - Delete dividend
 """
 
 from datetime import datetime, timedelta
@@ -76,7 +76,7 @@ class TestDividendCreate:
             "dividend_per_share": 0.75,
         }
 
-        response = client.post("/api/dividends", json=payload)
+        response = client.post("/api/dividend", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -125,7 +125,7 @@ class TestDividendCreate:
             "dividend_per_share": 1.50,
         }
 
-        response = client.post("/api/dividends", json=payload)
+        response = client.post("/api/dividend", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
@@ -175,7 +175,7 @@ class TestDividendRetrieve:
         db_session.add_all([div1, div2])
         db_session.commit()
 
-        response = client.get(f"/api/dividends/fund/{fund.id}")
+        response = client.get(f"/api/dividend/fund/{fund.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -192,7 +192,7 @@ class TestDividendRetrieve:
         invalid fund references from bookmarks or external links.
         """
         fake_id = make_id()
-        response = client.get(f"/api/dividends/fund/{fake_id}")
+        response = client.get(f"/api/dividend/fund/{fake_id}")
 
         # Should return empty list or error
         assert response.status_code in [200, 404]
@@ -238,7 +238,7 @@ class TestDividendRetrieve:
         db_session.add_all([div1, div2])
         db_session.commit()
 
-        response = client.get(f"/api/dividends/portfolio/{portfolio.id}")
+        response = client.get(f"/api/dividend/portfolio/{portfolio.id}")
 
         assert response.status_code == 200
         data = response.get_json()
@@ -254,7 +254,7 @@ class TestDividendRetrieve:
         users attempt to access deleted or moved portfolio data.
         """
         fake_id = make_id()
-        response = client.get(f"/api/dividends/portfolio/{fake_id}")
+        response = client.get(f"/api/dividend/portfolio/{fake_id}")
 
         # Should return empty list or error
         assert response.status_code in [200, 404]
@@ -311,7 +311,7 @@ class TestDividendUpdateDelete:
             "dividend_per_share": 0.42,  # Changed
         }
 
-        response = client.put(f"/api/dividends/{div.id}", json=payload)
+        response = client.put(f"/api/dividend/{div.id}", json=payload)
 
         assert response.status_code == 200
         data = response.get_json()
@@ -340,7 +340,7 @@ class TestDividendUpdateDelete:
             "dividend_per_share": 0.50,
         }
 
-        response = client.put(f"/api/dividends/{fake_id}", json=payload)
+        response = client.put(f"/api/dividend/{fake_id}", json=payload)
 
         assert response.status_code in [400, 404]
 
@@ -374,7 +374,7 @@ class TestDividendUpdateDelete:
         db_session.commit()
         div_id = div.id
 
-        response = client.delete(f"/api/dividends/{div_id}")
+        response = client.delete(f"/api/dividend/{div_id}")
 
         assert response.status_code == 200
 
@@ -391,7 +391,7 @@ class TestDividendUpdateDelete:
         failed attempts, avoiding duplicate delete operations and race conditions.
         """
         fake_id = make_id()
-        response = client.delete(f"/api/dividends/{fake_id}")
+        response = client.delete(f"/api/dividend/{fake_id}")
 
         # API returns error for dividend not found (404 or 500)
         assert response.status_code in [404, 500]
@@ -430,7 +430,7 @@ class TestDividendErrors:
                 "dividend_per_share": 0.50,
             }
 
-            response = client.post("/api/dividends", json=payload)
+            response = client.post("/api/dividend", json=payload)
 
             assert response.status_code == 500
             data = response.get_json()
@@ -450,7 +450,7 @@ class TestDividendErrors:
             mock_get.side_effect = Exception("Database query failed")
 
             fake_id = make_id()
-            response = client.get(f"/api/dividends/fund/{fake_id}")
+            response = client.get(f"/api/dividend/fund/{fake_id}")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -472,7 +472,7 @@ class TestDividendErrors:
             mock_get.side_effect = Exception("Database query failed")
 
             fake_id = make_id()
-            response = client.get(f"/api/dividends/portfolio/{fake_id}")
+            response = client.get(f"/api/dividend/portfolio/{fake_id}")
 
             assert response.status_code == 500
             data = response.get_json()
@@ -520,7 +520,7 @@ class TestDividendErrors:
                 "dividend_per_share": 0.55,
             }
 
-            response = client.put(f"/api/dividends/{div.id}", json=payload)
+            response = client.put(f"/api/dividend/{div.id}", json=payload)
 
             assert response.status_code == 404
             data = response.get_json()
@@ -568,7 +568,7 @@ class TestDividendErrors:
                 "dividend_per_share": 0.80,
             }
 
-            response = client.put(f"/api/dividends/{div.id}", json=payload)
+            response = client.put(f"/api/dividend/{div.id}", json=payload)
 
             assert response.status_code == 500
             data = response.get_json()
@@ -588,7 +588,7 @@ class TestDividendErrors:
             mock_delete.side_effect = ValueError("Dividend not found")
 
             fake_id = make_id()
-            response = client.delete(f"/api/dividends/{fake_id}")
+            response = client.delete(f"/api/dividend/{fake_id}")
 
             assert response.status_code == 404
             data = response.get_json()
@@ -629,7 +629,7 @@ class TestDividendErrors:
         with patch("app.api.dividend_namespace.DividendService.delete_dividend") as mock_delete:
             mock_delete.side_effect = Exception("Database constraint violation")
 
-            response = client.delete(f"/api/dividends/{div.id}")
+            response = client.delete(f"/api/dividend/{div.id}")
 
             assert response.status_code == 500
             data = response.get_json()

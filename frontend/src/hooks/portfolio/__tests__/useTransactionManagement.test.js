@@ -244,7 +244,7 @@ describe('useTransactionManagement', () => {
         await result.current.handleCreateTransaction({ preventDefault: jest.fn() });
       });
 
-      expect(api.post).toHaveBeenCalledWith('/transactions', mockNewTransaction);
+      expect(api.post).toHaveBeenCalledWith('/transaction', mockNewTransaction);
       expect(mockOnDataChange).toHaveBeenCalled();
       expect(result.current.isTransactionModalOpen).toBe(false);
     });
@@ -329,7 +329,7 @@ describe('useTransactionManagement', () => {
         await result.current.handleUpdateTransaction({ preventDefault: jest.fn() });
       });
 
-      expect(api.put).toHaveBeenCalledWith(`/transactions/${mockTransaction.id}`, mockTransaction);
+      expect(api.put).toHaveBeenCalledWith(`/transaction/${mockTransaction.id}`, mockTransaction);
       expect(mockOnDataChange).toHaveBeenCalled();
       expect(result.current.isTransactionEditModalOpen).toBe(false);
       expect(result.current.editingTransaction).toBeNull();
@@ -390,7 +390,7 @@ describe('useTransactionManagement', () => {
       expect(global.window.confirm).toHaveBeenCalledWith(
         'Are you sure you want to delete this transaction?'
       );
-      expect(api.delete).toHaveBeenCalledWith('/transactions/1');
+      expect(api.delete).toHaveBeenCalledWith('/transaction/1');
       expect(mockOnDataChange).toHaveBeenCalled();
     });
 
@@ -489,7 +489,7 @@ describe('useTransactionManagement', () => {
         );
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-prices/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-prices/fund-123');
       expect(result.current.newTransaction.date).toBe('2024-01-15');
       expect(result.current.newTransaction.cost_per_share).toBe(50.25);
       expect(result.current.priceFound).toBe(true);

@@ -24,7 +24,7 @@ test.describe('Transaction Management', () => {
       await page.waitForTimeout(1000);
 
       // Should be on portfolio detail page (UUID-based ID)
-      await expect(page).toHaveURL(/.*portfolios\/[0-9a-f-]+/);
+      await expect(page).toHaveURL(/.*portfolio\/[0-9a-f-]+/);
     } else {
       test.skip();
     }

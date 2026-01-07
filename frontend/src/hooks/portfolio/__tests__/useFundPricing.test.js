@@ -72,7 +72,7 @@ describe('useFundPricing', () => {
         priceMap = await result.current.fetchFundPrice('fund-123');
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-prices/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-prices/fund-123');
       expect(priceMap).toEqual({
         '2024-01-15': 50.25,
         '2024-01-16': 51.0,
@@ -228,8 +228,8 @@ describe('useFundPricing', () => {
       expect(price1).toBe(50.25);
       expect(price2).toBe(100.5);
       expect(api.get).toHaveBeenCalledTimes(2);
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-prices/fund-123');
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-prices/fund-456');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-prices/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-prices/fund-456');
     });
   });
 

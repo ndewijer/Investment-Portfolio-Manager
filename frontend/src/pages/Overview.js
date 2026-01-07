@@ -42,10 +42,10 @@ const Overview = () => {
     onZoomChange,
     loadAllData,
     totalDataRange,
-  } = useChartData('/portfolios-history', {}, 365);
+  } = useChartData('/portfolio/history', {}, 365);
 
   useEffect(() => {
-    fetchPortfolioSummary(() => api.get('/portfolios-summary'));
+    fetchPortfolioSummary(() => api.get('/portfolio/summary'));
   }, [fetchPortfolioSummary]);
 
   // Extract performance calculation logic
@@ -159,7 +159,7 @@ const Overview = () => {
   };
 
   const handlePortfolioClick = (portfolio) => {
-    navigate(`/portfolios/${portfolio.id}`);
+    navigate(`/portfolio/${portfolio.id}`);
   };
 
   const getChartLines = () => {
@@ -411,7 +411,7 @@ const Overview = () => {
           columns={columns}
           loading={summaryLoading}
           error={summaryError}
-          onRetry={() => fetchPortfolioSummary(() => api.get('/portfolios-summary'))}
+          onRetry={() => fetchPortfolioSummary(() => api.get('/portfolio/summary'))}
           onRowClick={handlePortfolioClick}
           mobileCardRenderer={renderMobileCard}
           emptyMessage="No portfolios found"

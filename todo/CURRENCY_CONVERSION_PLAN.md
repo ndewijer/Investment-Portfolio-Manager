@@ -323,7 +323,7 @@ formatCurrencyWithCode(fund.latest_price, fund.currency)
 
 **File**: `backend/app/routes/portfolio_routes.py`
 
-#### Endpoint: `GET /portfolios/{id}/funds`
+#### Endpoint: `GET /portfolio/{id}/funds`
 
 **Current Response**:
 ```json
@@ -361,7 +361,7 @@ return jsonify([
 ])
 ```
 
-#### Endpoint: `GET /portfolios/{id}/transactions`
+#### Endpoint: `GET /portfolio/{id}/transactions`
 
 **Add** `fund_currency` field:
 ```python
@@ -376,7 +376,7 @@ return jsonify([
 ])
 ```
 
-#### Endpoint: `GET /portfolios/{id}/dividends`
+#### Endpoint: `GET /portfolio/{id}/dividends`
 
 **Add** `fund_currency` field:
 ```python

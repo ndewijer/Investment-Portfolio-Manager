@@ -83,9 +83,9 @@ export const usePortfolioData = (portfolioId) => {
     if (!portfolioId) return;
 
     await Promise.all([
-      fetchPortfolio(() => api.get(`/portfolios/${portfolioId}`)),
-      fetchPortfolioFunds(() => api.get(`/portfolios-funds?portfolio_id=${portfolioId}`)),
-      fetchFundHistory(() => api.get(`/portfolios/${portfolioId}/fund-history`)),
+      fetchPortfolio(() => api.get(`/portfolio/${portfolioId}`)),
+      fetchPortfolioFunds(() => api.get(`/portfolio/funds?portfolio_id=${portfolioId}`)),
+      fetchFundHistory(() => api.get(`/portfolio/${portfolioId}/fund-history`)),
     ]);
   }, [portfolioId, fetchPortfolio, fetchPortfolioFunds, fetchFundHistory]);
 
@@ -99,8 +99,8 @@ export const usePortfolioData = (portfolioId) => {
     if (!portfolioId) return;
 
     await Promise.all([
-      fetchPortfolio(() => api.get(`/portfolios/${portfolioId}`)),
-      fetchPortfolioFunds(() => api.get(`/portfolios-funds?portfolio_id=${portfolioId}`)),
+      fetchPortfolio(() => api.get(`/portfolio/${portfolioId}`)),
+      fetchPortfolioFunds(() => api.get(`/portfolio/funds?portfolio_id=${portfolioId}`)),
     ]);
   }, [portfolioId, fetchPortfolio, fetchPortfolioFunds]);
 

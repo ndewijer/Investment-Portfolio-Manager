@@ -100,7 +100,7 @@ echo -e "${GREEN}✅ Frontend proxy working${NC}"
 
 # Test 5: Verify database was seeded with funds
 echo -e "${BLUE}📊 Verifying database seeding...${NC}"
-FUNDS_RESPONSE=$(curl -s http://localhost/api/funds)
+FUNDS_RESPONSE=$(curl -s http://localhost/api/fund)
 echo "Funds response: $FUNDS_RESPONSE"
 
 if ! echo "$FUNDS_RESPONSE" | grep -q "Vanguard Total Stock Market ETF"; then
@@ -121,7 +121,7 @@ echo -e "${GREEN}✅ Database seeded correctly with expected funds${NC}"
 
 # Test 6: Verify portfolios were seeded
 echo -e "${BLUE}💼 Verifying portfolios were seeded...${NC}"
-PORTFOLIOS_RESPONSE=$(curl -s http://localhost/api/portfolios)
+PORTFOLIOS_RESPONSE=$(curl -s http://localhost/api/portfolio)
 PORTFOLIO_COUNT=$(echo "$PORTFOLIOS_RESPONSE" | grep -o '"id"[[:space:]]*:' | wc -l | tr -d '[:space:]')
 
 if [ "$PORTFOLIO_COUNT" -lt 1 ]; then

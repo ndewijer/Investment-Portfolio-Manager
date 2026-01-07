@@ -54,7 +54,7 @@ const Funds = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchFunds(() => api.get('/funds'));
+    fetchFunds(() => api.get('/fund'));
   }, [fetchFunds]);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ const Funds = () => {
       const fundsWithSymbols = funds.filter((fund) => fund.symbol);
       for (const fund of fundsWithSymbols) {
         try {
-          const response = await api.get(`/funds/symbol/${fund.symbol}`);
+          const response = await api.get(`/fund/symbol/${fund.symbol}`);
           if (response.data) {
             setSymbolInfo((prev) => ({
               ...prev,
@@ -91,14 +91,14 @@ const Funds = () => {
 
     try {
       if (editingFund) {
-        await api.put(`/funds/${editingFund.id}`, editingFund);
+        await api.put(`/fund/${editingFund.id}`, editingFund);
         setMessage('Fund updated successfully');
         setIsModalOpen(false);
         setEditingFund(null);
         // Refetch the full list of funds
-        await fetchFunds(() => api.get('/funds'));
+        await fetchFunds(() => api.get('/fund'));
       } else {
-        await api.post('/funds', newFund);
+        await api.post('/fund', newFund);
         setMessage('Fund created successfully');
         setIsModalOpen(false);
         setNewFund({
@@ -110,7 +110,7 @@ const Funds = () => {
           investment_type: 'fund',
         });
         // Refetch the full list of funds
-        await fetchFunds(() => api.get('/funds'));
+        await fetchFunds(() => api.get('/fund'));
       }
     } catch (error) {
       console.error('Error saving fund:', error);
@@ -122,7 +122,7 @@ const Funds = () => {
 
   const handleDeleteFund = async (id) => {
     try {
-      const usageResponse = await api.get(`/funds/${id}/check-usage`);
+      const usageResponse = await api.get(`/fund/${id}/check-usage`);
       if (usageResponse.data.in_use) {
         const portfolioInfo = usageResponse.data.portfolios
           .map((p) => `${p.name} (${p.transaction_count} transactions)`)
@@ -134,8 +134,8 @@ const Funds = () => {
       }
 
       if (window.confirm('Are you sure you want to delete this fund?')) {
-        await api.delete(`/funds/${id}`);
-        fetchFunds(() => api.get('/funds'));
+        await api.delete(`/fund/${id}`);
+        fetchFunds(() => api.get('/fund'));
         setMessage('Fund deleted successfully');
       }
     } catch (error) {
@@ -201,7 +201,7 @@ const Funds = () => {
 
     if (symbol) {
       try {
-        const response = await api.get(`/funds/symbol/${symbol}`);
+        const response = await api.get(`/fund/symbol/${symbol}`);
         if (response.data) {
           setSymbolInfo((prev) => ({
             ...prev,
@@ -260,7 +260,7 @@ const Funds = () => {
   };
 
   const handleViewFund = (fundId) => {
-    navigate(`/funds/${fundId}`);
+    navigate(`/fund/${fundId}`);
   };
 
   return (
@@ -284,7 +284,7 @@ const Funds = () => {
       {loading ? (
         <LoadingSpinner message="Loading funds..." />
       ) : error ? (
-        <ErrorMessage error={error} onRetry={() => fetchFunds(() => api.get('/funds'))} />
+        <ErrorMessage error={error} onRetry={() => fetchFunds(() => api.get('/fund'))} />
       ) : (
         <div className="funds-grid">
           {funds.map((fund) => (

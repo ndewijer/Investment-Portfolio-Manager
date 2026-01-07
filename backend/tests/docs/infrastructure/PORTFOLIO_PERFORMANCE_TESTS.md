@@ -678,7 +678,7 @@ pytest tests/test_portfolio_performance.py -v -s
 
 **Why**:
 - Performance tests are meaningless without realistic data volume
-- Query optimization only shows with multiple portfolios/funds
+- Query optimization only shows with multiple portfolio/funds
 - Timing benchmarks need actual data to process
 
 **Running without data**:

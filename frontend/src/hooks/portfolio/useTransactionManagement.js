@@ -90,13 +90,13 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
   // Fetch transactions for portfolio
   const loadTransactions = useCallback(async () => {
     if (!portfolioId) return;
-    await fetchTransactions(() => api.get(`/transactions?portfolio_id=${portfolioId}`));
+    await fetchTransactions(() => api.get(`/transaction?portfolio_id=${portfolioId}`));
   }, [portfolioId, fetchTransactions]);
 
   // Fetch fund price for a specific date
   const fetchFundPrice = useCallback(async (fundId) => {
     try {
-      const response = await api.get(`/funds/fund-prices/${fundId}`);
+      const response = await api.get(`/fund/fund-prices/${fundId}`);
       const prices = response.data;
       const priceMap = prices.reduce((acc, price) => {
         acc[price.date.split('T')[0]] = price.price;
@@ -159,7 +159,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
     async (e) => {
       e.preventDefault();
       try {
-        const response = await api.post('/transactions', newTransaction);
+        const response = await api.post('/transaction', newTransaction);
 
         // Update transactions state incrementally
         fetchTransactions(() => Promise.resolve({ data: [...transactions, response.data] }));
@@ -199,10 +199,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
     async (e) => {
       e.preventDefault();
       try {
-        const response = await api.put(
-          `/transactions/${editingTransaction.id}`,
-          editingTransaction
-        );
+        const response = await api.put(`/transaction/${editingTransaction.id}`, editingTransaction);
 
         // Update transactions state incrementally
         const updatedTransactions = transactions.map((t) =>
@@ -230,7 +227,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
     async (transactionId) => {
       if (window.confirm('Are you sure you want to delete this transaction?')) {
         try {
-          await api.delete(`/transactions/${transactionId}`);
+          await api.delete(`/transaction/${transactionId}`);
 
           // Update transactions state incrementally
           const updatedTransactions = transactions.filter((t) => t.id !== transactionId);

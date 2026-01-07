@@ -20,11 +20,11 @@ Integration tests for dividend management API endpoints. Verifies dividend CRUD 
 
 ### Endpoints Tested
 
-1. **POST /api/dividends** - Create dividend
-2. **GET /api/dividends/fund/<fund_id>** - Get dividends by fund
-3. **GET /api/dividends/portfolio/<portfolio_id>** - Get dividends by portfolio
-4. **PUT /api/dividends/<dividend_id>** - Update dividend
-5. **DELETE /api/dividends/<dividend_id>** - Delete dividend
+1. **POST /api/dividend** - Create dividend
+2. **GET /api/dividend/fund/<fund_id>** - Get dividends by fund
+3. **GET /api/dividend/portfolio/<portfolio_id>** - Get dividends by portfolio
+4. **PUT /api/dividend/<dividend_id>** - Update dividend
+5. **DELETE /api/dividend/<dividend_id>** - Delete dividend
 
 ---
 

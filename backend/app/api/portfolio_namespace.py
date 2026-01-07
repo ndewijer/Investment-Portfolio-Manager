@@ -17,7 +17,7 @@ from ..services.logging_service import logger
 from ..services.portfolio_service import PortfolioService
 
 # Create namespace
-ns = Namespace("portfolios", description="Portfolio management operations")
+ns = Namespace("portfolio", description="Portfolio management operations")
 
 # Define models for documentation
 portfolio_list_item_model = ns.model(
@@ -396,7 +396,7 @@ class PortfolioUnarchive(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route("-summary")
+@ns.route("/summary")
 class PortfolioSummary(Resource):
     """Portfolio summary endpoint."""
 
@@ -426,7 +426,7 @@ class PortfolioSummary(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route("-history")
+@ns.route("/history")
 class PortfolioHistory(Resource):
     """Portfolio history endpoint."""
 
@@ -464,7 +464,7 @@ class PortfolioHistory(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route("-funds")
+@ns.route("/funds")
 class PortfolioFundsList(Resource):
     """Portfolio-fund relationships endpoint."""
 
@@ -543,7 +543,7 @@ class PortfolioFundsList(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route("-funds/<string:portfolio_fund_id>")
+@ns.route("/fund/<string:portfolio_fund_id>")
 @ns.param("portfolio_fund_id", "Portfolio-Fund relationship ID")
 class PortfolioFundDetail(Resource):
     """Portfolio-fund relationship detail endpoint."""

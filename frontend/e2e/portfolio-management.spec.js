@@ -18,7 +18,7 @@ test.describe('Portfolio Management', () => {
     await page.click('text=Portfolios');
 
     // Verify URL changed
-    await expect(page).toHaveURL(/.*portfolios/);
+    await expect(page).toHaveURL(/.*portfolio/);
 
     // Verify page heading
     await expect(page.locator('h1')).toContainText('Portfolios');
@@ -70,7 +70,7 @@ test.describe('Portfolio Management', () => {
       await firstViewButton.click();
 
       // Should navigate to portfolio detail page (UUID-based ID)
-      await expect(page).toHaveURL(/.*portfolios\/[0-9a-f-]+/);
+      await expect(page).toHaveURL(/.*portfolio\/[0-9a-f-]+/);
 
       // Portfolio detail page should have key sections
       await page.waitForTimeout(1000); // Wait for page to load

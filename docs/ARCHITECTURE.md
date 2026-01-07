@@ -30,7 +30,7 @@ The backend follows a service layer architecture to separate concerns and improv
 **Example:**
 ```python
 # Route (thin)
-@portfolio.route('/portfolios/<id>', methods=['DELETE'])
+@portfolio.route('/portfolio/<id>', methods=['DELETE'])
 def delete_portfolio(id):
     return PortfolioService.delete_portfolio(id)
 

@@ -15,7 +15,7 @@ Tests IBKR API endpoints:
 - GET /ibkr/portfolios - Get portfolios for allocation ✅
 - GET /ibkr/inbox/<transaction_id>/eligible-portfolios - Get eligible portfolios ✅
 - POST /ibkr/inbox/<transaction_id>/allocate - Allocate transaction ✅
-- GET /ibkr/dividends/pending - Get pending dividends ✅
+- GET /ibkr/dividend/pending - Get pending dividends ✅
 - POST /ibkr/inbox/<transaction_id>/match-dividend - Match dividend ✅
 - POST /ibkr/inbox/<transaction_id>/unallocate - Unallocate transaction ✅
 - GET /ibkr/inbox/<transaction_id>/allocations - Get transaction allocations ✅
@@ -478,7 +478,7 @@ class TestIBKRAllocation:
 
     def test_get_pending_dividends(self, app_context, client, db_session):
         """
-        Test GET /ibkr/dividends/pending returns pending dividends.
+        Test GET /ibkr/dividend/pending returns pending dividends.
 
         WHY:
         Users need to see which dividend records await matching with IBKR dividend transactions.
@@ -507,7 +507,7 @@ class TestIBKRAllocation:
         db_session.add(dividend)
         db_session.commit()
 
-        response = client.get("/api/ibkr/dividends/pending")
+        response = client.get("/api/ibkr/dividend/pending")
 
         assert response.status_code == 200
         data = response.get_json()

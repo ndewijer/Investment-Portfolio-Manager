@@ -135,7 +135,7 @@ describe('useDividendManagement', () => {
         await result.current.handleAddDividend(mockFund);
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
       expect(result.current.isDividendModalOpen).toBe(true);
       expect(result.current.selectedFund).toEqual(mockFundData);
       expect(result.current.newDividend.portfolio_fund_id).toBe('pf-1');
@@ -199,7 +199,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.post).toHaveBeenCalledWith(
-        '/dividends',
+        '/dividend',
         expect.objectContaining({
           portfolio_fund_id: 'pf-1',
           dividend_per_share: '1.50',
@@ -261,7 +261,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.post).toHaveBeenCalledWith(
-        '/dividends',
+        '/dividend',
         expect.objectContaining({
           buy_order_date: '2024-02-01',
           reinvestment_shares: undefined,
@@ -327,7 +327,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.post).toHaveBeenCalledWith(
-        '/dividends',
+        '/dividend',
         expect.objectContaining({
           buy_order_date: '2024-01-10',
           reinvestment_shares: '10',
@@ -386,7 +386,7 @@ describe('useDividendManagement', () => {
         await result.current.handleEditDividend(mockDividend);
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
       expect(result.current.isDividendEditModalOpen).toBe(true);
       expect(result.current.selectedFund).toEqual(mockFundData);
       expect(result.current.editingDividend).toMatchObject({
@@ -418,8 +418,8 @@ describe('useDividendManagement', () => {
         await result.current.handleEditDividend(mockDividend);
       });
 
-      expect(api.get).toHaveBeenCalledWith('/funds/fund-123');
-      expect(api.get).toHaveBeenCalledWith('/transactions/txn-456');
+      expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
+      expect(api.get).toHaveBeenCalledWith('/transaction/txn-456');
       expect(result.current.editingDividend.reinvestment_shares).toBe(10);
       expect(result.current.editingDividend.reinvestment_price).toBe(50);
     });
@@ -486,7 +486,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(api.put).toHaveBeenCalledWith(
-        '/dividends/1',
+        '/dividend/1',
         expect.objectContaining({ id: 1, dividend_per_share: '2.00' })
       );
       expect(mockOnDataChange).toHaveBeenCalled();
@@ -569,7 +569,7 @@ describe('useDividendManagement', () => {
       expect(global.window.confirm).toHaveBeenCalledWith(
         'Are you sure you want to delete this dividend?'
       );
-      expect(api.delete).toHaveBeenCalledWith('/dividends/1');
+      expect(api.delete).toHaveBeenCalledWith('/dividend/1');
       expect(mockOnDataChange).toHaveBeenCalled();
     });
 

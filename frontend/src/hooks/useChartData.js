@@ -31,7 +31,7 @@ import api from '../utils/api';
  *   loading,
  *   onZoomChange,
  *   loadAllData
- * } = useChartData('/portfolios-history', { portfolio_id: 123 }, 180);
+ * } = useChartData('/portfolio/history', { portfolio_id: 123 }, 180);
  *
  * return (
  *   <Chart
