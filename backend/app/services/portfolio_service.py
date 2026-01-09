@@ -59,6 +59,8 @@ class PortfolioService:
                         cost = (cost / (shares + transaction.shares)) * shares
                     else:
                         cost = 0
+                elif transaction.type == "fee":
+                    cost += transaction.cost_per_share
 
         return max(0, round(shares, 6)), max(0, cost)
 
@@ -219,16 +221,18 @@ class PortfolioService:
         realized_gains = RealizedGainLoss.query.filter_by(portfolio_id=portfolio.id).all()
 
         totals = {
-            "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
-            "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
-            "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
-            "totalUnrealizedGainLoss": sum(
-                pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+            "totalValue": round(sum(pf["current_value"] for pf in portfolio_funds_data), 6),
+            "totalCost": round(sum(pf["total_cost"] for pf in portfolio_funds_data), 6),
+            "totalDividends": round(sum(pf["total_dividends"] for pf in portfolio_funds_data), 6),
+            "totalUnrealizedGainLoss": round(
+                sum(pf["unrealized_gain_loss"] for pf in portfolio_funds_data), 6
             ),
-            "totalRealizedGainLoss": sum(pf["realized_gain_loss"] for pf in portfolio_funds_data),
-            "totalSaleProceeds": sum(gain.sale_proceeds for gain in realized_gains),
-            "totalOriginalCost": sum(gain.cost_basis for gain in realized_gains),
-            "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
+            "totalRealizedGainLoss": round(
+                sum(pf["realized_gain_loss"] for pf in portfolio_funds_data), 6
+            ),
+            "totalSaleProceeds": round(sum(gain.sale_proceeds for gain in realized_gains), 6),
+            "totalOriginalCost": round(sum(gain.cost_basis for gain in realized_gains), 6),
+            "totalGainLoss": round(sum(pf["total_gain_loss"] for pf in portfolio_funds_data), 6),
         }
 
         return {
