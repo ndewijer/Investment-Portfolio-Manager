@@ -74,7 +74,7 @@ module.exports = (env, argv) => {
       new HtmlWebpackPlugin({
         template: './public/index.html',
         filename: 'index.html',
-        favicon: './public/favicon.ico',
+        favicon: './public/portfolio-icon.svg',
         inject: true,
       }),
       new webpack.DefinePlugin(stringifiedEnv),
@@ -92,7 +92,7 @@ module.exports = (env, argv) => {
       historyApiFallback: {
         disableDotRule: true,
         rewrites: [
-          { from: /^\/favicon.ico$/, to: '/favicon.ico' },
+          { from: /^\/portfolio-icon.svg$/, to: '/portfolio-icon.svg' },
           { from: /^\/[^.]*$/, to: '/index.html' },
         ],
       },
