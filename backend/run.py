@@ -194,6 +194,38 @@ def create_app(config=None):
     app.config["VERSION"] = get_version()  # Add version to app config
     app.wsgi_app = ProxyFix(app.wsgi_app)
 
+    # Add request timing to Flask's default logging (if enabled via .env)
+    if os.environ.get("FLASK_LOG_RESPONSE_TIME", "false").lower() == "true":
+        import logging
+        import time
+        from datetime import datetime
+
+        from flask import g, request
+
+        # Disable Werkzeug's default request logging
+        log = logging.getLogger("werkzeug")
+        log.setLevel(logging.ERROR)
+
+        @app.before_request
+        def before_request():
+            """Record request start time."""
+            g.start_time = time.time()
+
+        @app.after_request
+        def after_request(response):
+            """Log request with response time in Werkzeug format."""
+            if hasattr(g, "start_time"):
+                elapsed_ms = (time.time() - g.start_time) * 1000
+                timestamp = datetime.now().strftime("%d/%b/%Y %H:%M:%S")
+                path = request.full_path if request.query_string else request.path
+                print(
+                    f"{request.remote_addr} - - [{timestamp}] "
+                    f'"{request.method} {path} '
+                    f'{request.environ.get("SERVER_PROTOCOL")}" '
+                    f"{response.status_code} - {elapsed_ms:.0f}ms"
+                )
+            return response
+
     # Apply custom config first if provided (e.g., for testing)
     if config:
         app.config.update(config)
