@@ -1003,8 +1003,8 @@ const PowerUserTab = ({ setMessage, setError }) => {
   useEffect(() => {
     // Initial data load - wrapped to avoid direct setState in effect
     const loadInitialData = async () => {
-      fetchFunds(() => axios.get(`${API_BASE_URL}/funds`));
-      fetchPortfolios(() => axios.get(`${API_BASE_URL}/portfolios`));
+      fetchFunds(() => axios.get(`${API_BASE_URL}/fund`));
+      fetchPortfolios(() => axios.get(`${API_BASE_URL}/portfolio`));
       fetchCsvTemplate(() => axios.get(`${API_BASE_URL}/developer/csv/transactions/template`));
       fetchFundPriceTemplate(() => axios.get(`${API_BASE_URL}/developer/csv/fund-prices/template`));
       await fetchCurrentExchangeRate();
@@ -1065,11 +1065,15 @@ const PowerUserTab = ({ setMessage, setError }) => {
       formData.append('fund_id', selectedFundId);
 
       try {
-        const response = await axios.post(`${API_BASE_URL}/import-transactions`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        const response = await axios.post(
+          `${API_BASE_URL}/developer/import-transactions`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
         setMessage(response.data.message);
       } catch (err) {
         setError(err.response?.data?.message || 'Error importing transactions');
@@ -1091,7 +1095,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
     formData.append('fund_id', selectedPriceFundId);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/import-fund-prices`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/developer/import-fund-prices`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
