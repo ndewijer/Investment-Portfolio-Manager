@@ -445,6 +445,18 @@ class PortfolioHistory(Resource):
         - start_date: Start date for historical data (YYYY-MM-DD)
         - end_date: End date for historical data (YYYY-MM-DD)
 
+        Returns daily data with the following fields per portfolio:
+        - id, name: Portfolio identification
+        - value: Current portfolio value
+        - cost: Total cost basis
+        - realized_gain: Realized gains/losses
+        - unrealized_gain: Unrealized gains/losses
+        - total_dividends: Total dividends received
+        - total_sale_proceeds: Total proceeds from sales
+        - total_original_cost: Total original cost basis of sold positions
+        - total_gain_loss: Total gain/loss (realized + unrealized)
+        - is_archived: Archive status
+
         Useful for performance charts and analysis.
         """
         try:
