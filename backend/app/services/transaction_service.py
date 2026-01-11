@@ -424,10 +424,10 @@ class TransactionService:
 
             # Invalidate materialized view
             try:
+                from ..models import PortfolioFund
                 from .portfolio_history_materialized_service import (
                     PortfolioHistoryMaterializedService,
                 )
-                from ..models import PortfolioFund
 
                 portfolio_fund = db.session.get(PortfolioFund, portfolio_fund_id)
                 if portfolio_fund:

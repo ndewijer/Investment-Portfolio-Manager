@@ -5,8 +5,7 @@ This service handles the creation, querying, and invalidation of pre-calculated
 portfolio history data stored in the portfolio_history_materialized table.
 """
 
-from datetime import date, datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from datetime import date, datetime
 
 from ..models import (
     Portfolio,
@@ -31,8 +30,8 @@ class MaterializedCoverage:
         self,
         is_complete: bool = False,
         partial_coverage: bool = False,
-        missing_ranges: Optional[List[Tuple[date, date]]] = None,
-        covered_ranges: Optional[List[Tuple[date, date]]] = None,
+        missing_ranges: list[tuple[date, date]] | None = None,
+        covered_ranges: list[tuple[date, date]] | None = None,
     ):
         self.is_complete = is_complete
         self.partial_coverage = partial_coverage
@@ -53,7 +52,7 @@ class PortfolioHistoryMaterializedService:
 
     @staticmethod
     def check_materialized_coverage(
-        portfolio_ids: List[str], start_date: date, end_date: date
+        portfolio_ids: list[str], start_date: date, end_date: date
     ) -> MaterializedCoverage:
         """
         Check if the requested date range is fully materialized for the given portfolios.
@@ -83,7 +82,7 @@ class PortfolioHistoryMaterializedService:
             .all()
         )
 
-        # Calculate expected number of records (days × portfolios)
+        # Calculate expected number of records (days * portfolios)
         days_in_range = (end_date - start_date).days + 1
         expected_total = days_in_range * len(portfolio_ids)
         actual_total = len(existing_records)
@@ -112,8 +111,8 @@ class PortfolioHistoryMaterializedService:
 
     @staticmethod
     def get_materialized_history(
-        portfolio_ids: List[str], start_date: date, end_date: date
-    ) -> List[Dict]:
+        portfolio_ids: list[str], start_date: date, end_date: date
+    ) -> list[dict]:
         """
         Get materialized portfolio history from the cache.
 
@@ -168,8 +167,8 @@ class PortfolioHistoryMaterializedService:
     @staticmethod
     def materialize_portfolio_history(
         portfolio_id: str,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         force_recalculate: bool = False,
     ) -> int:
         """
@@ -184,7 +183,6 @@ class PortfolioHistoryMaterializedService:
         Returns:
             Number of records materialized
         """
-        from .portfolio_service import PortfolioService
 
         # Get portfolio
         portfolio = db.session.get(Portfolio, portfolio_id)
@@ -221,7 +219,6 @@ class PortfolioHistoryMaterializedService:
 
         # Calculate history using existing service
         # We need to call it for this specific portfolio only
-        from ..models import Portfolio
 
         # Temporarily filter to only this portfolio by calling the calculation
         # for just this portfolio's date range
@@ -297,13 +294,10 @@ class PortfolioHistoryMaterializedService:
         Returns:
             Number of records deleted
         """
-        deleted = (
-            PortfolioHistoryMaterialized.query.filter(
-                PortfolioHistoryMaterialized.portfolio_id == portfolio_id,
-                PortfolioHistoryMaterialized.date >= from_date.isoformat(),
-            )
-            .delete(synchronize_session=False)
-        )
+        deleted = PortfolioHistoryMaterialized.query.filter(
+            PortfolioHistoryMaterialized.portfolio_id == portfolio_id,
+            PortfolioHistoryMaterialized.date >= from_date.isoformat(),
+        ).delete(synchronize_session=False)
 
         db.session.commit()
 
@@ -316,7 +310,7 @@ class PortfolioHistoryMaterializedService:
         return deleted
 
     @staticmethod
-    def materialize_all_portfolios(force_recalculate: bool = False) -> Dict[str, int]:
+    def materialize_all_portfolios(force_recalculate: bool = False) -> dict[str, int]:
         """
         Materialize history for all portfolios.
 
@@ -336,7 +330,7 @@ class PortfolioHistoryMaterializedService:
                 )
                 results[portfolio.id] = count
             except Exception as e:
-                results[portfolio.id] = f"Error: {str(e)}"
+                results[portfolio.id] = f"Error: {e!s}"
 
         return results
 
@@ -416,7 +410,7 @@ class PortfolioHistoryMaterializedService:
         return total_deleted
 
     @staticmethod
-    def get_materialized_stats() -> Dict:
+    def get_materialized_stats() -> dict:
         """
         Get statistics about the materialized view.
 
@@ -425,17 +419,13 @@ class PortfolioHistoryMaterializedService:
         """
         total_records = PortfolioHistoryMaterialized.query.count()
         portfolios_with_data = (
-            db.session.query(PortfolioHistoryMaterialized.portfolio_id)
-            .distinct()
-            .count()
+            db.session.query(PortfolioHistoryMaterialized.portfolio_id).distinct().count()
         )
 
         # Get date range
         if total_records > 0:
             oldest = (
-                PortfolioHistoryMaterialized.query.order_by(
-                    PortfolioHistoryMaterialized.date.asc()
-                )
+                PortfolioHistoryMaterialized.query.order_by(PortfolioHistoryMaterialized.date.asc())
                 .first()
                 .date
             )

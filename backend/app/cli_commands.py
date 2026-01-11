@@ -185,7 +185,8 @@ def register_commands(app):
 
         Usage:
             flask invalidate-materialized-history --portfolio-id=abc --from-date=2024-01-01
-            flask invalidate-materialized-history --portfolio-id=abc --from-date=2024-01-01 --recalculate
+            flask invalidate-materialized-history --portfolio-id=abc \
+                --from-date=2024-01-01 --recalculate
         """
         from datetime import datetime
 
