@@ -92,3 +92,150 @@ def register_commands(app):
         click.echo("")
         click.echo("✅ Seed price data updated successfully!")
         click.echo("Run 'flask seed-db' to regenerate seed data with the new prices.")
+
+    @app.cli.command("materialize-history")
+    @click.option(
+        "--portfolio-id",
+        default=None,
+        help="Specific portfolio ID to materialize (default: all portfolios)",
+    )
+    @click.option(
+        "--force",
+        is_flag=True,
+        help="Force recalculation even if data already exists",
+    )
+    def materialize_history(portfolio_id, force):
+        """
+        Pre-calculate and store portfolio history for fast querying.
+
+        This command calculates portfolio history values for all dates and stores
+        them in the materialized view table. Future queries will use this cached
+        data for much faster response times.
+
+        Usage:
+            flask materialize-history                    # Materialize all portfolios
+            flask materialize-history --force            # Force recalculate all
+            flask materialize-history --portfolio-id=abc # Specific portfolio
+        """
+        from .services.portfolio_history_materialized_service import (
+            PortfolioHistoryMaterializedService,
+        )
+
+        click.echo("🔄 Starting portfolio history materialization...")
+        click.echo("")
+
+        if portfolio_id:
+            # Materialize specific portfolio
+            try:
+                count = PortfolioHistoryMaterializedService.materialize_portfolio_history(
+                    portfolio_id, force_recalculate=force
+                )
+                click.echo(f"✅ Materialized {count} records for portfolio {portfolio_id}")
+            except ValueError as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                return
+        else:
+            # Materialize all portfolios
+            results = PortfolioHistoryMaterializedService.materialize_all_portfolios(
+                force_recalculate=force
+            )
+
+            total_records = 0
+            for pid, count in results.items():
+                if isinstance(count, int):
+                    click.echo(f"  ✅ Portfolio {pid}: {count} records")
+                    total_records += count
+                else:
+                    click.echo(f"  ❌ Portfolio {pid}: {count}", err=True)
+
+            click.echo("")
+            click.echo(f"✅ Total records materialized: {total_records}")
+
+        # Show stats
+        stats = PortfolioHistoryMaterializedService.get_materialized_stats()
+        click.echo("")
+        click.echo("📊 Materialized View Statistics:")
+        click.echo(f"  Total records: {stats['total_records']}")
+        click.echo(f"  Portfolios with data: {stats['portfolios_with_data']}")
+        if stats["oldest_date"]:
+            click.echo(f"  Date range: {stats['oldest_date']} to {stats['newest_date']}")
+
+    @app.cli.command("invalidate-materialized-history")
+    @click.option(
+        "--portfolio-id",
+        required=True,
+        help="Portfolio ID to invalidate",
+    )
+    @click.option(
+        "--from-date",
+        required=True,
+        help="Invalidate from this date forward (YYYY-MM-DD)",
+    )
+    @click.option(
+        "--recalculate",
+        is_flag=True,
+        help="Recalculate immediately after invalidation",
+    )
+    def invalidate_materialized_history(portfolio_id, from_date, recalculate):
+        """
+        Invalidate materialized history from a specific date forward.
+
+        This is useful when you need to force recalculation due to data corrections
+        or when automatic invalidation didn't trigger properly.
+
+        Usage:
+            flask invalidate-materialized-history --portfolio-id=abc --from-date=2024-01-01
+            flask invalidate-materialized-history --portfolio-id=abc --from-date=2024-01-01 --recalculate
+        """
+        from datetime import datetime
+
+        from .services.portfolio_history_materialized_service import (
+            PortfolioHistoryMaterializedService,
+        )
+
+        try:
+            from_date_parsed = datetime.strptime(from_date, "%Y-%m-%d").date()
+        except ValueError:
+            click.echo("❌ Invalid date format. Use YYYY-MM-DD", err=True)
+            return
+
+        click.echo(
+            f"🔄 Invalidating materialized history for portfolio {portfolio_id} from {from_date}..."
+        )
+
+        try:
+            deleted = PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                portfolio_id, from_date_parsed, recalculate=recalculate
+            )
+            click.echo(f"✅ Deleted {deleted} records")
+
+            if recalculate:
+                click.echo("✅ Recalculation completed")
+        except Exception as e:
+            click.echo(f"❌ Error: {e}", err=True)
+
+    @app.cli.command("materialized-stats")
+    def materialized_stats():
+        """
+        Show statistics about the materialized view.
+
+        Usage:
+            flask materialized-stats
+        """
+        from .services.portfolio_history_materialized_service import (
+            PortfolioHistoryMaterializedService,
+        )
+
+        stats = PortfolioHistoryMaterializedService.get_materialized_stats()
+
+        click.echo("📊 Materialized View Statistics:")
+        click.echo(f"  Total records: {stats['total_records']}")
+        click.echo(f"  Portfolios with data: {stats['portfolios_with_data']}")
+        if stats["oldest_date"]:
+            click.echo(f"  Date range: {stats['oldest_date']} to {stats['newest_date']}")
+        else:
+            click.echo("  No data in materialized view")
+
+        if stats["total_records"] == 0:
+            click.echo("")
+            click.echo("💡 Run 'flask materialize-history' to populate the materialized view")

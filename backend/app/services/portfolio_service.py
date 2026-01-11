@@ -599,9 +599,59 @@ class PortfolioService:
         ]
 
     @staticmethod
-    def get_portfolio_history(start_date=None, end_date=None):
+    def get_portfolio_history(start_date=None, end_date=None, use_materialized=True):
         """
         Get historical value data for all non-archived and visible portfolios.
+
+        This method intelligently routes between materialized view (fast, cached)
+        and on-demand calculation (slow, always fresh) based on data availability.
+
+        Args:
+            start_date (str, optional): Start date in YYYY-MM-DD format
+            end_date (str, optional): End date in YYYY-MM-DD format
+            use_materialized (bool, optional): Whether to use materialized view if available
+
+        Returns:
+            list: List of daily values containing portfolio history
+        """
+        # Import here to avoid circular dependency
+        from .portfolio_history_materialized_service import (
+            PortfolioHistoryMaterializedService,
+        )
+
+        portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
+
+        if not portfolios:
+            return []
+
+        # Parse dates for materialized view check
+        if use_materialized and start_date and end_date:
+            try:
+                start_date_parsed = datetime.strptime(start_date, "%Y-%m-%d").date()
+                end_date_parsed = datetime.strptime(end_date, "%Y-%m-%d").date()
+                portfolio_ids = [p.id for p in portfolios]
+
+                # Check if we have complete materialized coverage
+                coverage = PortfolioHistoryMaterializedService.check_materialized_coverage(
+                    portfolio_ids, start_date_parsed, end_date_parsed
+                )
+
+                if coverage.is_complete:
+                    # Use materialized view - FAST PATH
+                    return PortfolioHistoryMaterializedService.get_materialized_history(
+                        portfolio_ids, start_date_parsed, end_date_parsed
+                    )
+            except (ValueError, Exception):
+                # Fall through to on-demand calculation
+                pass
+
+        # Fall back to on-demand calculation - SLOW PATH
+        return PortfolioService._get_portfolio_history_on_demand(start_date, end_date)
+
+    @staticmethod
+    def _get_portfolio_history_on_demand(start_date=None, end_date=None):
+        """
+        Calculate portfolio history on-demand (original implementation).
 
         Uses batch processing to load all data once and calculate values in memory,
         avoiding repeated database queries.
