@@ -599,7 +599,7 @@ class PortfolioService:
         ]
 
     @staticmethod
-    def get_portfolio_history(start_date=None, end_date=None, use_materialized=True):
+    def get_portfolio_history(start_date=None, end_date=None, use_materialized=True, include_excluded=False):
         """
         Get historical value data for all non-archived and visible portfolios.
 
@@ -610,6 +610,7 @@ class PortfolioService:
             start_date (str, optional): Start date in YYYY-MM-DD format
             end_date (str, optional): End date in YYYY-MM-DD format
             use_materialized (bool, optional): Whether to use materialized view if available
+            include_excluded (bool, optional): Include portfolios with exclude_from_overview=True
 
         Returns:
             list: List of daily values containing portfolio history
@@ -619,7 +620,10 @@ class PortfolioService:
             PortfolioHistoryMaterializedService,
         )
 
-        portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
+        if include_excluded:
+            portfolios = Portfolio.query.filter_by(is_archived=False).all()
+        else:
+            portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
 
         if not portfolios:
             return []
@@ -646,10 +650,10 @@ class PortfolioService:
                 pass
 
         # Fall back to on-demand calculation - SLOW PATH
-        return PortfolioService._get_portfolio_history_on_demand(start_date, end_date)
+        return PortfolioService._get_portfolio_history_on_demand(start_date, end_date, include_excluded)
 
     @staticmethod
-    def _get_portfolio_history_on_demand(start_date=None, end_date=None):
+    def _get_portfolio_history_on_demand(start_date=None, end_date=None, include_excluded=False):
         """
         Calculate portfolio history on-demand (original implementation).
 
@@ -659,12 +663,16 @@ class PortfolioService:
         Args:
             start_date (str, optional): Start date in YYYY-MM-DD format
             end_date (str, optional): End date in YYYY-MM-DD format
+            include_excluded (bool, optional): Include portfolios with exclude_from_overview=True
 
         Returns:
             list: List of daily values containing portfolio history
         """
 
-        portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
+        if include_excluded:
+            portfolios = Portfolio.query.filter_by(is_archived=False).all()
+        else:
+            portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
 
         if not portfolios:
             return []

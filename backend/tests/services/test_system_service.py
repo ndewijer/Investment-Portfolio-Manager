@@ -194,6 +194,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": False,
             "ibkr_integration": False,
+            "materialized_view_performance": False,
         }
         assert features == expected_features
 
@@ -205,6 +206,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": False,
             "ibkr_integration": False,
+            "materialized_view_performance": False,
         }
         assert features == expected_features
 
@@ -216,6 +218,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": False,  # Added in 1.1.1
             "ibkr_integration": False,
+            "materialized_view_performance": False,
         }
         assert features == expected_features
 
@@ -227,6 +230,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": True,
             "ibkr_integration": False,
+            "materialized_view_performance": False,
         }
         assert features == expected_features
 
@@ -238,6 +242,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": True,
             "ibkr_integration": True,
+            "materialized_view_performance": False,
         }
         assert features == expected_features
 
@@ -249,6 +254,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": True,
             "ibkr_integration": True,
+            "materialized_view_performance": True,  # 1.4.0+
         }
         assert features == expected_features
 
@@ -260,6 +266,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": True,
             "ibkr_integration": True,
+            "materialized_view_performance": True,  # 1.4.0+
         }
         assert features == expected_features
 
@@ -272,6 +279,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": False,
             "ibkr_integration": False,
+            "materialized_view_performance": False,
         }
         assert features == expected_features
 
@@ -283,6 +291,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": True,
             "ibkr_integration": True,
+            "materialized_view_performance": True,
         }
         assert features == expected_features
 
@@ -323,6 +332,7 @@ class TestSystemService:
             "basic_portfolio_management": True,
             "realized_gain_loss": True,
             "ibkr_integration": True,
+            "materialized_view_performance": True,  # 1.4.0+
         }
         assert version_info["features"] == expected_features
 

@@ -222,8 +222,9 @@ class PortfolioHistoryMaterializedService:
 
         # Temporarily filter to only this portfolio by calling the calculation
         # for just this portfolio's date range
+        # Include hidden (exclude_from_overview=True) portfolios but not archived ones
         history = PortfolioService.get_portfolio_history(
-            start_date=start_date.isoformat(), end_date=end_date.isoformat()
+            start_date=start_date.isoformat(), end_date=end_date.isoformat(), include_excluded=True
         )
 
         # Filter to only this portfolio's data and insert into materialized view
