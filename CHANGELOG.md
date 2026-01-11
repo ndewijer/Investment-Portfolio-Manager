@@ -10,14 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Materialized View for Portfolio History** - See [PR #133](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/133)
   - SQLite materialized view for portfolio history calculations
-  - 160x performance improvement on portfolio history queries
-  - CLI management tools: `flask mv create`, `flask mv refresh`, `flask mv drop`, `flask mv status`
-  - Benchmark command: `flask mv benchmark` for performance testing
+  - Performance improvement: 6-9x faster for 1 year of data (real-world benchmarks)
+  - CLI management tools: `flask materialize-history`, `flask invalidate-materialized-history`, `flask materialized-stats`
+  - Benchmark command: `flask benchmark-materialized` for performance testing
   - Automatic refresh on transaction/price changes
   - Feature flag: `materialized_view_performance` (version 1.4.0+)
-  - Comprehensive architecture documentation in `docs/ARCHITECTURE_MATERIALIZED_VIEW.md`
+  - Comprehensive architecture documentation in `docs/MATERIALIZED_VIEW_IMPLEMENTATION.md`
   - Idempotent migrations for safe upgrades
   - Includes hidden portfolios in calculations
+  - Real-world benchmarks: 0.014s vs 0.129s for 1 year (366 days) of portfolio history
 
 - **Optional Flask Response Time Logging** - See [PR #131](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/131)
   - Configurable via `FLASK_LOG_RESPONSE_TIME` environment variable
