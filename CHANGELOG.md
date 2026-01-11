@@ -5,6 +5,61 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-01-11
+
+### Added
+- **Materialized View for Portfolio History** - See [PR #133](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/133)
+  - SQLite materialized view for portfolio history calculations
+  - 160x performance improvement on portfolio history queries
+  - CLI management tools: `flask mv create`, `flask mv refresh`, `flask mv drop`, `flask mv status`
+  - Benchmark command: `flask mv benchmark` for performance testing
+  - Automatic refresh on transaction/price changes
+  - Feature flag: `materialized_view_performance` (version 1.4.0+)
+  - Comprehensive architecture documentation in `docs/ARCHITECTURE_MATERIALIZED_VIEW.md`
+  - Idempotent migrations for safe upgrades
+  - Includes hidden portfolios in calculations
+
+- **Optional Flask Response Time Logging** - See [PR #131](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/131)
+  - Configurable via `FLASK_LOG_RESPONSE_TIME` environment variable
+  - Logs format: `IP - - [timestamp] "METHOD path PROTOCOL" STATUS - XXms`
+  - Useful for development and debugging performance issues
+  - Documentation in `docs/DEVELOPMENT.md`
+
+### Changed
+- **Refactored Portfolio Services** - See [PR #132](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/132)
+  - Consolidated `get_portfolio_summary()` and `get_portfolio_history()` logic
+  - Eliminated ~120 lines of duplicate code
+  - Single source of truth for portfolio calculations
+  - Enhanced history endpoint with additional fields:
+    - `total_dividends` - Total dividend amounts received
+    - `total_sale_proceeds` - Total proceeds from sales
+    - `total_original_cost` - Total original cost basis of sold positions
+    - `total_gain_loss` - Combined realized + unrealized gains/losses
+    - `is_archived` - Portfolio archive status
+  - Summary endpoint now delegates to history for consistency
+  - All values rounded to 6 decimal places
+
+- **API Naming Improvements** - See [PR #129](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/129)
+  - Removed plurality from API endpoints for clarity
+  - Better API naming conventions
+
+### Fixed
+- **Fee Processing** - See [PR #130](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/130)
+  - Fixed fee processing in transactions
+  - Standardized rounding to 6 decimal places across all financial calculations
+
+- **CORS Headers** - See [PR #128](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/128)
+  - Corrected CORS request and response headers configuration
+
+### Dependencies
+- **Python Dependencies** - See [PR #123](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/123)
+  - Updated python-packages group with 3 package updates
+  - Updated yfinance from 0.2.66 to 1.0 - See [PR #124](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/124)
+
+- **GitHub Actions** - See [PR #121](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/121) and [PR #122](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/122)
+  - Bumped astral-sh/setup-uv from 6 to 7
+  - Bumped actions/upload-artifact from 4 to 6
+
 ## [1.3.6] - 2026-01-06
 
 ### Fixed
