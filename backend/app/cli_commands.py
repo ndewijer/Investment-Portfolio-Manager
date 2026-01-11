@@ -240,3 +240,102 @@ def register_commands(app):
         if stats["total_records"] == 0:
             click.echo("")
             click.echo("💡 Run 'flask materialize-history' to populate the materialized view")
+
+    @app.cli.command("benchmark-materialized")
+    @click.option(
+        "--days",
+        default=365,
+        help="Number of days of history to benchmark (default: 365)",
+    )
+    @click.option(
+        "--materialize-first",
+        is_flag=True,
+        help="Materialize data before benchmarking",
+    )
+    def benchmark_materialized(days, materialize_first):
+        """
+        Benchmark performance difference between materialized and on-demand history.
+
+        This command compares the execution time of portfolio history queries
+        using the materialized view versus on-demand calculation.
+
+        Usage:
+            flask benchmark-materialized                    # 365 days, use existing materialized data
+            flask benchmark-materialized --days 1825        # 5 years
+            flask benchmark-materialized --materialize-first # Ensure data is materialized first
+        """
+        import time
+
+        from .services.portfolio_history_materialized_service import (
+            PortfolioHistoryMaterializedService,
+        )
+        from .services.portfolio_service import PortfolioService
+
+        # Calculate date range
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days)
+
+        click.echo("⚡ Portfolio History Performance Benchmark")
+        click.echo(f"   Date range: {start_date} to {end_date} ({days} days)")
+        click.echo("")
+
+        # Optionally materialize data first
+        if materialize_first:
+            click.echo("🔄 Materializing data first...")
+            results = PortfolioHistoryMaterializedService.materialize_all_portfolios(
+                force_recalculate=True
+            )
+            total_records = sum(count for count in results.values() if isinstance(count, int))
+            click.echo(f"✅ Materialized {total_records} records")
+            click.echo("")
+
+        # Benchmark materialized query (FAST PATH)
+        click.echo("🚀 Testing materialized view (FAST PATH)...")
+        start_time = time.time()
+        result_materialized = PortfolioService.get_portfolio_history(
+            start_date=start_date.isoformat(),
+            end_date=end_date.isoformat(),
+            use_materialized=True,
+        )
+        materialized_time = time.time() - start_time
+
+        click.echo(f"   ✓ Completed in {materialized_time:.4f} seconds")
+        click.echo(f"   ✓ Returned {len(result_materialized)} days of data")
+        click.echo("")
+
+        # Benchmark on-demand calculation (SLOW PATH)
+        click.echo("🐌 Testing on-demand calculation (SLOW PATH)...")
+        start_time = time.time()
+        result_on_demand = PortfolioService.get_portfolio_history(
+            start_date=start_date.isoformat(),
+            end_date=end_date.isoformat(),
+            use_materialized=False,
+        )
+        on_demand_time = time.time() - start_time
+
+        click.echo(f"   ✓ Completed in {on_demand_time:.4f} seconds")
+        click.echo(f"   ✓ Returned {len(result_on_demand)} days of data")
+        click.echo("")
+
+        # Calculate and display performance improvement
+        if materialized_time > 0:
+            speedup = on_demand_time / materialized_time
+            percentage_faster = ((on_demand_time - materialized_time) / on_demand_time) * 100
+
+            click.echo("📊 Performance Comparison:")
+            click.echo(f"   Materialized:  {materialized_time:.4f}s")
+            click.echo(f"   On-demand:     {on_demand_time:.4f}s")
+            click.echo(f"   Speedup:       {speedup:.1f}x faster")
+            click.echo(f"   Improvement:   {percentage_faster:.1f}% faster")
+
+            # Show visual indicator
+            if speedup > 100:
+                click.echo("   🏆 EXCELLENT performance improvement!")
+            elif speedup > 10:
+                click.echo("   ✅ GREAT performance improvement!")
+            elif speedup > 2:
+                click.echo("   👍 GOOD performance improvement")
+            else:
+                click.echo("   ⚠️  Modest performance improvement")
+        else:
+            click.echo("⚠️  Materialized query was too fast to measure accurately")
