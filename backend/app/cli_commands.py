@@ -260,7 +260,7 @@ def register_commands(app):
         using the materialized view versus on-demand calculation.
 
         Usage:
-            flask benchmark-materialized                    # 365 days, use existing materialized data
+            flask benchmark-materialized                    # 1 year with existing materialized data
             flask benchmark-materialized --days 1825        # 5 years
             flask benchmark-materialized --materialize-first # Ensure data is materialized first
         """
