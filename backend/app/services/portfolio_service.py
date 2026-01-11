@@ -599,7 +599,9 @@ class PortfolioService:
         ]
 
     @staticmethod
-    def get_portfolio_history(start_date=None, end_date=None, use_materialized=True, include_excluded=False):
+    def get_portfolio_history(
+        start_date=None, end_date=None, use_materialized=True, include_excluded=False
+    ):
         """
         Get historical value data for all non-archived and visible portfolios.
 
@@ -623,7 +625,9 @@ class PortfolioService:
         if include_excluded:
             portfolios = Portfolio.query.filter_by(is_archived=False).all()
         else:
-            portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
+            portfolios = Portfolio.query.filter_by(
+                is_archived=False, exclude_from_overview=False
+            ).all()
 
         if not portfolios:
             return []
@@ -650,7 +654,9 @@ class PortfolioService:
                 pass
 
         # Fall back to on-demand calculation - SLOW PATH
-        return PortfolioService._get_portfolio_history_on_demand(start_date, end_date, include_excluded)
+        return PortfolioService._get_portfolio_history_on_demand(
+            start_date, end_date, include_excluded
+        )
 
     @staticmethod
     def _get_portfolio_history_on_demand(start_date=None, end_date=None, include_excluded=False):
@@ -672,7 +678,9 @@ class PortfolioService:
         if include_excluded:
             portfolios = Portfolio.query.filter_by(is_archived=False).all()
         else:
-            portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
+            portfolios = Portfolio.query.filter_by(
+                is_archived=False, exclude_from_overview=False
+            ).all()
 
         if not portfolios:
             return []
