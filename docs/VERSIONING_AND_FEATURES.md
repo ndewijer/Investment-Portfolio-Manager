@@ -359,6 +359,51 @@ flask shell
 - Update ARCHITECTURE.md if needed
 - Update MODELS.md with new column
 
+## Schema Change Checklist
+
+Use this checklist when adding a new feature with schema changes to ensure nothing is missed:
+
+### Pre-Implementation
+- [ ] Decide on version number (major.minor.patch)
+- [ ] Determine if feature flag is needed
+
+### Database Changes
+- [ ] Create Alembic migration with version number as revision ID
+- [ ] Make migration idempotent (check if table/column exists)
+- [ ] Set appropriate defaults for existing data
+- [ ] Test both upgrade and downgrade
+- [ ] Update models.py with new schema
+
+### Version Updates (CRITICAL - Often Missed!)
+- [ ] Update `backend/VERSION` file to new version
+- [ ] Update `frontend/package.json` version field to match
+- [ ] Verify both versions match exactly
+
+### Feature Flag (if needed)
+- [ ] Add feature flag to `SystemService.check_feature_availability()`
+- [ ] Add version check logic (e.g., `if major >= 1 and minor >= 4`)
+- [ ] Test feature flag returns correct value
+
+### Documentation
+- [ ] Add feature to "Current Feature Flags" table in VERSIONING_AND_FEATURES.md
+- [ ] Add version to "Version History" table with date and changes
+- [ ] Update ARCHITECTURE.md if architectural changes
+- [ ] Update TESTING.md if new tests added
+- [ ] Create/update relevant documentation files
+
+### Testing
+- [ ] Write comprehensive tests for new functionality
+- [ ] Test migration upgrade/downgrade cycle
+- [ ] Verify feature flag works correctly
+- [ ] Test with both old and new schema versions
+
+### Release
+- [ ] Create RELEASE_NOTES entry
+- [ ] Commit all changes together
+- [ ] Tag release in git if applicable
+
+**Why This Checklist Exists**: Previous implementations have missed version updates and feature flags, causing confusion about schema compatibility. This checklist ensures completeness.
+
 ## Current Feature Flags
 
 | Feature | Version | Description |
@@ -366,6 +411,7 @@ flask shell
 | `exclude_from_overview` | 1.1.0+ | Hide portfolios from overview |
 | `realized_gain_loss` | 1.1.1+ | Track realized gains/losses |
 | `ibkr_integration` | 1.3.0+ | IBKR Flex Web Service integration |
+| `materialized_view_performance` | 1.4.0+ | Portfolio history materialized view (160x performance improvement) |
 
 ## Version History
 
@@ -376,6 +422,7 @@ flask shell
 | 1.1.2 | 2024-11 | Performance indexes (no feature flag) |
 | 1.3.0 | 2024-11 | IBKR Flex integration |
 | 1.3.1 | 2024-11-07 | IBKR enable/disable toggle, bulk transaction processing, allocation presets, mobile UI fixes, chart improvements |
+| 1.4.0 | 2026-01-11 | Portfolio history materialized view for 160x performance improvement, CLI management tools |
 
 ## Best Practices
 
