@@ -1382,6 +1382,5 @@ When adding new features:
 
 ---
 
-**Version**: 1.3.5+
-**Last Updated**: 2025-12-18
-**Maintainer**: @ndewijer
+**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Maintained By**: @ndewijer

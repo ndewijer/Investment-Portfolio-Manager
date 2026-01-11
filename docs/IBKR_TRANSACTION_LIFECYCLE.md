@@ -607,3 +607,8 @@ Should include: `FOREIGN KEY(transaction_id) REFERENCES transaction(id) ON DELET
 - **Transaction Routes**: See `backend/app/routes/transaction_routes.py`
 - **IBKR Service**: See `backend/app/services/ibkr_transaction_service.py`
 - **Fund Matching**: See `backend/app/services/fund_matching_service.py`
+
+---
+
+**Last Updated**: 2025-11-05 (Version 1.3.0)
+**Maintained By**: @ndewijer

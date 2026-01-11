@@ -227,3 +227,8 @@ For application issues:
 - Check the Log Viewer in the application
 - Review error messages in the IBKR Inbox
 - Report issues on GitHub: https://github.com/ndewijer/investment-portfolio-manager/issues
+
+---
+
+**Last Updated**: 2025-11-22 (Version 1.3.0)
+**Maintained By**: @ndewijer

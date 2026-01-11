@@ -158,3 +158,8 @@ Each column object in the `columns` array supports:
 ## More Components Coming Soon
 
 Component documentation will be added here as the project evolves.
+
+---
+
+**Last Updated**: 2025-11-08 (Version 1.3.1)
+**Maintained By**: @ndewijer

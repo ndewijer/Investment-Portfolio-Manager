@@ -760,5 +760,5 @@ API improvements and additions are welcome! See `CONTRIBUTING.md` for guidelines
 
 ---
 
-**Last Updated**: 2024 (Version 1.3.3)
+**Last Updated**: 2026-01-07 (Version 1.4.0)
 **Maintained By**: @ndewijer

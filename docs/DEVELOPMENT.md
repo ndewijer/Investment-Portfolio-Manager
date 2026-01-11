@@ -316,4 +316,7 @@ def downgrade():
             raise e
 ```
 
-[Detailed development documentation...]
+---
+
+**Last Updated**: 2026-01-09 (Version 1.4.0)
+**Maintained By**: @ndewijer

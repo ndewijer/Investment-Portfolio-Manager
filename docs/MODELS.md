@@ -386,3 +386,8 @@ logger.log(
 - All changes are application logic only
 
 For detailed implementation information, see [IBKR_TRANSACTION_LIFECYCLE.md](./IBKR_TRANSACTION_LIFECYCLE.md)
+
+---
+
+**Last Updated**: 2025-11-05 (Version 1.3.0)
+**Maintained By**: @ndewijer

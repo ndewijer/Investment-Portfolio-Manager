@@ -436,3 +436,8 @@ if (!versionInfo.features.ibkr_integration) {
 - `GET /api/system/health` - Basic health check endpoint
 - Returns database connection status
 - Useful for monitoring and deployment verification
+
+---
+
+**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Maintained By**: @ndewijer

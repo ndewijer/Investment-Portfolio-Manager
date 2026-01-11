@@ -61,3 +61,8 @@ A: Fallback to pip with `backend/dev-requirements.txt` and report the issue.
 ## Resources
 - [uv docs](https://docs.astral.sh/uv/)
 - [uv GitHub](https://github.com/astral-sh/uv)
+
+---
+
+**Last Updated**: 2025-12-02 (Version 1.3.4)
+**Maintained By**: @ndewijer

@@ -296,3 +296,8 @@ Check the source code documentation:
 - `PortfolioHistoryMaterializedService` class docstrings
 - Migration file comments
 - CLI command help text: `flask materialize-history --help`
+
+---
+
+**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Maintained By**: @ndewijer

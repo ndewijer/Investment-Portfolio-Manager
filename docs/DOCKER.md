@@ -259,3 +259,8 @@ The INTERNAL_API_KEY can be handled in two ways:
    - The generated key is logged at startup for reference
    - The key persists for the container's lifetime
    - A new key is generated if the container is recreated
+
+---
+
+**Last Updated**: 2025-12-10 (Version 1.3.5)
+**Maintained By**: @ndewijer

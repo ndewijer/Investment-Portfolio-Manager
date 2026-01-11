@@ -75,3 +75,8 @@ cd frontend && npm test
 - All PRs require review
 - CI must pass
 - Documentation must be updated
+
+---
+
+**Last Updated**: 2025-12-02 (Version 1.3.4)
+**Maintained By**: @ndewijer

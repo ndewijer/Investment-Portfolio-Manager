@@ -613,3 +613,8 @@ For issues or questions:
 - GitHub Issues: https://github.com/ndewijer/investment-portfolio-manager/issues
 - Documentation: `docs/IBKR_SETUP.md`
 - Architecture: `docs/ARCHITECTURE.md`
+
+---
+
+**Last Updated**: 2025-12-17 (Version 1.3.5)
+**Maintained By**: @ndewijer

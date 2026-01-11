@@ -76,3 +76,8 @@ backend/data/
 - Existing databases safely upgrade through migrations
 - Version control prevents duplicate schema changes
 - Error handling for common database operations
+
+---
+
+**Last Updated**: 2024-12-01 (Version 1.2.0)
+**Maintained By**: @ndewijer

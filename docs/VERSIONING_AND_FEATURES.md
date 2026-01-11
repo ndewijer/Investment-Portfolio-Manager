@@ -563,3 +563,8 @@ docker compose restart
 - [Semantic Versioning](https://semver.org/)
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - [DEVELOPMENT.md](DEVELOPMENT.md)
+
+---
+
+**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Maintained By**: @ndewijer
