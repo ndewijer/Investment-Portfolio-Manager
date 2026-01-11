@@ -211,8 +211,12 @@ class TestPortfolioHistoryMaterializedService:
         # Should have deleted records from transaction date forward
         assert deleted >= 0
 
-    def test_get_materialized_stats_empty(self, app):
+    def test_get_materialized_stats_empty(self, app, db_session):
         """Test getting stats with no data."""
+        # Explicitly clean up any materialized data
+        PortfolioHistoryMaterialized.query.delete()
+        db.session.commit()
+
         stats = PortfolioHistoryMaterializedService.get_materialized_stats()
 
         assert stats["total_records"] == 0
@@ -220,8 +224,12 @@ class TestPortfolioHistoryMaterializedService:
         assert stats["oldest_date"] is None
         assert stats["newest_date"] is None
 
-    def test_get_materialized_stats_with_data(self, app, sample_portfolio):
+    def test_get_materialized_stats_with_data(self, app, db_session, sample_portfolio):
         """Test getting stats with data."""
+        # Explicitly clean up any materialized data
+        PortfolioHistoryMaterialized.query.delete()
+        db.session.commit()
+
         start_date = date(2024, 1, 1)
 
         # Create some records

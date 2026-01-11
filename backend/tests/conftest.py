@@ -188,6 +188,7 @@ def db_session(app_context):
             Log,
             Portfolio,
             PortfolioFund,
+            PortfolioHistoryMaterialized,
             RealizedGainLoss,
             SystemSetting,
             Transaction,
@@ -204,6 +205,7 @@ def db_session(app_context):
             Dividend,
             IBKRTransaction,
             IBKRImportCache,
+            PortfolioHistoryMaterialized,
             PortfolioFund,
             Fund,
             Portfolio,
@@ -320,8 +322,12 @@ def sample_portfolio(app_context):
 
     Scope: function - created for each test.
     """
-    # Placeholder - will be implemented with factories
-    pass
+    from app.models import Portfolio, db
+
+    portfolio = Portfolio(name="Test Portfolio", description="Test portfolio for tests")
+    db.session.add(portfolio)
+    db.session.commit()
+    return portfolio
 
 
 @pytest.fixture(scope="function")
@@ -333,8 +339,23 @@ def cash_dividend_fund(app_context):
 
     Scope: function - created for each test.
     """
-    # Placeholder - will be implemented with factories
-    pass
+    import uuid
+
+    from app.models import DividendType, Fund, InvestmentType, db
+
+    # Use UUID to ensure unique ISIN for each test
+    unique_isin = f"US{uuid.uuid4().hex[:10].upper()}"
+    fund = Fund(
+        name="Test Cash Dividend Fund",
+        isin=unique_isin,
+        currency="USD",
+        exchange="NASDAQ",
+        investment_type=InvestmentType.FUND,
+        dividend_type=DividendType.CASH,
+    )
+    db.session.add(fund)
+    db.session.commit()
+    return fund
 
 
 @pytest.fixture(scope="function")
@@ -346,5 +367,20 @@ def stock_dividend_fund(app_context):
 
     Scope: function - created for each test.
     """
-    # Placeholder - will be implemented with factories
-    pass
+    import uuid
+
+    from app.models import DividendType, Fund, InvestmentType, db
+
+    # Use UUID to ensure unique ISIN for each test
+    unique_isin = f"US{uuid.uuid4().hex[:10].upper()}"
+    fund = Fund(
+        name="Test Stock Dividend Fund",
+        isin=unique_isin,
+        currency="USD",
+        exchange="NASDAQ",
+        investment_type=InvestmentType.FUND,
+        dividend_type=DividendType.STOCK,
+    )
+    db.session.add(fund)
+    db.session.commit()
+    return fund
