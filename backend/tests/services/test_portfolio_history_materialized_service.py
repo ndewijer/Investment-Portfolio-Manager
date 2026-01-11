@@ -1,11 +1,8 @@
 """Tests for portfolio history materialized service."""
 
-from datetime import date, datetime, timedelta
-
-import pytest
+from datetime import date, timedelta
 
 from app.models import (
-    Portfolio,
     PortfolioFund,
     PortfolioHistoryMaterialized,
     Transaction,
@@ -110,20 +107,8 @@ class TestPortfolioHistoryMaterializedService:
         assert history[1]["portfolios"][0]["value"] == 1100.0
         assert history[2]["portfolios"][0]["value"] == 1200.0
 
-    def test_materialize_portfolio_history(
-        self, app, sample_portfolio, sample_fund, sample_transaction
-    ):
+    def test_materialize_portfolio_history(self, app, sample_portfolio):
         """Test materializing portfolio history."""
-        # Add a transaction
-        pf = PortfolioFund.query.filter_by(
-            portfolio_id=sample_portfolio.id, fund_id=sample_fund.id
-        ).first()
-
-        if not pf:
-            pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=sample_fund.id)
-            db.session.add(pf)
-            db.session.commit()
-
         count = PortfolioHistoryMaterializedService.materialize_portfolio_history(
             sample_portfolio.id, force_recalculate=True
         )
@@ -174,7 +159,7 @@ class TestPortfolioHistoryMaterializedService:
         assert remaining == 5
 
     def test_invalidate_from_transaction(
-        self, app, sample_portfolio, sample_fund, sample_transaction
+        self, app, sample_portfolio, cash_dividend_fund
     ):
         """Test invalidation from transaction."""
         # Create some materialized records
@@ -199,11 +184,13 @@ class TestPortfolioHistoryMaterializedService:
 
         # Create a transaction
         pf = PortfolioFund.query.filter_by(
-            portfolio_id=sample_portfolio.id, fund_id=sample_fund.id
+            portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
         ).first()
 
         if not pf:
-            pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=sample_fund.id)
+            pf = PortfolioFund(
+                portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
+            )
             db.session.add(pf)
             db.session.commit()
 
@@ -287,15 +274,17 @@ class TestPortfolioHistoryMaterializedService:
         assert len(coverage.missing_ranges) == 0
 
     def test_materialize_portfolio_history_with_date_range(
-        self, app, sample_portfolio, sample_fund
+        self, app, sample_portfolio, cash_dividend_fund
     ):
         """Test materializing with specific date range."""
         pf = PortfolioFund.query.filter_by(
-            portfolio_id=sample_portfolio.id, fund_id=sample_fund.id
+            portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
         ).first()
 
         if not pf:
-            pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=sample_fund.id)
+            pf = PortfolioFund(
+                portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
+            )
             db.session.add(pf)
             db.session.commit()
 
@@ -321,15 +310,19 @@ class TestPortfolioHistoryMaterializedService:
         # Should have some records
         assert count >= 0
 
-    def test_invalidate_from_price_update(self, app, sample_portfolio, sample_fund):
+    def test_invalidate_from_price_update(
+        self, app, sample_portfolio, cash_dividend_fund
+    ):
         """Test invalidation from price update."""
         # Create portfolio fund
         pf = PortfolioFund.query.filter_by(
-            portfolio_id=sample_portfolio.id, fund_id=sample_fund.id
+            portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
         ).first()
 
         if not pf:
-            pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=sample_fund.id)
+            pf = PortfolioFund(
+                portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
+            )
             db.session.add(pf)
             db.session.commit()
 
@@ -356,7 +349,7 @@ class TestPortfolioHistoryMaterializedService:
         # Invalidate from price update
         price_date = start_date + timedelta(days=5)
         deleted = PortfolioHistoryMaterializedService.invalidate_from_price_update(
-            sample_fund.id, price_date
+            cash_dividend_fund.id, price_date
         )
 
         # Should have deleted records
