@@ -139,6 +139,7 @@ class SystemService:
             "basic_portfolio_management": True,  # Always available
             "realized_gain_loss": False,
             "ibkr_integration": False,
+            "materialized_view_performance": False,
         }
 
         # Parse version and check feature availability
@@ -164,6 +165,10 @@ class SystemService:
                 # Version 1.3.0+: IBKR integration
                 if major > 1 or (major == 1 and minor >= 3):
                     features["ibkr_integration"] = True
+
+                # Version 1.4.0+: Materialized view performance optimization
+                if major > 1 or (major == 1 and minor >= 4):
+                    features["materialized_view_performance"] = True
 
         except (ValueError, IndexError) as e:
             logger.log(

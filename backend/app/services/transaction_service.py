@@ -229,6 +229,18 @@ class TransactionService:
             )
             db.session.add(transaction)
             db.session.commit()
+
+            # Invalidate materialized view
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                PortfolioHistoryMaterializedService.invalidate_from_transaction(transaction)
+            except Exception:
+                # Don't fail transaction if invalidation fails
+                pass
+
             return transaction
 
     @staticmethod
@@ -299,6 +311,18 @@ class TransactionService:
                 db.session.add(gain_loss_record)
 
         db.session.commit()
+
+        # Invalidate materialized view
+        try:
+            from .portfolio_history_materialized_service import (
+                PortfolioHistoryMaterializedService,
+            )
+
+            PortfolioHistoryMaterializedService.invalidate_from_transaction(transaction)
+        except Exception:
+            # Don't fail transaction if invalidation fails
+            pass
+
         return transaction
 
     @staticmethod
@@ -390,9 +414,29 @@ class TransactionService:
                 if realized_gain:
                     db.session.delete(realized_gain)
 
+            # Save transaction info for invalidation before deletion
+            portfolio_fund_id = transaction.portfolio_fund_id
+            transaction_date = transaction.date
+
             # Delete the transaction (will cascade delete the IBKR allocation)
             db.session.delete(transaction)
             db.session.commit()
+
+            # Invalidate materialized view
+            try:
+                from ..models import PortfolioFund
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                portfolio_fund = db.session.get(PortfolioFund, portfolio_fund_id)
+                if portfolio_fund:
+                    PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                        portfolio_fund.portfolio_id, transaction_date, recalculate=False
+                    )
+            except Exception:
+                # Don't fail deletion if invalidation fails
+                pass
 
             return {
                 "transaction_details": transaction_details,

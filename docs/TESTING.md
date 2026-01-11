@@ -38,13 +38,15 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
     - `ibkr_config_service.py`: 100% ✅
   - **High Coverage Services** (90%+):
     - `dividend_service.py`: 92% (21 tests) ✅
-    - `portfolio_service.py`: 91% ✅
-    - `transaction_service.py`: 94% (26 tests) ✅
+    - `portfolio_service.py`: 92% (46 tests) ✅
+    - `transaction_service.py`: 91% (26 tests) ✅
     - `logging_service.py`: 96% ✅
-    - `fund_service.py`: 97% ✅
+    - `fund_service.py`: 94% ✅
   - **Target Coverage Services** (85%+):
     - `ibkr_transaction_service.py`: 89% (40 tests) ✅
     - `developer_service.py`: 99% ✅
+  - **New Services** (75%+):
+    - `portfolio_history_materialized_service.py`: 79% (13 tests) ⚡ (v1.4.0 - Performance optimization)
 
 - **Route Tests**: Complete coverage of all route error paths
   - `ibkr_routes.py`: 100% ✅
@@ -62,7 +64,7 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
   - Validation bypassing with zero values
   - UNIQUE constraint errors with invalid cache
 
-**Overall Test Coverage**: 656+ tests across routes and services, **95.20%** average coverage
+**Overall Test Coverage**: 669+ tests across routes and services, **90.05%** overall coverage
 
 ### Goals
 
@@ -126,6 +128,7 @@ backend/
 │   │   ├── test_ibkr_transaction_service.py
 │   │   ├── test_logging_service.py
 │   │   ├── test_portfolio_service.py
+│   │   ├── test_portfolio_history_materialized_service.py
 │   │   ├── test_price_update_service.py
 │   │   ├── test_symbol_lookup_service.py
 │   │   └── test_transaction_service.py
@@ -139,6 +142,7 @@ backend/
 │       │   ├── IBKR_FLEX_SERVICE_TESTS.md
 │       │   ├── IBKR_TRANSACTION_SERVICE_TESTS.md
 │       │   ├── PORTFOLIO_SERVICE_TESTS.md
+│       │   ├── PORTFOLIO_HISTORY_MATERIALIZED_SERVICE_TESTS.md
 │       │   ├── PRICE_UPDATE_SERVICE_TESTS.md
 │       │   ├── SYMBOL_LOOKUP_SERVICE_TESTS.md
 │       │   └── TRANSACTION_SERVICE_TESTS.md

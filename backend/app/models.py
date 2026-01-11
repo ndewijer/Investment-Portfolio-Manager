@@ -503,6 +503,58 @@ class RealizedGainLoss(db.Model):
     )
 
 
+class PortfolioHistoryMaterialized(db.Model):
+    """
+    Materialized view for portfolio history calculations.
+
+    Pre-calculates and stores daily portfolio values to improve query performance.
+    This table acts as a cache that is invalidated and recalculated when
+    source data (transactions, prices, dividends) changes.
+
+    Attributes:
+        id (str): Unique identifier (UUID)
+        portfolio_id (str): Foreign key to Portfolio
+        date (str): Date in YYYY-MM-DD format
+        value (float): Total portfolio value on this date
+        cost (float): Total cost basis on this date
+        realized_gain (float): Cumulative realized gains up to this date
+        unrealized_gain (float): Unrealized gains on this date
+        total_dividends (float): Cumulative dividends up to this date
+        total_sale_proceeds (float): Cumulative sale proceeds up to this date
+        total_original_cost (float): Cumulative original cost of sold positions
+        total_gain_loss (float): Total gain/loss (realized + unrealized)
+        is_archived (int): Archive status (0 or 1, matches portfolio.is_archived)
+        calculated_at (datetime): Timestamp when this record was calculated
+    """
+
+    __tablename__ = "portfolio_history_materialized"
+
+    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
+    portfolio_id = db.Column(
+        db.String(36), db.ForeignKey("portfolio.id", ondelete="CASCADE"), nullable=False
+    )
+    date = db.Column(db.String(10), nullable=False)  # YYYY-MM-DD format
+    value = db.Column(db.Float, nullable=False)
+    cost = db.Column(db.Float, nullable=False)
+    realized_gain = db.Column(db.Float, nullable=False)
+    unrealized_gain = db.Column(db.Float, nullable=False)
+    total_dividends = db.Column(db.Float, nullable=False)
+    total_sale_proceeds = db.Column(db.Float, nullable=False)
+    total_original_cost = db.Column(db.Float, nullable=False)
+    total_gain_loss = db.Column(db.Float, nullable=False)
+    is_archived = db.Column(db.Integer, nullable=False)
+    calculated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
+
+    # Relationships
+    portfolio = db.relationship("Portfolio", backref="materialized_history")
+
+    __table_args__ = (
+        db.UniqueConstraint("portfolio_id", "date", name="uq_portfolio_date"),
+        db.Index("idx_portfolio_history_mat_portfolio_date", "portfolio_id", "date"),
+        db.Index("idx_portfolio_history_mat_date", "date"),
+    )
+
+
 class IBKRConfig(db.Model):
     """
     Stores IBKR Flex Web Service configuration.
