@@ -158,9 +158,7 @@ class TestPortfolioHistoryMaterializedService:
         ).count()
         assert remaining == 5
 
-    def test_invalidate_from_transaction(
-        self, app, sample_portfolio, cash_dividend_fund
-    ):
+    def test_invalidate_from_transaction(self, app, sample_portfolio, cash_dividend_fund):
         """Test invalidation from transaction."""
         # Create some materialized records
         start_date = date(2024, 1, 1)
@@ -188,9 +186,7 @@ class TestPortfolioHistoryMaterializedService:
         ).first()
 
         if not pf:
-            pf = PortfolioFund(
-                portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
-            )
+            pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id)
             db.session.add(pf)
             db.session.commit()
 
@@ -204,9 +200,7 @@ class TestPortfolioHistoryMaterializedService:
         db.session.add(transaction)
         db.session.commit()
 
-        deleted = PortfolioHistoryMaterializedService.invalidate_from_transaction(
-            transaction
-        )
+        deleted = PortfolioHistoryMaterializedService.invalidate_from_transaction(transaction)
 
         # Should have deleted records from transaction date forward
         assert deleted >= 0
@@ -290,9 +284,7 @@ class TestPortfolioHistoryMaterializedService:
         ).first()
 
         if not pf:
-            pf = PortfolioFund(
-                portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
-            )
+            pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id)
             db.session.add(pf)
             db.session.commit()
 
@@ -318,9 +310,7 @@ class TestPortfolioHistoryMaterializedService:
         # Should have some records
         assert count >= 0
 
-    def test_invalidate_from_price_update(
-        self, app, sample_portfolio, cash_dividend_fund
-    ):
+    def test_invalidate_from_price_update(self, app, sample_portfolio, cash_dividend_fund):
         """Test invalidation from price update."""
         # Create portfolio fund
         pf = PortfolioFund.query.filter_by(
@@ -328,9 +318,7 @@ class TestPortfolioHistoryMaterializedService:
         ).first()
 
         if not pf:
-            pf = PortfolioFund(
-                portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id
-            )
+            pf = PortfolioFund(portfolio_id=sample_portfolio.id, fund_id=cash_dividend_fund.id)
             db.session.add(pf)
             db.session.commit()
 
