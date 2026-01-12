@@ -37,7 +37,7 @@ def upgrade():
             sa.Column("total_sale_proceeds", sa.Float(), nullable=False),
             sa.Column("total_original_cost", sa.Float(), nullable=False),
             sa.Column("total_gain_loss", sa.Float(), nullable=False),
-            sa.Column("is_archived", sa.Integer(), nullable=False),
+            sa.Column("is_archived", sa.Boolean(), nullable=False),
             sa.Column(
                 "calculated_at",
                 sa.DateTime(),

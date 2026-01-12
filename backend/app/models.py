@@ -523,7 +523,7 @@ class PortfolioHistoryMaterialized(db.Model):
         total_sale_proceeds (float): Cumulative sale proceeds up to this date
         total_original_cost (float): Cumulative original cost of sold positions
         total_gain_loss (float): Total gain/loss (realized + unrealized)
-        is_archived (int): Archive status (0 or 1, matches portfolio.is_archived)
+        is_archived (bool): Archive status (matches portfolio.is_archived)
         calculated_at (datetime): Timestamp when this record was calculated
     """
 
@@ -542,7 +542,7 @@ class PortfolioHistoryMaterialized(db.Model):
     total_sale_proceeds = db.Column(db.Float, nullable=False)
     total_original_cost = db.Column(db.Float, nullable=False)
     total_gain_loss = db.Column(db.Float, nullable=False)
-    is_archived = db.Column(db.Integer, nullable=False)
+    is_archived = db.Column(db.Boolean, nullable=False)
     calculated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
 
     # Relationships

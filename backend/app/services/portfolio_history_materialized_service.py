@@ -157,7 +157,7 @@ class PortfolioHistoryMaterializedService:
                     "total_sale_proceeds": round(record.total_sale_proceeds, 6),
                     "total_original_cost": round(record.total_original_cost, 6),
                     "total_gain_loss": round(record.total_gain_loss, 6),
-                    "is_archived": bool(record.is_archived),
+                    "is_archived": record.is_archived,
                 }
             )
 
@@ -253,7 +253,7 @@ class PortfolioHistoryMaterializedService:
                     existing.total_sale_proceeds = portfolio_data["total_sale_proceeds"]
                     existing.total_original_cost = portfolio_data["total_original_cost"]
                     existing.total_gain_loss = portfolio_data["total_gain_loss"]
-                    existing.is_archived = int(portfolio_data["is_archived"])
+                    existing.is_archived = portfolio_data["is_archived"]
                     existing.calculated_at = datetime.now()
                 else:
                     # Create new record
@@ -268,7 +268,7 @@ class PortfolioHistoryMaterializedService:
                         total_sale_proceeds=portfolio_data["total_sale_proceeds"],
                         total_original_cost=portfolio_data["total_original_cost"],
                         total_gain_loss=portfolio_data["total_gain_loss"],
-                        is_archived=int(portfolio_data["is_archived"]),
+                        is_archived=portfolio_data["is_archived"],
                     )
                     db.session.add(record)
 
