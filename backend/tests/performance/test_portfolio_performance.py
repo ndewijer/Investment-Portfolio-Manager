@@ -196,10 +196,10 @@ class TestPortfolioHistoryCorrectness:
                 portfolio = first_day["portfolios"][0]
                 assert "id" in portfolio
                 assert "name" in portfolio
-                assert "value" in portfolio
-                assert "cost" in portfolio
-                assert "realized_gain" in portfolio
-                assert "unrealized_gain" in portfolio
+                assert "totalValue" in portfolio
+                assert "totalCost" in portfolio
+                assert "totalRealizedGainLoss" in portfolio
+                assert "totalUnrealizedGainLoss" in portfolio
 
     def test_portfolio_fund_history_returns_data(self, app_context):
         """Verify that portfolio fund history returns valid data structure."""
@@ -227,12 +227,12 @@ class TestPortfolioHistoryCorrectness:
                 assert "portfolio_fund_id" in fund
                 assert "fund_id" in fund
                 assert "fund_name" in fund
-                assert "value" in fund
-                assert "cost" in fund
+                assert "totalValue" in fund
+                assert "totalCost" in fund
                 assert "shares" in fund
                 assert "price" in fund
-                assert "realized_gain" in fund
-                assert "unrealized_gain" in fund
+                assert "totalRealizedGainLoss" in fund
+                assert "totalUnrealizedGainLoss" in fund
 
     def test_date_range_filtering(self, app_context):
         """Verify that date range parameters are respected."""

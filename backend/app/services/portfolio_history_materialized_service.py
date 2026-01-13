@@ -149,15 +149,15 @@ class PortfolioHistoryMaterializedService:
                 {
                     "id": record.portfolio_id,
                     "name": portfolio_name,
-                    "value": round(record.value, 6),
-                    "cost": round(record.cost, 6),
-                    "realized_gain": round(record.realized_gain, 6),
-                    "unrealized_gain": round(record.unrealized_gain, 6),
-                    "total_dividends": round(record.total_dividends, 6),
-                    "total_sale_proceeds": round(record.total_sale_proceeds, 6),
-                    "total_original_cost": round(record.total_original_cost, 6),
-                    "total_gain_loss": round(record.total_gain_loss, 6),
-                    "is_archived": record.is_archived,
+                    "totalValue": round(record.value, 6),
+                    "totalCost": round(record.cost, 6),
+                    "totalRealizedGainLoss": round(record.realized_gain, 6),
+                    "totalUnrealizedGainLoss": round(record.unrealized_gain, 6),
+                    "totalDividends": round(record.total_dividends, 6),
+                    "totalSaleProceeds": round(record.total_sale_proceeds, 6),
+                    "totalOriginalCost": round(record.total_original_cost, 6),
+                    "totalGainLoss": round(record.total_gain_loss, 6),
+                    "isArchived": record.is_archived,
                 }
             )
 
@@ -217,13 +217,11 @@ class PortfolioHistoryMaterializedService:
             ).delete(synchronize_session=False)
             db.session.commit()
 
-        # Calculate history using existing service
-        # We need to call it for this specific portfolio only
-
-        # Temporarily filter to only this portfolio by calling the calculation
-        # for just this portfolio's date range
+        # Calculate history using existing service (internal method)
+        # We call the internal _get_portfolio_history_on_demand method directly
+        # to get snake_case data (internal format) and avoid recursion issues.
         # Include hidden (exclude_from_overview=True) portfolios but not archived ones
-        history = PortfolioService.get_portfolio_history(
+        history = PortfolioService._get_portfolio_history_on_demand(
             start_date=start_date.isoformat(), end_date=end_date.isoformat(), include_excluded=True
         )
 
@@ -244,7 +242,7 @@ class PortfolioHistoryMaterializedService:
                     continue
 
                 if existing:
-                    # Update existing record
+                    # Update existing record (accessing snake_case keys)
                     existing.value = portfolio_data["value"]
                     existing.cost = portfolio_data["cost"]
                     existing.realized_gain = portfolio_data["realized_gain"]
@@ -256,7 +254,7 @@ class PortfolioHistoryMaterializedService:
                     existing.is_archived = portfolio_data["is_archived"]
                     existing.calculated_at = datetime.now()
                 else:
-                    # Create new record
+                    # Create new record (accessing snake_case keys)
                     record = PortfolioHistoryMaterialized(
                         portfolio_id=portfolio_id,
                         date=date_str,

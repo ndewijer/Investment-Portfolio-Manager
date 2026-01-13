@@ -549,15 +549,15 @@ class PortfolioService:
                 {
                     "id": portfolio_data["id"],
                     "name": portfolio_data["name"],
-                    "totalValue": portfolio_data["value"],
-                    "totalCost": portfolio_data["cost"],
-                    "totalDividends": portfolio_data["total_dividends"],
-                    "totalUnrealizedGainLoss": portfolio_data["unrealized_gain"],
-                    "totalRealizedGainLoss": portfolio_data["realized_gain"],
-                    "totalSaleProceeds": portfolio_data["total_sale_proceeds"],
-                    "totalOriginalCost": portfolio_data["total_original_cost"],
-                    "totalGainLoss": portfolio_data["total_gain_loss"],
-                    "is_archived": portfolio_data["is_archived"],
+                    "totalValue": portfolio_data["totalValue"],
+                    "totalCost": portfolio_data["totalCost"],
+                    "totalDividends": portfolio_data["totalDividends"],
+                    "totalUnrealizedGainLoss": portfolio_data["totalUnrealizedGainLoss"],
+                    "totalRealizedGainLoss": portfolio_data["totalRealizedGainLoss"],
+                    "totalSaleProceeds": portfolio_data["totalSaleProceeds"],
+                    "totalOriginalCost": portfolio_data["totalOriginalCost"],
+                    "totalGainLoss": portfolio_data["totalGainLoss"],
+                    "isArchived": portfolio_data["isArchived"],
                 }
             )
 
@@ -599,6 +599,39 @@ class PortfolioService:
         ]
 
     @staticmethod
+    def _convert_history_to_camel_case(history):
+        """
+        Convert portfolio history from snake_case to camelCase for API responses.
+
+        Args:
+            history (list): History data with snake_case keys
+
+        Returns:
+            list: History data with camelCase keys
+        """
+        converted = []
+        for daily_data in history:
+            converted_day = {"date": daily_data["date"], "portfolios": []}
+            for portfolio_data in daily_data["portfolios"]:
+                converted_day["portfolios"].append(
+                    {
+                        "id": portfolio_data["id"],
+                        "name": portfolio_data["name"],
+                        "totalValue": portfolio_data["value"],
+                        "totalCost": portfolio_data["cost"],
+                        "totalRealizedGainLoss": portfolio_data["realized_gain"],
+                        "totalUnrealizedGainLoss": portfolio_data["unrealized_gain"],
+                        "totalDividends": portfolio_data["total_dividends"],
+                        "totalSaleProceeds": portfolio_data["total_sale_proceeds"],
+                        "totalOriginalCost": portfolio_data["total_original_cost"],
+                        "totalGainLoss": portfolio_data["total_gain_loss"],
+                        "isArchived": portfolio_data["is_archived"],
+                    }
+                )
+            converted.append(converted_day)
+        return converted
+
+    @staticmethod
     def get_portfolio_history(
         start_date=None, end_date=None, use_materialized=True, include_excluded=False
     ):
@@ -615,7 +648,7 @@ class PortfolioService:
             include_excluded (bool, optional): Include portfolios with exclude_from_overview=True
 
         Returns:
-            list: List of daily values containing portfolio history
+            list: List of daily values containing portfolio history (camelCase format)
         """
         # Import here to avoid circular dependency
         from .portfolio_history_materialized_service import (
@@ -645,7 +678,7 @@ class PortfolioService:
                 )
 
                 if coverage.is_complete:
-                    # Use materialized view - FAST PATH
+                    # Use materialized view - FAST PATH (already returns camelCase)
                     return PortfolioHistoryMaterializedService.get_materialized_history(
                         portfolio_ids, start_date_parsed, end_date_parsed
                     )
@@ -653,10 +686,13 @@ class PortfolioService:
                 # Fall through to on-demand calculation
                 pass
 
-        # Fall back to on-demand calculation - SLOW PATH
-        return PortfolioService._get_portfolio_history_on_demand(
+        # Fall back to on-demand calculation - SLOW PATH (returns snake_case)
+        history = PortfolioService._get_portfolio_history_on_demand(
             start_date, end_date, include_excluded
         )
+
+        # Convert snake_case to camelCase for API response
+        return PortfolioService._convert_history_to_camel_case(history)
 
     @staticmethod
     def _get_portfolio_history_on_demand(start_date=None, end_date=None, include_excluded=False):

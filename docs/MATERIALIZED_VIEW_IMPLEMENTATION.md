@@ -41,6 +41,8 @@ CREATE TABLE portfolio_history_materialized (
 );
 ```
 
+**Field Naming Convention**: The database and internal Python code use snake_case (e.g., `realized_gain`, `unrealized_gain`), while the API responses use camelCase (e.g., `totalRealizedGainLoss`, `totalUnrealizedGainLoss`). The conversion happens automatically at the API boundary.
+
 ### Smart Query Router
 
 The `PortfolioService.get_portfolio_history()` method now intelligently routes between:
@@ -117,6 +119,19 @@ flask invalidate-materialized-history --portfolio-id=<id> --from-date=2024-01-01
 ### Portfolio History Endpoint
 
 The `/api/portfolio/history` endpoint now automatically uses the materialized view when available.
+
+**Response Format (v1.4.1+)**: Returns portfolio history with camelCase field names:
+- `totalValue` (previously `value`)
+- `totalCost` (previously `cost`)
+- `totalRealizedGainLoss` (previously `realized_gain`)
+- `totalUnrealizedGainLoss` (previously `unrealized_gain`)
+- `totalDividends` (previously `total_dividends`)
+- `totalSaleProceeds` (previously `total_sale_proceeds`)
+- `totalOriginalCost` (previously `total_original_cost`)
+- `totalGainLoss` (previously `total_gain_loss`)
+- `isArchived` (previously `is_archived`)
+
+This standardizes the response format to match the summary endpoint and follows JavaScript naming conventions.
 
 **Bypass materialized view (for testing):**
 
@@ -299,5 +314,5 @@ Check the source code documentation:
 
 ---
 
-**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Last Updated**: 2026-01-13 (Version 1.4.1)
 **Maintained By**: @ndewijer

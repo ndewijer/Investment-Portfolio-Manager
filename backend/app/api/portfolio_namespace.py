@@ -447,15 +447,15 @@ class PortfolioHistory(Resource):
 
         Returns daily data with the following fields per portfolio:
         - id, name: Portfolio identification
-        - value: Current portfolio value
-        - cost: Total cost basis
-        - realized_gain: Realized gains/losses
-        - unrealized_gain: Unrealized gains/losses
-        - total_dividends: Total dividends received
-        - total_sale_proceeds: Total proceeds from sales
-        - total_original_cost: Total original cost basis of sold positions
-        - total_gain_loss: Total gain/loss (realized + unrealized)
-        - is_archived: Archive status
+        - totalValue: Current portfolio value
+        - totalCost: Total cost basis
+        - totalRealizedGainLoss: Realized gains/losses
+        - totalUnrealizedGainLoss: Unrealized gains/losses
+        - totalDividends: Total dividends received
+        - totalSaleProceeds: Total proceeds from sales
+        - totalOriginalCost: Total original cost basis of sold positions
+        - totalGainLoss: Total gain/loss (realized + unrealized)
+        - isArchived: Archive status
 
         Useful for performance charts and analysis.
         """

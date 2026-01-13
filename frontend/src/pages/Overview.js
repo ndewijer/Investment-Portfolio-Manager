@@ -104,11 +104,14 @@ const Overview = () => {
       };
 
       // Calculate totals for this day using the new backend data structure
-      const totalValue = day.portfolios.reduce((sum, p) => sum + p.value, 0);
-      const totalCost = day.portfolios.reduce((sum, p) => sum + p.cost, 0);
-      const totalRealizedGain = day.portfolios.reduce((sum, p) => sum + (p.realized_gain || 0), 0);
+      const totalValue = day.portfolios.reduce((sum, p) => sum + p.totalValue, 0);
+      const totalCost = day.portfolios.reduce((sum, p) => sum + p.totalCost, 0);
+      const totalRealizedGain = day.portfolios.reduce(
+        (sum, p) => sum + (p.totalRealizedGainLoss || 0),
+        0
+      );
       const totalUnrealizedGain = day.portfolios.reduce(
-        (sum, p) => sum + (p.unrealized_gain || 0),
+        (sum, p) => sum + (p.totalUnrealizedGainLoss || 0),
         0
       );
 
@@ -125,10 +128,10 @@ const Overview = () => {
       portfolioSummary.forEach((portfolio) => {
         const portfolioData = day.portfolios.find((p) => p.id === portfolio.id);
         if (portfolioData) {
-          dayData[`${portfolio.name} Value`] = portfolioData.value;
-          dayData[`${portfolio.name} Cost`] = portfolioData.cost;
-          dayData[`${portfolio.name} Realized`] = portfolioData.realized_gain || 0;
-          dayData[`${portfolio.name} Unrealized`] = portfolioData.unrealized_gain || 0;
+          dayData[`${portfolio.name} Value`] = portfolioData.totalValue;
+          dayData[`${portfolio.name} Cost`] = portfolioData.totalCost;
+          dayData[`${portfolio.name} Realized`] = portfolioData.totalRealizedGainLoss || 0;
+          dayData[`${portfolio.name} Unrealized`] = portfolioData.totalUnrealizedGainLoss || 0;
         }
       });
 
