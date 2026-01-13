@@ -103,9 +103,9 @@ class TestPortfolioHistoryMaterializedService:
 
         assert len(history) == 3
         assert history[0]["date"] == "2024-01-01"
-        assert history[0]["portfolios"][0]["value"] == 1000.0
-        assert history[1]["portfolios"][0]["value"] == 1100.0
-        assert history[2]["portfolios"][0]["value"] == 1200.0
+        assert history[0]["portfolios"][0]["totalValue"] == 1000.0
+        assert history[1]["portfolios"][0]["totalValue"] == 1100.0
+        assert history[2]["portfolios"][0]["totalValue"] == 1200.0
 
     def test_materialize_portfolio_history(self, app, sample_portfolio):
         """Test materializing portfolio history."""

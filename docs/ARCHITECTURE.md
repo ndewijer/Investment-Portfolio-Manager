@@ -269,10 +269,13 @@ The materialized view feature dramatically improves portfolio history query perf
 #### PortfolioHistoryMaterialized Model
 - `backend/app/models.py`
 - Stores pre-calculated daily portfolio metrics
-- Fields: portfolio_id, date, value, cost, realized_gain, unrealized_gain, total_dividends, total_sale_proceeds, total_original_cost, total_gain_loss, is_archived, calculated_at
+- Database fields (snake_case): portfolio_id, date, value, cost, realized_gain, unrealized_gain, total_dividends, total_sale_proceeds, total_original_cost, total_gain_loss, is_archived, calculated_at
+- API response fields (camelCase): totalValue, totalCost, totalRealizedGainLoss, totalUnrealizedGainLoss, totalDividends, totalSaleProceeds, totalOriginalCost, totalGainLoss, isArchived
 - Indexed on (portfolio_id, date) for efficient range queries
 - Unique constraint on (portfolio_id, date)
 - CASCADE delete when portfolio is deleted
+
+**Note on Field Naming**: The internal database and Python code use snake_case (following Python conventions), while the API responses use camelCase (following JavaScript conventions). The conversion happens at the API boundary in `PortfolioService.get_portfolio_history()`.
 
 #### PortfolioHistoryMaterializedService
 - `backend/app/services/portfolio_history_materialized_service.py`
@@ -439,5 +442,5 @@ if (!versionInfo.features.ibkr_integration) {
 
 ---
 
-**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Last Updated**: 2026-01-13 (Version 1.4.1)
 **Maintained By**: @ndewijer

@@ -50,6 +50,7 @@ Integration tests for all portfolio management API endpoints. Verifies HTTP endp
 - Get portfolio summary with aggregated metrics
 - Verify archived portfolios excluded from summary
 - Get portfolio historical performance data
+  - Note (v1.4.1+): Returns camelCase field names (e.g., `totalValue`, `totalRealizedGainLoss`)
 
 ### TestPortfolioFunds (7 tests)
 - List all portfolio funds
@@ -88,7 +89,8 @@ Helper to create Fund instances with all required fields (isin, symbol, name, cu
 - **Error Path Testing**: Mocks simulate service failures to verify error handlers return appropriate status codes
 - **SQLAlchemy 2.0 Patterns**: Uses `db.session.get(Model, id)` instead of deprecated `Model.query.get(id)`
 - **Historical Data**: FundPrice model uses `price` field (not `close`)
-- **Response Flexibility**: Verifies status codes and key fields, not exact naming conventions (camelCase vs snake_case)
+- **Response Flexibility**: Verifies status codes and key fields, not exact naming conventions
+- **API Response Format (v1.4.1+)**: Portfolio history endpoint returns camelCase field names (internal Python uses snake_case, conversion happens at API boundary)
 
 ---
 
@@ -154,5 +156,5 @@ pytest tests/api/test_portfolio_routes.py -v --no-cov
 
 ---
 
-**Last Updated**: Phase 5 - Phase 1b (Query API Deprecation Fixes) + Phase 4a (Error Path Testing)
-**Maintainer**: See git history
+**Last Updated**: 2026-01-13 (Version 1.4.1)
+**Maintained By**: @ndewijer

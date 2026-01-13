@@ -134,7 +134,10 @@ def test_get_portfolios_list_default(self, app_context, db_session):
 
 ### Historical Analysis Methods
 - `get_portfolio_history(start_date=None, end_date=None)` - Get historical portfolio values
+  - Returns API response with camelCase field names (e.g., `totalValue`, `totalRealizedGainLoss`)
+  - Internal calculation uses snake_case; conversion happens at API boundary
 - `get_portfolio_fund_history(portfolio_id, start_date=None, end_date=None)` - Get fund-level history
+  - Returns fund-level data with snake_case field names (internal format)
 
 ### Helper Methods
 - `_process_transactions_for_date(transactions, date, dividend_shares=0)` - Process transactions for specific date
@@ -225,3 +228,8 @@ This test suite validates fixes to ensure:
 - Data integrity is maintained
 
 The comprehensive test coverage provides confidence in the PortfolioService implementation and helps prevent regression bugs in future development.
+
+---
+
+**Last Updated**: 2026-01-13 (Version 1.4.1)
+**Maintained By**: @ndewijer

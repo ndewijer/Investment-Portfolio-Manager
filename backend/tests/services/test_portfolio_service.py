@@ -844,7 +844,7 @@ class TestPortfolioCalculations:
         assert p1["totalValue"] == 1500.0  # 100 shares * $15
         assert p1["totalCost"] == 1000.0
         assert p1["totalUnrealizedGainLoss"] == 500.0
-        assert p1["is_archived"] is False
+        assert p1["isArchived"] is False
 
         # Check portfolio 2
         p2 = next(p for p in result if p["id"] == portfolio2.id)
@@ -1089,16 +1089,16 @@ class TestPortfolioHistoricalMethods:
         # Find our specific portfolio in the day 1 results
         portfolio_day1 = next(p for p in day1_entry["portfolios"] if p["id"] == portfolio.id)
         assert portfolio_day1["name"] == "Test Portfolio"
-        assert portfolio_day1["value"] == 1000.0  # 100 * 10
-        assert portfolio_day1["cost"] == 1000.0
+        assert portfolio_day1["totalValue"] == 1000.0  # 100 * 10
+        assert portfolio_day1["totalCost"] == 1000.0
 
         # Find day 3 entry (after second transaction) and our specific portfolio
         day3_entry = next(
             d for d in result if d["date"] == (base_date + timedelta(days=2)).strftime("%Y-%m-%d")
         )
         portfolio_day3 = next(p for p in day3_entry["portfolios"] if p["id"] == portfolio.id)
-        assert portfolio_day3["value"] == 1800.0  # 150 * 12
-        assert portfolio_day3["cost"] == 1600.0  # 100*10 + 50*12
+        assert portfolio_day3["totalValue"] == 1800.0  # 150 * 12
+        assert portfolio_day3["totalCost"] == 1600.0  # 100*10 + 50*12
 
     def test_get_portfolio_fund_history_invalid_portfolio(self, app_context, db_session):
         """Test fund history with invalid portfolio ID."""

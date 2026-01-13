@@ -69,7 +69,8 @@ def test_get_materialized_stats_empty(self, app, db_session):
 
 ### Materialized History Queries
 - `get_materialized_history(portfolio_ids, start_date, end_date)` - Retrieve cached portfolio history
-- Returns data in same format as `PortfolioService.get_portfolio_history()`
+- Returns data in camelCase format matching `PortfolioService.get_portfolio_history()` API response
+- Note: Internal database fields use snake_case, but API responses use camelCase (conversion happens at service boundary)
 
 ### Materialization Operations
 - `materialize_portfolio_history(portfolio_id, start_date, end_date, force_recalculate)` - Calculate and store portfolio history
@@ -292,3 +293,8 @@ Key metrics tracked:
 - `coverage_percent`: Percentage of requests using fast path
 
 The comprehensive test coverage provides confidence in the materialized view implementation and ensures performance improvements while maintaining data accuracy.
+
+---
+
+**Last Updated**: 2026-01-13 (Version 1.4.1)
+**Maintained By**: @ndewijer
