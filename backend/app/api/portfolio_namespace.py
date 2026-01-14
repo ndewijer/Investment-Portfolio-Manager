@@ -196,7 +196,7 @@ class Portfolio(Resource):
                 "id": portfolio.id,
                 "name": portfolio.name,
                 "description": portfolio.description,
-                "is_archived": portfolio.is_archived,
+                "isArchived": portfolio.is_archived,
                 "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
                 "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
                 "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
