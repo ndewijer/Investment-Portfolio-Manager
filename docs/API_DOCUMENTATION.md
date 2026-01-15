@@ -67,7 +67,7 @@ System health and version information.
 
 Portfolio management and analytics.
 
-**Endpoints**: 13
+**Endpoints**: 14
 - CRUD operations for portfolios
 - Portfolio summary and history
 - Fund-portfolio relationships
@@ -401,7 +401,7 @@ Content-Type: application/json
 
 1. **Get Portfolio-Fund Relationship ID**:
 ```http
-GET /api/portfolio/funds?portfolio_id=portfolio-uuid
+GET /api/portfolio/funds/portfolio-uuid
 ```
 
 Response: `[{ "id": "portfolio-fund-uuid", ... }]`

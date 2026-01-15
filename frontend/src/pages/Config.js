@@ -1111,9 +1111,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
     setSelectedPortfolioId(selectedId);
     setSelectedFundId('');
     if (selectedId) {
-      fetchPortfolioFunds(() =>
-        axios.get(`${API_BASE_URL}/portfolio/funds?portfolio_id=${selectedId}`)
-      );
+      fetchPortfolioFunds(() => axios.get(`${API_BASE_URL}/portfolio/funds/${selectedId}`));
     } else {
       fetchPortfolioFunds(() => Promise.resolve({ data: [] }));
     }

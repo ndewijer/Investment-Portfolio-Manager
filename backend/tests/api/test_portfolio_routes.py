@@ -469,7 +469,7 @@ class TestPortfolioFunds:
 
     def test_list_portfolio_funds_filtered(self, app_context, client, db_session):
         """
-        Verify GET /portfolio/funds?portfolio_id=<id> filters results to specific portfolio.
+        Verify GET /portfolio/funds/<id> filters results to specific portfolio.
 
         WHY: Users often need to see funds for a single portfolio without noise from other
         portfolios, enabling focused portfolio management and efficient data retrieval for
@@ -486,7 +486,7 @@ class TestPortfolioFunds:
         db_session.add_all([pf1, pf2])
         db_session.commit()
 
-        response = client.get(f"/api/portfolio/funds?portfolio_id={p1.id}")
+        response = client.get(f"/api/portfolio/funds/{p1.id}")
 
         assert response.status_code == 200
         # Should only return funds for p1

@@ -476,33 +476,23 @@ class PortfolioHistory(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route("/funds")
+@ns.route("/funds/<string:portfolio_id>")
+@ns.param("portfolio_id", "Portfolio ID")
 class PortfolioFundsList(Resource):
     """Portfolio-fund relationships endpoint."""
 
     @ns.doc("get_portfolio_funds")
-    @ns.param("portfolio_id", "Filter by portfolio ID", _in="query")
     @ns.response(200, "Success")
     @ns.response(500, "Server error", error_model)
-    def get(self):
+    def get(self, portfolio_id):
         """
-        Get portfolio-fund relationships.
+        Get portfolio-fund relationships for a specific portfolio.
 
-        Returns all portfolio-fund relationships, optionally filtered by portfolio.
-
-        Query Parameters:
-        - portfolio_id: Filter relationships for a specific portfolio
-
-        Each relationship represents a fund held in a portfolio.
+        Returns all portfolio-fund relationships filtered by portfolio ID.
+        Each relationship represents a fund held in the portfolio.
         """
         try:
-            portfolio_id = request.args.get("portfolio_id")
-
-            if portfolio_id:
-                portfolio_funds = PortfolioService.get_portfolio_funds(portfolio_id)
-            else:
-                portfolio_funds = PortfolioService.get_all_portfolio_funds()
-
+            portfolio_funds = PortfolioService.get_portfolio_funds(portfolio_id)
             return portfolio_funds, 200
         except HTTPException:
             raise
@@ -511,6 +501,35 @@ class PortfolioFundsList(Resource):
                 level=LogLevel.ERROR,
                 category=LogCategory.PORTFOLIO,
                 message="Error retrieving portfolio funds",
+                details={"error": str(e)},
+            )
+            return {"error": str(e)}, 500
+
+
+@ns.route("/funds")
+class PortfolioFundsCreate(Resource):
+    """Portfolio-fund relationships endpoint."""
+
+    @ns.doc("get_all_portfolio_funds")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
+    def get(self):
+        """
+        Get all portfolio-fund relationships.
+
+        Returns all portfolio-fund relationships across all portfolios.
+        Each relationship represents a fund held in a portfolio.
+        """
+        try:
+            portfolio_funds = PortfolioService.get_all_portfolio_funds()
+            return portfolio_funds, 200
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.PORTFOLIO,
+                message="Error retrieving all portfolio funds",
                 details={"error": str(e)},
             )
             return {"error": str(e)}, 500
