@@ -375,8 +375,8 @@ Content-Type: application/json
   "symbol": "AAPL",
   "currency": "USD",
   "exchange": "NASDAQ",
-  "investment_type": "stock",
-  "dividend_type": "cash"
+  "investmentType": "stock",
+  "dividendType": "cash"
 }
 ```
 

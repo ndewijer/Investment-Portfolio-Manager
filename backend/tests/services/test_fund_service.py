@@ -223,7 +223,7 @@ class TestFundCreation:
             "currency": "USD",
             "exchange": "NASDAQ",
             "symbol": "TSLA",
-            "investment_type": "stock",
+            "investmentType": "stock",
         }
 
         fund = FundService.create_fund(data)
@@ -237,7 +237,7 @@ class TestFundCreation:
             "isin": make_isin("US"),
             "currency": "USD",
             "exchange": "NYSE",
-            "investment_type": "fund",
+            "investmentType": "fund",
         }
 
         fund = FundService.create_fund(data)
@@ -381,7 +381,7 @@ class TestFundUpdate:
             "isin": fund.isin,
             "currency": "USD",
             "exchange": "NYSE",
-            "dividend_type": "cash",  # Lowercase enum value
+            "dividendType": "cash",  # Lowercase enum value
         }
         updated_fund, _ = FundService.update_fund(fund_id, update_data)
 
@@ -408,7 +408,7 @@ class TestFundUpdate:
             "isin": fund.isin,
             "currency": "USD",
             "exchange": "NYSE",
-            "investment_type": "stock",
+            "investmentType": "stock",
         }
         updated_fund, _ = FundService.update_fund(fund_id, update_data)
 

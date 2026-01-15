@@ -24,7 +24,7 @@ import './PortfolioDetail.css';
  * fund holdings, transactions, and dividends. Orchestrates three custom hooks
  * (usePortfolioData, useTransactionManagement, useDividendManagement) to manage
  * separate data domains. Displays dividend table only if portfolio contains funds
- * with dividend_type !== 'none'.
+ * with dividendType !== 'none'.
  *
  * @returns {JSX.Element} The portfolio detail page
  */
@@ -134,7 +134,7 @@ const PortfolioDetail = () => {
   // Check for loading and error states
   const loading = portfolioLoading || transactionsLoading || dividendsLoading;
   const error = portfolioError || transactionsError || dividendsError;
-  const hasDividendFunds = portfolioFunds.some((pf) => pf.dividend_type !== 'none');
+  const hasDividendFunds = portfolioFunds.some((pf) => pf.dividendType !== 'none');
 
   if (loading) return <LoadingSpinner message="Loading portfolio data..." />;
   if (error) return <ErrorMessage error={error} onRetry={fetchPortfolioData} showRetry={true} />;

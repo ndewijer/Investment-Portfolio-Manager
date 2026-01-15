@@ -92,8 +92,8 @@ describe('FundsTable Component', () => {
       total_cost: 24000,
       current_value: 25050,
       total_dividends: 500,
-      dividend_type: 'cash',
-      investment_type: 'fund',
+      dividendType: 'cash',
+      investmentType: 'fund',
     },
     {
       id: 2,
@@ -105,8 +105,8 @@ describe('FundsTable Component', () => {
       total_cost: 8500,
       current_value: 8762.5,
       total_dividends: 0,
-      dividend_type: 'none',
-      investment_type: 'stock',
+      dividendType: 'none',
+      investmentType: 'stock',
     },
   ];
 

@@ -39,8 +39,8 @@ class FundService:
             "symbol": fund.symbol,
             "currency": fund.currency,
             "exchange": fund.exchange,
-            "dividend_type": fund.dividend_type.value,
-            "investment_type": fund.investment_type.value,
+            "dividendType": fund.dividend_type.value,
+            "investmentType": fund.investment_type.value,
         }
 
     @staticmethod
@@ -144,7 +144,7 @@ class FundService:
             IntegrityError: If ISIN is not unique
         """
         # Get investment_type from request, default to 'fund' if not provided
-        investment_type_str = data.get("investment_type", "fund")
+        investment_type_str = data.get("investmentType", "fund")
         investment_type = (
             InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
         )
@@ -205,11 +205,11 @@ class FundService:
         fund.currency = data["currency"]
         fund.exchange = data["exchange"]
 
-        if "dividend_type" in data:
-            fund.dividend_type = DividendType(data["dividend_type"])
+        if "dividendType" in data:
+            fund.dividend_type = DividendType(data["dividendType"])
 
-        if "investment_type" in data:
-            investment_type_str = data["investment_type"]
+        if "investmentType" in data:
+            investment_type_str = data["investmentType"]
             fund.investment_type = (
                 InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
             )

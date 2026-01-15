@@ -19,7 +19,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
  *
  * Includes "Add Fund/Stock" button that opens a modal to add new holdings
  * from the available funds list. Mobile view uses custom card layout.
- * Dividend button only shown for funds with dividend_type !== 'none'.
+ * Dividend button only shown for funds with dividendType !== 'none'.
  *
  * @param {Object} props - Component props object
  * @param {Array} props.portfolioFunds - Array of portfolio fund objects with metrics
@@ -144,13 +144,13 @@ const FundsTable = ({
           <ActionButton variant="primary" size="small" onClick={() => onAddTransaction(fund.id)}>
             Add Transaction
           </ActionButton>
-          {fund.dividend_type !== 'none' && (
+          {fund.dividendType !== 'none' && (
             <ActionButton variant="primary" size="small" onClick={() => onAddDividend(fund)}>
               Add Dividend
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove {fund.investment_type === 'stock' ? 'Stock' : 'Fund'}
+            Remove {fund.investmentType === 'stock' ? 'Stock' : 'Fund'}
           </ActionButton>
         </div>
       ),
@@ -197,13 +197,13 @@ const FundsTable = ({
           <ActionButton variant="primary" size="small" onClick={() => onAddTransaction(fund.id)}>
             Add Transaction
           </ActionButton>
-          {fund.dividend_type !== 'none' && (
+          {fund.dividendType !== 'none' && (
             <ActionButton variant="primary" size="small" onClick={() => onAddDividend(fund)}>
               Add Dividend
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove {fund.investment_type === 'stock' ? 'Stock' : 'Fund'}
+            Remove {fund.investmentType === 'stock' ? 'Stock' : 'Fund'}
           </ActionButton>
         </div>
       </div>

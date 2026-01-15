@@ -37,10 +37,10 @@ fund_model = ns.model(
             required=True, description="Trading currency code (e.g., USD, EUR)"
         ),
         "exchange": fields.String(required=True, description="Exchange where fund is traded"),
-        "dividend_type": fields.String(
+        "dividendType": fields.String(
             required=True, description="Dividend type", enum=["none", "cash", "stock"]
         ),
-        "investment_type": fields.String(
+        "investmentType": fields.String(
             required=True, description="Investment type", enum=["fund", "stock"]
         ),
     },
@@ -60,10 +60,10 @@ fund_create_model = ns.model(
         "symbol": fields.String(description="Trading symbol", example="VOO"),
         "currency": fields.String(required=True, description="Currency code", example="USD"),
         "exchange": fields.String(required=True, description="Exchange", example="NYSE"),
-        "dividend_type": fields.String(
+        "dividendType": fields.String(
             description="Dividend type", enum=["none", "cash", "stock"], default="none"
         ),
-        "investment_type": fields.String(
+        "investmentType": fields.String(
             description="Investment type", enum=["fund", "stock"], default="fund"
         ),
     },
@@ -77,8 +77,8 @@ fund_update_model = ns.model(
         "symbol": fields.String(description="Trading symbol"),
         "currency": fields.String(description="Currency code"),
         "exchange": fields.String(description="Exchange"),
-        "dividend_type": fields.String(description="Dividend type", enum=["none", "cash", "stock"]),
-        "investment_type": fields.String(description="Investment type", enum=["fund", "stock"]),
+        "dividendType": fields.String(description="Dividend type", enum=["none", "cash", "stock"]),
+        "investmentType": fields.String(description="Investment type", enum=["fund", "stock"]),
     },
 )
 
@@ -141,8 +141,8 @@ class FundList(Resource):
                     "symbol": f.symbol,
                     "currency": f.currency,
                     "exchange": f.exchange,
-                    "dividend_type": f.dividend_type.value,
-                    "investment_type": f.investment_type.value,
+                    "dividendType": f.dividend_type.value,
+                    "investmentType": f.investment_type.value,
                 }
                 for f in funds
             ], 200
@@ -215,8 +215,8 @@ class FundList(Resource):
                 "symbol": fund.symbol,
                 "currency": fund.currency,
                 "exchange": fund.exchange,
-                "dividend_type": fund.dividend_type.value,
-                "investment_type": fund.investment_type.value,
+                "dividendType": fund.dividend_type.value,
+                "investmentType": fund.investment_type.value,
             }, 201
 
         except IntegrityError as e:
@@ -279,8 +279,8 @@ class FundDetail(Resource):
                 "isin": fund.isin,
                 "currency": fund.currency,
                 "exchange": fund.exchange,
-                "investment_type": fund.investment_type.value,
-                "dividend_type": fund.dividend_type.value,
+                "investmentType": fund.investment_type.value,
+                "dividendType": fund.dividend_type.value,
                 "latest_price": latest_price,
             }
 
@@ -364,8 +364,8 @@ class FundDetail(Resource):
                 "symbol": fund.symbol,
                 "currency": fund.currency,
                 "exchange": fund.exchange,
-                "dividend_type": fund.dividend_type.value,
-                "investment_type": fund.investment_type.value,
+                "dividendType": fund.dividend_type.value,
+                "investmentType": fund.investment_type.value,
             }, 200
 
         except ValueError as e:
@@ -718,6 +718,6 @@ class FundPriceUpdate(Resource):
                 level=LogLevel.ERROR,
                 category=LogCategory.FUND,
                 message=f"Error updating fund prices: {e!s}",
-                details={"fund_id": fund_id, "update_type": update_type, "error": str(e)},
+                details={"fund_id": fund_id, "updateType": update_type, "error": str(e)},
             )
             return {"error": "Error updating fund prices", "details": str(e)}, 500

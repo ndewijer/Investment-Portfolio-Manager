@@ -41,7 +41,7 @@ const Funds = () => {
     symbol: '',
     currency: '',
     exchange: '',
-    investment_type: 'fund',
+    investmentType: 'fund',
   });
   const [editingFund, setEditingFund] = useState(null);
   const [symbolInfo, setSymbolInfo] = useState({});
@@ -107,7 +107,7 @@ const Funds = () => {
           symbol: '',
           currency: '',
           exchange: '',
-          investment_type: 'fund',
+          investmentType: 'fund',
         });
         // Refetch the full list of funds
         await fetchFunds(() => api.get('/fund'));
@@ -151,7 +151,7 @@ const Funds = () => {
       symbol: '',
       currency: '',
       exchange: '',
-      investment_type: 'fund',
+      investmentType: 'fund',
     });
     setIsModalOpen(true);
   };
@@ -163,7 +163,7 @@ const Funds = () => {
       symbol: '',
       currency: '',
       exchange: '',
-      investment_type: 'stock',
+      investmentType: 'stock',
     });
     setIsModalOpen(true);
   };
@@ -288,10 +288,10 @@ const Funds = () => {
       ) : (
         <div className="funds-grid">
           {funds.map((fund) => (
-            <div key={fund.id} className={`fund-card ${fund.investment_type || 'fund'}`}>
+            <div key={fund.id} className={`fund-card ${fund.investmentType || 'fund'}`}>
               <h3>{fund.name}</h3>
               <div className="fund-details">
-                {fund.investment_type === 'fund' ? (
+                {fund.investmentType === 'fund' ? (
                   <>
                     <p>
                       <strong>ISIN:</strong> {fund.isin}
@@ -332,10 +332,10 @@ const Funds = () => {
                 <p>
                   <strong>Exchange:</strong> {fund.exchange}
                 </p>
-                {fund.dividend_type !== 'none' && (
+                {fund.dividendType !== 'none' && (
                   <p>
                     <strong>Dividend Type:</strong>{' '}
-                    {fund.dividend_type === 'cash' ? (
+                    {fund.dividendType === 'cash' ? (
                       <>
                         <FontAwesomeIcon icon={faMoneyBill} /> Cash
                       </>
@@ -371,7 +371,7 @@ const Funds = () => {
           setErrorMessage('');
         }}
         title={
-          editingFund ? 'Edit Fund' : `Add ${newFund.investment_type === 'fund' ? 'Fund' : 'Stock'}`
+          editingFund ? 'Edit Fund' : `Add ${newFund.investmentType === 'fund' ? 'Fund' : 'Stock'}`
         }
         onSubmit={handleSubmit}
         loading={submitting}
@@ -395,7 +395,7 @@ const Funds = () => {
         <div className="form-field">
           <label className="field-label">Investment Type</label>
           <div className="static-field">
-            {editingFund?.investment_type === 'stock' || newFund.investment_type === 'stock'
+            {editingFund?.investmentType === 'stock' || newFund.investmentType === 'stock'
               ? 'Stock'
               : 'Fund'}
           </div>
@@ -405,7 +405,7 @@ const Funds = () => {
         <div className="form-field">
           <label className="field-label">
             ISIN{' '}
-            {(editingFund?.investment_type || newFund.investment_type) === 'stock'
+            {(editingFund?.investmentType || newFund.investmentType) === 'stock'
               ? '(optional)'
               : ''}
           </label>
@@ -413,12 +413,12 @@ const Funds = () => {
             type="text"
             value={editingFund?.isin || newFund.isin}
             onChange={handleIsinChange}
-            required={(editingFund?.investment_type || newFund.investment_type) === 'fund'}
+            required={(editingFund?.investmentType || newFund.investmentType) === 'fund'}
           />
         </div>
 
         {/* Show symbol group for funds, or stock-specific symbol for stocks */}
-        {(editingFund?.investment_type || newFund.investment_type) === 'fund' ? (
+        {(editingFund?.investmentType || newFund.investmentType) === 'fund' ? (
           <>
             <div className="form-field">
               <label className="field-label">Symbol (optional)</label>
@@ -506,12 +506,12 @@ const Funds = () => {
         <FormField
           label="Dividend Type"
           type="select"
-          value={editingFund?.dividend_type || newFund.dividend_type || 'none'}
+          value={editingFund?.dividendType || newFund.dividendType || 'none'}
           onChange={(value) => {
             if (editingFund) {
-              setEditingFund({ ...editingFund, dividend_type: value });
+              setEditingFund({ ...editingFund, dividendType: value });
             } else {
-              setNewFund({ ...newFund, dividend_type: value });
+              setNewFund({ ...newFund, dividendType: value });
             }
           }}
           options={[
