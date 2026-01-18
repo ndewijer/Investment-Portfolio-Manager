@@ -1256,7 +1256,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
               <option value="">Select a fund/stock...</option>
               {portfolioFunds.map((pf) => (
                 <option key={pf.id} value={pf.id}>
-                  {pf.fund_name}
+                  {pf.fundName}
                 </option>
               ))}
             </select>

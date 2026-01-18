@@ -327,19 +327,19 @@ class TestPortfolioFundManagement:
 
         # Verify details of our portfolio funds
         found_pf1 = next(pf for pf in result if pf["id"] == pf1.id)
-        assert found_pf1["portfolio_name"] == "Portfolio 1"
-        assert found_pf1["fund_name"] == "Fund 1"
+        assert found_pf1["portfolioName"] == "Portfolio 1"
+        assert found_pf1["fundName"] == "Fund 1"
 
         found_pf2 = next(pf for pf in result if pf["id"] == pf2.id)
-        assert found_pf2["portfolio_name"] == "Portfolio 2"
-        assert found_pf2["fund_name"] == "Fund 2"
+        assert found_pf2["portfolioName"] == "Portfolio 2"
+        assert found_pf2["fundName"] == "Fund 2"
 
         # Check structure
         pf1_data = next(pf for pf in result if pf["id"] == pf1.id)
-        assert pf1_data["portfolio_id"] == portfolio1.id
-        assert pf1_data["fund_id"] == fund1.id
-        assert pf1_data["portfolio_name"] == "Portfolio 1"
-        assert pf1_data["fund_name"] == "Fund 1"
+        assert pf1_data["portfolioId"] == portfolio1.id
+        assert pf1_data["fundId"] == fund1.id
+        assert pf1_data["portfolioName"] == "Portfolio 1"
+        assert pf1_data["fundName"] == "Fund 1"
 
     def test_delete_portfolio_fund_no_transactions(self, app_context, db_session):
         """Test deleting portfolio-fund with no associated transactions."""
@@ -652,17 +652,17 @@ class TestPortfolioCalculations:
         assert len(result) == 1
         pf_data = result[0]
         assert pf_data["id"] == pf.id
-        assert pf_data["fund_id"] == fund.id
-        assert pf_data["fund_name"] == "Test Fund"
-        assert pf_data["total_shares"] == 100
-        assert pf_data["latest_price"] == 12.0
-        assert pf_data["average_cost"] == 10.0
-        assert pf_data["total_cost"] == 1000.0
-        assert pf_data["current_value"] == 1200.0
-        assert pf_data["unrealized_gain_loss"] == 200.0
-        assert pf_data["realized_gain_loss"] == 0
-        assert pf_data["total_gain_loss"] == 200.0
-        assert pf_data["total_dividends"] == 0
+        assert pf_data["fundId"] == fund.id
+        assert pf_data["fundName"] == "Test Fund"
+        assert pf_data["totalShares"] == 100
+        assert pf_data["latestPrice"] == 12.0
+        assert pf_data["averageCost"] == 10.0
+        assert pf_data["totalCost"] == 1000.0
+        assert pf_data["currentValue"] == 1200.0
+        assert pf_data["unrealizedGainLoss"] == 200.0
+        assert pf_data["realizedGainLoss"] == 0
+        assert pf_data["totalGainLoss"] == 200.0
+        assert pf_data["totalDividends"] == 0
 
     def test_calculate_portfolio_fund_values_with_sell(self, app_context, db_session):
         """Test calculating values with buy and sell transactions."""
@@ -710,10 +710,10 @@ class TestPortfolioCalculations:
         # Verify calculations (70 shares remaining)
         assert len(result) == 1
         pf_data = result[0]
-        assert pf_data["total_shares"] == 70
-        assert pf_data["latest_price"] == 12.0
-        assert pf_data["total_cost"] == 700.0  # Proportional reduction
-        assert pf_data["current_value"] == 840.0
+        assert pf_data["totalShares"] == 70
+        assert pf_data["latestPrice"] == 12.0
+        assert pf_data["totalCost"] == 700.0  # Proportional reduction
+        assert pf_data["currentValue"] == 840.0
 
     def test_get_portfolio_funds(self, app_context, db_session):
         """Test getting portfolio funds for a specific portfolio."""
@@ -764,7 +764,7 @@ class TestPortfolioCalculations:
         # Verify results
         assert len(result) == 2
         assert all(isinstance(pf, dict) for pf in result)
-        fund_names = {pf["fund_name"] for pf in result}
+        fund_names = {pf["fundName"] for pf in result}
         assert "Fund 1" in fund_names
         assert "Fund 2" in fund_names
 
@@ -976,10 +976,10 @@ class TestEdgeCases:
         # Should return data with zero price
         assert len(result) == 1
         pf_data = result[0]
-        assert pf_data["total_shares"] == 100
-        assert pf_data["latest_price"] == 0
-        assert pf_data["current_value"] == 0
-        assert pf_data["total_cost"] == 1000.0
+        assert pf_data["totalShares"] == 100
+        assert pf_data["latestPrice"] == 0
+        assert pf_data["currentValue"] == 0
+        assert pf_data["totalCost"] == 1000.0
 
 
 class TestPortfolioHistoricalMethods:
@@ -1393,10 +1393,10 @@ class TestPortfolioHelperMethods:
         )
 
         # Should return simplified historical format
-        expected_keys = {"fund_id", "fund_name", "shares", "cost", "value", "price"}
+        expected_keys = {"fundId", "fundName", "shares", "cost", "value", "price"}
         assert set(result.keys()) == expected_keys
-        assert result["fund_id"] == fund.id
-        assert result["fund_name"] == "Test Fund"
+        assert result["fundId"] == fund.id
+        assert result["fundName"] == "Test Fund"
 
 
 class TestGetActivePortfolios:

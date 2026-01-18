@@ -84,27 +84,27 @@ describe('FundsTable Component', () => {
   const mockPortfolioFunds = [
     {
       id: 1,
-      fund_id: 101,
-      fund_name: 'Vanguard Total Stock Market ETF',
-      latest_price: 250.5,
-      total_shares: 100,
-      average_cost: 240.0,
-      total_cost: 24000,
-      current_value: 25050,
-      total_dividends: 500,
+      fundId: 101,
+      fundName: 'Vanguard Total Stock Market ETF',
+      latestPrice: 250.5,
+      totalShares: 100,
+      averageCost: 240.0,
+      totalCost: 24000,
+      currentValue: 25050,
+      totalDividends: 500,
       dividendType: 'cash',
       investmentType: 'fund',
     },
     {
       id: 2,
-      fund_id: 102,
-      fund_name: 'Apple Inc.',
-      latest_price: 175.25,
-      total_shares: 50,
-      average_cost: 170.0,
-      total_cost: 8500,
-      current_value: 8762.5,
-      total_dividends: 0,
+      fundId: 102,
+      fundName: 'Apple Inc.',
+      latestPrice: 175.25,
+      totalShares: 50,
+      averageCost: 170.0,
+      totalCost: 8500,
+      currentValue: 8762.5,
+      totalDividends: 0,
       dividendType: 'none',
       investmentType: 'stock',
     },
@@ -150,15 +150,15 @@ describe('FundsTable Component', () => {
       renderWithProviders(defaultProps);
 
       // European format uses commas for decimals
-      expect(screen.getByText(/250,50/)).toBeInTheDocument(); // latest_price
-      expect(screen.getByText(/240,00/)).toBeInTheDocument(); // average_cost
+      expect(screen.getByText(/250,50/)).toBeInTheDocument(); // latestPrice
+      expect(screen.getByText(/240,00/)).toBeInTheDocument(); // averageCost
     });
 
     test('renders formatted share numbers', () => {
       renderWithProviders(defaultProps);
 
       // European format uses commas for decimals in numbers
-      expect(screen.getByText(/100,000000/)).toBeInTheDocument(); // total_shares with 6 decimals
+      expect(screen.getByText(/100,000000/)).toBeInTheDocument(); // totalShares with 6 decimals
       expect(screen.getByText(/50,000000/)).toBeInTheDocument();
     });
 
@@ -216,7 +216,7 @@ describe('FundsTable Component', () => {
       expect(defaultProps.onAddDividend).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 1,
-          fund_name: 'Vanguard Total Stock Market ETF',
+          fundName: 'Vanguard Total Stock Market ETF',
         })
       );
     });
@@ -230,7 +230,7 @@ describe('FundsTable Component', () => {
       expect(defaultProps.onRemoveFund).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 1,
-          fund_name: 'Vanguard Total Stock Market ETF',
+          fundName: 'Vanguard Total Stock Market ETF',
         })
       );
     });
@@ -328,9 +328,9 @@ describe('FundsTable Component', () => {
       const fundsWithZeros = [
         {
           ...mockPortfolioFunds[0],
-          latest_price: 0,
-          total_shares: 0,
-          current_value: 0,
+          latestPrice: 0,
+          totalShares: 0,
+          currentValue: 0,
         },
       ];
 

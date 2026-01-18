@@ -178,25 +178,25 @@ class PortfolioService:
 
             return {
                 "id": portfolio_fund.id,
-                "fund_id": portfolio_fund.fund_id,
-                "fund_name": portfolio_fund.fund.name,
-                "total_shares": shares,
-                "latest_price": price_value,
-                "average_cost": cost / shares if shares > 0 else 0,
-                "total_cost": cost,
-                "current_value": current_value,
-                "unrealized_gain_loss": current_value - cost,
-                "realized_gain_loss": realized_gain_loss,
-                "total_gain_loss": realized_gain_loss + (current_value - cost),
-                "total_dividends": total_dividends,
-                "dividend_type": portfolio_fund.fund.dividend_type.value,
-                "investment_type": portfolio_fund.fund.investment_type.value,
+                "fundId": portfolio_fund.fund_id,
+                "fundName": portfolio_fund.fund.name,
+                "totalShares": shares,
+                "latestPrice": price_value,
+                "averageCost": cost / shares if shares > 0 else 0,
+                "totalCost": cost,
+                "currentValue": current_value,
+                "unrealizedGainLoss": current_value - cost,
+                "realizedGainLoss": realized_gain_loss,
+                "totalGainLoss": realized_gain_loss + (current_value - cost),
+                "totalDividends": total_dividends,
+                "dividendType": portfolio_fund.fund.dividend_type.value,
+                "investmentType": portfolio_fund.fund.investment_type.value,
             }
         else:
             # Historical calculation - simpler return
             return {
-                "fund_id": portfolio_fund.fund_id,
-                "fund_name": portfolio_fund.fund.name,
+                "fundId": portfolio_fund.fund_id,
+                "fundName": portfolio_fund.fund.name,
                 "shares": shares,
                 "cost": cost,
                 "value": current_value,
@@ -237,7 +237,7 @@ class PortfolioService:
             "id": portfolio.id,
             "name": portfolio.name,
             **totals,
-            "is_archived": portfolio.is_archived,
+            "isArchived": portfolio.is_archived,
         }
 
     @staticmethod
@@ -278,7 +278,7 @@ class PortfolioService:
                         all_dividends[pf_id] = []
                     all_dividends[pf_id].append(
                         {
-                            "ex_dividend_date": dividend.ex_dividend_date,
+                            "exDividendDate": dividend.ex_dividend_date,
                             "shares": dividend.shares or 0,
                         }
                     )
@@ -589,11 +589,11 @@ class PortfolioService:
         return [
             {
                 "id": pf.id,
-                "portfolio_id": pf.portfolio_id,
-                "fund_id": pf.fund_id,
-                "portfolio_name": pf.portfolio.name,
-                "fund_name": pf.fund.name,
-                "dividend_type": pf.fund.dividend_type.value,
+                "portfolioId": pf.portfolio_id,
+                "fundId": pf.fund_id,
+                "portfolioName": pf.portfolio.name,
+                "fundName": pf.fund.name,
+                "dividendType": pf.fund.dividend_type.value,
             }
             for pf in portfolio_funds
         ]

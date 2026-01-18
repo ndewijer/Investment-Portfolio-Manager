@@ -124,7 +124,7 @@ describe('useDividendManagement', () => {
 
   describe('Add Dividend Modal', () => {
     test('handleAddDividend fetches fund details and opens modal', async () => {
-      const mockFund = { id: 'pf-1', fund_id: 'fund-123' };
+      const mockFund = { id: 'pf-1', fundId: 'fund-123' };
       const mockFundData = { id: 'fund-123', name: 'Test Fund', dividend_type: 'cash' };
 
       api.get.mockResolvedValue({ data: mockFundData });
