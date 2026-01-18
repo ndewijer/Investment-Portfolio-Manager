@@ -1,21 +1,21 @@
-# PortfolioHistoryMaterializedService Test Suite Documentation
+# FundHistoryMaterializedService Test Suite Documentation
 
-**File**: `tests/services/test_portfolio_history_materialized_service.py`\
-**Service**: `app/services/portfolio_history_materialized_service.py`\
+**File**: `tests/services/test_fund_history_materialized_service.py`\
+**Service**: `app/services/fund_history_materialized_service.py`\
 **Tests**: 13 tests\
 **Coverage**: 79%\
 **Created**: Version 1.4.0 (Materialized View Implementation)\
-**Updated**: Initial implementation
+**Updated**: Version 1.5.0 (Fund-Level Materialized View Migration)
 
 ## Overview
 
-Comprehensive test suite for the PortfolioHistoryMaterializedService class, covering materialized view management, coverage checking, query routing, and automatic cache invalidation.
+Comprehensive test suite for the FundHistoryMaterializedService class, covering materialized view management, coverage checking, query routing, and automatic cache invalidation.
 
 ## Test Structure
 
 ### Test Classes
 
-#### TestPortfolioHistoryMaterializedService (13 tests)
+#### TestFundHistoryMaterializedService (13 tests)
 
 Tests materialized view operations:
 - `test_check_materialized_coverage_empty` - Coverage check with no portfolios
@@ -45,10 +45,10 @@ Tests use **Explicit Cleanup** approach:
 ```python
 def test_get_materialized_stats_empty(self, app, db_session):
     # Explicitly clean up any materialized data
-    PortfolioHistoryMaterialized.query.delete()
+    FundHistoryMaterialized.query.delete()
     db.session.commit()
 
-    stats = PortfolioHistoryMaterializedService.get_materialized_stats()
+    stats = FundHistoryMaterializedService.get_materialized_stats()
 
     assert stats["total_records"] == 0
     assert stats["portfolios_with_data"] == 0
@@ -145,7 +145,7 @@ def cash_dividend_fund(app_context):
 
 ### Materialized Record Creation
 ```python
-record = PortfolioHistoryMaterialized(
+record = FundHistoryMaterialized(
     portfolio_id=sample_portfolio.id,
     date="2024-01-01",
     value=1000.0,
@@ -187,7 +187,7 @@ The test suite validates the performance optimization:
 ## Integration Points
 
 ### Database Schema
-- New `portfolio_history_materialized` table with indexes
+- New `fund_history_materialized` table with indexes
 - Foreign key to `portfolio` table with CASCADE delete
 - Unique constraint on (portfolio_id, date)
 
@@ -253,7 +253,7 @@ Tests validate automatic invalidation on:
 
 ## Dependencies
 
-- **Models**: Portfolio, PortfolioHistoryMaterialized, PortfolioFund, Transaction
+- **Models**: Portfolio, FundHistoryMaterialized, PortfolioFund, Transaction
 - **Services**: PortfolioService (for on-demand calculation)
 - **Fixtures**: sample_portfolio, cash_dividend_fund, db_session
 - **External**: None (uses test database)
@@ -296,5 +296,5 @@ The comprehensive test coverage provides confidence in the materialized view imp
 
 ---
 
-**Last Updated**: 2026-01-13 (Version 1.4.1)
+**Last Updated**: 2026-01-18 (Version 1.5.0)
 **Maintained By**: @ndewijer

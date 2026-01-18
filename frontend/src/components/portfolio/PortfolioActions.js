@@ -224,11 +224,11 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
         <div className="form-group">
           <label>Dividend Type:</label>
           <div className="static-field">
-            {selectedFund?.dividend_type === 'stock' ? (
+            {selectedFund?.dividendType === 'stock' ? (
               <>
                 <FontAwesomeIcon icon={faChartLine} /> Stock Dividend
               </>
-            ) : selectedFund?.dividend_type === 'cash' ? (
+            ) : selectedFund?.dividendType === 'cash' ? (
               <>
                 <FontAwesomeIcon icon={faMoneyBill} /> Cash Dividend
               </>
@@ -279,7 +279,7 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
             required
           />
         </div>
-        {selectedFund?.dividend_type === 'stock' && (
+        {selectedFund?.dividendType === 'stock' && (
           <div className="reinvestment-fields">
             <h3>Reinvestment Details</h3>
             <div className="form-group">
@@ -390,7 +390,7 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
                 required
               />
             </div>
-            {selectedFund?.dividend_type === 'stock' && (
+            {selectedFund?.dividendType === 'stock' && (
               <div className="reinvestment-fields">
                 <h3>Reinvestment Details</h3>
                 <div className="form-group">

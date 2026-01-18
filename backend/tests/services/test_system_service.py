@@ -195,6 +195,7 @@ class TestSystemService:
             "realized_gain_loss": False,
             "ibkr_integration": False,
             "materialized_view_performance": False,
+            "fund_level_materialized_view": False,
         }
         assert features == expected_features
 
@@ -207,6 +208,7 @@ class TestSystemService:
             "realized_gain_loss": False,
             "ibkr_integration": False,
             "materialized_view_performance": False,
+            "fund_level_materialized_view": False,
         }
         assert features == expected_features
 
@@ -219,6 +221,7 @@ class TestSystemService:
             "realized_gain_loss": False,  # Added in 1.1.1
             "ibkr_integration": False,
             "materialized_view_performance": False,
+            "fund_level_materialized_view": False,
         }
         assert features == expected_features
 
@@ -231,6 +234,7 @@ class TestSystemService:
             "realized_gain_loss": True,
             "ibkr_integration": False,
             "materialized_view_performance": False,
+            "fund_level_materialized_view": False,
         }
         assert features == expected_features
 
@@ -243,6 +247,7 @@ class TestSystemService:
             "realized_gain_loss": True,
             "ibkr_integration": True,
             "materialized_view_performance": False,
+            "fund_level_materialized_view": False,
         }
         assert features == expected_features
 
@@ -255,6 +260,7 @@ class TestSystemService:
             "realized_gain_loss": True,
             "ibkr_integration": True,
             "materialized_view_performance": True,  # 1.4.0+
+            "fund_level_materialized_view": True,  # 1.5.0+
         }
         assert features == expected_features
 
@@ -267,6 +273,7 @@ class TestSystemService:
             "realized_gain_loss": True,
             "ibkr_integration": True,
             "materialized_view_performance": True,  # 1.4.0+
+            "fund_level_materialized_view": True,  # 1.5.0+
         }
         assert features == expected_features
 
@@ -280,6 +287,7 @@ class TestSystemService:
             "realized_gain_loss": False,
             "ibkr_integration": False,
             "materialized_view_performance": False,
+            "fund_level_materialized_view": False,
         }
         assert features == expected_features
 
@@ -292,6 +300,7 @@ class TestSystemService:
             "realized_gain_loss": True,
             "ibkr_integration": True,
             "materialized_view_performance": True,
+            "fund_level_materialized_view": True,
         }
         assert features == expected_features
 
@@ -333,6 +342,7 @@ class TestSystemService:
             "realized_gain_loss": True,
             "ibkr_integration": True,
             "materialized_view_performance": True,  # 1.4.0+
+            "fund_level_materialized_view": True,  # 1.5.0+
         }
         assert version_info["features"] == expected_features
 

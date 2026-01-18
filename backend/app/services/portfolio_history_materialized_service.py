@@ -2,14 +2,21 @@
 Service for managing portfolio history materialized views.
 
 This service handles the creation, querying, and invalidation of pre-calculated
-portfolio history data stored in the portfolio_history_materialized table.
+fund-level history data stored in the fund_history_materialized table.
+
+The fund-level data is aggregated on-the-fly to provide portfolio-level views,
+eliminating data duplication while maintaining query flexibility.
 """
 
 from datetime import date, datetime
 
+from sqlalchemy import func
+
 from ..models import (
+    FundHistoryMaterialized,
     Portfolio,
-    PortfolioHistoryMaterialized,
+    PortfolioFund,
+    RealizedGainLoss,
     db,
 )
 from .portfolio_service import PortfolioService
@@ -45,8 +52,8 @@ class PortfolioHistoryMaterializedService:
 
     Provides methods for:
     - Checking coverage of materialized data
-    - Querying materialized history
-    - Materializing new data
+    - Querying materialized history (aggregated from fund-level data)
+    - Materializing new data at fund level
     - Invalidating cached data
     """
 
@@ -56,6 +63,8 @@ class PortfolioHistoryMaterializedService:
     ) -> MaterializedCoverage:
         """
         Check if the requested date range is fully materialized for the given portfolios.
+
+        Now checks fund-level data coverage instead of portfolio-level.
 
         Args:
             portfolio_ids: List of portfolio IDs to check
@@ -68,23 +77,36 @@ class PortfolioHistoryMaterializedService:
         if not portfolio_ids:
             return MaterializedCoverage(is_complete=True)
 
+        # Get all portfolio_fund IDs for these portfolios
+        portfolio_fund_ids = (
+            db.session.query(PortfolioFund.id)
+            .filter(PortfolioFund.portfolio_id.in_(portfolio_ids))
+            .all()
+        )
+        portfolio_fund_ids = [pf[0] for pf in portfolio_fund_ids]
+
+        if not portfolio_fund_ids:
+            # No funds in these portfolios, consider it complete (nothing to materialize)
+            return MaterializedCoverage(is_complete=True)
+
         # Query for existing materialized records in the date range
+        # We need at least one record per portfolio_fund per day
         existing_records = (
             db.session.query(
-                PortfolioHistoryMaterialized.portfolio_id,
-                PortfolioHistoryMaterialized.date,
+                FundHistoryMaterialized.portfolio_fund_id,
+                FundHistoryMaterialized.date,
             )
             .filter(
-                PortfolioHistoryMaterialized.portfolio_id.in_(portfolio_ids),
-                PortfolioHistoryMaterialized.date >= start_date.isoformat(),
-                PortfolioHistoryMaterialized.date <= end_date.isoformat(),
+                FundHistoryMaterialized.portfolio_fund_id.in_(portfolio_fund_ids),
+                FundHistoryMaterialized.date >= start_date.isoformat(),
+                FundHistoryMaterialized.date <= end_date.isoformat(),
             )
             .all()
         )
 
-        # Calculate expected number of records (days * portfolios)
+        # Calculate expected number of records (days * portfolio_funds)
         days_in_range = (end_date - start_date).days + 1
-        expected_total = days_in_range * len(portfolio_ids)
+        expected_total = days_in_range * len(portfolio_fund_ids)
         actual_total = len(existing_records)
 
         if actual_total == 0:
@@ -114,7 +136,7 @@ class PortfolioHistoryMaterializedService:
         portfolio_ids: list[str], start_date: date, end_date: date
     ) -> list[dict]:
         """
-        Get materialized portfolio history from the cache.
+        Get materialized portfolio history by aggregating fund-level data.
 
         Args:
             portfolio_ids: List of portfolio IDs
@@ -124,40 +146,102 @@ class PortfolioHistoryMaterializedService:
         Returns:
             List of daily portfolio values in the same format as get_portfolio_history
         """
-        # Query materialized data
+        # Aggregate fund-level data to portfolio level using SQL
         records = (
-            PortfolioHistoryMaterialized.query.filter(
-                PortfolioHistoryMaterialized.portfolio_id.in_(portfolio_ids),
-                PortfolioHistoryMaterialized.date >= start_date.isoformat(),
-                PortfolioHistoryMaterialized.date <= end_date.isoformat(),
+            db.session.query(
+                FundHistoryMaterialized.date,
+                PortfolioFund.portfolio_id,
+                func.sum(FundHistoryMaterialized.value).label("total_value"),
+                func.sum(FundHistoryMaterialized.cost).label("total_cost"),
+                func.sum(FundHistoryMaterialized.realized_gain).label("total_realized_gain"),
+                func.sum(FundHistoryMaterialized.unrealized_gain).label("total_unrealized_gain"),
+                func.sum(FundHistoryMaterialized.total_gain_loss).label("total_gain_loss"),
+                func.sum(FundHistoryMaterialized.dividends).label("total_dividends"),
+                func.sum(FundHistoryMaterialized.fees).label("total_fees"),
             )
-            .order_by(PortfolioHistoryMaterialized.date.asc())
+            .join(PortfolioFund, FundHistoryMaterialized.portfolio_fund_id == PortfolioFund.id)
+            .filter(
+                PortfolioFund.portfolio_id.in_(portfolio_ids),
+                FundHistoryMaterialized.date >= start_date.isoformat(),
+                FundHistoryMaterialized.date <= end_date.isoformat(),
+            )
+            .group_by(FundHistoryMaterialized.date, PortfolioFund.portfolio_id)
+            .order_by(FundHistoryMaterialized.date.asc())
             .all()
         )
+
+        # Get portfolio metadata
+        portfolios = {
+            p.id: p for p in Portfolio.query.filter(Portfolio.id.in_(portfolio_ids)).all()
+        }
+
+        # Get realized gain details for sale proceeds and original cost
+        # (these are not stored in fund_history_materialized)
+        realized_gain_records = RealizedGainLoss.query.filter(
+            RealizedGainLoss.portfolio_id.in_(portfolio_ids),
+            RealizedGainLoss.transaction_date >= start_date,
+            RealizedGainLoss.transaction_date <= end_date,
+        ).all()
+
+        # Build lookup for realized gains by portfolio and date
+        realized_by_portfolio_date = {}
+        for rg in realized_gain_records:
+            key = (
+                rg.portfolio_id,
+                rg.transaction_date.isoformat()
+                if hasattr(rg.transaction_date, "isoformat")
+                else str(rg.transaction_date),
+            )
+            if key not in realized_by_portfolio_date:
+                realized_by_portfolio_date[key] = {"sale_proceeds": 0, "original_cost": 0}
+            realized_by_portfolio_date[key]["sale_proceeds"] += rg.sale_proceeds
+            realized_by_portfolio_date[key]["original_cost"] += rg.cost_basis
+
+        # Build cumulative totals for sale proceeds and original cost
+        cumulative_by_portfolio = {
+            pid: {"sale_proceeds": 0, "original_cost": 0} for pid in portfolio_ids
+        }
 
         # Group by date
         history_by_date = {}
         for record in records:
-            if record.date not in history_by_date:
-                history_by_date[record.date] = {"date": record.date, "portfolios": []}
+            date_str = record.date
+            portfolio_id = record.portfolio_id
 
-            # Get portfolio name
-            portfolio = db.session.get(Portfolio, record.portfolio_id)
-            portfolio_name = portfolio.name if portfolio else "Unknown"
+            if date_str not in history_by_date:
+                history_by_date[date_str] = {"date": date_str, "portfolios": []}
 
-            history_by_date[record.date]["portfolios"].append(
+            portfolio = portfolios.get(portfolio_id)
+            if not portfolio:
+                continue
+
+            # Add any realized gains from this date to cumulative totals
+            key = (portfolio_id, date_str)
+            if key in realized_by_portfolio_date:
+                cumulative_by_portfolio[portfolio_id]["sale_proceeds"] += (
+                    realized_by_portfolio_date[key]["sale_proceeds"]
+                )
+                cumulative_by_portfolio[portfolio_id]["original_cost"] += (
+                    realized_by_portfolio_date[key]["original_cost"]
+                )
+
+            history_by_date[date_str]["portfolios"].append(
                 {
-                    "id": record.portfolio_id,
-                    "name": portfolio_name,
-                    "totalValue": round(record.value, 6),
-                    "totalCost": round(record.cost, 6),
-                    "totalRealizedGainLoss": round(record.realized_gain, 6),
-                    "totalUnrealizedGainLoss": round(record.unrealized_gain, 6),
-                    "totalDividends": round(record.total_dividends, 6),
-                    "totalSaleProceeds": round(record.total_sale_proceeds, 6),
-                    "totalOriginalCost": round(record.total_original_cost, 6),
-                    "totalGainLoss": round(record.total_gain_loss, 6),
-                    "isArchived": record.is_archived,
+                    "id": portfolio_id,
+                    "name": portfolio.name,
+                    "totalValue": round(record.total_value or 0, 6),
+                    "totalCost": round(record.total_cost or 0, 6),
+                    "totalRealizedGainLoss": round(record.total_realized_gain or 0, 6),
+                    "totalUnrealizedGainLoss": round(record.total_unrealized_gain or 0, 6),
+                    "totalDividends": round(record.total_dividends or 0, 6),
+                    "totalSaleProceeds": round(
+                        cumulative_by_portfolio[portfolio_id]["sale_proceeds"], 6
+                    ),
+                    "totalOriginalCost": round(
+                        cumulative_by_portfolio[portfolio_id]["original_cost"], 6
+                    ),
+                    "totalGainLoss": round(record.total_gain_loss or 0, 6),
+                    "isArchived": portfolio.is_archived,
                 }
             )
 
@@ -172,7 +256,7 @@ class PortfolioHistoryMaterializedService:
         force_recalculate: bool = False,
     ) -> int:
         """
-        Calculate and store portfolio history in the materialized view.
+        Calculate and store fund-level history in the materialized view.
 
         Args:
             portfolio_id: Portfolio ID to materialize
@@ -181,19 +265,25 @@ class PortfolioHistoryMaterializedService:
             force_recalculate: If True, recalculate even if data exists
 
         Returns:
-            Number of records materialized
+            Number of fund records materialized
         """
+        from ..models import Transaction
 
         # Get portfolio
         portfolio = db.session.get(Portfolio, portfolio_id)
         if not portfolio:
             raise ValueError(f"Portfolio {portfolio_id} not found")
 
+        # Get portfolio funds
+        portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
+        if not portfolio_funds:
+            return 0
+
+        portfolio_fund_ids = [pf.id for pf in portfolio_funds]
+
         # Determine date range
         if start_date is None:
             # Find first transaction date
-            from ..models import PortfolioFund, Transaction
-
             earliest_tx = (
                 Transaction.query.join(PortfolioFund)
                 .filter(PortfolioFund.portfolio_id == portfolio_id)
@@ -207,66 +297,117 @@ class PortfolioHistoryMaterializedService:
         if end_date is None:
             end_date = datetime.now().date()
 
-        # If not force recalculate, delete only missing ranges
+        # If force recalculate, delete existing records in this range
         if force_recalculate:
-            # Delete existing records in this range
-            PortfolioHistoryMaterialized.query.filter(
-                PortfolioHistoryMaterialized.portfolio_id == portfolio_id,
-                PortfolioHistoryMaterialized.date >= start_date.isoformat(),
-                PortfolioHistoryMaterialized.date <= end_date.isoformat(),
+            FundHistoryMaterialized.query.filter(
+                FundHistoryMaterialized.portfolio_fund_id.in_(portfolio_fund_ids),
+                FundHistoryMaterialized.date >= start_date.isoformat(),
+                FundHistoryMaterialized.date <= end_date.isoformat(),
             ).delete(synchronize_session=False)
             db.session.commit()
 
-        # Calculate history using existing service (internal method)
-        # We call the internal _get_portfolio_history_on_demand method directly
-        # to get snake_case data (internal format) and avoid recursion issues.
-        # Include hidden (exclude_from_overview=True) portfolios but not archived ones
-        history = PortfolioService._get_portfolio_history_on_demand(
-            start_date=start_date.isoformat(), end_date=end_date.isoformat(), include_excluded=True
+        # Calculate fund history using existing service
+        fund_history = PortfolioService.get_portfolio_fund_history(
+            portfolio_id,
+            start_date=start_date.isoformat(),
+            end_date=end_date.isoformat(),
         )
 
-        # Filter to only this portfolio's data and insert into materialized view
+        # Get realized gains for each fund
+        realized_gains_by_fund = {}
+        realized_records = RealizedGainLoss.query.filter_by(portfolio_id=portfolio_id).all()
+        for rg in realized_records:
+            if rg.fund_id not in realized_gains_by_fund:
+                realized_gains_by_fund[rg.fund_id] = []
+            realized_gains_by_fund[rg.fund_id].append(rg)
+
+        # Get dividends for each portfolio fund
+        from ..models import Dividend
+
+        dividends_by_pf = {}
+        dividends = Dividend.query.filter(Dividend.portfolio_fund_id.in_(portfolio_fund_ids)).all()
+        for d in dividends:
+            if d.portfolio_fund_id not in dividends_by_pf:
+                dividends_by_pf[d.portfolio_fund_id] = []
+            dividends_by_pf[d.portfolio_fund_id].append(d)
+
+        # Insert fund-level records
         records_inserted = 0
-        for daily_data in history:
+        for daily_data in fund_history:
             date_str = daily_data["date"]
-            for portfolio_data in daily_data["portfolios"]:
-                if portfolio_data["id"] != portfolio_id:
-                    continue
+
+            for fund_data in daily_data.get("funds", []):
+                portfolio_fund_id = fund_data["portfolioFundId"]
+                fund_id = fund_data["fundId"]
 
                 # Check if record already exists
-                existing = PortfolioHistoryMaterialized.query.filter_by(
-                    portfolio_id=portfolio_id, date=date_str
+                existing = FundHistoryMaterialized.query.filter_by(
+                    portfolio_fund_id=portfolio_fund_id, date=date_str
                 ).first()
 
                 if existing and not force_recalculate:
                     continue
 
+                # Calculate cumulative realized gains for this fund up to this date
+                realized_gain = 0
+                if fund_id in realized_gains_by_fund:
+                    for rg in realized_gains_by_fund[fund_id]:
+                        rg_date = (
+                            rg.transaction_date.isoformat()
+                            if hasattr(rg.transaction_date, "isoformat")
+                            else str(rg.transaction_date)
+                        )
+                        if rg_date <= date_str:
+                            realized_gain += rg.realized_gain_loss
+
+                # Calculate cumulative dividends for this fund up to this date
+                total_dividends = 0
+                if portfolio_fund_id in dividends_by_pf:
+                    for d in dividends_by_pf[portfolio_fund_id]:
+                        d_date = (
+                            d.ex_dividend_date.isoformat()
+                            if hasattr(d.ex_dividend_date, "isoformat")
+                            else str(d.ex_dividend_date)
+                        )
+                        if d_date <= date_str:
+                            total_dividends += d.total_amount
+
+                # Calculate unrealized gain
+                unrealized_gain = fund_data.get(
+                    "unrealizedGain", fund_data["value"] - fund_data["cost"]
+                )
+
+                # Calculate total gain/loss
+                total_gain_loss = realized_gain + unrealized_gain
+
                 if existing:
-                    # Update existing record (accessing snake_case keys)
-                    existing.value = portfolio_data["value"]
-                    existing.cost = portfolio_data["cost"]
-                    existing.realized_gain = portfolio_data["realized_gain"]
-                    existing.unrealized_gain = portfolio_data["unrealized_gain"]
-                    existing.total_dividends = portfolio_data["total_dividends"]
-                    existing.total_sale_proceeds = portfolio_data["total_sale_proceeds"]
-                    existing.total_original_cost = portfolio_data["total_original_cost"]
-                    existing.total_gain_loss = portfolio_data["total_gain_loss"]
-                    existing.is_archived = portfolio_data["is_archived"]
+                    # Update existing record
+                    existing.fund_id = fund_id
+                    existing.shares = fund_data["shares"]
+                    existing.price = fund_data["price"]
+                    existing.value = fund_data["value"]
+                    existing.cost = fund_data["cost"]
+                    existing.realized_gain = realized_gain
+                    existing.unrealized_gain = unrealized_gain
+                    existing.total_gain_loss = total_gain_loss
+                    existing.dividends = total_dividends
+                    existing.fees = 0  # Fees can be added later if needed
                     existing.calculated_at = datetime.now()
                 else:
-                    # Create new record (accessing snake_case keys)
-                    record = PortfolioHistoryMaterialized(
-                        portfolio_id=portfolio_id,
+                    # Create new record
+                    record = FundHistoryMaterialized(
+                        portfolio_fund_id=portfolio_fund_id,
+                        fund_id=fund_id,
                         date=date_str,
-                        value=portfolio_data["value"],
-                        cost=portfolio_data["cost"],
-                        realized_gain=portfolio_data["realized_gain"],
-                        unrealized_gain=portfolio_data["unrealized_gain"],
-                        total_dividends=portfolio_data["total_dividends"],
-                        total_sale_proceeds=portfolio_data["total_sale_proceeds"],
-                        total_original_cost=portfolio_data["total_original_cost"],
-                        total_gain_loss=portfolio_data["total_gain_loss"],
-                        is_archived=portfolio_data["is_archived"],
+                        shares=fund_data["shares"],
+                        price=fund_data["price"],
+                        value=fund_data["value"],
+                        cost=fund_data["cost"],
+                        realized_gain=realized_gain,
+                        unrealized_gain=unrealized_gain,
+                        total_gain_loss=total_gain_loss,
+                        dividends=total_dividends,
+                        fees=0,
                     )
                     db.session.add(record)
 
@@ -293,9 +434,17 @@ class PortfolioHistoryMaterializedService:
         Returns:
             Number of records deleted
         """
-        deleted = PortfolioHistoryMaterialized.query.filter(
-            PortfolioHistoryMaterialized.portfolio_id == portfolio_id,
-            PortfolioHistoryMaterialized.date >= from_date.isoformat(),
+        # Get portfolio fund IDs for this portfolio
+        portfolio_fund_ids = [
+            pf.id for pf in PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
+        ]
+
+        if not portfolio_fund_ids:
+            return 0
+
+        deleted = FundHistoryMaterialized.query.filter(
+            FundHistoryMaterialized.portfolio_fund_id.in_(portfolio_fund_ids),
+            FundHistoryMaterialized.date >= from_date.isoformat(),
         ).delete(synchronize_session=False)
 
         db.session.commit()
@@ -369,7 +518,6 @@ class PortfolioHistoryMaterializedService:
         """
         # Get portfolio_id from the dividend
         portfolio_fund_id = dividend.portfolio_fund_id
-        from ..models import PortfolioFund
 
         portfolio_fund = db.session.get(PortfolioFund, portfolio_fund_id)
         if not portfolio_fund:
@@ -394,8 +542,6 @@ class PortfolioHistoryMaterializedService:
         Returns:
             Total number of records deleted
         """
-        from ..models import PortfolioFund
-
         # Find all portfolios holding this fund
         portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
 
@@ -416,22 +562,33 @@ class PortfolioHistoryMaterializedService:
         Returns:
             Dictionary with statistics
         """
-        total_records = PortfolioHistoryMaterialized.query.count()
+        total_records = FundHistoryMaterialized.query.count()
+
+        # Get unique portfolio funds with data
+        portfolio_funds_with_data = (
+            db.session.query(FundHistoryMaterialized.portfolio_fund_id).distinct().count()
+        )
+
+        # Get unique portfolios with data
         portfolios_with_data = (
-            db.session.query(PortfolioHistoryMaterialized.portfolio_id).distinct().count()
+            db.session.query(PortfolioFund.portfolio_id)
+            .join(
+                FundHistoryMaterialized,
+                PortfolioFund.id == FundHistoryMaterialized.portfolio_fund_id,
+            )
+            .distinct()
+            .count()
         )
 
         # Get date range
         if total_records > 0:
             oldest = (
-                PortfolioHistoryMaterialized.query.order_by(PortfolioHistoryMaterialized.date.asc())
+                FundHistoryMaterialized.query.order_by(FundHistoryMaterialized.date.asc())
                 .first()
                 .date
             )
             newest = (
-                PortfolioHistoryMaterialized.query.order_by(
-                    PortfolioHistoryMaterialized.date.desc()
-                )
+                FundHistoryMaterialized.query.order_by(FundHistoryMaterialized.date.desc())
                 .first()
                 .date
             )
@@ -441,6 +598,7 @@ class PortfolioHistoryMaterializedService:
 
         return {
             "total_records": total_records,
+            "portfolio_funds_with_data": portfolio_funds_with_data,
             "portfolios_with_data": portfolios_with_data,
             "oldest_date": oldest,
             "newest_date": newest,

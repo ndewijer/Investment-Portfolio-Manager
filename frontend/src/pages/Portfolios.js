@@ -140,7 +140,7 @@ const Portfolios = () => {
               <ActionButton variant="danger" onClick={() => handleDelete(portfolio.id)}>
                 Delete
               </ActionButton>
-              {portfolio.is_archived ? (
+              {portfolio.isArchived ? (
                 <ActionButton variant="info" onClick={() => handleUnarchive(portfolio.id)}>
                   Unarchive
                 </ActionButton>

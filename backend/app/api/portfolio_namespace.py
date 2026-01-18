@@ -196,7 +196,7 @@ class Portfolio(Resource):
                 "id": portfolio.id,
                 "name": portfolio.name,
                 "description": portfolio.description,
-                "is_archived": portfolio.is_archived,
+                "isArchived": portfolio.is_archived,
                 "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
                 "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
                 "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
@@ -476,33 +476,23 @@ class PortfolioHistory(Resource):
             return {"error": str(e)}, 500
 
 
-@ns.route("/funds")
+@ns.route("/funds/<string:portfolio_id>")
+@ns.param("portfolio_id", "Portfolio ID")
 class PortfolioFundsList(Resource):
     """Portfolio-fund relationships endpoint."""
 
     @ns.doc("get_portfolio_funds")
-    @ns.param("portfolio_id", "Filter by portfolio ID", _in="query")
     @ns.response(200, "Success")
     @ns.response(500, "Server error", error_model)
-    def get(self):
+    def get(self, portfolio_id):
         """
-        Get portfolio-fund relationships.
+        Get portfolio-fund relationships for a specific portfolio.
 
-        Returns all portfolio-fund relationships, optionally filtered by portfolio.
-
-        Query Parameters:
-        - portfolio_id: Filter relationships for a specific portfolio
-
-        Each relationship represents a fund held in a portfolio.
+        Returns all portfolio-fund relationships filtered by portfolio ID.
+        Each relationship represents a fund held in the portfolio.
         """
         try:
-            portfolio_id = request.args.get("portfolio_id")
-
-            if portfolio_id:
-                portfolio_funds = PortfolioService.get_portfolio_funds(portfolio_id)
-            else:
-                portfolio_funds = PortfolioService.get_all_portfolio_funds()
-
+            portfolio_funds = PortfolioService.get_portfolio_funds(portfolio_id)
             return portfolio_funds, 200
         except HTTPException:
             raise
@@ -511,6 +501,35 @@ class PortfolioFundsList(Resource):
                 level=LogLevel.ERROR,
                 category=LogCategory.PORTFOLIO,
                 message="Error retrieving portfolio funds",
+                details={"error": str(e)},
+            )
+            return {"error": str(e)}, 500
+
+
+@ns.route("/funds")
+class PortfolioFundsCreate(Resource):
+    """Portfolio-fund relationships endpoint."""
+
+    @ns.doc("get_all_portfolio_funds")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
+    def get(self):
+        """
+        Get all portfolio-fund relationships.
+
+        Returns all portfolio-fund relationships across all portfolios.
+        Each relationship represents a fund held in a portfolio.
+        """
+        try:
+            portfolio_funds = PortfolioService.get_all_portfolio_funds()
+            return portfolio_funds, 200
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.PORTFOLIO,
+                message="Error retrieving all portfolio funds",
                 details={"error": str(e)},
             )
             return {"error": str(e)}, 500
@@ -626,43 +645,5 @@ class PortfolioFundDetail(Resource):
             return {"error": "Error deleting fund from portfolio"}, 400
 
 
-@ns.route("/<string:portfolio_id>/fund-history")
-@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
-class PortfolioFundHistory(Resource):
-    """Portfolio fund history endpoint."""
-
-    @ns.doc("get_portfolio_fund_history")
-    @ns.param("start_date", "Start date (YYYY-MM-DD)", _in="query")
-    @ns.param("end_date", "End date (YYYY-MM-DD)", _in="query")
-    @ns.response(200, "Success")
-    @ns.response(500, "Server error", error_model)
-    def get(self, portfolio_id):
-        """
-        Get historical fund values for a portfolio.
-
-        Returns time-series data showing individual fund values
-        within a portfolio over time.
-
-        Query Parameters:
-        - start_date: Start date for historical data (YYYY-MM-DD)
-        - end_date: End date for historical data (YYYY-MM-DD)
-
-        Useful for analyzing individual fund performance within a portfolio.
-        """
-        try:
-            start_date = request.args.get("start_date")
-            end_date = request.args.get("end_date")
-
-            return PortfolioService.get_portfolio_fund_history(
-                portfolio_id, start_date, end_date
-            ), 200
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.log(
-                level=LogLevel.ERROR,
-                category=LogCategory.PORTFOLIO,
-                message=f"Error retrieving fund history for portfolio {portfolio_id}",
-                details={"error": str(e)},
-            )
-            return {"error": str(e)}, 500
+# NOTE: The /fund-history endpoint has been moved to /api/fund/history/<portfolio_id>
+# See fund_namespace.py for the new implementation using fund_history_materialized table

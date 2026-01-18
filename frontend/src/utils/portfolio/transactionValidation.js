@@ -82,7 +82,7 @@ export const validateTransaction = (transaction) => {
  * @param {number} [dividend.reinvestment_shares] - Reinvestment shares (for stock dividends)
  * @param {number} [dividend.reinvestment_price] - Reinvestment price (for stock dividends)
  * @param {Object} selectedFund - Selected fund data
- * @param {string} [selectedFund.dividend_type] - Dividend type ('stock' or 'cash')
+ * @param {string} [selectedFund.dividendType] - Dividend type ('stock' or 'cash')
  * @returns {Object} - Validation result with isValid and errors
  * @returns {boolean} returns.isValid - Whether the dividend is valid
  * @returns {Array<string>} returns.errors - Array of error messages
@@ -93,7 +93,7 @@ export const validateTransaction = (transaction) => {
  *   record_date: '2024-01-15',
  *   ex_dividend_date: '2024-01-10',
  *   dividend_per_share: 2.50
- * }, { dividend_type: 'cash' });
+ * }, { dividendType: 'cash' });
  * // Returns: { isValid: true, errors: [] }
  *
  * @example
@@ -103,7 +103,7 @@ export const validateTransaction = (transaction) => {
  *   ex_dividend_date: '2024-01-10',
  *   dividend_per_share: 2.50,
  *   buy_order_date: '2024-01-01'
- * }, { dividend_type: 'stock' });
+ * }, { dividendType: 'stock' });
  * // Returns: {
  * //   isValid: false,
  * //   errors: [
@@ -132,7 +132,7 @@ export const validateDividend = (dividend, selectedFund) => {
   }
 
   // Stock dividend specific validations
-  if (selectedFund?.dividend_type === 'stock') {
+  if (selectedFund?.dividendType === 'stock') {
     if (!dividend.buy_order_date) {
       errors.push('Buy order date is required for stock dividends');
     }

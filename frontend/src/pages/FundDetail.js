@@ -224,11 +224,11 @@ const FundDetail = () => {
               <label>Exchange:</label>
               <span>{fund.exchange}</span>
             </div>
-            {fund.dividend_type !== 'none' && (
+            {fund.dividendType !== 'none' && (
               <div className="info-item">
                 <label>Dividend Type:</label>
                 <span>
-                  {fund.dividend_type === 'cash' ? (
+                  {fund.dividendType === 'cash' ? (
                     <>
                       <FontAwesomeIcon icon={faMoneyBill} /> Cash
                     </>
