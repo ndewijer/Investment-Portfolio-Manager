@@ -1167,8 +1167,8 @@ class TestPortfolioHistoricalMethods:
 
         # Should have our fund
         fund_data = day_result["funds"][0]
-        assert fund_data["fund_id"] == fund.id
-        assert fund_data["fund_name"] == "Test Fund"
+        assert fund_data["fundId"] == fund.id
+        assert fund_data["fundName"] == "Test Fund"
         assert fund_data["shares"] == 100.0
         assert fund_data["cost"] == 1000.0
         assert fund_data["value"] == 1200.0  # 100 * 12

@@ -224,15 +224,15 @@ class TestPortfolioHistoryCorrectness:
             # If there are fund entries, check their structure
             if len(first_day["funds"]) > 0:
                 fund = first_day["funds"][0]
-                assert "portfolio_fund_id" in fund
-                assert "fund_id" in fund
-                assert "fund_name" in fund
+                assert "portfolioFundId" in fund
+                assert "fundId" in fund
+                assert "fundName" in fund
                 assert "value" in fund
                 assert "cost" in fund
                 assert "shares" in fund
                 assert "price" in fund
-                assert "realized_gain" in fund
-                assert "unrealized_gain" in fund
+                assert "realizedGain" in fund
+                assert "unrealizedGain" in fund
 
     def test_date_range_filtering(self, app_context):
         """Verify that date range parameters are respected."""

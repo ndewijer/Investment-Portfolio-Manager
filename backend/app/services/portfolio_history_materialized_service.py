@@ -337,8 +337,8 @@ class PortfolioHistoryMaterializedService:
             date_str = daily_data["date"]
 
             for fund_data in daily_data.get("funds", []):
-                portfolio_fund_id = fund_data["portfolio_fund_id"]
-                fund_id = fund_data["fund_id"]
+                portfolio_fund_id = fund_data["portfolioFundId"]
+                fund_id = fund_data["fundId"]
 
                 # Check if record already exists
                 existing = FundHistoryMaterialized.query.filter_by(
@@ -374,7 +374,7 @@ class PortfolioHistoryMaterializedService:
 
                 # Calculate unrealized gain
                 unrealized_gain = fund_data.get(
-                    "unrealized_gain", fund_data["value"] - fund_data["cost"]
+                    "unrealizedGain", fund_data["value"] - fund_data["cost"]
                 )
 
                 # Calculate total gain/loss

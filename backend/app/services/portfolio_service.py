@@ -991,15 +991,15 @@ class PortfolioService:
 
                     daily_values["funds"].append(
                         {
-                            "portfolio_fund_id": pf.id,
-                            "fund_id": pf.fund_id,
-                            "fund_name": pf.fund.name,
+                            "portfolioFundId": pf.id,
+                            "fundId": pf.fund_id,
+                            "fundName": pf.fund.name,
                             "value": value,
                             "cost": cost,
                             "shares": shares,
                             "price": price,
-                            "realized_gain": fund_realized_gain,
-                            "unrealized_gain": value - cost,
+                            "realizedGain": fund_realized_gain,
+                            "unrealizedGain": value - cost,
                         }
                     )
 
