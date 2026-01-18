@@ -227,12 +227,12 @@ class TestPortfolioHistoryCorrectness:
                 assert "portfolio_fund_id" in fund
                 assert "fund_id" in fund
                 assert "fund_name" in fund
-                assert "totalValue" in fund
-                assert "totalCost" in fund
+                assert "value" in fund
+                assert "cost" in fund
                 assert "shares" in fund
                 assert "price" in fund
-                assert "totalRealizedGainLoss" in fund
-                assert "totalUnrealizedGainLoss" in fund
+                assert "realized_gain" in fund
+                assert "unrealized_gain" in fund
 
     def test_date_range_filtering(self, app_context):
         """Verify that date range parameters are respected."""
@@ -266,8 +266,8 @@ class TestPhase2EagerLoadingPerformance:
         """
         Test that portfolio summary uses eager loading with minimal queries.
 
-        Target: <= 10 queries (was ~50+ with N+1 pattern)
-        Note: Includes 1 query for materialized view coverage check (v1.4.0+)
+        Target: <= 11 queries (was ~50+ with N+1 pattern)
+        Note: Includes queries for fund-level materialized view (v1.5.0+)
         """
         query_counter.reset()
 
@@ -279,7 +279,7 @@ class TestPhase2EagerLoadingPerformance:
 
         # Check query count
         print(f"\n✓ Portfolio summary query count: {query_counter.count}")
-        assert query_counter.count <= 10, f"Too many queries: {query_counter.count} (target: <= 10)"
+        assert query_counter.count <= 11, f"Too many queries: {query_counter.count} (target: <= 11)"
 
     def test_portfolio_summary_execution_time(self, app_context, timer):
         """

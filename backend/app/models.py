@@ -503,56 +503,73 @@ class RealizedGainLoss(db.Model):
     )
 
 
-class PortfolioHistoryMaterialized(db.Model):
+class FundHistoryMaterialized(db.Model):
     """
-    Materialized view for portfolio history calculations.
+    Materialized view storing pre-calculated fund-level historical data.
 
-    Pre-calculates and stores daily portfolio values to improve query performance.
-    This table acts as a cache that is invalidated and recalculated when
-    source data (transactions, prices, dividends) changes.
+    This table stores atomic fund metrics for each date, which can be aggregated
+    to produce portfolio-level views. This eliminates data duplication and provides
+    the flexibility to query at either fund or portfolio granularity.
+
+    Populated by background calculation jobs.
 
     Attributes:
         id (str): Unique identifier (UUID)
-        portfolio_id (str): Foreign key to Portfolio
+        portfolio_fund_id (str): Foreign key to PortfolioFund
+        fund_id (str): Fund identifier for quick lookups
         date (str): Date in YYYY-MM-DD format
-        value (float): Total portfolio value on this date
+        shares (float): Number of shares held on this date
+        price (float): Price per share on this date
+        value (float): Total value (shares * price) on this date
         cost (float): Total cost basis on this date
-        realized_gain (float): Cumulative realized gains up to this date
+        realized_gain (float): Realized gains up to this date
         unrealized_gain (float): Unrealized gains on this date
-        total_dividends (float): Cumulative dividends up to this date
-        total_sale_proceeds (float): Cumulative sale proceeds up to this date
-        total_original_cost (float): Cumulative original cost of sold positions
         total_gain_loss (float): Total gain/loss (realized + unrealized)
-        is_archived (bool): Archive status (matches portfolio.is_archived)
+        dividends (float): Cumulative dividends up to this date
+        fees (float): Cumulative fees up to this date
         calculated_at (datetime): Timestamp when this record was calculated
     """
 
-    __tablename__ = "portfolio_history_materialized"
+    __tablename__ = "fund_history_materialized"
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    portfolio_id = db.Column(
-        db.String(36), db.ForeignKey("portfolio.id", ondelete="CASCADE"), nullable=False
+    portfolio_fund_id = db.Column(
+        db.String(36), db.ForeignKey("portfolio_fund.id", ondelete="CASCADE"), nullable=False
     )
+    fund_id = db.Column(db.String(36), nullable=False)
     date = db.Column(db.String(10), nullable=False)  # YYYY-MM-DD format
-    value = db.Column(db.Float, nullable=False)
-    cost = db.Column(db.Float, nullable=False)
-    realized_gain = db.Column(db.Float, nullable=False)
-    unrealized_gain = db.Column(db.Float, nullable=False)
-    total_dividends = db.Column(db.Float, nullable=False)
-    total_sale_proceeds = db.Column(db.Float, nullable=False)
-    total_original_cost = db.Column(db.Float, nullable=False)
-    total_gain_loss = db.Column(db.Float, nullable=False)
-    is_archived = db.Column(db.Boolean, nullable=False)
+
+    # Fund metrics
+    shares = db.Column(db.Float, nullable=False, default=0.0)
+    price = db.Column(db.Float, nullable=False, default=0.0)
+    value = db.Column(db.Float, nullable=False, default=0.0)
+    cost = db.Column(db.Float, nullable=False, default=0.0)
+
+    # Gain/loss metrics
+    realized_gain = db.Column(db.Float, nullable=False, default=0.0)
+    unrealized_gain = db.Column(db.Float, nullable=False, default=0.0)
+    total_gain_loss = db.Column(db.Float, nullable=False, default=0.0)
+
+    # Income/expense metrics
+    dividends = db.Column(db.Float, nullable=False, default=0.0)
+    fees = db.Column(db.Float, nullable=False, default=0.0)
+
+    # Metadata
     calculated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
 
     # Relationships
-    portfolio = db.relationship("Portfolio", backref="materialized_history")
+    portfolio_fund = db.relationship("PortfolioFund", backref="history_entries")
 
     __table_args__ = (
-        db.UniqueConstraint("portfolio_id", "date", name="uq_portfolio_date"),
-        db.Index("idx_portfolio_history_mat_portfolio_date", "portfolio_id", "date"),
-        db.Index("idx_portfolio_history_mat_date", "date"),
+        db.UniqueConstraint("portfolio_fund_id", "date", name="uq_portfolio_fund_date"),
+        db.Index("idx_fund_history_pf_date", "portfolio_fund_id", "date"),
+        db.Index("idx_fund_history_date", "date"),
+        db.Index("idx_fund_history_fund_id", "fund_id"),
     )
+
+    def __repr__(self):
+        """String representation of FundHistoryMaterialized."""
+        return f"<FundHistoryMaterialized {self.fund_id} on {self.date}>"
 
 
 class IBKRConfig(db.Model):

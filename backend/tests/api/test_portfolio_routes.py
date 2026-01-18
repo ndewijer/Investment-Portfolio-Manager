@@ -14,7 +14,7 @@ Tests all Portfolio API endpoints:
 - GET /portfolio/funds - List portfolio funds (optional filter by portfolio_id)
 - POST /portfolio/funds - Add fund to portfolio
 - DELETE /portfolio/fund/<id> - Remove fund from portfolio
-- GET /portfolio/<id>/fund-history - Get fund-specific history for portfolio
+- GET /fund/history/<id> - Get fund-specific history for portfolio (moved to fund namespace)
 """
 
 from datetime import datetime, timedelta
@@ -585,11 +585,14 @@ class TestPortfolioFunds:
 
     def test_get_fund_history_for_portfolio(self, app_context, client, db_session):
         """
-        Verify GET /portfolio/<id>/fund-history returns fund-specific historical performance.
+        Verify GET /fund/history/<id> returns fund-specific historical performance.
 
         WHY: Users need to analyze individual fund performance within a portfolio to identify
         top performers, underperformers, and make informed buy/sell decisions. Fund-level
         historical data is crucial for detailed investment analysis.
+
+        NOTE: This endpoint was moved from /portfolio/<id>/fund-history to /fund/history/<id>
+        as part of the fund-level materialized view migration (v1.5.0).
         """
         portfolio = Portfolio(name="History Portfolio")
         fund = create_fund("US", "META", "Meta")
@@ -619,7 +622,7 @@ class TestPortfolioFunds:
             db_session.add(fund_price)
         db_session.commit()
 
-        response = client.get(f"/api/portfolio/{portfolio.id}/fund-history")
+        response = client.get(f"/api/fund/history/{portfolio.id}")
 
         assert response.status_code == 200
         data = response.get_json()

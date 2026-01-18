@@ -721,3 +721,68 @@ class FundPriceUpdate(Resource):
                 details={"fund_id": fund_id, "updateType": update_type, "error": str(e)},
             )
             return {"error": "Error updating fund prices", "details": str(e)}, 500
+
+
+@ns.route("/history/<string:portfolio_id>")
+@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
+class FundHistory(Resource):
+    """Fund history endpoint for a specific portfolio."""
+
+    @ns.doc("get_fund_history")
+    @ns.param("start_date", "Start date (YYYY-MM-DD)", _in="query")
+    @ns.param("end_date", "End date (YYYY-MM-DD)", _in="query")
+    @ns.response(200, "Success")
+    @ns.response(404, "Portfolio not found", error_model)
+    @ns.response(500, "Server error", error_model)
+    def get(self, portfolio_id):
+        """
+        Get historical fund values for a portfolio.
+
+        Returns time-series data showing individual fund values
+        within a portfolio over time.
+
+        Query Parameters:
+        - start_date: Start date for historical data (YYYY-MM-DD)
+        - end_date: End date for historical data (YYYY-MM-DD)
+
+        Returns daily data with the following structure:
+        [
+          {
+            "date": "2021-09-06",
+            "funds": [
+              {
+                "portfolioFundId": "...",
+                "fundId": "...",
+                "fundName": "...",
+                "shares": 15.78,
+                "price": 31.67,
+                "value": 500.00,
+                "cost": 500.00,
+                "realizedGain": 0,
+                "unrealizedGain": 0,
+                "dividends": 0,
+                "fees": 0
+              }
+            ]
+          }
+        ]
+
+        Useful for analyzing individual fund performance within a portfolio.
+        """
+        try:
+            start_date = request.args.get("start_date")
+            end_date = request.args.get("end_date")
+
+            return FundService.get_fund_history(portfolio_id, start_date, end_date), 200
+        except ValueError as e:
+            return {"error": str(e)}, 404
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.FUND,
+                message=f"Error retrieving fund history for portfolio {portfolio_id}",
+                details={"error": str(e)},
+            )
+            return {"error": str(e)}, 500

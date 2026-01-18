@@ -8,7 +8,21 @@ This module provides methods for:
 - Checking fund usage in portfolios
 """
 
-from ..models import DividendType, Fund, FundPrice, InvestmentType, PortfolioFund, Transaction, db
+from datetime import datetime
+
+from flask import abort
+
+from ..models import (
+    DividendType,
+    Fund,
+    FundHistoryMaterialized,
+    FundPrice,
+    InvestmentType,
+    Portfolio,
+    PortfolioFund,
+    Transaction,
+    db,
+)
 
 
 class FundService:
@@ -80,8 +94,6 @@ class FundService:
         """
         fund = db.session.get(Fund, fund_id)
         if not fund:
-            from flask import abort
-
             abort(404)
         return fund
 
@@ -354,3 +366,113 @@ class FundService:
             "total_updated": len(updated_funds),
             "total_errors": len(errors),
         }
+
+    @staticmethod
+    def get_fund_history(portfolio_id, start_date=None, end_date=None):
+        """
+        Get historical fund data for a specific portfolio.
+
+        This method retrieves pre-calculated fund metrics from the
+        fund_history_materialized table. Data is grouped by date with
+        all funds for each date.
+
+        Args:
+            portfolio_id (str): Portfolio identifier
+            start_date (str, optional): Start date in YYYY-MM-DD format
+            end_date (str, optional): End date in YYYY-MM-DD format
+
+        Returns:
+            list: List of daily fund values in the format:
+                [
+                    {
+                        "date": "2021-09-06",
+                        "funds": [
+                            {
+                                "portfolioFundId": "...",
+                                "fundId": "...",
+                                "fundName": "...",
+                                "shares": 15.78,
+                                "price": 31.67,
+                                "value": 500.00,
+                                "cost": 500.00,
+                                "realizedGain": 0,
+                                "unrealizedGain": 0,
+                                "totalGainLoss": 0,
+                                "dividends": 0,
+                                "fees": 0
+                            }
+                        ]
+                    }
+                ]
+
+        Raises:
+            ValueError: If portfolio not found
+        """
+        # Verify portfolio exists
+        portfolio = db.session.get(Portfolio, portfolio_id)
+        if not portfolio:
+            raise ValueError("Portfolio not found")
+
+        # Parse dates
+        if start_date:
+            try:
+                start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                start_date = None
+
+        if end_date:
+            try:
+                end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+            except ValueError:
+                end_date = None
+
+        # Build query
+        query = (
+            db.session.query(FundHistoryMaterialized, Fund.name.label("fund_name"))
+            .join(PortfolioFund, FundHistoryMaterialized.portfolio_fund_id == PortfolioFund.id)
+            .join(Fund, FundHistoryMaterialized.fund_id == Fund.id)
+            .filter(PortfolioFund.portfolio_id == portfolio_id)
+        )
+
+        # Apply date filters
+        if start_date:
+            query = query.filter(FundHistoryMaterialized.date >= start_date.strftime("%Y-%m-%d"))
+        if end_date:
+            query = query.filter(FundHistoryMaterialized.date <= end_date.strftime("%Y-%m-%d"))
+
+        # Order by date and fund name
+        query = query.order_by(FundHistoryMaterialized.date.asc(), Fund.name.asc())
+
+        # Execute query
+        results = query.all()
+
+        # Group results by date
+        history_by_date = {}
+        for entry, fund_name in results:
+            date_str = entry.date
+            if date_str not in history_by_date:
+                history_by_date[date_str] = []
+
+            history_by_date[date_str].append(
+                {
+                    "portfolioFundId": entry.portfolio_fund_id,
+                    "fundId": entry.fund_id,
+                    "fundName": fund_name,
+                    "shares": entry.shares,
+                    "price": entry.price,
+                    "value": entry.value,
+                    "cost": entry.cost,
+                    "realizedGain": entry.realized_gain,
+                    "unrealizedGain": entry.unrealized_gain,
+                    "totalGainLoss": entry.total_gain_loss,
+                    "dividends": entry.dividends,
+                    "fees": entry.fees,
+                }
+            )
+
+        # Convert to list format
+        history = [
+            {"date": date, "funds": funds} for date, funds in sorted(history_by_date.items())
+        ]
+
+        return history

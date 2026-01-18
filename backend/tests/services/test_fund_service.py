@@ -689,3 +689,242 @@ class TestEdgeCases:
         portfolio_names = {p["name"] for p in usage["portfolios"]}
         assert "Portfolio 1" in portfolio_names
         assert "Portfolio 2" in portfolio_names
+
+
+class TestGetFundHistory:
+    """Tests for FundService.get_fund_history method."""
+
+    def test_get_fund_history_success(self, app_context, db_session):
+        """Test retrieving fund history with data."""
+        from datetime import date, timedelta
+
+        from app.models import FundHistoryMaterialized
+
+        # Create portfolio, fund, and portfolio fund
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, pf])
+        db_session.commit()
+
+        # Create fund history records
+        start_date = date(2024, 1, 1)
+        for i in range(3):
+            current_date = start_date + timedelta(days=i)
+            record = FundHistoryMaterialized(
+                portfolio_fund_id=pf.id,
+                fund_id=fund.id,
+                date=current_date.isoformat(),
+                shares=10.0 + i,
+                price=100.0 + i * 10,
+                value=1000.0 + i * 100,
+                cost=800.0,
+                realized_gain=0.0,
+                unrealized_gain=200.0 + i * 100,
+                total_gain_loss=200.0 + i * 100,
+                dividends=0.0,
+                fees=0.0,
+            )
+            db_session.add(record)
+        db_session.commit()
+
+        # Get fund history
+        history = FundService.get_fund_history(portfolio.id)
+
+        # Verify results
+        assert len(history) == 3
+        assert history[0]["date"] == "2024-01-01"
+        assert len(history[0]["funds"]) == 1
+        assert history[0]["funds"][0]["fundName"] == "Test Fund"
+        assert history[0]["funds"][0]["shares"] == 10.0
+        assert history[0]["funds"][0]["value"] == 1000.0
+
+    def test_get_fund_history_with_date_range(self, app_context, db_session):
+        """Test fund history with start and end date filters."""
+        from datetime import date, timedelta
+
+        from app.models import FundHistoryMaterialized
+
+        # Create portfolio, fund, and portfolio fund
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, pf])
+        db_session.commit()
+
+        # Create fund history records for 10 days
+        start_date = date(2024, 1, 1)
+        for i in range(10):
+            current_date = start_date + timedelta(days=i)
+            record = FundHistoryMaterialized(
+                portfolio_fund_id=pf.id,
+                fund_id=fund.id,
+                date=current_date.isoformat(),
+                shares=10.0,
+                price=100.0,
+                value=1000.0,
+                cost=800.0,
+                realized_gain=0.0,
+                unrealized_gain=200.0,
+                total_gain_loss=200.0,
+                dividends=0.0,
+                fees=0.0,
+            )
+            db_session.add(record)
+        db_session.commit()
+
+        # Get fund history with date range
+        history = FundService.get_fund_history(
+            portfolio.id,
+            start_date="2024-01-03",
+            end_date="2024-01-07",
+        )
+
+        # Verify only dates in range are returned
+        assert len(history) == 5
+        assert history[0]["date"] == "2024-01-03"
+        assert history[-1]["date"] == "2024-01-07"
+
+    def test_get_fund_history_empty(self, app_context, db_session):
+        """Test fund history with no data."""
+        portfolio = Portfolio(id=make_id(), name="Empty Portfolio")
+        db_session.add(portfolio)
+        db_session.commit()
+
+        history = FundService.get_fund_history(portfolio.id)
+
+        assert history == []
+
+    def test_get_fund_history_invalid_portfolio(self, app_context, db_session):
+        """Test fund history with non-existent portfolio raises ValueError."""
+        fake_id = make_id()
+
+        with pytest.raises(ValueError, match="Portfolio not found"):
+            FundService.get_fund_history(fake_id)
+
+    def test_get_fund_history_invalid_date_format(self, app_context, db_session):
+        """Test fund history handles invalid date format gracefully."""
+
+        from app.models import FundHistoryMaterialized
+
+        portfolio = Portfolio(id=make_id(), name="Test Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, pf])
+        db_session.commit()
+
+        # Create one record
+        record = FundHistoryMaterialized(
+            portfolio_fund_id=pf.id,
+            fund_id=fund.id,
+            date="2024-01-01",
+            shares=10.0,
+            price=100.0,
+            value=1000.0,
+            cost=800.0,
+            realized_gain=0.0,
+            unrealized_gain=200.0,
+            total_gain_loss=200.0,
+            dividends=0.0,
+            fees=0.0,
+        )
+        db_session.add(record)
+        db_session.commit()
+
+        # Invalid date format should be ignored (not cause error)
+        history = FundService.get_fund_history(
+            portfolio.id,
+            start_date="invalid-date",
+            end_date="also-invalid",
+        )
+
+        # Should return all records since invalid dates are ignored
+        assert len(history) == 1
+
+    def test_get_fund_history_multiple_funds(self, app_context, db_session):
+        """Test fund history with multiple funds in portfolio."""
+        from datetime import date
+
+        from app.models import FundHistoryMaterialized
+
+        # Create portfolio and two funds
+        portfolio = Portfolio(id=make_id(), name="Multi-Fund Portfolio")
+        fund1 = Fund(
+            id=make_id(),
+            name="Fund A",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        fund2 = Fund(
+            id=make_id(),
+            name="Fund B",
+            isin=make_isin("GB"),
+            currency="EUR",
+            exchange="LSE",
+        )
+        pf1 = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund1.id)
+        pf2 = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund2.id)
+        db_session.add_all([portfolio, fund1, fund2, pf1, pf2])
+        db_session.commit()
+
+        # Create records for both funds on same date
+        test_date = date(2024, 1, 1)
+        record1 = FundHistoryMaterialized(
+            portfolio_fund_id=pf1.id,
+            fund_id=fund1.id,
+            date=test_date.isoformat(),
+            shares=10.0,
+            price=100.0,
+            value=1000.0,
+            cost=800.0,
+            realized_gain=0.0,
+            unrealized_gain=200.0,
+            total_gain_loss=200.0,
+            dividends=0.0,
+            fees=0.0,
+        )
+        record2 = FundHistoryMaterialized(
+            portfolio_fund_id=pf2.id,
+            fund_id=fund2.id,
+            date=test_date.isoformat(),
+            shares=20.0,
+            price=50.0,
+            value=1000.0,
+            cost=900.0,
+            realized_gain=0.0,
+            unrealized_gain=100.0,
+            total_gain_loss=100.0,
+            dividends=0.0,
+            fees=0.0,
+        )
+        db_session.add_all([record1, record2])
+        db_session.commit()
+
+        history = FundService.get_fund_history(portfolio.id)
+
+        # Should have one date entry with two funds
+        assert len(history) == 1
+        assert len(history[0]["funds"]) == 2
+
+        # Funds should be ordered alphabetically by name
+        fund_names = [f["fundName"] for f in history[0]["funds"]]
+        assert fund_names == ["Fund A", "Fund B"]

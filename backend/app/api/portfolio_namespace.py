@@ -645,43 +645,5 @@ class PortfolioFundDetail(Resource):
             return {"error": "Error deleting fund from portfolio"}, 400
 
 
-@ns.route("/<string:portfolio_id>/fund-history")
-@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
-class PortfolioFundHistory(Resource):
-    """Portfolio fund history endpoint."""
-
-    @ns.doc("get_portfolio_fund_history")
-    @ns.param("start_date", "Start date (YYYY-MM-DD)", _in="query")
-    @ns.param("end_date", "End date (YYYY-MM-DD)", _in="query")
-    @ns.response(200, "Success")
-    @ns.response(500, "Server error", error_model)
-    def get(self, portfolio_id):
-        """
-        Get historical fund values for a portfolio.
-
-        Returns time-series data showing individual fund values
-        within a portfolio over time.
-
-        Query Parameters:
-        - start_date: Start date for historical data (YYYY-MM-DD)
-        - end_date: End date for historical data (YYYY-MM-DD)
-
-        Useful for analyzing individual fund performance within a portfolio.
-        """
-        try:
-            start_date = request.args.get("start_date")
-            end_date = request.args.get("end_date")
-
-            return PortfolioService.get_portfolio_fund_history(
-                portfolio_id, start_date, end_date
-            ), 200
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.log(
-                level=LogLevel.ERROR,
-                category=LogCategory.PORTFOLIO,
-                message=f"Error retrieving fund history for portfolio {portfolio_id}",
-                details={"error": str(e)},
-            )
-            return {"error": str(e)}, 500
+# NOTE: The /fund-history endpoint has been moved to /api/fund/history/<portfolio_id>
+# See fund_namespace.py for the new implementation using fund_history_materialized table

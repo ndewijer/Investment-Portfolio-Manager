@@ -29,11 +29,19 @@ trap cleanup EXIT
 
 echo -e "${BLUE}🐳 Running Docker integration tests...${NC}"
 
+# Clear any stale buildx cache that might cause "parent snapshot does not exist" errors
+echo -e "${BLUE}🧹 Clearing stale build cache...${NC}"
+docker builder prune -f --filter "until=24h" 2>/dev/null || true
+
 # Build containers
 echo -e "${BLUE}📦 Building Docker images...${NC}"
 if ! docker compose build --no-cache --quiet; then
-    echo -e "${RED}❌ Docker build failed${NC}"
-    exit 1
+    echo -e "${YELLOW}⚠️  Build failed, retrying with full cache clear...${NC}"
+    docker builder prune -af 2>/dev/null || true
+    if ! docker compose build --no-cache --quiet; then
+        echo -e "${RED}❌ Docker build failed${NC}"
+        exit 1
+    fi
 fi
 
 # Start containers
