@@ -77,7 +77,7 @@ export const sortTransactions = (transactions, sortConfig) => {
  * @param {Object} filters - Filter criteria
  * @param {Date} [filters.dateFrom] - Filter transactions from this date
  * @param {Date} [filters.dateTo] - Filter transactions until this date
- * @param {Array<string>} [filters.fund_names] - Filter by fund names
+ * @param {Array<string>} [filters.fundNames] - Filter by fund names
  * @param {string} [filters.type] - Filter by transaction type (e.g., 'buy', 'sell')
  * @returns {Array} - Filtered transactions
  *
@@ -89,7 +89,7 @@ export const sortTransactions = (transactions, sortConfig) => {
  * filterTransactions(transactions, {
  *   dateFrom: new Date('2024-02-01'),
  *   dateTo: new Date('2024-02-28'),
- *   fund_names: [],
+ *   fundNames: [],
  *   type: null
  * });
  * // Returns only the second transaction
@@ -101,7 +101,11 @@ export const filterTransactions = (transactions, filters) => {
     if (filters.dateFrom && transactionDate < filters.dateFrom) return false;
     if (filters.dateTo && transactionDate > filters.dateTo) return false;
 
-    if (filters.fund_names.length > 0 && !filters.fund_names.includes(transaction.fund_name)) {
+    if (
+      filters.fundNames &&
+      filters.fundNames.length > 0 &&
+      !filters.fundNames.includes(transaction.fund_name)
+    ) {
       return false;
     }
 
@@ -128,7 +132,7 @@ export const filterTransactions = (transactions, filters) => {
  * // Returns: ['Fund A', 'Fund B']
  */
 export const getUniqueFundNames = (portfolioFunds) => {
-  return [...new Set(portfolioFunds.map((pf) => pf.fund_name))];
+  return [...new Set(portfolioFunds.map((pf) => pf.fundName))];
 };
 
 /**
@@ -173,7 +177,7 @@ export const formatChartData = (fundHistory) => {
 
     const totalValue = day.funds.reduce((sum, f) => sum + f.value, 0);
     const totalCost = day.funds.reduce((sum, f) => sum + f.cost, 0);
-    const totalRealizedGain = day.funds.reduce((sum, f) => sum + (f.realized_gain || 0), 0);
+    const totalRealizedGain = day.funds.reduce((sum, f) => sum + (f.realizedGain || 0), 0);
     const totalUnrealizedGain = day.funds.reduce((sum, f) => sum + (f.value - f.cost || 0), 0);
 
     dayData.totalValue = totalValue;
@@ -182,12 +186,12 @@ export const formatChartData = (fundHistory) => {
     dayData.unrealizedGain = totalUnrealizedGain;
     dayData.totalGain = totalRealizedGain + totalUnrealizedGain;
 
-    // Use portfolio_fund_id as unique identifier instead of array index
+    // Use portfolioFundId as unique identifier instead of array index
     day.funds.forEach((fund) => {
-      const fundId = fund.portfolio_fund_id;
+      const fundId = fund.portfolioFundId;
       dayData[`fund_${fundId}_value`] = fund.value;
       dayData[`fund_${fundId}_cost`] = fund.cost;
-      dayData[`fund_${fundId}_realized`] = fund.realized_gain || 0;
+      dayData[`fund_${fundId}_realized`] = fund.realizedGain || 0;
       dayData[`fund_${fundId}_unrealized`] = fund.value - fund.cost || 0;
     });
 
@@ -277,7 +281,7 @@ export const getChartLines = (portfolioFunds, visibleMetrics) => {
     if (visibleMetrics.value) {
       lines.push({
         dataKey: `fund_${fundId}_value`,
-        name: `${fund.fund_name} Value`,
+        name: `${fund.fundName} Value`,
         color: getFundColor(index),
         strokeWidth: 1,
         strokeDasharray: '5 5',
@@ -287,7 +291,7 @@ export const getChartLines = (portfolioFunds, visibleMetrics) => {
     if (visibleMetrics.cost) {
       lines.push({
         dataKey: `fund_${fundId}_cost`,
-        name: `${fund.fund_name} Cost`,
+        name: `${fund.fundName} Cost`,
         color: getFundColor(index),
         strokeWidth: 1,
         strokeDasharray: '2 2',

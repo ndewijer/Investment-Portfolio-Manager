@@ -197,16 +197,14 @@ class Portfolio(Resource):
                 "name": portfolio.name,
                 "description": portfolio.description,
                 "isArchived": portfolio.is_archived,
-                "totalValue": sum(pf["current_value"] for pf in portfolio_funds_data),
-                "totalCost": sum(pf["total_cost"] for pf in portfolio_funds_data),
-                "totalDividends": sum(pf["total_dividends"] for pf in portfolio_funds_data),
+                "totalValue": sum(pf["currentValue"] for pf in portfolio_funds_data),
+                "totalCost": sum(pf["totalCost"] for pf in portfolio_funds_data),
+                "totalDividends": sum(pf["totalDividends"] for pf in portfolio_funds_data),
                 "totalUnrealizedGainLoss": sum(
-                    pf["unrealized_gain_loss"] for pf in portfolio_funds_data
+                    pf["unrealizedGainLoss"] for pf in portfolio_funds_data
                 ),
-                "totalRealizedGainLoss": sum(
-                    pf["realized_gain_loss"] for pf in portfolio_funds_data
-                ),
-                "totalGainLoss": sum(pf["total_gain_loss"] for pf in portfolio_funds_data),
+                "totalRealizedGainLoss": sum(pf["realizedGainLoss"] for pf in portfolio_funds_data),
+                "totalGainLoss": sum(pf["totalGainLoss"] for pf in portfolio_funds_data),
             }, 200
 
         except HTTPException:

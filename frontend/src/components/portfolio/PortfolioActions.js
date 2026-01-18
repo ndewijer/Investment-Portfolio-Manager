@@ -75,7 +75,7 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
         <div className="form-group">
           <label>Fund:</label>
           <div className="static-field">
-            {portfolioFunds.find((pf) => pf.id === newTransaction.portfolio_fund_id)?.fund_name}
+            {portfolioFunds.find((pf) => pf.id === newTransaction.portfolio_fund_id)?.fundName}
           </div>
         </div>
         <div className="form-group">
@@ -218,7 +218,7 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
         <div className="form-group">
           <label>Fund:</label>
           <div className="static-field">
-            {portfolioFunds.find((pf) => pf.id === newDividend.portfolio_fund_id)?.fund_name}
+            {portfolioFunds.find((pf) => pf.id === newDividend.portfolio_fund_id)?.fundName}
           </div>
         </div>
         <div className="form-group">

@@ -98,7 +98,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   // Add dividend for a specific fund
   const handleAddDividend = useCallback(async (fund) => {
     try {
-      const response = await api.get(`/fund/${fund.fund_id}`);
+      const response = await api.get(`/fund/${fund.fundId}`);
       const fundData = response.data;
 
       setSelectedFund(fundData);

@@ -91,47 +91,47 @@ const FundsTable = ({
   // Define columns for the funds table
   const fundsColumns = [
     {
-      key: 'fund_name',
+      key: 'fundName',
       header: 'Fund',
       sortable: true,
       render: (value, fund) => (
-        <span className="clickable-fund-name" onClick={() => handleFundClick(fund.fund_id)}>
+        <span className="clickable-fund-name" onClick={() => handleFundClick(fund.fundId)}>
           {value}
         </span>
       ),
     },
     {
-      key: 'latest_price',
+      key: 'latestPrice',
       header: 'Latest Share Price',
       sortable: true,
       render: (value) => formatCurrency(value),
     },
     {
-      key: 'total_shares',
+      key: 'totalShares',
       header: 'Total Shares',
       sortable: true,
       render: (value) => formatNumber(value, 6),
     },
     {
-      key: 'average_cost',
+      key: 'averageCost',
       header: 'Average Cost / Share',
       sortable: true,
       render: (value) => formatCurrency(value),
     },
     {
-      key: 'total_cost',
+      key: 'totalCost',
       header: 'Total Cost',
       sortable: true,
       render: (value) => formatCurrency(value),
     },
     {
-      key: 'current_value',
+      key: 'currentValue',
       header: 'Current Value',
       sortable: true,
       render: (value) => formatCurrency(value),
     },
     {
-      key: 'total_dividends',
+      key: 'totalDividends',
       header: 'Total Dividends',
       sortable: true,
       render: (value) => formatCurrency(value),
@@ -161,33 +161,33 @@ const FundsTable = ({
   const renderFundMobileCard = (fund) => (
     <div className="fund-card">
       <div className="card-header">
-        <h3 className="fund-name clickable-fund-name" onClick={() => handleFundClick(fund.fund_id)}>
-          {fund.fund_name}
+        <h3 className="fund-name clickable-fund-name" onClick={() => handleFundClick(fund.fundId)}>
+          {fund.fundName}
         </h3>
-        <div className="current-value">{formatCurrency(fund.current_value)}</div>
+        <div className="current-value">{formatCurrency(fund.currentValue)}</div>
       </div>
 
       <div className="card-main">
         <div className="main-stats">
           <div className="stat-item">
             <span className="label">Shares</span>
-            <span className="value">{formatNumber(fund.total_shares, 6)}</span>
+            <span className="value">{formatNumber(fund.totalShares, 6)}</span>
           </div>
           <div className="stat-item">
             <span className="label">Latest Price</span>
-            <span className="value">{formatCurrency(fund.latest_price)}</span>
+            <span className="value">{formatCurrency(fund.latestPrice)}</span>
           </div>
           <div className="stat-item">
             <span className="label">Avg Cost</span>
-            <span className="value">{formatCurrency(fund.average_cost)}</span>
+            <span className="value">{formatCurrency(fund.averageCost)}</span>
           </div>
           <div className="stat-item">
             <span className="label">Total Cost</span>
-            <span className="value">{formatCurrency(fund.total_cost)}</span>
+            <span className="value">{formatCurrency(fund.totalCost)}</span>
           </div>
           <div className="stat-item dividends-stat">
             <span className="label">Dividends</span>
-            <span className="value">{formatCurrency(fund.total_dividends)}</span>
+            <span className="value">{formatCurrency(fund.totalDividends)}</span>
           </div>
         </div>
       </div>

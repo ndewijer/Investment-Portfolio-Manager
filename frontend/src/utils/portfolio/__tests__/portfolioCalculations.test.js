@@ -89,9 +89,9 @@ describe('Portfolio Calculations', () => {
 
   describe('sortTransactions', () => {
     const mockTransactions = [
-      { id: 1, date: '2025-01-15', shares: 100, cost_per_share: 50, fund_name: 'Fund A' },
-      { id: 2, date: '2025-01-10', shares: 50, cost_per_share: 60, fund_name: 'Fund B' },
-      { id: 3, date: '2025-01-20', shares: 75, cost_per_share: 55, fund_name: 'Fund C' },
+      { id: 1, date: '2025-01-15', shares: 100, cost_per_share: 50, fundName: 'Fund A' },
+      { id: 2, date: '2025-01-10', shares: 50, cost_per_share: 60, fundName: 'Fund B' },
+      { id: 3, date: '2025-01-20', shares: 75, cost_per_share: 55, fundName: 'Fund C' },
     ];
 
     test('sorts by date ascending', () => {
@@ -132,18 +132,18 @@ describe('Portfolio Calculations', () => {
       expect(sorted[2].cost_per_share).toBe(60);
     });
 
-    test('sorts by string field (fund_name) ascending', () => {
-      const sorted = sortTransactions(mockTransactions, { key: 'fund_name', direction: 'asc' });
-      expect(sorted[0].fund_name).toBe('Fund A');
-      expect(sorted[1].fund_name).toBe('Fund B');
-      expect(sorted[2].fund_name).toBe('Fund C');
+    test('sorts by string field (fundName) ascending', () => {
+      const sorted = sortTransactions(mockTransactions, { key: 'fundName', direction: 'asc' });
+      expect(sorted[0].fundName).toBe('Fund A');
+      expect(sorted[1].fundName).toBe('Fund B');
+      expect(sorted[2].fundName).toBe('Fund C');
     });
 
-    test('sorts by string field (fund_name) descending', () => {
-      const sorted = sortTransactions(mockTransactions, { key: 'fund_name', direction: 'desc' });
-      expect(sorted[0].fund_name).toBe('Fund C');
-      expect(sorted[1].fund_name).toBe('Fund B');
-      expect(sorted[2].fund_name).toBe('Fund A');
+    test('sorts by string field (fundName) descending', () => {
+      const sorted = sortTransactions(mockTransactions, { key: 'fundName', direction: 'desc' });
+      expect(sorted[0].fundName).toBe('Fund C');
+      expect(sorted[1].fundName).toBe('Fund B');
+      expect(sorted[2].fundName).toBe('Fund A');
     });
 
     test('does not mutate original array', () => {
@@ -194,7 +194,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: new Date('2025-01-16'),
         dateTo: null,
-        fund_names: [],
+        fundNames: [],
         type: null,
       });
       expect(filtered.length).toBe(3);
@@ -205,7 +205,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: null,
         dateTo: new Date('2025-01-31'),
-        fund_names: [],
+        fundNames: [],
         type: null,
       });
       expect(filtered.length).toBe(2);
@@ -216,7 +216,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: new Date('2025-01-16'),
         dateTo: new Date('2025-02-02'),
-        fund_names: [],
+        fundNames: [],
         type: null,
       });
       expect(filtered.length).toBe(2);
@@ -228,7 +228,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: null,
         dateTo: null,
-        fund_names: ['Fund A'],
+        fundNames: ['Fund A'],
         type: null,
       });
       expect(filtered.length).toBe(2);
@@ -239,7 +239,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: null,
         dateTo: null,
-        fund_names: ['Fund A', 'Fund B'],
+        fundNames: ['Fund A', 'Fund B'],
         type: null,
       });
       expect(filtered.length).toBe(3);
@@ -249,7 +249,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: null,
         dateTo: null,
-        fund_names: [],
+        fundNames: [],
         type: 'buy',
       });
       expect(filtered.length).toBe(2);
@@ -260,7 +260,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: new Date('2025-01-01'),
         dateTo: new Date('2025-01-31'),
-        fund_names: ['Fund A'],
+        fundNames: ['Fund A'],
         type: 'buy',
       });
       expect(filtered.length).toBe(1);
@@ -271,7 +271,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: null,
         dateTo: null,
-        fund_names: [],
+        fundNames: [],
         type: null,
       });
       expect(filtered).toEqual(mockTransactions);
@@ -281,7 +281,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions(mockTransactions, {
         dateFrom: null,
         dateTo: null,
-        fund_names: ['Nonexistent Fund'],
+        fundNames: ['Nonexistent Fund'],
         type: null,
       });
       expect(filtered).toEqual([]);
@@ -291,7 +291,7 @@ describe('Portfolio Calculations', () => {
       const filtered = filterTransactions([], {
         dateFrom: new Date('2025-01-01'),
         dateTo: new Date('2025-12-31'),
-        fund_names: ['Fund A'],
+        fundNames: ['Fund A'],
         type: 'buy',
       });
       expect(filtered).toEqual([]);
@@ -301,11 +301,11 @@ describe('Portfolio Calculations', () => {
   describe('getUniqueFundNames', () => {
     test('returns unique fund names', () => {
       const portfolioFunds = [
-        { fund_name: 'Fund A' },
-        { fund_name: 'Fund B' },
-        { fund_name: 'Fund A' },
-        { fund_name: 'Fund C' },
-        { fund_name: 'Fund B' },
+        { fundName: 'Fund A' },
+        { fundName: 'Fund B' },
+        { fundName: 'Fund A' },
+        { fundName: 'Fund C' },
+        { fundName: 'Fund B' },
       ];
       const unique = getUniqueFundNames(portfolioFunds);
       expect(unique).toEqual(['Fund A', 'Fund B', 'Fund C']);
@@ -313,24 +313,24 @@ describe('Portfolio Calculations', () => {
     });
 
     test('handles single fund', () => {
-      const portfolioFunds = [{ fund_name: 'Fund A' }];
+      const portfolioFunds = [{ fundName: 'Fund A' }];
       expect(getUniqueFundNames(portfolioFunds)).toEqual(['Fund A']);
     });
 
     test('handles all unique funds', () => {
       const portfolioFunds = [
-        { fund_name: 'Fund A' },
-        { fund_name: 'Fund B' },
-        { fund_name: 'Fund C' },
+        { fundName: 'Fund A' },
+        { fundName: 'Fund B' },
+        { fundName: 'Fund C' },
       ];
       expect(getUniqueFundNames(portfolioFunds)).toEqual(['Fund A', 'Fund B', 'Fund C']);
     });
 
     test('handles all duplicate funds', () => {
       const portfolioFunds = [
-        { fund_name: 'Fund A' },
-        { fund_name: 'Fund A' },
-        { fund_name: 'Fund A' },
+        { fundName: 'Fund A' },
+        { fundName: 'Fund A' },
+        { fundName: 'Fund A' },
       ];
       expect(getUniqueFundNames(portfolioFunds)).toEqual(['Fund A']);
     });
@@ -341,10 +341,10 @@ describe('Portfolio Calculations', () => {
 
     test('preserves order of first occurrence', () => {
       const portfolioFunds = [
-        { fund_name: 'Fund C' },
-        { fund_name: 'Fund A' },
-        { fund_name: 'Fund B' },
-        { fund_name: 'Fund A' },
+        { fundName: 'Fund C' },
+        { fundName: 'Fund A' },
+        { fundName: 'Fund B' },
+        { fundName: 'Fund A' },
       ];
       const unique = getUniqueFundNames(portfolioFunds);
       expect(unique[0]).toBe('Fund C');
@@ -362,7 +362,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 50 }],
+          funds: [{ portfolioFundId: 1, value: 1000, cost: 900, realizedGain: 50 }],
         },
       ];
 
@@ -388,8 +388,8 @@ describe('Portfolio Calculations', () => {
         {
           date: '2024-01-15',
           funds: [
-            { portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 50 },
-            { portfolio_fund_id: 2, value: 2000, cost: 1800, realized_gain: 100 },
+            { portfolioFundId: 1, value: 1000, cost: 900, realizedGain: 50 },
+            { portfolioFundId: 2, value: 2000, cost: 1800, realizedGain: 100 },
           ],
         },
       ];
@@ -415,11 +415,11 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 0 }],
+          funds: [{ portfolioFundId: 1, value: 1000, cost: 900, realizedGain: 0 }],
         },
         {
           date: '2024-01-16',
-          funds: [{ portfolio_fund_id: 1, value: 1100, cost: 900, realized_gain: 0 }],
+          funds: [{ portfolioFundId: 1, value: 1100, cost: 900, realizedGain: 0 }],
         },
       ];
 
@@ -436,7 +436,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900 }],
+          funds: [{ portfolioFundId: 1, value: 1000, cost: 900 }],
         },
       ];
 
@@ -450,7 +450,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: null }],
+          funds: [{ portfolioFundId: 1, value: 1000, cost: 900, realizedGain: null }],
         },
       ];
 
@@ -464,7 +464,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: undefined }],
+          funds: [{ portfolioFundId: 1, value: 1000, cost: 900, realizedGain: undefined }],
         },
       ];
 
@@ -479,8 +479,8 @@ describe('Portfolio Calculations', () => {
         {
           date: '2024-01-15',
           funds: [
-            { portfolio_fund_id: 1, value: 1200, cost: 1000, realized_gain: 0 },
-            { portfolio_fund_id: 2, value: 800, cost: 1000, realized_gain: 0 },
+            { portfolioFundId: 1, value: 1200, cost: 1000, realizedGain: 0 },
+            { portfolioFundId: 2, value: 800, cost: 1000, realizedGain: 0 },
           ],
         },
       ];
@@ -496,7 +496,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1200, cost: 1000, realized_gain: 50 }],
+          funds: [{ portfolioFundId: 1, value: 1200, cost: 1000, realizedGain: 50 }],
         },
       ];
 
@@ -509,7 +509,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 800, cost: 1000, realized_gain: -50 }],
+          funds: [{ portfolioFundId: 1, value: 800, cost: 1000, realizedGain: -50 }],
         },
       ];
 
@@ -526,7 +526,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 0, cost: 0, realized_gain: 0 }],
+          funds: [{ portfolioFundId: 1, value: 0, cost: 0, realizedGain: 0 }],
         },
       ];
 
@@ -539,13 +539,13 @@ describe('Portfolio Calculations', () => {
       expect(result[0].totalGain).toBe(0);
     });
 
-    test('uses portfolio_fund_id for fund keys', () => {
+    test('uses portfolioFundId for fund keys', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
           funds: [
-            { portfolio_fund_id: 5, value: 1000, cost: 900, realized_gain: 0 },
-            { portfolio_fund_id: 10, value: 2000, cost: 1800, realized_gain: 0 },
+            { portfolioFundId: 5, value: 1000, cost: 900, realizedGain: 0 },
+            { portfolioFundId: 10, value: 2000, cost: 1800, realizedGain: 0 },
           ],
         },
       ];
@@ -562,7 +562,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1000000, cost: 900000, realized_gain: 50000 }],
+          funds: [{ portfolioFundId: 1, value: 1000000, cost: 900000, realizedGain: 50000 }],
         },
       ];
 
@@ -578,7 +578,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-01-15',
-          funds: [{ portfolio_fund_id: 1, value: 1000.5, cost: 900.25, realized_gain: 50.75 }],
+          funds: [{ portfolioFundId: 1, value: 1000.5, cost: 900.25, realizedGain: 50.75 }],
         },
       ];
 
@@ -594,7 +594,7 @@ describe('Portfolio Calculations', () => {
       const fundHistory = [
         {
           date: '2024-12-31',
-          funds: [{ portfolio_fund_id: 1, value: 1000, cost: 900, realized_gain: 0 }],
+          funds: [{ portfolioFundId: 1, value: 1000, cost: 900, realizedGain: 0 }],
         },
       ];
 
@@ -606,8 +606,8 @@ describe('Portfolio Calculations', () => {
 
   describe('getChartLines', () => {
     const mockPortfolioFunds = [
-      { id: 1, fund_name: 'Fund A' },
-      { id: 2, fund_name: 'Fund B' },
+      { id: 1, fundName: 'Fund A' },
+      { id: 2, fundName: 'Fund B' },
     ];
 
     test('returns empty array when no metrics visible', () => {
@@ -795,10 +795,10 @@ describe('Portfolio Calculations', () => {
       expect(fund2CostLine).toBeDefined();
     });
 
-    test('uses portfolio_fund_id for fund line keys', () => {
+    test('uses portfolioFundId for fund line keys', () => {
       const fundsWithIds = [
-        { id: 5, fund_name: 'Fund X' },
-        { id: 10, fund_name: 'Fund Y' },
+        { id: 5, fundName: 'Fund X' },
+        { id: 10, fundName: 'Fund Y' },
       ];
 
       const visibleMetrics = {
