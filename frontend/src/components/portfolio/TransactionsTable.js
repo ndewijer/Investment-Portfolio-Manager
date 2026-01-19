@@ -67,7 +67,7 @@ const TransactionsTable = ({
   const [filters, setFilters] = useState({
     dateFrom: null,
     dateTo: null,
-    fund_names: [],
+    fundNames: [],
     type: '',
   });
   const [filterPosition, setFilterPosition] = useState({ top: 0, right: 0 });
@@ -77,7 +77,7 @@ const TransactionsTable = ({
     type: false,
   });
   const [tempFilters, setTempFilters] = useState({
-    fund_names: [],
+    fundNames: [],
     type: '',
   });
 
@@ -121,7 +121,7 @@ const TransactionsTable = ({
       render: (value) => formatDisplayDate(value),
     },
     {
-      key: 'fund_name',
+      key: 'fundName',
       header: 'Fund',
       sortable: true,
       filterable: true,
@@ -137,11 +137,11 @@ const TransactionsTable = ({
       render: (value) => value,
     },
     {
-      key: 'ibkr_linked',
+      key: 'ibkrLinked',
       header: 'Source',
       sortable: false,
       render: (value, transaction) =>
-        transaction.ibkr_linked ? (
+        transaction.ibkrLinked ? (
           <span className="ibkr-badge" title="Imported from IBKR">
             IBKR
           </span>
@@ -158,7 +158,7 @@ const TransactionsTable = ({
       render: (value) => formatNumber(value, 6),
     },
     {
-      key: 'cost_per_share',
+      key: 'costPerShare',
       header: 'Cost per Share',
       sortable: true,
       render: (value) => formatCurrency(value),
@@ -167,12 +167,12 @@ const TransactionsTable = ({
       key: 'total',
       header: 'Total',
       render: (value, transaction) => {
-        // For fee transactions, total is just the cost_per_share value (not shares * cost_per_share)
+        // For fee transactions, total is just the costPerShare value (not shares * costPerShare)
         if (transaction.type === 'fee') {
-          return formatCurrency(transaction.cost_per_share);
+          return formatCurrency(transaction.costPerShare);
         }
         return formatCurrency(
-          calculateTransactionTotal(transaction.shares, transaction.cost_per_share)
+          calculateTransactionTotal(transaction.shares, transaction.costPerShare)
         );
       },
     },
@@ -208,7 +208,7 @@ const TransactionsTable = ({
         <div className="transaction-main">
           <span className="date">{formatDisplayDate(transaction.date)}</span>
           <span className={`type type-${transaction.type}`}>{transaction.type.toUpperCase()}</span>
-          {transaction.ibkr_linked ? (
+          {transaction.ibkrLinked ? (
             <span className="ibkr-badge" title="Imported from IBKR">
               IBKR
             </span>
@@ -219,14 +219,12 @@ const TransactionsTable = ({
           )}
         </div>
         <div className="total-amount">
-          {formatCurrency(
-            calculateTransactionTotal(transaction.shares, transaction.cost_per_share)
-          )}
+          {formatCurrency(calculateTransactionTotal(transaction.shares, transaction.costPerShare))}
         </div>
       </div>
 
       <div className="card-body">
-        <div className="fund-name">{transaction.fund_name}</div>
+        <div className="fund-name">{transaction.fundName}</div>
         <div className="transaction-details">
           <div className="detail-item">
             <span className="label">Shares:</span>
@@ -234,7 +232,7 @@ const TransactionsTable = ({
           </div>
           <div className="detail-item">
             <span className="label">Price per Share:</span>
-            <span className="value">{formatCurrency(transaction.cost_per_share)}</span>
+            <span className="value">{formatCurrency(transaction.costPerShare)}</span>
           </div>
         </div>
       </div>
@@ -294,14 +292,14 @@ const TransactionsTable = ({
         isOpen={filterPopups.fund}
         onClose={() => {
           setFilterPopups((prev) => ({ ...prev, fund: false }));
-          setFilters((prev) => ({ ...prev, fund_names: tempFilters.fund_names }));
+          setFilters((prev) => ({ ...prev, fundNames: tempFilters.fundNames }));
         }}
         position={filterPosition}
-        value={tempFilters.fund_names.map((name) => ({ label: name, value: name }))}
+        value={tempFilters.fundNames.map((name) => ({ label: name, value: name }))}
         onChange={(selected) => {
           setTempFilters((prev) => ({
             ...prev,
-            fund_names: selected ? selected.map((option) => option.value) : [],
+            fundNames: selected ? selected.map((option) => option.value) : [],
           }));
         }}
         options={uniqueFundNames.map((name) => ({ label: name, value: name }))}

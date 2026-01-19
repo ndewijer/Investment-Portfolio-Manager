@@ -78,19 +78,19 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
   const [priceFound, setPriceFound] = useState(false);
   const [fundPrices, setFundPrices] = useState({});
 
-  // New transaction form state
+  // New transaction form state (using camelCase to match API)
   const [newTransaction, setNewTransaction] = useState({
-    portfolio_fund_id: '',
+    portfolioFundId: '',
     date: getTodayString(),
     type: 'buy',
     shares: '',
-    cost_per_share: '',
+    costPerShare: '',
   });
 
-  // Fetch transactions for portfolio
+  // Fetch transactions for portfolio using new REST endpoint
   const loadTransactions = useCallback(async () => {
     if (!portfolioId) return;
-    await fetchTransactions(() => api.get(`/transaction?portfolio_id=${portfolioId}`));
+    await fetchTransactions(() => api.get(`/transaction/portfolio/${portfolioId}`));
   }, [portfolioId, fetchTransactions]);
 
   // Fetch fund price for a specific date
@@ -115,18 +115,16 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
       const date = e.target.value;
       setPriceFound(false);
 
-      if (newTransaction.portfolio_fund_id && newTransaction.type === 'buy') {
-        const selectedFund = portfolioFunds.find(
-          (pf) => pf.id === newTransaction.portfolio_fund_id
-        );
+      if (newTransaction.portfolioFundId && newTransaction.type === 'buy') {
+        const selectedFund = portfolioFunds.find((pf) => pf.id === newTransaction.portfolioFundId);
         if (selectedFund) {
-          let priceMap = fundPrices[selectedFund.fund_id];
+          let priceMap = fundPrices[selectedFund.fundId];
 
           if (!priceMap) {
-            priceMap = await fetchFundPrice(selectedFund.fund_id);
+            priceMap = await fetchFundPrice(selectedFund.fundId);
             setFundPrices((prev) => ({
               ...prev,
-              [selectedFund.fund_id]: priceMap,
+              [selectedFund.fundId]: priceMap,
             }));
           }
 
@@ -134,7 +132,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
             setNewTransaction((prev) => ({
               ...prev,
               date: date,
-              cost_per_share: priceMap[date],
+              costPerShare: priceMap[date],
             }));
             setPriceFound(true);
           } else {
@@ -151,7 +149,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
         }));
       }
     },
-    [newTransaction.portfolio_fund_id, newTransaction.type, fundPrices, fetchFundPrice]
+    [newTransaction.portfolioFundId, newTransaction.type, fundPrices, fetchFundPrice]
   );
 
   // Create new transaction
@@ -166,11 +164,11 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
 
         setIsTransactionModalOpen(false);
         setNewTransaction({
-          portfolio_fund_id: '',
+          portfolioFundId: '',
           date: getTodayString(),
           type: 'buy',
           shares: '',
-          cost_per_share: '',
+          costPerShare: '',
         });
 
         // Notify parent component of data change
@@ -249,11 +247,11 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
   // Open transaction modal for specific fund
   const openTransactionModal = useCallback((portfolioFundId) => {
     setNewTransaction({
-      portfolio_fund_id: portfolioFundId,
+      portfolioFundId: portfolioFundId,
       date: getTodayString(),
       type: 'buy',
       shares: '',
-      cost_per_share: '',
+      costPerShare: '',
     });
     setIsTransactionModalOpen(true);
   }, []);
@@ -262,11 +260,11 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
   const closeTransactionModal = useCallback(() => {
     setIsTransactionModalOpen(false);
     setNewTransaction({
-      portfolio_fund_id: '',
+      portfolioFundId: '',
       date: getTodayString(),
       type: 'buy',
       shares: '',
-      cost_per_share: '',
+      costPerShare: '',
     });
   }, []);
 

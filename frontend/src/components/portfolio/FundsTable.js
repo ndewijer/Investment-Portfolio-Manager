@@ -144,13 +144,13 @@ const FundsTable = ({
           <ActionButton variant="primary" size="small" onClick={() => onAddTransaction(fund.id)}>
             Add Transaction
           </ActionButton>
-          {fund.dividendType !== 'none' && (
+          {fund.dividendType !== 'NONE' && (
             <ActionButton variant="primary" size="small" onClick={() => onAddDividend(fund)}>
               Add Dividend
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove {fund.investmentType === 'stock' ? 'Stock' : 'Fund'}
+            Remove {fund.investmentType === 'STOCK' ? 'Stock' : 'Fund'}
           </ActionButton>
         </div>
       ),
@@ -197,13 +197,13 @@ const FundsTable = ({
           <ActionButton variant="primary" size="small" onClick={() => onAddTransaction(fund.id)}>
             Add Transaction
           </ActionButton>
-          {fund.dividendType !== 'none' && (
+          {fund.dividendType !== 'NONE' && (
             <ActionButton variant="primary" size="small" onClick={() => onAddDividend(fund)}>
               Add Dividend
             </ActionButton>
           )}
           <ActionButton variant="danger" size="small" onClick={() => onRemoveFund(fund)}>
-            Remove {fund.investmentType === 'stock' ? 'Stock' : 'Fund'}
+            Remove {fund.investmentType === 'STOCK' ? 'Stock' : 'Fund'}
           </ActionButton>
         </div>
       </div>

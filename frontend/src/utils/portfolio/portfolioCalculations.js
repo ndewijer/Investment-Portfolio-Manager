@@ -83,8 +83,8 @@ export const sortTransactions = (transactions, sortConfig) => {
  *
  * @example
  * const transactions = [
- *   { date: '2024-01-15', fund_name: 'Fund A', type: 'buy' },
- *   { date: '2024-02-20', fund_name: 'Fund B', type: 'sell' }
+ *   { date: '2024-01-15', fundName: 'Fund A', type: 'buy' },
+ *   { date: '2024-02-20', fundName: 'Fund B', type: 'sell' }
  * ];
  * filterTransactions(transactions, {
  *   dateFrom: new Date('2024-02-01'),
@@ -104,7 +104,7 @@ export const filterTransactions = (transactions, filters) => {
     if (
       filters.fundNames &&
       filters.fundNames.length > 0 &&
-      !filters.fundNames.includes(transaction.fund_name)
+      !filters.fundNames.includes(transaction.fundName)
     ) {
       return false;
     }

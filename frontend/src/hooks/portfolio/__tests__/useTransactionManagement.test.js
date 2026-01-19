@@ -83,11 +83,11 @@ describe('useTransactionManagement', () => {
       );
 
       expect(result.current.newTransaction).toMatchObject({
-        portfolio_fund_id: '',
+        portfolioFundId: '',
         date: getTodayString(),
         type: 'buy',
         shares: '',
-        cost_per_share: '',
+        costPerShare: '',
       });
     });
   });
@@ -103,7 +103,7 @@ describe('useTransactionManagement', () => {
       });
 
       expect(result.current.isTransactionModalOpen).toBe(true);
-      expect(result.current.newTransaction.portfolio_fund_id).toBe('fund-123');
+      expect(result.current.newTransaction.portfolioFundId).toBe('fund-123');
       expect(result.current.newTransaction.date).toBe(getTodayString());
       expect(result.current.newTransaction.type).toBe('buy');
     });
@@ -124,9 +124,9 @@ describe('useTransactionManagement', () => {
       });
 
       expect(result.current.isTransactionModalOpen).toBe(false);
-      expect(result.current.newTransaction.portfolio_fund_id).toBe('');
+      expect(result.current.newTransaction.portfolioFundId).toBe('');
       expect(result.current.newTransaction.shares).toBe('');
-      expect(result.current.newTransaction.cost_per_share).toBe('');
+      expect(result.current.newTransaction.costPerShare).toBe('');
     });
 
     test('handleEditTransaction opens edit modal with transaction data', () => {
@@ -136,11 +136,11 @@ describe('useTransactionManagement', () => {
 
       const mockTransaction = {
         id: 1,
-        portfolio_fund_id: 'fund-123',
+        portfolioFundId: 'fund-123',
         date: '2024-01-15T00:00:00Z',
         type: 'buy',
         shares: 100,
-        cost_per_share: 50,
+        costPerShare: 50,
       };
 
       act(() => {
@@ -150,11 +150,11 @@ describe('useTransactionManagement', () => {
       expect(result.current.isTransactionEditModalOpen).toBe(true);
       expect(result.current.editingTransaction).toMatchObject({
         id: 1,
-        portfolio_fund_id: 'fund-123',
+        portfolioFundId: 'fund-123',
         date: '2024-01-15',
         type: 'buy',
         shares: 100,
-        cost_per_share: 50,
+        costPerShare: 50,
       });
     });
 
@@ -168,7 +168,7 @@ describe('useTransactionManagement', () => {
         result.current.handleEditTransaction({
           id: 1,
           date: '2024-01-15',
-          portfolio_fund_id: 'fund-123',
+          portfolioFundId: 'fund-123',
         });
       });
 
@@ -212,11 +212,11 @@ describe('useTransactionManagement', () => {
   describe('Create Transaction', () => {
     test('handleCreateTransaction creates transaction and updates state', async () => {
       const mockNewTransaction = {
-        portfolio_fund_id: 'fund-123',
+        portfolioFundId: 'fund-123',
         date: '2024-01-15',
         type: 'buy',
         shares: 100,
-        cost_per_share: 50,
+        costPerShare: 50,
       };
 
       const mockCreatedTransaction = { ...mockNewTransaction, id: 1 };
@@ -292,11 +292,11 @@ describe('useTransactionManagement', () => {
     test('handleUpdateTransaction updates transaction and closes modal', async () => {
       const mockTransaction = {
         id: 1,
-        portfolio_fund_id: 'fund-123',
+        portfolioFundId: 'fund-123',
         date: '2024-01-15',
         type: 'buy',
         shares: 150,
-        cost_per_share: 55,
+        costPerShare: 55,
       };
 
       const mockUpdatedTransaction = { ...mockTransaction };
@@ -441,11 +441,11 @@ describe('useTransactionManagement', () => {
 
       act(() => {
         result.current.setNewTransaction({
-          portfolio_fund_id: 'fund-123',
+          portfolioFundId: 'fund-123',
           type: 'sell',
           date: getTodayString(),
           shares: '',
-          cost_per_share: '',
+          costPerShare: '',
         });
       });
 
@@ -466,7 +466,7 @@ describe('useTransactionManagement', () => {
 
       api.get.mockResolvedValue({ data: mockPrices });
 
-      const mockPortfolioFunds = [{ id: 'pf-1', fund_id: 'fund-123' }];
+      const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
         useTransactionManagement(mockPortfolioId, mockOnDataChange)
@@ -474,11 +474,11 @@ describe('useTransactionManagement', () => {
 
       act(() => {
         result.current.setNewTransaction({
-          portfolio_fund_id: 'pf-1',
+          portfolioFundId: 'pf-1',
           type: 'buy',
           date: getTodayString(),
           shares: '',
-          cost_per_share: '',
+          costPerShare: '',
         });
       });
 
@@ -491,7 +491,7 @@ describe('useTransactionManagement', () => {
 
       expect(api.get).toHaveBeenCalledWith('/fund/fund-prices/fund-123');
       expect(result.current.newTransaction.date).toBe('2024-01-15');
-      expect(result.current.newTransaction.cost_per_share).toBe(50.25);
+      expect(result.current.newTransaction.costPerShare).toBe(50.25);
       expect(result.current.priceFound).toBe(true);
     });
 
@@ -500,7 +500,7 @@ describe('useTransactionManagement', () => {
 
       api.get.mockResolvedValue({ data: mockPrices });
 
-      const mockPortfolioFunds = [{ id: 'pf-1', fund_id: 'fund-123' }];
+      const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
         useTransactionManagement(mockPortfolioId, mockOnDataChange)
@@ -508,11 +508,11 @@ describe('useTransactionManagement', () => {
 
       act(() => {
         result.current.setNewTransaction({
-          portfolio_fund_id: 'pf-1',
+          portfolioFundId: 'pf-1',
           type: 'buy',
           date: getTodayString(),
           shares: '',
-          cost_per_share: '',
+          costPerShare: '',
         });
       });
 
@@ -543,7 +543,7 @@ describe('useTransactionManagement', () => {
 
       api.get.mockResolvedValue({ data: mockPrices });
 
-      const mockPortfolioFunds = [{ id: 'pf-1', fund_id: 'fund-123' }];
+      const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
         useTransactionManagement(mockPortfolioId, mockOnDataChange)
@@ -551,11 +551,11 @@ describe('useTransactionManagement', () => {
 
       act(() => {
         result.current.setNewTransaction({
-          portfolio_fund_id: 'pf-1',
+          portfolioFundId: 'pf-1',
           type: 'buy',
           date: getTodayString(),
           shares: '',
-          cost_per_share: '',
+          costPerShare: '',
         });
       });
 
@@ -567,14 +567,14 @@ describe('useTransactionManagement', () => {
       });
 
       expect(result.current.newTransaction.date).toBe('2024-01-16');
-      expect(result.current.newTransaction.cost_per_share).toBe('');
+      expect(result.current.newTransaction.costPerShare).toBe('');
       expect(result.current.priceFound).toBe(false);
     });
 
     test('handleTransactionDateChange handles price fetch error', async () => {
       api.get.mockRejectedValue(new Error('Price fetch failed'));
 
-      const mockPortfolioFunds = [{ id: 'pf-1', fund_id: 'fund-123' }];
+      const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
         useTransactionManagement(mockPortfolioId, mockOnDataChange)
@@ -582,11 +582,11 @@ describe('useTransactionManagement', () => {
 
       act(() => {
         result.current.setNewTransaction({
-          portfolio_fund_id: 'pf-1',
+          portfolioFundId: 'pf-1',
           type: 'buy',
           date: getTodayString(),
           shares: '',
-          cost_per_share: '',
+          costPerShare: '',
         });
       });
 
@@ -610,11 +610,11 @@ describe('useTransactionManagement', () => {
       );
 
       const newData = {
-        portfolio_fund_id: 'fund-123',
+        portfolioFundId: 'fund-123',
         date: '2024-01-15',
         type: 'buy',
         shares: 100,
-        cost_per_share: 50,
+        costPerShare: 50,
       };
 
       act(() => {
@@ -631,11 +631,11 @@ describe('useTransactionManagement', () => {
 
       const editData = {
         id: 1,
-        portfolio_fund_id: 'fund-123',
+        portfolioFundId: 'fund-123',
         date: '2024-01-15',
         type: 'buy',
         shares: 100,
-        cost_per_share: 50,
+        costPerShare: 50,
       };
 
       act(() => {

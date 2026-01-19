@@ -291,7 +291,7 @@ const Funds = () => {
             <div key={fund.id} className={`fund-card ${fund.investmentType || 'fund'}`}>
               <h3>{fund.name}</h3>
               <div className="fund-details">
-                {fund.investmentType === 'fund' ? (
+                {fund.investmentType === 'FUND' ? (
                   <>
                     <p>
                       <strong>ISIN:</strong> {fund.isin}
@@ -335,7 +335,7 @@ const Funds = () => {
                 {fund.dividendType !== 'none' && (
                   <p>
                     <strong>Dividend Type:</strong>{' '}
-                    {fund.dividendType === 'cash' ? (
+                    {fund.dividendType === 'CASH' ? (
                       <>
                         <FontAwesomeIcon icon={faMoneyBill} /> Cash
                       </>
@@ -371,7 +371,7 @@ const Funds = () => {
           setErrorMessage('');
         }}
         title={
-          editingFund ? 'Edit Fund' : `Add ${newFund.investmentType === 'fund' ? 'Fund' : 'Stock'}`
+          editingFund ? 'Edit Fund' : `Add ${newFund.investmentType === 'FUND' ? 'Fund' : 'Stock'}`
         }
         onSubmit={handleSubmit}
         loading={submitting}
@@ -395,7 +395,7 @@ const Funds = () => {
         <div className="form-field">
           <label className="field-label">Investment Type</label>
           <div className="static-field">
-            {editingFund?.investmentType === 'stock' || newFund.investmentType === 'stock'
+            {editingFund?.investmentType === 'STOCK' || newFund.investmentType === 'STOCK'
               ? 'Stock'
               : 'Fund'}
           </div>

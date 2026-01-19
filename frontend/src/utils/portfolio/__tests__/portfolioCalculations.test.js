@@ -163,28 +163,28 @@ describe('Portfolio Calculations', () => {
       {
         id: 1,
         date: '2025-01-15',
-        fund_name: 'Fund A',
+        fundName: 'Fund A',
         type: 'buy',
         shares: 100,
       },
       {
         id: 2,
         date: '2025-01-20',
-        fund_name: 'Fund B',
+        fundName: 'Fund B',
         type: 'sell',
         shares: 50,
       },
       {
         id: 3,
         date: '2025-02-01',
-        fund_name: 'Fund A',
+        fundName: 'Fund A',
         type: 'buy',
         shares: 75,
       },
       {
         id: 4,
         date: '2025-02-10',
-        fund_name: 'Fund C',
+        fundName: 'Fund C',
         type: 'sell',
         shares: 25,
       },
@@ -232,7 +232,7 @@ describe('Portfolio Calculations', () => {
         type: null,
       });
       expect(filtered.length).toBe(2);
-      expect(filtered.every((t) => t.fund_name === 'Fund A')).toBe(true);
+      expect(filtered.every((t) => t.fundName === 'Fund A')).toBe(true);
     });
 
     test('filters by multiple fund names', () => {

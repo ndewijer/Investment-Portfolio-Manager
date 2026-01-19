@@ -2,10 +2,11 @@
 Integration tests for transaction routes (transaction_routes.py).
 
 Tests all Transaction API endpoints:
-- GET /transaction - List all transactions (optionally filtered by portfolio)
-- POST /transaction - Create transaction
-- GET /transaction/<id> - Get transaction detail
-- PUT /transaction/<id> - Update transaction
+- GET /transaction - List all transactions
+- POST /transaction - Create transaction (with camelCase request/response)
+- GET /transaction/portfolio/<portfolio_id> - List portfolio transactions
+- GET /transaction/<id> - Get transaction detail (camelCase response)
+- PUT /transaction/<id> - Update transaction (with camelCase request/response)
 - DELETE /transaction/<id> - Delete transaction
 """
 
@@ -94,11 +95,13 @@ class TestTransactionList:
 
     def test_list_transactions_filtered_by_portfolio(self, app_context, client, db_session):
         """
-        Verify that portfolio_id query parameter correctly filters transactions by portfolio.
+        Verify that portfolio transactions endpoint correctly returns only portfolio's transactions.
 
         WHY: Users with multiple portfolios need to isolate transactions by portfolio to
         analyze individual portfolio performance without noise from other portfolios.
         Prevents data leakage between portfolios and enables focused financial analysis.
+
+        Endpoint: GET /transaction/portfolio/<portfolio_id>
         """
         # Create two portfolios with different transactions
         p1 = Portfolio(name="Portfolio 1")
@@ -123,12 +126,18 @@ class TestTransactionList:
         db_session.add(txn1)
         db_session.commit()
 
-        response = client.get(f"/api/transaction?portfolio_id={p1.id}")
+        # Use new REST endpoint structure
+        response = client.get(f"/api/transaction/portfolio/{p1.id}")
 
         assert response.status_code == 200
         data = response.get_json()
         assert isinstance(data, list)
         # Should only include transactions for portfolio 1
+        # Verify camelCase field names in response
+        if len(data) > 0:
+            assert "portfolioFundId" in data[0]
+            assert "fundName" in data[0]
+            assert "costPerShare" in data[0]
 
 
 class TestTransactionCreate:
@@ -136,11 +145,13 @@ class TestTransactionCreate:
 
     def test_create_buy_transaction(self, app_context, client, db_session):
         """
-        Verify that buy transactions can be created with required fields.
+        Verify that buy transactions can be created with required fields using camelCase.
 
         WHY: Buy transactions are the foundation of portfolio tracking. Users must be able
         to record purchases to establish cost basis for tax calculations, performance metrics,
         and compliance with investment tracking regulations.
+
+        Request/Response: camelCase format (portfolioFundId, costPerShare, fundName)
         """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "GOOGL", "Google")
@@ -151,12 +162,13 @@ class TestTransactionCreate:
         db_session.add(pf)
         db_session.commit()
 
+        # Use camelCase in request payload
         payload = {
-            "portfolio_fund_id": pf.id,
+            "portfolioFundId": pf.id,
             "date": datetime.now().date().isoformat(),
             "type": "buy",
             "shares": 15,
-            "cost_per_share": 120.50,
+            "costPerShare": 120.50,
         }
 
         response = client.post("/api/transaction", json=payload)
@@ -166,6 +178,11 @@ class TestTransactionCreate:
         assert data["type"] == "buy"
         assert data["shares"] == 15
         assert "id" in data
+        # Verify camelCase response fields
+        assert "portfolioFundId" in data
+        assert "fundName" in data
+        assert "costPerShare" in data
+        assert data["costPerShare"] == 120.50
 
         # Verify database
         transaction = db.session.get(Transaction, data["id"])
@@ -174,11 +191,13 @@ class TestTransactionCreate:
 
     def test_create_sell_transaction(self, app_context, client, db_session):
         """
-        Verify that sell transactions can be created and recorded properly.
+        Verify that sell transactions can be created and recorded properly with camelCase.
 
         WHY: Sell transactions trigger realized gain/loss calculations essential for tax
         reporting and portfolio performance analysis. Accurate recording prevents tax
         calculation errors that could cost users money or cause compliance issues.
+
+        Request/Response: camelCase format (portfolioFundId, costPerShare, realizedGainLoss)
         """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "TSLA", "Tesla")
@@ -200,13 +219,13 @@ class TestTransactionCreate:
         db_session.add(buy_txn)
         db_session.commit()
 
-        # Now sell some shares
+        # Now sell some shares using camelCase payload
         payload = {
-            "portfolio_fund_id": pf.id,
+            "portfolioFundId": pf.id,
             "date": datetime.now().date().isoformat(),
             "type": "sell",
             "shares": 10,
-            "cost_per_share": 250.00,
+            "costPerShare": 250.00,
         }
 
         response = client.post("/api/transaction", json=payload)
@@ -215,14 +234,20 @@ class TestTransactionCreate:
         data = response.get_json()
         assert data["type"] == "sell"
         assert data["shares"] == 10
+        # Verify camelCase response fields
+        assert "portfolioFundId" in data
+        assert "costPerShare" in data
+        assert data["costPerShare"] == 250.00
 
     def test_create_dividend_transaction(self, app_context, client, db_session):
         """
-        Verify that dividend transactions can be recorded for income tracking.
+        Verify that dividend transactions can be recorded for income tracking using camelCase.
 
         WHY: Dividend income must be tracked separately for accurate tax reporting and
         total return calculations. Missing dividend records would understate portfolio
         performance and create tax reporting gaps.
+
+        Request/Response: camelCase format (portfolioFundId, costPerShare)
         """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "NVDA", "NVIDIA")
@@ -233,12 +258,13 @@ class TestTransactionCreate:
         db_session.add(pf)
         db_session.commit()
 
+        # Use camelCase in request payload
         payload = {
-            "portfolio_fund_id": pf.id,
+            "portfolioFundId": pf.id,
             "date": datetime.now().date().isoformat(),
             "type": "dividend",
             "shares": 2,
-            "cost_per_share": 50.00,
+            "costPerShare": 50.00,
         }
 
         response = client.post("/api/transaction", json=payload)
@@ -246,6 +272,9 @@ class TestTransactionCreate:
         assert response.status_code == 201
         data = response.get_json()
         assert data["type"] == "dividend"
+        # Verify camelCase response fields
+        assert "portfolioFundId" in data
+        assert "costPerShare" in data
 
 
 class TestTransactionRetrieveUpdateDelete:
@@ -253,11 +282,13 @@ class TestTransactionRetrieveUpdateDelete:
 
     def test_get_transaction_detail(self, app_context, client, db_session):
         """
-        Verify that individual transaction details can be retrieved by ID.
+        Verify that individual transaction details can be retrieved by ID with camelCase response.
 
         WHY: Users need to view individual transaction details to verify accuracy of data
         entry and audit their financial records. Critical for catching data entry errors
         before they propagate into tax calculations or performance reports.
+
+        Response: camelCase format (portfolioFundId, fundName, costPerShare)
         """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "AMD", "AMD")
@@ -285,6 +316,11 @@ class TestTransactionRetrieveUpdateDelete:
         assert data["id"] == txn.id
         assert data["type"] == "buy"
         assert data["shares"] == 25
+        # Verify camelCase response fields
+        assert "portfolioFundId" in data
+        assert "fundName" in data
+        assert "costPerShare" in data
+        assert float(data["costPerShare"]) == 80.00
 
     def test_get_transaction_not_found(self, app_context, client):
         """
@@ -301,11 +337,13 @@ class TestTransactionRetrieveUpdateDelete:
 
     def test_update_transaction(self, app_context, client, db_session):
         """
-        Verify that existing transactions can be updated with new values.
+        Verify that existing transactions can be updated with new values using camelCase.
 
         WHY: Users need to correct data entry errors in transactions without deleting and
         recreating them, which would break transaction history and audit trails. Essential
         for maintaining data integrity while allowing error correction.
+
+        Request/Response: camelCase format (portfolioFundId, costPerShare)
         """
         portfolio = Portfolio(name="Test")
         fund = create_fund("US", "INTC", "Intel")
@@ -326,12 +364,13 @@ class TestTransactionRetrieveUpdateDelete:
         db_session.add(txn)
         db_session.commit()
 
+        # Use camelCase in request payload
         payload = {
-            "portfolio_fund_id": pf.id,
+            "portfolioFundId": pf.id,
             "date": datetime.now().date().isoformat(),
             "type": "buy",
             "shares": 35,  # Changed
-            "cost_per_share": 47.00,  # Changed
+            "costPerShare": 47.00,  # Changed
         }
 
         response = client.put(f"/api/transaction/{txn.id}", json=payload)
@@ -339,7 +378,9 @@ class TestTransactionRetrieveUpdateDelete:
         assert response.status_code == 200
         data = response.get_json()
         assert data["shares"] == 35
-        assert float(data["cost_per_share"]) == 47.00
+        # Verify camelCase response fields
+        assert "costPerShare" in data
+        assert float(data["costPerShare"]) == 47.00
 
         # Verify database
         db_session.refresh(txn)
@@ -354,12 +395,13 @@ class TestTransactionRetrieveUpdateDelete:
         confusing application states.
         """
         fake_id = make_id()
+        # Use camelCase in request payload
         payload = {
-            "portfolio_fund_id": make_id(),
+            "portfolioFundId": make_id(),
             "date": datetime.now().date().isoformat(),
             "type": "buy",
             "shares": 10,
-            "cost_per_share": 100.00,
+            "costPerShare": 100.00,
         }
 
         response = client.put(f"/api/transaction/{fake_id}", json=payload)
@@ -467,12 +509,13 @@ class TestTransactionErrors:
         ) as mock_create:
             mock_create.side_effect = Exception("Database error")
 
+            # Use camelCase in request payload
             payload = {
-                "portfolio_fund_id": pf.id,
+                "portfolioFundId": pf.id,
                 "date": datetime.now().date().isoformat(),
                 "type": "buy",
                 "shares": 10,
-                "cost_per_share": 100.00,
+                "costPerShare": 100.00,
             }
 
             response = client.post("/api/transaction", json=payload)
@@ -590,13 +633,13 @@ class TestTransactionErrors:
         db_session.add(sell_txn)
         db_session.commit()
 
-        # Update the sell transaction
+        # Update the sell transaction with camelCase payload
         payload = {
-            "portfolio_fund_id": pf.id,
+            "portfolioFundId": pf.id,
             "date": datetime.now().date().isoformat(),
             "type": "sell",
             "shares": 12,  # Changed
-            "cost_per_share": 65.00,  # Changed
+            "costPerShare": 65.00,  # Changed
         }
 
         response = client.put(f"/api/transaction/{sell_txn.id}", json=payload)

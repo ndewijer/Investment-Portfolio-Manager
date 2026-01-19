@@ -155,10 +155,10 @@ class FundService:
         Raises:
             IntegrityError: If ISIN is not unique
         """
-        # Get investment_type from request, default to 'fund' if not provided
-        investment_type_str = data.get("investmentType", "fund")
+        # Get investment_type from request, default to 'FUND' if not provided
+        investment_type_str = data.get("investmentType", "FUND")
         investment_type = (
-            InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
+            InvestmentType.STOCK if investment_type_str == "STOCK" else InvestmentType.FUND
         )
 
         fund = Fund(
@@ -223,7 +223,7 @@ class FundService:
         if "investmentType" in data:
             investment_type_str = data["investmentType"]
             fund.investment_type = (
-                InvestmentType.STOCK if investment_type_str == "stock" else InvestmentType.FUND
+                InvestmentType.STOCK if investment_type_str == "STOCK" else InvestmentType.FUND
             )
 
         db.session.add(fund)

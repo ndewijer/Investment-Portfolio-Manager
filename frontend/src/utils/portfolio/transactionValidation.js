@@ -132,7 +132,7 @@ export const validateDividend = (dividend, selectedFund) => {
   }
 
   // Stock dividend specific validations
-  if (selectedFund?.dividendType === 'stock') {
+  if (selectedFund?.dividendType === 'STOCK') {
     if (!dividend.buy_order_date) {
       errors.push('Buy order date is required for stock dividends');
     }

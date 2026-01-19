@@ -323,33 +323,46 @@ class DividendService:
     @staticmethod
     def format_dividend(dividend):
         """
-        Format dividend for API response.
+        Format dividend for API response with camelCase keys.
 
         Args:
             dividend (Dividend): Dividend object
 
         Returns:
-            dict: Formatted dividend data
+            dict: Formatted dividend data with camelCase keys containing:
+                - id: Dividend ID
+                - fundId: Fund ID
+                - fundName: Fund name
+                - portfolioFundId: Portfolio fund ID
+                - recordDate: ISO format date
+                - exDividendDate: ISO format date
+                - sharesOwned: Shares owned on record date
+                - dividendPerShare: Dividend amount per share
+                - totalAmount: Total dividend amount
+                - reinvestmentStatus: Reinvestment status (PENDING/COMPLETED/PARTIAL)
+                - buyOrderDate: Buy order date if applicable
+                - reinvestmentTransactionId: Transaction ID if reinvested
+                - dividendType: Dividend type (NONE/CASH/STOCK)
 
         Raises:
             ValueError: If dividend object is not found
         """
         return {
             "id": dividend.id,
-            "fund_id": dividend.fund_id,
-            "fund_name": dividend.fund.name,
-            "portfolio_fund_id": dividend.portfolio_fund_id,
-            "record_date": dividend.record_date.isoformat(),
-            "ex_dividend_date": dividend.ex_dividend_date.isoformat(),
-            "shares_owned": dividend.shares_owned,
-            "dividend_per_share": dividend.dividend_per_share,
-            "total_amount": dividend.total_amount,
-            "reinvestment_status": dividend.reinvestment_status.value,
-            "buy_order_date": (
+            "fundId": dividend.fund_id,
+            "fundName": dividend.fund.name,
+            "portfolioFundId": dividend.portfolio_fund_id,
+            "recordDate": dividend.record_date.isoformat(),
+            "exDividendDate": dividend.ex_dividend_date.isoformat(),
+            "sharesOwned": dividend.shares_owned,
+            "dividendPerShare": dividend.dividend_per_share,
+            "totalAmount": dividend.total_amount,
+            "reinvestmentStatus": dividend.reinvestment_status.value,
+            "buyOrderDate": (
                 dividend.buy_order_date.isoformat() if dividend.buy_order_date else None
             ),
-            "reinvestment_transaction_id": dividend.reinvestment_transaction_id,
-            "dividend_type": dividend.fund.dividend_type.value,
+            "reinvestmentTransactionId": dividend.reinvestment_transaction_id,
+            "dividendType": dividend.fund.dividend_type.value,
         }
 
     @staticmethod
