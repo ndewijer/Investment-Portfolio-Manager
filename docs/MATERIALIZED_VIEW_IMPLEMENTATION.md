@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation introduces a materialized view pattern for portfolio history calculations to dramatically improve query performance. Instead of calculating portfolio values on-demand for every request, historical data is pre-calculated and stored in a SQLite table.
+This implementation uses a fund-level materialized view pattern for portfolio history calculations to dramatically improve query performance. Instead of calculating portfolio values on-demand for every request, historical data is pre-calculated and stored at the fund level in a SQLite table.
 
 ## Performance Improvements
 
@@ -13,32 +13,67 @@ This implementation introduces a materialized view pattern for portfolio history
 **After (Materialized View):**
 - 5 years of daily history: ~50ms (160x faster)
 - Pre-calculated data served from cache
+- Both portfolio and fund-level queries benefit from same data source
 
 ## Architecture
 
+### Fund-Level Materialized View
+
+```
+fund_history_materialized
+  ├─ portfolio_fund_id, fund_id, date, shares, price, value, cost, ...
+  └─ One row per fund per date (atomic data)
+
+/api/portfolio/history
+  → SELECT SUM(...) FROM fund_history_materialized GROUP BY date, portfolio_id
+
+/api/fund/history/{portfolioId}
+  → Direct query from fund_history_materialized (fast)
+```
+
+**Benefits:**
+- ✅ No data duplication (fund data is source of truth)
+- ✅ Both endpoints served from same table
+- ✅ Easier debugging (can trace specific fund on specific date)
+- ✅ Self-healing (fix one fund, portfolio auto-updates)
+
 ### Database Schema
 
-A new table `portfolio_history_materialized` stores pre-calculated portfolio history:
+The `fund_history_materialized` table stores pre-calculated fund-level history:
 
 ```sql
-CREATE TABLE portfolio_history_materialized (
+CREATE TABLE fund_history_materialized (
     id TEXT PRIMARY KEY,
-    portfolio_id TEXT NOT NULL,
+    portfolio_fund_id TEXT NOT NULL,
+    fund_id TEXT NOT NULL,
     date TEXT NOT NULL,  -- YYYY-MM-DD format
+
+    -- Fund metrics
+    shares REAL NOT NULL,
+    price REAL NOT NULL,
     value REAL NOT NULL,
     cost REAL NOT NULL,
+
+    -- Gain/loss metrics
     realized_gain REAL NOT NULL,
     unrealized_gain REAL NOT NULL,
-    total_dividends REAL NOT NULL,
-    total_sale_proceeds REAL NOT NULL,
-    total_original_cost REAL NOT NULL,
     total_gain_loss REAL NOT NULL,
-    is_archived INTEGER NOT NULL,
+
+    -- Income/expense metrics
+    dividends REAL NOT NULL,
+    fees REAL NOT NULL,
+
+    -- Metadata
     calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (portfolio_id) REFERENCES portfolio(id) ON DELETE CASCADE,
-    UNIQUE(portfolio_id, date)
+    FOREIGN KEY (portfolio_fund_id) REFERENCES portfolio_fund(id) ON DELETE CASCADE,
+    UNIQUE(portfolio_fund_id, date)
 );
+
+-- Indexes for optimal query performance
+CREATE INDEX idx_fund_history_pf_date ON fund_history_materialized(portfolio_fund_id, date);
+CREATE INDEX idx_fund_history_date ON fund_history_materialized(date);
+CREATE INDEX idx_fund_history_fund_id ON fund_history_materialized(fund_id);
 ```
 
 **Field Naming Convention**: The database and internal Python code use snake_case (e.g., `realized_gain`, `unrealized_gain`), while the API responses use camelCase (e.g., `totalRealizedGainLoss`, `totalUnrealizedGainLoss`). The conversion happens automatically at the API boundary.
@@ -114,45 +149,68 @@ With automatic recalculation:
 flask invalidate-materialized-history --portfolio-id=<id> --from-date=2024-01-01 --recalculate
 ```
 
-## API Changes
+## API Endpoints
 
 ### Portfolio History Endpoint
 
-The `/api/portfolio/history` endpoint now automatically uses the materialized view when available.
+The `/api/portfolio/history` endpoint aggregates data from the fund-level materialized view.
 
-**Response Format (v1.4.1+)**: Returns portfolio history with camelCase field names:
-- `totalValue` (previously `value`)
-- `totalCost` (previously `cost`)
-- `totalRealizedGainLoss` (previously `realized_gain`)
-- `totalUnrealizedGainLoss` (previously `unrealized_gain`)
-- `totalDividends` (previously `total_dividends`)
-- `totalSaleProceeds` (previously `total_sale_proceeds`)
-- `totalOriginalCost` (previously `total_original_cost`)
-- `totalGainLoss` (previously `total_gain_loss`)
-- `isArchived` (previously `is_archived`)
+**Response Format**: Returns portfolio history with camelCase field names:
+- `totalValue` - Aggregated sum of all fund values
+- `totalCost` - Aggregated sum of all fund costs
+- `totalRealizedGainLoss` - Aggregated sum of realized gains
+- `totalUnrealizedGainLoss` - Aggregated sum of unrealized gains
+- `totalDividends` - Aggregated sum of dividends
+- `totalSaleProceeds` - Calculated from realized_gain_loss table
+- `totalOriginalCost` - Calculated from realized_gain_loss table
+- `totalGainLoss` - Aggregated sum of total gain/loss
+- `isArchived` - Portfolio archive status
 
-This standardizes the response format to match the summary endpoint and follows JavaScript naming conventions.
+### Fund History Endpoint
 
-**Bypass materialized view (for testing):**
+The `/api/fund/history/{portfolioId}` endpoint provides fund-level historical data.
 
-The service method accepts an optional `use_materialized=False` parameter to force on-demand calculation, useful for comparing results.
+**Response Format**:
+```json
+[
+  {
+    "date": "2021-09-06",
+    "funds": [
+      {
+        "portfolio_fund_id": "...",
+        "fund_id": "...",
+        "fund_name": "Goldman Sachs Enhanced Index Sustainable Equity",
+        "shares": 15.787812,
+        "price": 31.67,
+        "value": 500.00,
+        "cost": 500.00,
+        "realized_gain": 0,
+        "unrealized_gain": 0,
+        "total_gain_loss": 0,
+        "dividends": 0,
+        "fees": 0
+      }
+    ]
+  }
+]
+```
 
 ## How It Works
 
 ### 1. Data Flow
 
 ```
-User Request → Portfolio Service
+User Request → Portfolio/Fund Service
                     ↓
-            Check Materialized Coverage
+        Fund History Materialized Table
                     ↓
         ┌──────────┴──────────┐
         ↓                     ↓
-    Complete              Incomplete
-    Coverage              Coverage
+   Fund Query           Portfolio Query
         ↓                     ↓
-    Return                Calculate
-    Cached Data           On-Demand
+   Direct Read         Aggregate (SUM)
+        ↓                     ↓
+   Fund History        Portfolio History
 ```
 
 ### 2. Invalidation Flow
@@ -160,25 +218,53 @@ User Request → Portfolio Service
 ```
 Transaction Created → Commit to DB
                           ↓
-                  Invalidate Materialized View
+                  Invalidate Fund History
                           ↓
-                  Delete records >= transaction.date
+                  Delete fund records >= transaction.date
                           ↓
                   (Recalculation happens on next query
                    or via background job)
 ```
 
-### 3. Coverage Check
+### 3. Fund-Level Calculation
 
-The system checks if the requested date range is fully materialized:
+The system calculates fund metrics for each date and stores them:
 
 ```python
-coverage = check_materialized_coverage(portfolio_ids, start_date, end_date)
+# For each portfolio_fund and each date:
+FundHistoryMaterialized(
+    portfolio_fund_id=pf.id,
+    fund_id=pf.fund_id,
+    date=date_str,
+    shares=calculated_shares,
+    price=latest_price,
+    value=shares * price,
+    cost=calculated_cost,
+    realized_gain=calculated_realized,
+    unrealized_gain=calculated_unrealized,
+    total_gain_loss=realized + unrealized,
+    dividends=calculated_dividends,
+    fees=calculated_fees
+)
+```
 
-if coverage.is_complete:
-    return get_materialized_history()  # Fast!
-else:
-    return get_portfolio_history_on_demand()  # Slow but accurate
+Portfolio-level data is then aggregated on-the-fly:
+
+```python
+# Portfolio history aggregates from fund data
+SELECT
+    date,
+    portfolio_id,
+    SUM(value) as total_value,
+    SUM(cost) as total_cost,
+    SUM(realized_gain) as total_realized_gain,
+    SUM(unrealized_gain) as total_unrealized_gain,
+    SUM(total_gain_loss) as total_gain_loss,
+    SUM(dividends) as total_dividends,
+    SUM(fees) as total_fees
+FROM fund_history_materialized
+JOIN portfolio_fund ON fund_history_materialized.portfolio_fund_id = portfolio_fund.id
+GROUP BY date, portfolio_id
 ```
 
 ## Maintenance
@@ -242,23 +328,47 @@ If issues arise:
 
 ## Technical Details
 
-### Files Changed
+### Key Files
 
-**New Files:**
-- `backend/migrations/versions/1.4.0_add_portfolio_history_materialized.py` - Migration
-- `backend/app/services/portfolio_history_materialized_service.py` - Service layer
+**Database Migration:**
+- `backend/migrations/versions/vX.Y.Z_fund_level_materialized_view.py` - Fund-level materialized view migration
 
-**Modified Files:**
-- `backend/app/models.py` - Added `PortfolioHistoryMaterialized` model
-- `backend/app/services/portfolio_service.py` - Added smart routing logic
-- `backend/app/services/transaction_service.py` - Added invalidation hooks
-- `backend/app/cli_commands.py` - Added CLI commands
+**API Layer:**
+- `backend/app/api/fund_namespace.py` - Fund API namespace and endpoints
+- `backend/app/api/portfolio_namespace.py` - Portfolio API namespace
+
+**Service Layer:**
+- `backend/app/services/fund_service.py` - Fund-related business logic
+- `backend/app/services/portfolio_service.py` - Portfolio history aggregation logic
+- `backend/app/services/portfolio_history_materialized_service.py` - Materialized view management
+- `backend/app/services/transaction_service.py` - Invalidation hooks
+
+**Models:**
+- `backend/app/models.py` - Contains `FundHistoryMaterialized` model
+
+**Application Setup:**
+- `backend/app/__init__.py` - Namespace registration
+- `backend/app/cli_commands.py` - CLI commands for materialization management
 
 ### Key Classes
 
-**`PortfolioHistoryMaterialized`**: SQLAlchemy model for cached data
-**`PortfolioHistoryMaterializedService`**: Service for managing materialized views
-**`MaterializedCoverage`**: Data class representing coverage status
+**`FundHistoryMaterialized`**: SQLAlchemy model for fund-level cached data
+
+**`FundService`**: Service for fund-related operations including fund history retrieval
+
+**`PortfolioHistoryMaterializedService`**: Service for managing materialized views and invalidation
+
+**`PortfolioService`**: Aggregates portfolio history from fund data
+
+### Architecture Benefits
+
+**Eliminated Data Duplication**: Fund-level data is the single source of truth, with portfolio aggregates calculated on-the-fly.
+
+**Flexible Querying**: The same underlying data serves both portfolio aggregate queries and detailed fund-level queries.
+
+**Improved Maintainability**: When fund data is corrected or recalculated, portfolio aggregates automatically reflect the changes.
+
+**Better Debugging**: Issues can be traced to specific funds on specific dates, rather than only seeing aggregated portfolio values.
 
 ### Error Handling
 
@@ -266,16 +376,16 @@ All invalidation operations are wrapped in try/except blocks to ensure that mate
 
 ## Troubleshooting
 
-### Issue: Materialized data doesn't match on-demand calculation
+### Issue: Materialized data doesn't match expected values
 
 **Solution:**
 ```bash
 flask invalidate-materialized-history --portfolio-id=<id> --from-date=2020-01-01 --recalculate
 ```
 
-### Issue: Queries still slow
+### Issue: Fund history endpoint returns no data
 
-**Check coverage:**
+**Check if data is materialized:**
 ```bash
 flask materialized-stats
 ```
@@ -283,6 +393,23 @@ flask materialized-stats
 **Materialize missing data:**
 ```bash
 flask materialize-history --force
+```
+
+### Issue: Portfolio history returns incorrect aggregates
+
+**Check fund-level data:**
+```sql
+-- Verify fund data exists
+SELECT date, COUNT(*) as fund_count, SUM(value) as total_value
+FROM fund_history_materialized
+GROUP BY date
+ORDER BY date DESC
+LIMIT 10;
+```
+
+**Recalculate from scratch:**
+```bash
+flask invalidate-materialized-history --portfolio-id=<id> --from-date=2020-01-01 --recalculate
 ```
 
 ### Issue: Database size growing too large
@@ -308,11 +435,14 @@ Potential improvements for future versions:
 ## Questions?
 
 Check the source code documentation:
+- `FundHistoryMaterialized` model in `backend/app/models.py`
+- `FundService` class docstrings in `backend/app/services/fund_service.py`
 - `PortfolioHistoryMaterializedService` class docstrings
 - Migration file comments
 - CLI command help text: `flask materialize-history --help`
 
 ---
 
-**Last Updated**: 2026-01-13 (Version 1.4.1)
+**Document Version**: 1.5.0
+**Last Updated**: 2026-01-19
 **Maintained By**: @ndewijer

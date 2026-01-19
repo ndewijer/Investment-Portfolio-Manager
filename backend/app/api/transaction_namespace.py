@@ -18,28 +18,31 @@ from ..services.transaction_service import TransactionService
 # Create namespace
 ns = Namespace("transaction", description="Transaction management operations")
 
-# Define models
+# Define models (using camelCase for API responses)
 transaction_model = ns.model(
     "Transaction",
     {
         "id": fields.String(required=True, description="Transaction unique identifier (UUID)"),
-        "portfolio_fund_id": fields.String(
+        "portfolioFundId": fields.String(
             required=True, description="Portfolio-Fund relationship ID"
         ),
+        "fundName": fields.String(required=True, description="Fund name"),
         "date": fields.String(required=True, description="Transaction date (YYYY-MM-DD)"),
         "type": fields.String(
             required=True, description="Transaction type", enum=["buy", "sell", "dividend", "fee"]
         ),
         "shares": fields.Float(required=True, description="Number of shares"),
-        "cost_per_share": fields.Float(required=True, description="Cost per share"),
-        "created_at": fields.DateTime(description="Creation timestamp"),
+        "costPerShare": fields.Float(required=True, description="Cost per share"),
+        "ibkrLinked": fields.Boolean(description="Whether transaction is linked to IBKR"),
+        "ibkrTransactionId": fields.String(description="IBKR transaction ID if linked"),
+        "realizedGainLoss": fields.Float(description="Realized gain/loss (sell transactions only)"),
     },
 )
 
 transaction_create_model = ns.model(
     "TransactionCreate",
     {
-        "portfolio_fund_id": fields.String(
+        "portfolioFundId": fields.String(
             required=True, description="Portfolio-Fund relationship ID"
         ),
         "date": fields.String(
@@ -49,7 +52,7 @@ transaction_create_model = ns.model(
             required=True, description="Transaction type", enum=["buy", "sell", "dividend", "fee"]
         ),
         "shares": fields.Float(required=True, description="Number of shares", example=10.5),
-        "cost_per_share": fields.Float(required=True, description="Cost per share", example=150.25),
+        "costPerShare": fields.Float(required=True, description="Cost per share", example=150.25),
     },
 )
 
@@ -63,40 +66,26 @@ class TransactionList(Resource):
     """Transaction collection endpoint."""
 
     @ns.doc("list_transactions")
-    @ns.param("portfolio_id", "Filter by portfolio ID", _in="query")
-    @ns.param("fund_id", "Filter by fund ID", _in="query")
-    @ns.param("start_date", "Start date (YYYY-MM-DD)", _in="query")
-    @ns.param("end_date", "End date (YYYY-MM-DD)", _in="query")
-    @ns.param("type", "Transaction type", _in="query")
     @ns.response(200, "Success", [transaction_model])
     @ns.response(500, "Server error", error_model)
     def get(self):
         """
-        Get all transactions with optional filters.
+        Get all transactions.
 
-        Retrieves a list of all transactions, optionally filtered by:
-        - Portfolio ID
-        - Fund ID
-        - Date range
-        - Transaction type
+        Returns a list of all transactions across all portfolios.
+        Use /transaction/portfolio/<portfolio_id> for portfolio-specific transactions.
 
         Returns transaction details including realized gain/loss for sell transactions.
         """
         try:
-            portfolio_id = request.args.get("portfolio_id")
             service = TransactionService()
-
-            if portfolio_id:
-                transactions = service.get_portfolio_transactions(portfolio_id)
-            else:
-                transactions = service.get_all_transactions()
+            transactions = service.get_all_transactions()
 
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.TRANSACTION,
-                message="Successfully retrieved transactions",
+                message="Successfully retrieved all transactions",
                 details={
-                    "portfolio_id": portfolio_id,
                     "transaction_count": len(transactions),
                 },
             )
@@ -109,7 +98,7 @@ class TransactionList(Resource):
                 level=LogLevel.ERROR,
                 category=LogCategory.TRANSACTION,
                 message=f"Error retrieving transactions: {e!s}",
-                details={"portfolio_id": portfolio_id, "error": str(e)},
+                details={"error": str(e)},
             )
             return {"error": str(e)}, 500
 
@@ -126,22 +115,34 @@ class TransactionList(Resource):
 
         For sell transactions, the system automatically calculates realized gain/loss
         using FIFO (First In, First Out) accounting method.
+
+        Request body should use camelCase (portfolioFundId, costPerShare).
         """
         try:
             data = request.json
-            service = TransactionService()
-            transaction = service.create_transaction(data)
 
-            # Format the transaction response
+            # Convert camelCase input to snake_case for service layer
+            service_data = {
+                "portfolio_fund_id": data.get("portfolioFundId"),
+                "date": data.get("date"),
+                "type": data.get("type"),
+                "shares": data.get("shares"),
+                "cost_per_share": data.get("costPerShare"),
+            }
+
+            service = TransactionService()
+            transaction = service.create_transaction(service_data)
+
+            # Format the transaction response (already in camelCase from service)
             response = service.format_transaction(transaction)
-            if data["type"] == "sell":
+            if service_data["type"] == "sell":
                 # Add realized gain/loss info to response for sell transactions
                 realized_records = RealizedGainLoss.query.filter_by(
                     transaction_id=transaction.id
                 ).first()
 
                 if realized_records:
-                    response["realized_gain_loss"] = realized_records.realized_gain_loss
+                    response["realizedGainLoss"] = realized_records.realized_gain_loss
 
             logger.log(
                 level=LogLevel.INFO,
@@ -168,6 +169,54 @@ class TransactionList(Resource):
                     "error": str(e),
                     "request_data": data,
                 },
+            )
+            return {"error": str(e)}, 500
+
+
+@ns.route("/portfolio/<string:portfolio_id>")
+@ns.param("portfolio_id", "Portfolio unique identifier (UUID)")
+class PortfolioTransactionList(Resource):
+    """Portfolio transactions endpoint."""
+
+    @ns.doc("list_portfolio_transactions")
+    @ns.response(200, "Success", [transaction_model])
+    @ns.response(500, "Server error", error_model)
+    def get(self, portfolio_id):
+        """
+        Get all transactions for a specific portfolio.
+
+        Returns all buy, sell, dividend, and fee transactions associated with
+        the specified portfolio, including fund names and realized gain/loss data.
+
+        Args:
+            portfolio_id: Portfolio unique identifier
+
+        Returns:
+            List of transaction objects in camelCase format
+        """
+        try:
+            service = TransactionService()
+            transactions = service.get_portfolio_transactions(portfolio_id)
+
+            logger.log(
+                level=LogLevel.INFO,
+                category=LogCategory.TRANSACTION,
+                message="Successfully retrieved portfolio transactions",
+                details={
+                    "portfolio_id": portfolio_id,
+                    "transaction_count": len(transactions),
+                },
+            )
+
+            return transactions, 200
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.TRANSACTION,
+                message=f"Error retrieving portfolio transactions: {e!s}",
+                details={"portfolio_id": portfolio_id, "error": str(e)},
             )
             return {"error": str(e)}, 500
 
@@ -224,11 +273,22 @@ class Transaction(Resource):
 
         Note: Modifying transactions may affect historical calculations
         and should be done with caution.
+
+        Request body should use camelCase (portfolioFundId, costPerShare).
         """
         try:
             data = request.json
+
+            # Convert camelCase input to snake_case for service layer
+            service_data = {
+                "date": data.get("date"),
+                "type": data.get("type"),
+                "shares": data.get("shares"),
+                "cost_per_share": data.get("costPerShare"),
+            }
+
             service = TransactionService()
-            transaction = service.update_transaction(transaction_id, data)
+            transaction = service.update_transaction(transaction_id, service_data)
 
             # Format the transaction response with realized gain/loss for sell transactions
             response = service.format_transaction(

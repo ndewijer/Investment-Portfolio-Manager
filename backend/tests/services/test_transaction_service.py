@@ -107,7 +107,7 @@ class TestGetTransactions:
         # Should only return portfolio1 transactions
         assert len(transactions) == 1
         assert transactions[0]["id"] == txn1.id
-        assert transactions[0]["fund_name"] == fund.name
+        assert transactions[0]["fundName"] == fund.name
 
     def test_get_portfolio_transactions_with_ibkr_allocation(self, app_context, db_session):
         """Test that get_portfolio_transactions includes IBKR allocation data."""
@@ -163,8 +163,8 @@ class TestGetTransactions:
 
         # Should include IBKR allocation data
         assert len(transactions) == 1
-        assert transactions[0]["ibkr_linked"] is True
-        assert transactions[0]["ibkr_transaction_id"] == ibkr_txn.id
+        assert transactions[0]["ibkrLinked"] is True
+        assert transactions[0]["ibkrTransactionId"] == ibkr_txn.id
 
 
 class TestFormatTransaction:
@@ -191,14 +191,14 @@ class TestFormatTransaction:
 
         # Verify formatting
         assert formatted["id"] == txn.id
-        assert formatted["portfolio_fund_id"] == pf.id
-        assert formatted["fund_name"] == pf.fund.name
+        assert formatted["portfolioFundId"] == pf.id
+        assert formatted["fundName"] == pf.fund.name
         assert formatted["date"] == "2024-01-01"
         assert formatted["type"] == "buy"
         assert formatted["shares"] == 100
-        assert formatted["cost_per_share"] == 10.0
-        assert formatted["ibkr_linked"] is False
-        assert formatted["ibkr_transaction_id"] is None
+        assert formatted["costPerShare"] == 10.0
+        assert formatted["ibkrLinked"] is False
+        assert formatted["ibkrTransactionId"] is None
 
     def test_format_transaction_with_ibkr_allocation(self, app_context, db_session):
         """Test formatting transaction with IBKR allocation."""
@@ -250,8 +250,8 @@ class TestFormatTransaction:
         formatted = TransactionService.format_transaction(txn)
 
         # Should query and include IBKR data
-        assert formatted["ibkr_linked"] is True
-        assert formatted["ibkr_transaction_id"] == ibkr_txn.id
+        assert formatted["ibkrLinked"] is True
+        assert formatted["ibkrTransactionId"] == ibkr_txn.id
 
     def test_format_transaction_batch_mode(self, app_context, db_session):
         """Test formatting in batch mode with pre-loaded data."""
@@ -276,8 +276,8 @@ class TestFormatTransaction:
         )
 
         # Should use pre-loaded data
-        assert formatted["fund_name"] == pf.fund.name
-        assert formatted["ibkr_linked"] is False
+        assert formatted["fundName"] == pf.fund.name
+        assert formatted["ibkrLinked"] is False
 
 
 class TestCreateTransaction:

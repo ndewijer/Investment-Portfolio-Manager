@@ -120,7 +120,7 @@ class TransactionService:
         include_realized_gain=False,
     ):
         """
-        Format a transaction object into a dictionary.
+        Format a transaction object into a dictionary with camelCase keys.
 
         Args:
             transaction (Transaction): Transaction object
@@ -133,21 +133,21 @@ class TransactionService:
             batch_mode (bool, optional): If True, skip database queries for missing
                 data. Use when calling with pre-loaded data to avoid N+1 queries.
                 Default: False.
-            include_realized_gain (bool, optional): If True, includes realized_gain_loss
+            include_realized_gain (bool, optional): If True, includes realizedGainLoss
                 for sell transactions. Default: False.
 
         Returns:
-            dict: Formatted transaction containing:
+            dict: Formatted transaction with camelCase keys containing:
                 - id: Transaction ID
-                - portfolio_fund_id: Portfolio fund ID
-                - fund_name: Fund name
+                - portfolioFundId: Portfolio fund ID
+                - fundName: Fund name
                 - date: ISO format date
                 - type: Transaction type
                 - shares: Number of shares
-                - cost_per_share: Cost per share
-                - ibkr_linked: Boolean indicating if transaction came from IBKR
-                - ibkr_transaction_id: ID of parent IBKR transaction (if applicable)
-                - realized_gain_loss: Realized gain/loss amount (only if include_realized_gain=True
+                - costPerShare: Cost per share
+                - ibkrLinked: Boolean indicating if transaction came from IBKR
+                - ibkrTransactionId: ID of parent IBKR transaction (if applicable)
+                - realizedGainLoss: Realized gain/loss amount (only if include_realized_gain=True
                   and transaction is a sell)
         """
         # If IBKR allocation not provided, query it (backwards compatibility)
@@ -168,14 +168,14 @@ class TransactionService:
 
         result = {
             "id": transaction.id,
-            "portfolio_fund_id": transaction.portfolio_fund_id,
-            "fund_name": fund_name,
+            "portfolioFundId": transaction.portfolio_fund_id,
+            "fundName": fund_name,
             "date": transaction.date.isoformat(),
             "type": transaction.type,
             "shares": transaction.shares,
-            "cost_per_share": transaction.cost_per_share,
-            "ibkr_linked": bool(ibkr_allocation),
-            "ibkr_transaction_id": ibkr_allocation.ibkr_transaction_id if ibkr_allocation else None,
+            "costPerShare": transaction.cost_per_share,
+            "ibkrLinked": bool(ibkr_allocation),
+            "ibkrTransactionId": ibkr_allocation.ibkr_transaction_id if ibkr_allocation else None,
         }
 
         # Include realized gain/loss if requested and it's a sell transaction
@@ -184,7 +184,7 @@ class TransactionService:
                 transaction_id=transaction.id
             ).first()
             if realized_record:
-                result["realized_gain_loss"] = realized_record.realized_gain_loss
+                result["realizedGainLoss"] = realized_record.realized_gain_loss
 
         return result
 

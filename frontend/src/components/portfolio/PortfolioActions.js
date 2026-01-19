@@ -75,7 +75,7 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
         <div className="form-group">
           <label>Fund:</label>
           <div className="static-field">
-            {portfolioFunds.find((pf) => pf.id === newTransaction.portfolio_fund_id)?.fundName}
+            {portfolioFunds.find((pf) => pf.id === newTransaction.portfolioFundId)?.fundName}
           </div>
         </div>
         <div className="form-group">
@@ -121,12 +121,12 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
           <label>Cost per Share:</label>
           <div className="input-with-indicator">
             <NumericInput
-              value={newTransaction.cost_per_share}
+              value={newTransaction.costPerShare}
               onChange={(value) => {
                 setPriceFound(false);
                 setNewTransaction((prev) => ({
                   ...prev,
-                  cost_per_share: value,
+                  costPerShare: value,
                 }));
               }}
               decimals={2}
@@ -193,11 +193,11 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
             <div className="form-group">
               <label>Cost per Share:</label>
               <NumericInput
-                value={editingTransaction.cost_per_share}
+                value={editingTransaction.costPerShare}
                 onChange={(value) => {
                   setEditingTransaction((prev) => ({
                     ...prev,
-                    cost_per_share: value,
+                    costPerShare: value,
                   }));
                 }}
                 decimals={2}
