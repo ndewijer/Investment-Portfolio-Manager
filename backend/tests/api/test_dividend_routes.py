@@ -69,11 +69,10 @@ class TestDividendCreate:
         db_session.commit()
 
         payload = {
-            "fund_id": fund.id,
-            "portfolio_fund_id": pf.id,
-            "record_date": datetime.now().date().isoformat(),
-            "ex_dividend_date": (datetime.now().date() - timedelta(days=1)).isoformat(),
-            "dividend_per_share": 0.75,
+            "portfolioFundId": pf.id,
+            "recordDate": datetime.now().date().isoformat(),
+            "exDividendDate": (datetime.now().date() - timedelta(days=1)).isoformat(),
+            "dividendPerShare": 0.75,
         }
 
         response = client.post("/api/dividend", json=payload)
@@ -81,8 +80,8 @@ class TestDividendCreate:
         assert response.status_code == 201
         data = response.get_json()
         assert "id" in data
-        assert data["shares_owned"] == 100
-        assert data["dividend_per_share"] == 0.75
+        assert data["sharesOwned"] == 100
+        assert data["dividendPerShare"] == 0.75
 
         # Verify database
         dividend = db.session.get(Dividend, data["id"])
@@ -118,11 +117,10 @@ class TestDividendCreate:
         db_session.commit()
 
         payload = {
-            "fund_id": fund.id,
-            "portfolio_fund_id": pf.id,
-            "record_date": datetime.now().date().isoformat(),
-            "ex_dividend_date": datetime.now().date().isoformat(),
-            "dividend_per_share": 1.50,
+            "portfolioFundId": pf.id,
+            "recordDate": datetime.now().date().isoformat(),
+            "exDividendDate": datetime.now().date().isoformat(),
+            "dividendPerShare": 1.50,
         }
 
         response = client.post("/api/dividend", json=payload)
@@ -130,7 +128,7 @@ class TestDividendCreate:
         assert response.status_code == 201
         data = response.get_json()
         # Total should be 50 * 1.50 = 75.00
-        assert data["total_amount"] == 75.00
+        assert data["totalAmount"] == 75.00
 
 
 class TestDividendRetrieve:
@@ -304,11 +302,10 @@ class TestDividendUpdateDelete:
         db_session.commit()
 
         payload = {
-            "fund_id": fund.id,
-            "portfolio_fund_id": pf.id,
-            "record_date": datetime.now().date().isoformat(),
-            "ex_dividend_date": (datetime.now().date() - timedelta(days=1)).isoformat(),
-            "dividend_per_share": 0.42,  # Changed
+            "recordDate": datetime.now().date().isoformat(),
+            "exDividendDate": (datetime.now().date() - timedelta(days=1)).isoformat(),
+            "dividendPerShare": 0.42,  # Changed
+            "buyOrderDate": datetime.now().date().isoformat(),
         }
 
         response = client.put(f"/api/dividend/{div.id}", json=payload)
@@ -316,7 +313,7 @@ class TestDividendUpdateDelete:
         assert response.status_code == 200
         data = response.get_json()
         # Verify the dividend_per_share was updated
-        assert data["dividend_per_share"] == 0.42
+        assert data["dividendPerShare"] == 0.42
 
         # Verify database
         db_session.refresh(div)
@@ -332,12 +329,9 @@ class TestDividendUpdateDelete:
         """
         fake_id = make_id()
         payload = {
-            "fund_id": make_id(),
-            "portfolio_fund_id": make_id(),
-            "record_date": datetime.now().date().isoformat(),
-            "ex_dividend_date": datetime.now().date().isoformat(),
-            "shares_owned": 100,
-            "dividend_per_share": 0.50,
+            "recordDate": datetime.now().date().isoformat(),
+            "exDividendDate": datetime.now().date().isoformat(),
+            "dividendPerShare": 0.50,
         }
 
         response = client.put(f"/api/dividend/{fake_id}", json=payload)
@@ -423,11 +417,10 @@ class TestDividendErrors:
             mock_create.side_effect = Exception("Database error")
 
             payload = {
-                "fund_id": fund.id,
-                "portfolio_fund_id": pf.id,
-                "record_date": datetime.now().date().isoformat(),
-                "ex_dividend_date": datetime.now().date().isoformat(),
-                "dividend_per_share": 0.50,
+                "portfolioFundId": pf.id,
+                "recordDate": datetime.now().date().isoformat(),
+                "exDividendDate": datetime.now().date().isoformat(),
+                "dividendPerShare": 0.50,
             }
 
             response = client.post("/api/dividend", json=payload)
@@ -513,11 +506,9 @@ class TestDividendErrors:
             mock_update.side_effect = ValueError("Dividend not found")
 
             payload = {
-                "fund_id": fund.id,
-                "portfolio_fund_id": pf.id,
-                "record_date": datetime.now().date().isoformat(),
-                "ex_dividend_date": datetime.now().date().isoformat(),
-                "dividend_per_share": 0.55,
+                "recordDate": datetime.now().date().isoformat(),
+                "exDividendDate": datetime.now().date().isoformat(),
+                "dividendPerShare": 0.55,
             }
 
             response = client.put(f"/api/dividend/{div.id}", json=payload)
@@ -561,11 +552,9 @@ class TestDividendErrors:
             mock_update.side_effect = Exception("Unexpected database error")
 
             payload = {
-                "fund_id": fund.id,
-                "portfolio_fund_id": pf.id,
-                "record_date": datetime.now().date().isoformat(),
-                "ex_dividend_date": datetime.now().date().isoformat(),
-                "dividend_per_share": 0.80,
+                "recordDate": datetime.now().date().isoformat(),
+                "exDividendDate": datetime.now().date().isoformat(),
+                "dividendPerShare": 0.80,
             }
 
             response = client.put(f"/api/dividend/{div.id}", json=payload)

@@ -89,13 +89,13 @@ describe('useDividendManagement', () => {
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       expect(result.current.newDividend).toMatchObject({
-        portfolio_fund_id: '',
-        record_date: '2024-01-15',
-        ex_dividend_date: '2024-01-15',
-        dividend_per_share: '',
-        buy_order_date: '',
-        reinvestment_shares: '',
-        reinvestment_price: '',
+        portfolioFundId: '',
+        recordDate: '2024-01-15',
+        exDividendDate: '2024-01-15',
+        dividendPerShare: '',
+        buyOrderDate: '',
+        reinvestmentShares: '',
+        reinvestmentPrice: '',
       });
     });
   });
@@ -125,7 +125,7 @@ describe('useDividendManagement', () => {
   describe('Add Dividend Modal', () => {
     test('handleAddDividend fetches fund details and opens modal', async () => {
       const mockFund = { id: 'pf-1', fundId: 'fund-123' };
-      const mockFundData = { id: 'fund-123', name: 'Test Fund', dividend_type: 'cash' };
+      const mockFundData = { id: 'fund-123', name: 'Test Fund', dividendType: 'CASH' };
 
       api.get.mockResolvedValue({ data: mockFundData });
 
@@ -138,11 +138,11 @@ describe('useDividendManagement', () => {
       expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
       expect(result.current.isDividendModalOpen).toBe(true);
       expect(result.current.selectedFund).toEqual(mockFundData);
-      expect(result.current.newDividend.portfolio_fund_id).toBe('pf-1');
+      expect(result.current.newDividend.portfolioFundId).toBe('pf-1');
     });
 
     test('handleAddDividend handles API error gracefully', async () => {
-      const mockFund = { id: 'pf-1', fund_id: 'fund-123' };
+      const mockFund = { id: 'pf-1', fundId: 'fund-123' };
       api.get.mockRejectedValue(new Error('Fund not found'));
 
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
@@ -169,17 +169,17 @@ describe('useDividendManagement', () => {
 
       expect(result.current.isDividendModalOpen).toBe(false);
       expect(result.current.selectedFund).toBeNull();
-      expect(result.current.newDividend.portfolio_fund_id).toBe('');
+      expect(result.current.newDividend.portfolioFundId).toBe('');
     });
   });
 
   describe('Create Dividend - Cash', () => {
     test('handleCreateDividend creates cash dividend successfully', async () => {
       const mockDividendData = {
-        portfolio_fund_id: 'pf-1',
-        record_date: '2024-01-15',
-        ex_dividend_date: '2024-01-15',
-        dividend_per_share: '1.50',
+        portfolioFundId: 'pf-1',
+        recordDate: '2024-01-15',
+        exDividendDate: '2024-01-15',
+        dividendPerShare: '1.50',
       };
 
       const mockCreatedDividend = { ...mockDividendData, id: 1 };
@@ -190,7 +190,7 @@ describe('useDividendManagement', () => {
 
       // Set up as cash dividend
       act(() => {
-        result.current.setSelectedFund({ dividend_type: 'cash' });
+        result.current.setSelectedFund({ dividendType: 'CASH' });
         result.current.setNewDividend(mockDividendData);
       });
 
@@ -201,8 +201,8 @@ describe('useDividendManagement', () => {
       expect(api.post).toHaveBeenCalledWith(
         '/dividend',
         expect.objectContaining({
-          portfolio_fund_id: 'pf-1',
-          dividend_per_share: '1.50',
+          portfolioFundId: 'pf-1',
+          dividendPerShare: '1.50',
         })
       );
       expect(mockOnDataChange).toHaveBeenCalled();
@@ -223,7 +223,7 @@ describe('useDividendManagement', () => {
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       act(() => {
-        result.current.setSelectedFund({ dividend_type: 'cash' });
+        result.current.setSelectedFund({ dividendType: 'CASH' });
       });
 
       await act(async () => {
@@ -240,11 +240,11 @@ describe('useDividendManagement', () => {
       dateHelpers.isDateInFuture.mockReturnValue(true);
 
       const mockDividendData = {
-        portfolio_fund_id: 'pf-1',
-        record_date: '2024-01-15',
-        ex_dividend_date: '2024-01-15',
-        dividend_per_share: '1.50',
-        buy_order_date: '2024-02-01',
+        portfolioFundId: 'pf-1',
+        recordDate: '2024-01-15',
+        exDividendDate: '2024-01-15',
+        dividendPerShare: '1.50',
+        buyOrderDate: '2024-02-01',
       };
 
       api.post.mockResolvedValue({ data: { ...mockDividendData, id: 1 } });
@@ -252,7 +252,7 @@ describe('useDividendManagement', () => {
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       act(() => {
-        result.current.setSelectedFund({ dividend_type: 'stock' });
+        result.current.setSelectedFund({ dividendType: 'STOCK' });
         result.current.setNewDividend(mockDividendData);
       });
 
@@ -263,28 +263,28 @@ describe('useDividendManagement', () => {
       expect(api.post).toHaveBeenCalledWith(
         '/dividend',
         expect.objectContaining({
-          buy_order_date: '2024-02-01',
-          reinvestment_shares: undefined,
-          reinvestment_price: undefined,
+          buyOrderDate: '2024-02-01',
+          reinvestmentShares: undefined,
+          reinvestmentPrice: undefined,
         })
       );
       expect(mockOnDataChange).toHaveBeenCalled();
     });
 
-    test('validates buy_order_date is required for stock dividends', async () => {
+    test('validates buyOrderDate is required for stock dividends', async () => {
       // Mock as future date to bypass reinvestment validation
       dateHelpers.isDateInFuture.mockReturnValue(true);
 
       const mockDividendData = {
-        portfolio_fund_id: 'pf-1',
-        dividend_per_share: '1.50',
-        buy_order_date: '', // Missing
+        portfolioFundId: 'pf-1',
+        dividendPerShare: '1.50',
+        buyOrderDate: '', // Missing
       };
 
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       act(() => {
-        result.current.setSelectedFund({ dividend_type: 'stock' });
+        result.current.setSelectedFund({ dividendType: 'STOCK' });
         result.current.setNewDividend(mockDividendData);
       });
 
@@ -304,13 +304,13 @@ describe('useDividendManagement', () => {
       dateHelpers.isDateInFuture.mockReturnValue(false);
 
       const mockDividendData = {
-        portfolio_fund_id: 'pf-1',
-        record_date: '2024-01-15',
-        ex_dividend_date: '2024-01-15',
-        dividend_per_share: '1.50',
-        buy_order_date: '2024-01-10',
-        reinvestment_shares: '10',
-        reinvestment_price: '50.00',
+        portfolioFundId: 'pf-1',
+        recordDate: '2024-01-15',
+        exDividendDate: '2024-01-15',
+        dividendPerShare: '1.50',
+        buyOrderDate: '2024-01-10',
+        reinvestmentShares: '10',
+        reinvestmentPrice: '50.00',
       };
 
       api.post.mockResolvedValue({ data: { ...mockDividendData, id: 1 } });
@@ -318,7 +318,7 @@ describe('useDividendManagement', () => {
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       act(() => {
-        result.current.setSelectedFund({ dividend_type: 'stock' });
+        result.current.setSelectedFund({ dividendType: 'STOCK' });
         result.current.setNewDividend(mockDividendData);
       });
 
@@ -329,9 +329,9 @@ describe('useDividendManagement', () => {
       expect(api.post).toHaveBeenCalledWith(
         '/dividend',
         expect.objectContaining({
-          buy_order_date: '2024-01-10',
-          reinvestment_shares: '10',
-          reinvestment_price: '50.00',
+          buyOrderDate: '2024-01-10',
+          reinvestmentShares: '10',
+          reinvestmentPrice: '50.00',
         })
       );
       expect(mockOnDataChange).toHaveBeenCalled();
@@ -341,17 +341,17 @@ describe('useDividendManagement', () => {
       dateHelpers.isDateInFuture.mockReturnValue(false);
 
       const mockDividendData = {
-        portfolio_fund_id: 'pf-1',
-        dividend_per_share: '1.50',
-        buy_order_date: '2024-01-10',
-        reinvestment_shares: '', // Missing
-        reinvestment_price: '', // Missing
+        portfolioFundId: 'pf-1',
+        dividendPerShare: '1.50',
+        buyOrderDate: '2024-01-10',
+        reinvestmentShares: '', // Missing
+        reinvestmentPrice: '', // Missing
       };
 
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       act(() => {
-        result.current.setSelectedFund({ dividend_type: 'stock' });
+        result.current.setSelectedFund({ dividendType: 'STOCK' });
         result.current.setNewDividend(mockDividendData);
       });
 
@@ -370,13 +370,13 @@ describe('useDividendManagement', () => {
     test('handleEditDividend fetches fund and opens edit modal', async () => {
       const mockDividend = {
         id: 1,
-        fund_id: 'fund-123',
-        record_date: '2024-01-15T00:00:00Z',
-        ex_dividend_date: '2024-01-15T00:00:00Z',
-        dividend_per_share: '1.50',
+        fundId: 'fund-123',
+        recordDate: '2024-01-15T00:00:00Z',
+        exDividendDate: '2024-01-15T00:00:00Z',
+        dividendPerShare: '1.50',
       };
 
-      const mockFundData = { id: 'fund-123', name: 'Test Fund', dividend_type: 'cash' };
+      const mockFundData = { id: 'fund-123', name: 'Test Fund', dividendType: 'CASH' };
 
       api.get.mockResolvedValue({ data: mockFundData });
 
@@ -391,22 +391,22 @@ describe('useDividendManagement', () => {
       expect(result.current.selectedFund).toEqual(mockFundData);
       expect(result.current.editingDividend).toMatchObject({
         id: 1,
-        record_date: '2024-01-15',
-        ex_dividend_date: '2024-01-15',
+        recordDate: '2024-01-15',
+        exDividendDate: '2024-01-15',
       });
     });
 
     test('handleEditDividend fetches transaction for stock dividend with reinvestment', async () => {
       const mockDividend = {
         id: 1,
-        fund_id: 'fund-123',
-        record_date: '2024-01-15T00:00:00Z',
-        ex_dividend_date: '2024-01-15T00:00:00Z',
-        reinvestment_transaction_id: 'txn-456',
+        fundId: 'fund-123',
+        recordDate: '2024-01-15T00:00:00Z',
+        exDividendDate: '2024-01-15T00:00:00Z',
+        reinvestmentTransactionId: 'txn-456',
       };
 
-      const mockFundData = { id: 'fund-123', dividend_type: 'stock' };
-      const mockTransaction = { id: 'txn-456', shares: 10, cost_per_share: 50 };
+      const mockFundData = { id: 'fund-123', dividendType: 'STOCK' };
+      const mockTransaction = { id: 'txn-456', shares: 10, costPerShare: 50 };
 
       api.get
         .mockResolvedValueOnce({ data: mockFundData })
@@ -420,8 +420,8 @@ describe('useDividendManagement', () => {
 
       expect(api.get).toHaveBeenCalledWith('/fund/fund-123');
       expect(api.get).toHaveBeenCalledWith('/transaction/txn-456');
-      expect(result.current.editingDividend.reinvestment_shares).toBe(10);
-      expect(result.current.editingDividend.reinvestment_price).toBe(50);
+      expect(result.current.editingDividend.reinvestmentShares).toBe(10);
+      expect(result.current.editingDividend.reinvestmentPrice).toBe(50);
     });
 
     test('handleEditDividend handles API error', async () => {
@@ -430,7 +430,7 @@ describe('useDividendManagement', () => {
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       await act(async () => {
-        await result.current.handleEditDividend({ id: 1, fund_id: 'fund-123' });
+        await result.current.handleEditDividend({ id: 1, fundId: 'fund-123' });
       });
 
       expect(global.window.alert).toHaveBeenCalledWith('Error loading dividend details');
@@ -459,13 +459,13 @@ describe('useDividendManagement', () => {
     test('handleUpdateDividend updates cash dividend', async () => {
       const mockDividend = {
         id: 1,
-        portfolio_fund_id: 'pf-1',
-        dividend_per_share: '2.00',
+        portfolioFundId: 'pf-1',
+        dividendPerShare: '2.00',
       };
 
       api.put.mockResolvedValue({ data: mockDividend });
 
-      const mockExistingDividends = [{ id: 1, dividend_per_share: '1.50' }];
+      const mockExistingDividends = [{ id: 1, dividendPerShare: '1.50' }];
 
       useApiState.mockReturnValue({
         data: mockExistingDividends,
@@ -478,7 +478,7 @@ describe('useDividendManagement', () => {
 
       act(() => {
         result.current.setEditingDividend(mockDividend);
-        result.current.setSelectedFund({ dividend_type: 'cash' });
+        result.current.setSelectedFund({ dividendType: 'CASH' });
       });
 
       await act(async () => {
@@ -487,7 +487,7 @@ describe('useDividendManagement', () => {
 
       expect(api.put).toHaveBeenCalledWith(
         '/dividend/1',
-        expect.objectContaining({ id: 1, dividend_per_share: '2.00' })
+        expect.objectContaining({ id: 1, dividendPerShare: '2.00' })
       );
       expect(mockOnDataChange).toHaveBeenCalled();
       expect(result.current.isDividendEditModalOpen).toBe(false);
@@ -496,15 +496,15 @@ describe('useDividendManagement', () => {
     test('handleUpdateDividend validates stock dividend reinvestment fields', async () => {
       const mockDividend = {
         id: 1,
-        reinvestment_shares: '', // Missing
-        reinvestment_price: '', // Missing
+        reinvestmentShares: '', // Missing
+        reinvestmentPrice: '', // Missing
       };
 
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       act(() => {
         result.current.setEditingDividend(mockDividend);
-        result.current.setSelectedFund({ dividend_type: 'stock' });
+        result.current.setSelectedFund({ dividendType: 'STOCK' });
       });
 
       await act(async () => {
@@ -532,7 +532,7 @@ describe('useDividendManagement', () => {
 
       act(() => {
         result.current.setEditingDividend({ id: 1 });
-        result.current.setSelectedFund({ dividend_type: 'cash' });
+        result.current.setSelectedFund({ dividendType: 'CASH' });
       });
 
       await act(async () => {
@@ -549,8 +549,8 @@ describe('useDividendManagement', () => {
       api.delete.mockResolvedValue({});
 
       const mockDividends = [
-        { id: 1, dividend_per_share: '1.50' },
-        { id: 2, dividend_per_share: '2.00' },
+        { id: 1, dividendPerShare: '1.50' },
+        { id: 2, dividendPerShare: '2.00' },
       ];
 
       useApiState.mockReturnValue({
@@ -613,8 +613,8 @@ describe('useDividendManagement', () => {
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
       const newData = {
-        portfolio_fund_id: 'pf-1',
-        dividend_per_share: '1.50',
+        portfolioFundId: 'pf-1',
+        dividendPerShare: '1.50',
       };
 
       act(() => {
@@ -629,7 +629,7 @@ describe('useDividendManagement', () => {
 
       const editData = {
         id: 1,
-        dividend_per_share: '2.00',
+        dividendPerShare: '2.00',
       };
 
       act(() => {
@@ -645,7 +645,7 @@ describe('useDividendManagement', () => {
       const fundData = {
         id: 'fund-123',
         name: 'Test Fund',
-        dividend_type: 'stock',
+        dividendType: 'STOCK',
       };
 
       act(() => {

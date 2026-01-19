@@ -53,29 +53,29 @@ const DividendsTable = ({
   // Define columns for the dividends table
   const dividendsColumns = [
     {
-      key: 'record_date',
+      key: 'recordDate',
       header: 'Record Date',
       sortable: true,
       render: (value) => formatDisplayDate(value),
     },
     {
-      key: 'ex_dividend_date',
+      key: 'exDividendDate',
       header: 'Ex-Dividend Date',
       sortable: true,
       render: (value) => formatDisplayDate(value),
     },
     {
-      key: 'fund_name',
+      key: 'fundName',
       header: 'Fund',
       sortable: true,
       render: (value) => value,
     },
     {
-      key: 'dividend_type',
+      key: 'dividendType',
       header: 'Type',
       sortable: true,
       render: (value) =>
-        value === 'stock' ? (
+        value === 'STOCK' ? (
           <>
             <FontAwesomeIcon icon={faChartLine} /> Stock
           </>
@@ -86,19 +86,19 @@ const DividendsTable = ({
         ),
     },
     {
-      key: 'shares_owned',
+      key: 'sharesOwned',
       header: 'Shares Owned',
       sortable: true,
       render: (value) => formatNumber(value, 6),
     },
     {
-      key: 'dividend_per_share',
+      key: 'dividendPerShare',
       header: 'Dividend per Share',
       sortable: true,
       render: (value) => formatCurrency(value),
     },
     {
-      key: 'total_amount',
+      key: 'totalAmount',
       header: 'Total Amount',
       sortable: true,
       render: (value) => formatCurrency(value),
@@ -108,10 +108,10 @@ const DividendsTable = ({
       header: 'Dividend Status',
       render: (value, dividend) => {
         let status;
-        if (dividend.dividend_type === 'cash') {
+        if (dividend.dividendType === 'CASH') {
           status = 'PAID OUT';
         } else {
-          status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
+          status = dividend.reinvestmentTransactionId ? 'REINVESTED' : 'PENDING';
         }
         return <span className={`status-${status.toLowerCase().replace(' ', '-')}`}>{status}</span>;
       },
@@ -135,19 +135,19 @@ const DividendsTable = ({
   // Mobile card renderer for dividends
   const renderDividendMobileCard = (dividend) => {
     let status;
-    if (dividend.dividend_type === 'cash') {
+    if (dividend.dividendType === 'CASH') {
       status = 'PAID OUT';
     } else {
-      status = dividend.reinvestment_transaction_id ? 'REINVESTED' : 'PENDING';
+      status = dividend.reinvestmentTransactionId ? 'REINVESTED' : 'PENDING';
     }
 
     return (
       <div className="dividend-card">
         <div className="card-header">
           <div className="dividend-main">
-            <span className="record-date">{formatDisplayDate(dividend.record_date)}</span>
+            <span className="record-date">{formatDisplayDate(dividend.recordDate)}</span>
             <div className="dividend-type">
-              {dividend.dividend_type === 'stock' ? (
+              {dividend.dividendType === 'STOCK' ? (
                 <>
                   <FontAwesomeIcon icon={faChartLine} /> Stock
                 </>
@@ -158,23 +158,23 @@ const DividendsTable = ({
               )}
             </div>
           </div>
-          <div className="total-amount">{formatCurrency(dividend.total_amount)}</div>
+          <div className="total-amount">{formatCurrency(dividend.totalAmount)}</div>
         </div>
 
         <div className="card-body">
-          <div className="fund-name">{dividend.fund_name}</div>
+          <div className="fund-name">{dividend.fundName}</div>
           <div className="dividend-details">
             <div className="detail-row">
               <span className="label">Ex-Dividend Date:</span>
-              <span className="value">{formatDisplayDate(dividend.ex_dividend_date)}</span>
+              <span className="value">{formatDisplayDate(dividend.exDividendDate)}</span>
             </div>
             <div className="detail-row">
               <span className="label">Shares Owned:</span>
-              <span className="value">{formatNumber(dividend.shares_owned, 6)}</span>
+              <span className="value">{formatNumber(dividend.sharesOwned, 6)}</span>
             </div>
             <div className="detail-row">
               <span className="label">Per Share:</span>
-              <span className="value">{formatCurrency(dividend.dividend_per_share)}</span>
+              <span className="value">{formatCurrency(dividend.dividendPerShare)}</span>
             </div>
             <div className="detail-row">
               <span className="label">Status:</span>

@@ -80,13 +80,13 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
 
   // New dividend form state
   const [newDividend, setNewDividend] = useState({
-    portfolio_fund_id: '',
-    record_date: getTodayString(),
-    ex_dividend_date: getTodayString(),
-    dividend_per_share: '',
-    buy_order_date: '',
-    reinvestment_shares: '',
-    reinvestment_price: '',
+    portfolioFundId: '',
+    recordDate: getTodayString(),
+    exDividendDate: getTodayString(),
+    dividendPerShare: '',
+    buyOrderDate: '',
+    reinvestmentShares: '',
+    reinvestmentPrice: '',
   });
 
   // Fetch dividends for portfolio
@@ -103,13 +103,13 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
 
       setSelectedFund(fundData);
       setNewDividend({
-        portfolio_fund_id: fund.id,
-        record_date: getTodayString(),
-        ex_dividend_date: getTodayString(),
-        dividend_per_share: '',
-        buy_order_date: '',
-        reinvestment_shares: '',
-        reinvestment_price: '',
+        portfolioFundId: fund.id,
+        recordDate: getTodayString(),
+        exDividendDate: getTodayString(),
+        dividendPerShare: '',
+        buyOrderDate: '',
+        reinvestmentShares: '',
+        reinvestmentPrice: '',
       });
       setIsDividendModalOpen(true);
     } catch (error) {
@@ -122,12 +122,12 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
     async (e) => {
       e.preventDefault();
       try {
-        if (selectedFund?.dividend_type === 'stock') {
-          const isFutureOrder = isDateInFuture(newDividend.buy_order_date);
+        if (selectedFund?.dividendType === 'STOCK') {
+          const isFutureOrder = isDateInFuture(newDividend.buyOrderDate);
 
           if (
             !isFutureOrder &&
-            (!newDividend.reinvestment_shares || !newDividend.reinvestment_price)
+            (!newDividend.reinvestmentShares || !newDividend.reinvestmentPrice)
           ) {
             alert(
               'Please fill in both reinvestment shares and price for completed stock dividends'
@@ -135,7 +135,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
             return;
           }
 
-          if (!newDividend.buy_order_date) {
+          if (!newDividend.buyOrderDate) {
             alert('Please specify a buy order date for stock dividends');
             return;
           }
@@ -143,16 +143,16 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
 
         const dividendData = {
           ...newDividend,
-          reinvestment_shares:
-            selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date)
-              ? newDividend.reinvestment_shares
+          reinvestmentShares:
+            selectedFund?.dividendType === 'STOCK' && !isDateInFuture(newDividend.buyOrderDate)
+              ? newDividend.reinvestmentShares
               : undefined,
-          reinvestment_price:
-            selectedFund?.dividend_type === 'stock' && !isDateInFuture(newDividend.buy_order_date)
-              ? newDividend.reinvestment_price
+          reinvestmentPrice:
+            selectedFund?.dividendType === 'STOCK' && !isDateInFuture(newDividend.buyOrderDate)
+              ? newDividend.reinvestmentPrice
               : undefined,
-          buy_order_date:
-            selectedFund?.dividend_type === 'stock' ? newDividend.buy_order_date : undefined,
+          buyOrderDate:
+            selectedFund?.dividendType === 'STOCK' ? newDividend.buyOrderDate : undefined,
         };
 
         const response = await api.post('/dividend', dividendData);
@@ -162,13 +162,13 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
 
         setIsDividendModalOpen(false);
         setNewDividend({
-          portfolio_fund_id: '',
-          record_date: getTodayString(),
-          ex_dividend_date: getTodayString(),
-          dividend_per_share: '',
-          buy_order_date: '',
-          reinvestment_shares: '',
-          reinvestment_price: '',
+          portfolioFundId: '',
+          recordDate: getTodayString(),
+          exDividendDate: getTodayString(),
+          dividendPerShare: '',
+          buyOrderDate: '',
+          reinvestmentShares: '',
+          reinvestmentPrice: '',
         });
         setSelectedFund(null);
 
@@ -191,24 +191,24 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   // Edit dividend
   const handleEditDividend = useCallback(async (dividend) => {
     try {
-      const fundResponse = await api.get(`/fund/${dividend.fund_id}`);
+      const fundResponse = await api.get(`/fund/${dividend.fundId}`);
       const fundData = fundResponse.data;
       setSelectedFund(fundData);
 
       const editData = {
         ...dividend,
-        record_date: toDateString(dividend.record_date),
-        ex_dividend_date: toDateString(dividend.ex_dividend_date),
+        recordDate: toDateString(dividend.recordDate),
+        exDividendDate: toDateString(dividend.exDividendDate),
       };
 
-      if (fundData.dividend_type === 'stock' && dividend.reinvestment_transaction_id) {
+      if (fundData.dividendType === 'STOCK' && dividend.reinvestmentTransactionId) {
         try {
           const transactionResponse = await api.get(
-            `/transaction/${dividend.reinvestment_transaction_id}`
+            `/transaction/${dividend.reinvestmentTransactionId}`
           );
           const transactionData = transactionResponse.data;
-          editData.reinvestment_shares = transactionData.shares;
-          editData.reinvestment_price = transactionData.cost_per_share;
+          editData.reinvestmentShares = transactionData.shares;
+          editData.reinvestmentPrice = transactionData.costPerShare;
         } catch (error) {
           console.error('Error fetching reinvestment transaction:', error);
         }
@@ -228,8 +228,8 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
       e.preventDefault();
       try {
         if (
-          selectedFund?.dividend_type === 'stock' &&
-          (!editingDividend.reinvestment_shares || !editingDividend.reinvestment_price)
+          selectedFund?.dividendType === 'STOCK' &&
+          (!editingDividend.reinvestmentShares || !editingDividend.reinvestmentPrice)
         ) {
           alert('Please fill in both reinvestment shares and price for stock dividends');
           return;
@@ -237,7 +237,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
 
         const response = await api.put(`/dividend/${editingDividend.id}`, {
           ...editingDividend,
-          reinvestment_transaction_id: editingDividend.reinvestment_transaction_id,
+          reinvestmentTransactionId: editingDividend.reinvestmentTransactionId,
         });
 
         // Update dividends state incrementally
@@ -298,13 +298,13 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   const closeDividendModal = useCallback(() => {
     setIsDividendModalOpen(false);
     setNewDividend({
-      portfolio_fund_id: '',
-      record_date: getTodayString(),
-      ex_dividend_date: getTodayString(),
-      dividend_per_share: '',
-      buy_order_date: '',
-      reinvestment_shares: '',
-      reinvestment_price: '',
+      portfolioFundId: '',
+      recordDate: getTodayString(),
+      exDividendDate: getTodayString(),
+      dividendPerShare: '',
+      buyOrderDate: '',
+      reinvestmentShares: '',
+      reinvestmentPrice: '',
     });
     setSelectedFund(null);
   }, []);

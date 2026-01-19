@@ -18,62 +18,66 @@ from ..services.logging_service import logger
 # Create namespace
 ns = Namespace("dividend", description="Dividend management operations")
 
-# Define models
+# Define models (using camelCase for API responses)
 dividend_model = ns.model(
     "Dividend",
     {
         "id": fields.String(required=True, description="Dividend unique identifier (UUID)"),
-        "fund_id": fields.String(required=True, description="Fund ID"),
-        "portfolio_fund_id": fields.String(
+        "fundId": fields.String(required=True, description="Fund ID"),
+        "fundName": fields.String(required=True, description="Fund name"),
+        "portfolioFundId": fields.String(
             required=True, description="Portfolio-Fund relationship ID"
         ),
-        "record_date": fields.String(required=True, description="Record date (YYYY-MM-DD)"),
-        "ex_dividend_date": fields.String(
-            required=True, description="Ex-dividend date (YYYY-MM-DD)"
-        ),
-        "shares_owned": fields.Float(required=True, description="Shares owned on record date"),
-        "dividend_per_share": fields.Float(required=True, description="Dividend amount per share"),
-        "total_amount": fields.Float(required=True, description="Total dividend amount"),
-        "reinvestment_status": fields.String(
+        "recordDate": fields.String(required=True, description="Record date (YYYY-MM-DD)"),
+        "exDividendDate": fields.String(required=True, description="Ex-dividend date (YYYY-MM-DD)"),
+        "sharesOwned": fields.Float(required=True, description="Shares owned on record date"),
+        "dividendPerShare": fields.Float(required=True, description="Dividend amount per share"),
+        "totalAmount": fields.Float(required=True, description="Total dividend amount"),
+        "reinvestmentStatus": fields.String(
             required=True,
             description="Reinvestment status",
-            enum=["pending", "completed", "partial"],
+            enum=["PENDING", "COMPLETED", "PARTIAL"],
         ),
-        "buy_order_date": fields.String(description="Buy order date for reinvestment"),
+        "buyOrderDate": fields.String(description="Buy order date for reinvestment"),
+        "reinvestmentTransactionId": fields.String(description="Reinvestment transaction ID"),
+        "dividendType": fields.String(description="Dividend type", enum=["NONE", "CASH", "STOCK"]),
     },
 )
 
 dividend_create_model = ns.model(
     "DividendCreate",
     {
-        "portfolio_fund_id": fields.String(
+        "portfolioFundId": fields.String(
             required=True, description="Portfolio-Fund relationship ID"
         ),
-        "record_date": fields.String(
+        "recordDate": fields.String(
             required=True, description="Record date (YYYY-MM-DD)", example="2024-01-15"
         ),
-        "ex_dividend_date": fields.String(
+        "exDividendDate": fields.String(
             required=True, description="Ex-dividend date (YYYY-MM-DD)", example="2024-01-10"
         ),
-        "dividend_per_share": fields.Float(
+        "dividendPerShare": fields.Float(
             required=True, description="Dividend per share", example=0.50
         ),
-        "buy_order_date": fields.String(
+        "buyOrderDate": fields.String(
             description="Buy order date for stock dividends (YYYY-MM-DD)"
         ),
-        "reinvestment_shares": fields.Float(
+        "reinvestmentShares": fields.Float(
             description="Shares from reinvestment (for stock dividends)"
         ),
-        "reinvestment_price": fields.Float(description="Price per share for reinvestment"),
+        "reinvestmentPrice": fields.Float(description="Price per share for reinvestment"),
     },
 )
 
 dividend_update_model = ns.model(
     "DividendUpdate",
     {
-        "reinvestment_shares": fields.Float(description="Shares from reinvestment"),
-        "reinvestment_price": fields.Float(description="Price per share for reinvestment"),
-        "buy_order_date": fields.String(description="Buy order date (YYYY-MM-DD)"),
+        "recordDate": fields.String(required=True, description="Record date (YYYY-MM-DD)"),
+        "exDividendDate": fields.String(required=True, description="Ex-dividend date (YYYY-MM-DD)"),
+        "dividendPerShare": fields.Float(required=True, description="Dividend amount per share"),
+        "reinvestmentShares": fields.Float(description="Shares from reinvestment"),
+        "reinvestmentPrice": fields.Float(description="Price per share for reinvestment"),
+        "buyOrderDate": fields.String(description="Buy order date (YYYY-MM-DD)"),
     },
 )
 
@@ -106,10 +110,24 @@ class DividendList(Resource):
         - Initial reinvestment status based on dividend type
 
         For stock dividends, optionally include reinvestment details.
+
+        Request body should use camelCase (portfolioFundId, recordDate, etc.).
         """
         try:
             data = request.json
-            dividend = DividendService.create_dividend(data)
+
+            # Convert camelCase input to snake_case for service layer
+            service_data = {
+                "portfolio_fund_id": data.get("portfolioFundId"),
+                "record_date": data.get("recordDate"),
+                "ex_dividend_date": data.get("exDividendDate"),
+                "dividend_per_share": data.get("dividendPerShare"),
+                "buy_order_date": data.get("buyOrderDate"),
+                "reinvestment_shares": data.get("reinvestmentShares"),
+                "reinvestment_price": data.get("reinvestmentPrice"),
+            }
+
+            dividend = DividendService.create_dividend(service_data)
 
             logger.log(
                 level=LogLevel.INFO,
@@ -271,10 +289,23 @@ class Dividend(Resource):
 
         Updates reinvestment information for a dividend, typically used
         when processing stock dividend reinvestment.
+
+        Request body should use camelCase (recordDate, exDividendDate, dividendPerShare, etc.).
         """
         try:
             data = request.json
-            dividend, _original_values = DividendService.update_dividend(dividend_id, data)
+
+            # Convert camelCase input to snake_case for service layer
+            service_data = {
+                "record_date": data.get("recordDate"),
+                "ex_dividend_date": data.get("exDividendDate"),
+                "dividend_per_share": data.get("dividendPerShare"),
+                "reinvestment_shares": data.get("reinvestmentShares"),
+                "reinvestment_price": data.get("reinvestmentPrice"),
+                "buy_order_date": data.get("buyOrderDate"),
+            }
+
+            dividend, _original_values = DividendService.update_dividend(dividend_id, service_data)
 
             logger.log(
                 level=LogLevel.INFO,
