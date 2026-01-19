@@ -228,7 +228,7 @@ const FundDetail = () => {
               <div className="info-item">
                 <label>Dividend Type:</label>
                 <span>
-                  {fund.dividendType === 'cash' ? (
+                  {fund.dividendType === 'CASH' ? (
                     <>
                       <FontAwesomeIcon icon={faMoneyBill} /> Cash
                     </>

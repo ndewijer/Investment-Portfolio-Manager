@@ -157,7 +157,7 @@ describe('Transaction Validation', () => {
         ex_dividend_date: '2025-01-10',
         dividend_per_share: 2.5,
       };
-      const fund = { dividendType: 'cash' };
+      const fund = { dividendType: 'CASH' };
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(true);
       expect(result.errors).toEqual([]);
@@ -173,7 +173,7 @@ describe('Transaction Validation', () => {
         dividend_per_share: 2.5,
         buy_order_date: futureDate.toISOString().split('T')[0],
       };
-      const fund = { dividendType: 'stock' };
+      const fund = { dividendType: 'STOCK' };
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(true);
       expect(result.errors).toEqual([]);
@@ -191,7 +191,7 @@ describe('Transaction Validation', () => {
         reinvestment_shares: 10,
         reinvestment_price: 25.0,
       };
-      const fund = { dividendType: 'stock' };
+      const fund = { dividendType: 'STOCK' };
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(true);
       expect(result.errors).toEqual([]);
@@ -249,7 +249,7 @@ describe('Transaction Validation', () => {
         ex_dividend_date: '2025-01-10',
         dividend_per_share: 2.5,
       };
-      const fund = { dividendType: 'stock' };
+      const fund = { dividendType: 'STOCK' };
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Buy order date is required for stock dividends');
@@ -265,7 +265,7 @@ describe('Transaction Validation', () => {
         dividend_per_share: 2.5,
         buy_order_date: pastDate.toISOString().split('T')[0],
       };
-      const fund = { dividendType: 'stock' };
+      const fund = { dividendType: 'STOCK' };
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
@@ -288,7 +288,7 @@ describe('Transaction Validation', () => {
         reinvestment_shares: 0,
         reinvestment_price: 25.0,
       };
-      const fund = { dividendType: 'stock' };
+      const fund = { dividendType: 'STOCK' };
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
@@ -308,7 +308,7 @@ describe('Transaction Validation', () => {
         reinvestment_shares: 10,
         reinvestment_price: 0,
       };
-      const fund = { dividendType: 'stock' };
+      const fund = { dividendType: 'STOCK' };
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(

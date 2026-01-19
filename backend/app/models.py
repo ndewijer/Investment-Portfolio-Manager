@@ -55,9 +55,9 @@ class DividendType(Enum):
         STOCK: Fund pays stock dividends
     """
 
-    NONE = "none"
-    CASH = "cash"
-    STOCK = "stock"
+    NONE = "NONE"
+    CASH = "CASH"
+    STOCK = "STOCK"
 
 
 class ReinvestmentStatus(Enum):
@@ -70,9 +70,9 @@ class ReinvestmentStatus(Enum):
         PARTIAL: Reinvestment is partially completed
     """
 
-    PENDING = "pending"
-    COMPLETED = "completed"
-    PARTIAL = "partial"
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    PARTIAL = "PARTIAL"
 
 
 class InvestmentType(Enum):
@@ -84,8 +84,8 @@ class InvestmentType(Enum):
         STOCK: Investment is a stock
     """
 
-    FUND = "fund"
-    STOCK = "stock"
+    FUND = "FUND"
+    STOCK = "STOCK"
 
 
 class Portfolio(db.Model):

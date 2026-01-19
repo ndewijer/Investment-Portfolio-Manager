@@ -38,10 +38,10 @@ fund_model = ns.model(
         ),
         "exchange": fields.String(required=True, description="Exchange where fund is traded"),
         "dividendType": fields.String(
-            required=True, description="Dividend type", enum=["none", "cash", "stock"]
+            required=True, description="Dividend type", enum=["NONE", "CASH", "STOCK"]
         ),
         "investmentType": fields.String(
-            required=True, description="Investment type", enum=["fund", "stock"]
+            required=True, description="Investment type", enum=["FUND", "STOCK"]
         ),
     },
 )
@@ -61,10 +61,10 @@ fund_create_model = ns.model(
         "currency": fields.String(required=True, description="Currency code", example="USD"),
         "exchange": fields.String(required=True, description="Exchange", example="NYSE"),
         "dividendType": fields.String(
-            description="Dividend type", enum=["none", "cash", "stock"], default="none"
+            description="Dividend type", enum=["NONE", "CASH", "STOCK"], default="NONE"
         ),
         "investmentType": fields.String(
-            description="Investment type", enum=["fund", "stock"], default="fund"
+            description="Investment type", enum=["FUND", "STOCK"], default="FUND"
         ),
     },
 )
@@ -77,8 +77,8 @@ fund_update_model = ns.model(
         "symbol": fields.String(description="Trading symbol"),
         "currency": fields.String(description="Currency code"),
         "exchange": fields.String(description="Exchange"),
-        "dividendType": fields.String(description="Dividend type", enum=["none", "cash", "stock"]),
-        "investmentType": fields.String(description="Investment type", enum=["fund", "stock"]),
+        "dividendType": fields.String(description="Dividend type", enum=["NONE", "CASH", "STOCK"]),
+        "investmentType": fields.String(description="Investment type", enum=["FUND", "STOCK"]),
     },
 )
 

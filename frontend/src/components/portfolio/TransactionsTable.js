@@ -137,11 +137,11 @@ const TransactionsTable = ({
       render: (value) => value,
     },
     {
-      key: 'ibkr_linked',
+      key: 'ibkrLinked',
       header: 'Source',
       sortable: false,
       render: (value, transaction) =>
-        transaction.ibkr_linked ? (
+        transaction.ibkrLinked ? (
           <span className="ibkr-badge" title="Imported from IBKR">
             IBKR
           </span>
