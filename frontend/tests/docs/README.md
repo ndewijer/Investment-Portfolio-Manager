@@ -280,7 +280,7 @@ describe('Component', () => {
 22. `src/context/__tests__/FormatContext.test.js` - 384 lines (23 tests)
 23. `src/context/__tests__/AppContext.test.js` - 286 lines (10 tests)
 
-### Phase 4: E2E Tests (6 files, ~40+ tests)
+### Phase 4: E2E Tests (7 files, ~45+ tests)
 
 **Playwright E2E Tests**:
 24. `e2e/smoke.spec.js` - Basic smoke tests (6 tests)
@@ -289,10 +289,11 @@ describe('Component', () => {
 27. `e2e/portfolio-management.spec.js` - Portfolio CRUD workflows
 28. `e2e/transactions.spec.js` - Transaction management flows
 29. `e2e/dividends.spec.js` - Dividend tracking functionality
+30. `e2e/ibkr-config.spec.js` - IBKR configuration and API payload validation (6 tests)
 
 **Total Unit Test Code**: 6,500+ lines
 **Total Unit Tests**: 584 tests (575 passing, 9 skipped)
-**Total E2E Tests**: 40+ tests across critical user journeys
+**Total E2E Tests**: 45+ tests across critical user journeys
 
 ---
 

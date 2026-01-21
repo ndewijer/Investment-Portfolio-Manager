@@ -432,9 +432,21 @@ POST /api/ibkr/config
 Content-Type: application/json
 
 {
-  "flex_token": "your-ibkr-token",
-  "flex_query_id": "123456",
-  "auto_import_enabled": false
+  "flexToken": "your-ibkr-token",
+  "flexQueryId": "123456",
+  "autoImportEnabled": false,
+  "enabled": true,
+  "defaultAllocationEnabled": false,
+  "defaultAllocations": [
+    {
+      "portfolioId": "uuid-here",
+      "percentage": 50.0
+    },
+    {
+      "portfolioId": "uuid-here-2",
+      "percentage": 50.0
+    }
+  ]
 }
 ```
 
@@ -444,8 +456,8 @@ POST /api/ibkr/config/test
 Content-Type: application/json
 
 {
-  "flex_token": "your-ibkr-token",
-  "flex_query_id": "123456"
+  "flexToken": "your-ibkr-token",
+  "flexQueryId": "123456"
 }
 ```
 
