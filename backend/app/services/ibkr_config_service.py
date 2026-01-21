@@ -9,6 +9,7 @@ This module provides methods for:
 - Managing default allocation presets
 """
 
+import json
 from datetime import datetime
 
 from ..models import IBKRConfig, db
@@ -67,22 +68,30 @@ class IBKRConfigService:
             if days_until_expiry < 30:
                 token_warning = f"Token expires in {days_until_expiry} days"
 
+        # Parse default_allocations from JSON string to actual JSON
+        default_allocations = None
+        if config.default_allocations:
+            try:
+                default_allocations = json.loads(config.default_allocations)
+            except (json.JSONDecodeError, TypeError):
+                default_allocations = None
+
         return {
             "configured": True,
-            "flex_query_id": config.flex_query_id,
-            "token_expires_at": (
+            "flexQueryId": config.flex_query_id,
+            "tokenExpiresAt": (
                 config.token_expires_at.isoformat() if config.token_expires_at else None
             ),
-            "token_warning": token_warning,
-            "last_import_date": (
+            "tokenWarning": token_warning,
+            "lastImportDate": (
                 config.last_import_date.isoformat() if config.last_import_date else None
             ),
-            "auto_import_enabled": config.auto_import_enabled,
+            "autoImportEnabled": config.auto_import_enabled,
             "enabled": config.enabled,
-            "default_allocation_enabled": config.default_allocation_enabled,
-            "default_allocations": config.default_allocations,
-            "created_at": config.created_at.isoformat(),
-            "updated_at": config.updated_at.isoformat(),
+            "defaultAllocationEnabled": config.default_allocation_enabled,
+            "defaultAllocations": default_allocations,
+            "createdAt": config.created_at.isoformat(),
+            "updatedAt": config.updated_at.isoformat(),
         }
 
     @staticmethod
@@ -119,6 +128,10 @@ class IBKRConfigService:
 
         # Encrypt the token
         encrypted_token = service._encrypt_token(flex_token)
+
+        # Convert default_allocations to JSON string if it's a list/dict
+        if default_allocations is not None and not isinstance(default_allocations, str):
+            default_allocations = json.dumps(default_allocations)
 
         # Get or create config
         config = IBKRConfigService.get_first_config()

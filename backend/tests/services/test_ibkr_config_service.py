@@ -75,14 +75,14 @@ class TestConfigRetrieval:
 
         # Verify status
         assert status["configured"] is True
-        assert status["flex_query_id"] == "123456"
-        assert status["auto_import_enabled"] is True
+        assert status["flexQueryId"] == "123456"
+        assert status["autoImportEnabled"] is True
         assert status["enabled"] is True
-        assert status["last_import_date"] is None
-        assert status["token_expires_at"] is None
-        assert status["token_warning"] is None
-        assert "created_at" in status
-        assert "updated_at" in status
+        assert status["lastImportDate"] is None
+        assert status["tokenExpiresAt"] is None
+        assert status["tokenWarning"] is None
+        assert "createdAt" in status
+        assert "updatedAt" in status
 
     def test_get_config_status_with_expiration_far_future(self, app_context, db_session):
         """Test status when token expires in far future (no warning)."""
@@ -102,8 +102,8 @@ class TestConfigRetrieval:
         status = IBKRConfigService.get_config_status()
 
         assert status["configured"] is True
-        assert status["token_expires_at"] == expires_at.isoformat()
-        assert status["token_warning"] is None  # No warning for 60+ days
+        assert status["tokenExpiresAt"] == expires_at.isoformat()
+        assert status["tokenWarning"] is None  # No warning for 60+ days
 
     def test_get_config_status_with_expiration_warning(self, app_context, db_session):
         """Test status when token expires soon (warning shown)."""
@@ -123,10 +123,10 @@ class TestConfigRetrieval:
         status = IBKRConfigService.get_config_status()
 
         assert status["configured"] is True
-        assert status["token_warning"] is not None
+        assert status["tokenWarning"] is not None
         # Should show warning for tokens expiring within 30 days
-        assert "days" in status["token_warning"]
-        assert "expires" in status["token_warning"]
+        assert "days" in status["tokenWarning"]
+        assert "expires" in status["tokenWarning"]
 
     def test_get_config_status_with_last_import(self, app_context, db_session):
         """Test status includes last import date."""
@@ -146,7 +146,7 @@ class TestConfigRetrieval:
         status = IBKRConfigService.get_config_status()
 
         assert status["configured"] is True
-        assert status["last_import_date"] == last_import.isoformat()
+        assert status["lastImportDate"] == last_import.isoformat()
 
 
 class TestConfigSave:
@@ -341,8 +341,8 @@ class TestEdgeCases:
 
         status = IBKRConfigService.get_config_status()
 
-        assert status["token_warning"] is not None
-        assert "0 days" in status["token_warning"]
+        assert status["tokenWarning"] is not None
+        assert "0 days" in status["tokenWarning"]
 
     def test_save_config_enabled_defaults_to_true(self, app_context, db_session, mock_encryption):
         """Test that enabled defaults to True when not specified."""
@@ -430,7 +430,8 @@ class TestDefaultAllocationConfig:
 
     def test_get_config_status_includes_default_allocations(self, app_context, db_session):
         """Test that status includes default allocation fields."""
-        allocations_json = '[{"portfolio_id": "p1", "percentage": 100.0}]'
+        allocations_json = '[{"portfolioId": "p1", "percentage": 100.0}]'
+        expected_allocations = [{"portfolioId": "p1", "percentage": 100.0}]
         config = IBKRConfig(
             id=make_id(),
             flex_token="encrypted_test_token",
@@ -444,8 +445,8 @@ class TestDefaultAllocationConfig:
 
         status = IBKRConfigService.get_config_status()
 
-        assert status["default_allocation_enabled"] is True
-        assert status["default_allocations"] == allocations_json
+        assert status["defaultAllocationEnabled"] is True
+        assert status["defaultAllocations"] == expected_allocations
 
     def test_update_config_default_allocations(self, app_context, db_session, mock_encryption):
         """Test updating default allocation settings."""
@@ -462,8 +463,7 @@ class TestDefaultAllocationConfig:
 
         # Update with default allocations
         allocations_json = (
-            '[{"portfolio_id": "p1", "percentage": 50.0}, '
-            '{"portfolio_id": "p2", "percentage": 50.0}]'
+            '[{"portfolioId": "p1", "percentage": 50.0}, {"portfolioId": "p2", "percentage": 50.0}]'
         )
         updated_config = IBKRConfigService.save_config(
             flex_token="test_token",
@@ -477,7 +477,7 @@ class TestDefaultAllocationConfig:
 
     def test_disable_default_allocation(self, app_context, db_session, mock_encryption):
         """Test disabling default allocation while keeping preset."""
-        allocations_json = '[{"portfolio_id": "p1", "percentage": 100.0}]'
+        allocations_json = '[{"portfolioId": "p1", "percentage": 100.0}]'
 
         # Create with enabled
         IBKRConfigService.save_config(
