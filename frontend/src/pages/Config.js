@@ -118,20 +118,20 @@ const Config = () => {
  */
 const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
   const [config, setConfig] = useState({
-    flex_token: '',
-    flex_query_id: '',
-    token_expires_at: '',
-    auto_import_enabled: false,
+    flexToken: '',
+    flexQueryId: '',
+    tokenExpiresAt: '',
+    autoImportEnabled: false,
     enabled: true,
-    default_allocation_enabled: false,
-    default_allocations: null,
+    defaultAllocationEnabled: false,
+    defaultAllocations: null,
   });
   const [existingConfig, setExistingConfig] = useState(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showAllocationModal, setShowAllocationModal] = useState(false);
   const [portfolios, setPortfolios] = useState([]);
-  const [allocations, setAllocations] = useState([{ portfolio_id: '', percentage: '' }]);
+  const [allocations, setAllocations] = useState([{ portfolioId: '', percentage: '' }]);
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -140,36 +140,29 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
       if (response.data.configured) {
         setExistingConfig(response.data);
         setConfig({
-          flex_token: '',
-          flex_query_id: response.data.flex_query_id || '',
-          token_expires_at: response.data.token_expires_at
-            ? response.data.token_expires_at.split('T')[0]
+          flexToken: '',
+          flexQueryId: response.data.flexQueryId || '',
+          tokenExpiresAt: response.data.tokenExpiresAt
+            ? response.data.tokenExpiresAt.split('T')[0]
             : '',
-          auto_import_enabled:
-            response.data.auto_import_enabled !== undefined
-              ? response.data.auto_import_enabled
-              : false,
+          autoImportEnabled:
+            response.data.autoImportEnabled !== undefined ? response.data.autoImportEnabled : false,
           enabled: response.data.enabled !== undefined ? response.data.enabled : true,
-          default_allocation_enabled:
-            response.data.default_allocation_enabled !== undefined
-              ? response.data.default_allocation_enabled
+          defaultAllocationEnabled:
+            response.data.defaultAllocationEnabled !== undefined
+              ? response.data.defaultAllocationEnabled
               : false,
-          default_allocations: response.data.default_allocations || null,
+          defaultAllocations: response.data.defaultAllocations || null,
         });
 
-        // Parse default allocations if they exist
-        if (response.data.default_allocations) {
-          try {
-            const parsedAllocations = JSON.parse(response.data.default_allocations);
-            setAllocations(
-              parsedAllocations.map((a) => ({
-                portfolio_id: a.portfolio_id,
-                percentage: a.percentage,
-              }))
-            );
-          } catch (e) {
-            console.error('Failed to parse default allocations:', e);
-          }
+        // Set allocations from default allocations if they exist
+        if (response.data.defaultAllocations && Array.isArray(response.data.defaultAllocations)) {
+          setAllocations(
+            response.data.defaultAllocations.map((a) => ({
+              portfolioId: a.portfolioId,
+              percentage: a.percentage,
+            }))
+          );
         }
       }
     } catch (err) {
@@ -203,7 +196,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     e.preventDefault();
 
     // Check if disabling with auto-import enabled - show warning
-    if (existingConfig && !config.enabled && existingConfig.enabled && config.auto_import_enabled) {
+    if (existingConfig && !config.enabled && existingConfig.enabled && config.autoImportEnabled) {
       const confirmed = window.confirm(
         'Warning: Disabling IBKR integration will also disable automated imports. Are you sure you want to continue?'
       );
@@ -214,21 +207,21 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
 
     try {
       const payload = {
-        flex_token: config.flex_token,
-        flex_query_id: config.flex_query_id,
-        auto_import_enabled: config.auto_import_enabled,
+        flexToken: config.flexToken,
+        flexQueryId: config.flexQueryId,
+        autoImportEnabled: config.autoImportEnabled,
         enabled: config.enabled,
-        default_allocation_enabled: config.default_allocation_enabled,
-        default_allocations: config.default_allocations,
+        defaultAllocationEnabled: config.defaultAllocationEnabled,
+        defaultAllocations: config.defaultAllocations,
       };
 
-      if (config.token_expires_at) {
-        payload.token_expires_at = new Date(config.token_expires_at).toISOString();
+      if (config.tokenExpiresAt) {
+        payload.tokenExpiresAt = new Date(config.tokenExpiresAt).toISOString();
       }
 
       await axios.post(`${API_BASE_URL}/ibkr/config`, payload);
       setMessage('IBKR configuration saved successfully');
-      setConfig({ ...config, flex_token: '' });
+      setConfig({ ...config, flexToken: '' });
       fetchConfig();
       // Refresh IBKR config in AppContext to update navigation
       if (refreshIBKRConfig) {
@@ -240,7 +233,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
   };
 
   const handleTestConnection = async () => {
-    if (!config.flex_token || !config.flex_query_id) {
+    if (!config.flexToken || !config.flexQueryId) {
       setError('Please provide both Flex Token and Query ID to test connection');
       return;
     }
@@ -251,8 +244,8 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
       setMessage('');
 
       const response = await axios.post(`${API_BASE_URL}/ibkr/config/test`, {
-        flex_token: config.flex_token,
-        flex_query_id: config.flex_query_id,
+        flexToken: config.flexToken,
+        flexQueryId: config.flexQueryId,
       });
 
       if (response.data.success) {
@@ -277,14 +270,14 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
       setMessage('IBKR configuration deleted successfully');
       setExistingConfig(null);
       setConfig({
-        flex_token: '',
-        flex_query_id: '',
-        token_expires_at: '',
-        auto_import_enabled: false,
-        default_allocation_enabled: false,
-        default_allocations: null,
+        flexToken: '',
+        flexQueryId: '',
+        tokenExpiresAt: '',
+        autoImportEnabled: false,
+        defaultAllocationEnabled: false,
+        defaultAllocations: null,
       });
-      setAllocations([{ portfolio_id: '', percentage: '' }]);
+      setAllocations([{ portfolioId: '', percentage: '' }]);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to delete configuration');
     }
@@ -303,7 +296,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
 
   // Add allocation row
   const handleAddAllocation = () => {
-    setAllocations([...allocations, { portfolio_id: '', percentage: '' }]);
+    setAllocations([...allocations, { portfolioId: '', percentage: '' }]);
   };
 
   // Remove allocation row
@@ -358,27 +351,25 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     }
 
     // Check for duplicate portfolios
-    const portfolioIds = allocations.map((a) => a.portfolio_id);
+    const portfolioIds = allocations.map((a) => a.portfolioId);
     if (new Set(portfolioIds).size !== portfolioIds.length) {
       setError('Cannot allocate the same portfolio multiple times');
       return;
     }
 
     // Check for empty portfolio selections
-    if (allocations.some((a) => !a.portfolio_id)) {
+    if (allocations.some((a) => !a.portfolioId)) {
       setError('Please select a portfolio for each allocation');
       return;
     }
 
-    // Convert to JSON string
-    const allocationsJson = JSON.stringify(
-      allocations.map((a) => ({
-        portfolio_id: a.portfolio_id,
-        percentage: a.percentage,
-      }))
-    );
+    // Set allocations as JSON array (not stringified)
+    const allocationsArray = allocations.map((a) => ({
+      portfolioId: a.portfolioId,
+      percentage: a.percentage,
+    }));
 
-    setConfig({ ...config, default_allocations: allocationsJson });
+    setConfig({ ...config, defaultAllocations: allocationsArray });
     setMessage(
       'Default allocation preset configured. Click "Update Configuration" below to save these changes.'
     );
@@ -386,24 +377,19 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
   };
 
   // Get summary of current allocation
-  const getAllocationSummary = (allocationsJson) => {
-    if (!allocationsJson) {
+  const getAllocationSummary = (allocationsData) => {
+    if (!allocationsData || !Array.isArray(allocationsData) || allocationsData.length === 0) {
       return 'No default allocation configured';
     }
 
-    try {
-      const parsed = JSON.parse(allocationsJson);
-      const portfolioNames = parsed
-        .map((a) => {
-          const portfolio = portfolios.find((p) => p.id === a.portfolio_id);
-          return portfolio ? `${portfolio.name} (${a.percentage.toFixed(0)}%)` : null;
-        })
-        .filter(Boolean);
+    const portfolioNames = allocationsData
+      .map((a) => {
+        const portfolio = portfolios.find((p) => p.id === a.portfolioId);
+        return portfolio ? `${portfolio.name} (${a.percentage.toFixed(0)}%)` : null;
+      })
+      .filter(Boolean);
 
-      return portfolioNames.length > 0 ? portfolioNames.join(', ') : 'Configured';
-    } catch {
-      return 'Configured';
-    }
+    return portfolioNames.length > 0 ? portfolioNames.join(', ') : 'Configured';
   };
 
   if (isLoading) {
@@ -472,18 +458,17 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
         </div>
       </CollapsibleInfo>
 
-      {existingConfig && existingConfig.token_warning && (
+      {existingConfig && existingConfig.tokenWarning && (
         <div className="token-warning">
           <span>⚠️</span>
-          <p>{existingConfig.token_warning}</p>
+          <p>{existingConfig.tokenWarning}</p>
         </div>
       )}
 
-      {existingConfig && existingConfig.last_import_date && (
+      {existingConfig && existingConfig.lastImportDate && (
         <div className="config-info">
           <p>
-            <strong>Last Import:</strong>{' '}
-            {new Date(existingConfig.last_import_date).toLocaleString()}
+            <strong>Last Import:</strong> {new Date(existingConfig.lastImportDate).toLocaleString()}
           </p>
         </div>
       )}
@@ -517,8 +502,8 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                 </label>
                 <input
                   type="password"
-                  value={config.flex_token}
-                  onChange={(e) => setConfig({ ...config, flex_token: e.target.value })}
+                  value={config.flexToken}
+                  onChange={(e) => setConfig({ ...config, flexToken: e.target.value })}
                   placeholder={
                     existingConfig
                       ? '*** Token Set *** (enter new token to update)'
@@ -538,8 +523,8 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                 </label>
                 <input
                   type="text"
-                  value={config.flex_query_id}
-                  onChange={(e) => setConfig({ ...config, flex_query_id: e.target.value })}
+                  value={config.flexQueryId}
+                  onChange={(e) => setConfig({ ...config, flexQueryId: e.target.value })}
                   placeholder="Enter Query ID (e.g., 123456)"
                   required
                 />
@@ -549,8 +534,8 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                 <label>Token Expiration Date:</label>
                 <input
                   type="date"
-                  value={config.token_expires_at}
-                  onChange={(e) => setConfig({ ...config, token_expires_at: e.target.value })}
+                  value={config.tokenExpiresAt}
+                  onChange={(e) => setConfig({ ...config, tokenExpiresAt: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
                 />
                 <small className="form-help">
@@ -568,10 +553,8 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={config.auto_import_enabled}
-                    onChange={(e) =>
-                      setConfig({ ...config, auto_import_enabled: e.target.checked })
-                    }
+                    checked={config.autoImportEnabled}
+                    onChange={(e) => setConfig({ ...config, autoImportEnabled: e.target.checked })}
                   />
                   Enable automated imports (Tuesday - Saturday at 06:30)
                 </label>
@@ -590,9 +573,9 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={config.default_allocation_enabled}
+                    checked={config.defaultAllocationEnabled}
                     onChange={(e) =>
-                      setConfig({ ...config, default_allocation_enabled: e.target.checked })
+                      setConfig({ ...config, defaultAllocationEnabled: e.target.checked })
                     }
                   />
                   Enable default allocation on import
@@ -607,19 +590,20 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                 Configure Default Allocation
               </button>
 
-              {(existingConfig?.default_allocations || config.default_allocations) && (
+              {(existingConfig?.defaultAllocations || config.defaultAllocations) && (
                 <div className="allocation-summary">
-                  {existingConfig?.default_allocations && (
+                  {existingConfig?.defaultAllocations && (
                     <div>
                       <strong>Current preset:</strong>{' '}
-                      {getAllocationSummary(existingConfig.default_allocations)}
+                      {getAllocationSummary(existingConfig.defaultAllocations)}
                     </div>
                   )}
-                  {config.default_allocations &&
-                    config.default_allocations !== existingConfig?.default_allocations && (
+                  {config.defaultAllocations &&
+                    JSON.stringify(config.defaultAllocations) !==
+                      JSON.stringify(existingConfig?.defaultAllocations) && (
                       <div className="allocation-pending">
                         <strong>Updated preset:</strong>{' '}
-                        {getAllocationSummary(config.default_allocations)}
+                        {getAllocationSummary(config.defaultAllocations)}
                         <span className="pending-badge">Pending save</span>
                       </div>
                     )}
@@ -642,7 +626,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
             type="button"
             className="secondary-button"
             onClick={handleTestConnection}
-            disabled={isTestingConnection || !config.flex_token || !config.flex_query_id}
+            disabled={isTestingConnection || !config.flexToken || !config.flexQueryId}
           >
             {isTestingConnection ? 'Testing...' : 'Test Connection'}
           </button>
@@ -694,9 +678,9 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
                   <div key={index} className="allocation-item">
                     <div className="allocation-row">
                       <select
-                        value={allocation.portfolio_id}
+                        value={allocation.portfolioId}
                         onChange={(e) =>
-                          handleAllocationChange(index, 'portfolio_id', e.target.value)
+                          handleAllocationChange(index, 'portfolioId', e.target.value)
                         }
                         required
                       >

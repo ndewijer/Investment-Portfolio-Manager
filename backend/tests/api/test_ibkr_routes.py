@@ -97,9 +97,9 @@ class TestIBKRConfig:
         configuration persists correctly for subsequent import operations.
         """
         payload = {
-            "flex_token": "test_token_123",
-            "flex_query_id": "query_456",
-            "auto_import_enabled": False,
+            "flexToken": "test_token_123",
+            "flexQueryId": "query_456",
+            "autoImportEnabled": False,
         }
 
         response = client.post("/api/ibkr/config", json=payload)
@@ -137,7 +137,7 @@ class TestIBKRConfig:
         assert response.status_code == 200
         data = response.get_json()
         assert data["configured"] is True
-        assert "flex_token" not in data  # Token should not be exposed
+        assert "flexToken" not in data  # Token should not be exposed
 
     def test_delete_config(self, app_context, client, db_session):
         """
@@ -463,7 +463,7 @@ class TestIBKRAllocation:
         db_session.add(txn)
         db_session.commit()
 
-        payload = {"allocations": [{"portfolio_id": portfolio.id, "percentage": 100.0}]}
+        payload = {"allocations": [{"portfolioId": portfolio.id, "percentage": 100.0}]}
 
         response = client.post(f"/api/ibkr/inbox/{txn.id}/allocate", json=payload)
 
@@ -706,6 +706,7 @@ class TestIBKRAllocation:
         # Allocate to process it first (100% to portfolio1)
         from app.services.ibkr_transaction_service import IBKRTransactionService
 
+        # Direct service call uses snake_case
         IBKRTransactionService.process_transaction_allocation(
             txn.id, [{"portfolio_id": portfolio1.id, "percentage": 100.0}]
         )
@@ -713,8 +714,8 @@ class TestIBKRAllocation:
         # Now modify to split 60/40 between two portfolios
         payload = {
             "allocations": [
-                {"portfolio_id": portfolio1.id, "percentage": 60.0},
-                {"portfolio_id": portfolio2.id, "percentage": 40.0},
+                {"portfolioId": portfolio1.id, "percentage": 60.0},
+                {"portfolioId": portfolio2.id, "percentage": 40.0},
             ]
         }
 
@@ -773,7 +774,7 @@ class TestIBKRBulkOperations:
 
         payload = {
             "transaction_ids": [txn1.id, txn2.id],
-            "allocations": [{"portfolio_id": portfolio.id, "percentage": 100.0}],
+            "allocations": [{"portfolioId": portfolio.id, "percentage": 100.0}],
         }
 
         response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
@@ -798,7 +799,7 @@ class TestIBKRConfigErrors:
         WHY: Prevents incomplete configuration that would fail during IBKR API calls.
         Clear validation errors guide users to provide all required credentials.
         """
-        payload = {"flex_query_id": "query_123"}
+        payload = {"flexQueryId": "query_123"}
 
         response = client.post("/api/ibkr/config", json=payload)
 
@@ -814,7 +815,7 @@ class TestIBKRConfigErrors:
         WHY: Both token and query ID are required to fetch IBKR data. Validation prevents
         configuration that cannot successfully import transactions.
         """
-        payload = {"flex_token": "token_123"}
+        payload = {"flexToken": "token_123"}
 
         response = client.post("/api/ibkr/config", json=payload)
 
@@ -851,15 +852,15 @@ class TestIBKRConfigErrors:
 
     def test_save_config_invalid_token_expires_at(self, client):
         """
-        Test POST /ibkr/config rejects invalid token_expires_at format.
+        Test POST /ibkr/config rejects invalid tokenExpiresAt format.
 
         WHY: Date validation prevents data corruption from malformed dates. Users receive
         immediate feedback on date format errors rather than silent failures.
         """
         payload = {
-            "flex_token": "token_123",
-            "flex_query_id": "query_123",
-            "token_expires_at": "not-a-date",
+            "flexToken": "token_123",
+            "flexQueryId": "query_123",
+            "tokenExpiresAt": "not-a-date",
         }
 
         response = client.post("/api/ibkr/config", json=payload)
@@ -883,7 +884,7 @@ class TestIBKRConfigErrors:
             "app.api.ibkr_namespace.IBKRConfigService.save_config",
             mock_save_config,
         ):
-            payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
+            payload = {"flexToken": "token_123", "flexQueryId": "query_123"}
             response = client.post("/api/ibkr/config", json=payload)
 
             assert response.status_code == 500
@@ -943,7 +944,7 @@ class TestIBKRConnectionErrors:
         WHY: Users must test complete credentials before saving. Prevents testing with
         incomplete configuration that would always fail IBKR connection attempts.
         """
-        payload = {"flex_query_id": "query_123"}
+        payload = {"flexQueryId": "query_123"}
 
         response = client.post("/api/ibkr/config/test", json=payload)
 
@@ -959,7 +960,7 @@ class TestIBKRConnectionErrors:
         WHY: Connection testing requires both credentials. Early validation saves users from
         confusion when test connections fail due to missing query ID.
         """
-        payload = {"flex_token": "token_123"}
+        payload = {"flexToken": "token_123"}
 
         response = client.post("/api/ibkr/config/test", json=payload)
 
@@ -990,7 +991,7 @@ class TestIBKRConnectionErrors:
             mock_instance = mock_service_class.return_value
             mock_instance.test_connection.return_value = {"success": True, "message": "Connected"}
 
-            payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
+            payload = {"flexToken": "token_123", "flexQueryId": "query_123"}
             response = client.post("/api/ibkr/config/test", json=payload)
 
             assert response.status_code == 200
@@ -1011,7 +1012,7 @@ class TestIBKRConnectionErrors:
                 "error": "Invalid credentials",
             }
 
-            payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
+            payload = {"flexToken": "token_123", "flexQueryId": "query_123"}
             response = client.post("/api/ibkr/config/test", json=payload)
 
             assert response.status_code == 400
@@ -1029,7 +1030,7 @@ class TestIBKRConnectionErrors:
             mock_instance = mock_service_class.return_value
             mock_instance.test_connection.side_effect = Exception("API error")
 
-            payload = {"flex_token": "token_123", "flex_query_id": "query_123"}
+            payload = {"flexToken": "token_123", "flexQueryId": "query_123"}
             response = client.post("/api/ibkr/config/test", json=payload)
 
             assert response.status_code == 500
@@ -1279,7 +1280,7 @@ class TestIBKRAllocationErrors:
         WHY: Attempting to allocate deleted transactions should fail fast with clear errors.
         Prevents phantom allocations and maintains referential integrity.
         """
-        payload = {"allocations": [{"portfolio_id": "test", "percentage": 100}]}
+        payload = {"allocations": [{"portfolioId": "test", "percentage": 100}]}
         response = client.post("/api/ibkr/inbox/nonexistent-id/allocate", json=payload)
 
         # May return 400 for validation or 404 for not found depending on order
@@ -1370,7 +1371,7 @@ class TestIBKRAllocationErrors:
         WHY: Modifying allocations on deleted transactions should fail with clear 404 errors.
         Supports idempotency and prevents updates to phantom records.
         """
-        payload = {"allocations": [{"portfolio_id": "test", "percentage": 100}]}
+        payload = {"allocations": [{"portfolioId": "test", "percentage": 100}]}
         response = client.put("/api/ibkr/inbox/nonexistent-id/allocations", json=payload)
 
         # May return 400 for validation or 404 for not found
@@ -1433,7 +1434,7 @@ class TestIBKRAllocationErrors:
         ) as mock_modify:
             mock_modify.side_effect = ValueError("Allocation validation failed")
 
-            payload = {"allocations": [{"portfolio_id": "test", "percentage": 100}]}
+            payload = {"allocations": [{"portfolioId": "test", "percentage": 100}]}
             response = client.put(f"/api/ibkr/inbox/{txn.id}/allocations", json=payload)
 
             assert response.status_code == 400
@@ -1467,7 +1468,7 @@ class TestIBKRAllocationErrors:
         ) as mock_modify:
             mock_modify.side_effect = Exception("Unexpected database error")
 
-            payload = {"allocations": [{"portfolio_id": "test", "percentage": 100}]}
+            payload = {"allocations": [{"portfolioId": "test", "percentage": 100}]}
             response = client.put(f"/api/ibkr/inbox/{txn.id}/allocations", json=payload)
 
             assert response.status_code == 500
@@ -1485,7 +1486,7 @@ class TestIBKRBulkOperationsErrors:
         WHY: Bulk operations require transaction list. Validates required fields to prevent
         meaningless operations and provide clear guidance on correct API usage.
         """
-        payload = {"allocations": [{"portfolio_id": "test", "percentage": 100}]}
+        payload = {"allocations": [{"portfolioId": "test", "percentage": 100}]}
         response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
 
         assert response.status_code in [400, 500]
@@ -1499,7 +1500,7 @@ class TestIBKRBulkOperationsErrors:
         """
         payload = {
             "transaction_ids": [],
-            "allocations": [{"portfolio_id": "test", "percentage": 100}],
+            "allocations": [{"portfolioId": "test", "percentage": 100}],
         }
         response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
 
@@ -1541,8 +1542,8 @@ class TestIBKRBulkOperationsErrors:
         payload = {
             "transaction_ids": ["txn1"],
             "allocations": [
-                {"portfolio_id": "test1", "percentage": 50},
-                {"portfolio_id": "test2", "percentage": 30},
+                {"portfolioId": "test1", "percentage": 50},
+                {"portfolioId": "test2", "percentage": 30},
             ],
         }
         response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
@@ -1604,7 +1605,7 @@ class TestIBKRBulkOperationsErrors:
 
             payload = {
                 "transaction_ids": [txn1.id, txn2.id],
-                "allocations": [{"portfolio_id": "test", "percentage": 100}],
+                "allocations": [{"portfolioId": "test", "percentage": 100}],
             }
             response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
 
@@ -1630,7 +1631,7 @@ class TestIBKRBulkOperationsErrors:
 
             payload = {
                 "transaction_ids": ["txn1"],
-                "allocations": [{"portfolio_id": "test", "percentage": 100}],
+                "allocations": [{"portfolioId": "test", "percentage": 100}],
             }
             response = client.post("/api/ibkr/inbox/bulk-allocate", json=payload)
 

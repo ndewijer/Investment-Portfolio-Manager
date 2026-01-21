@@ -478,7 +478,7 @@ class IBKRTransactionService:
         Args:
             transaction_id: IBKR Transaction ID
             allocations: List of allocation dictionaries with:
-                - portfolio_id: Portfolio ID
+                - portfolioId: Portfolio ID
                 - percentage: Allocation percentage
 
         Returns:

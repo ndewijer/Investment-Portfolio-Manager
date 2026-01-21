@@ -23,44 +23,77 @@ from ..services.logging_service import logger
 # Create namespace
 ns = Namespace("ibkr", description="Interactive Brokers integration operations")
 
+
+def _camel_to_snake(name: str) -> str:
+    """Convert camelCase to snake_case."""
+    import re
+
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+
+
+def _snake_to_camel(name: str) -> str:
+    """Convert snake_case to camelCase."""
+    components = name.split("_")
+    return components[0] + "".join(x.title() for x in components[1:])
+
+
+def _convert_allocations_to_snake_case(allocations: list[dict]) -> list[dict]:
+    """Convert allocation dicts from camelCase to snake_case keys."""
+    return [
+        {"portfolio_id": a.get("portfolioId"), "percentage": a.get("percentage")}
+        for a in allocations
+    ]
+
+
+def _convert_allocations_to_camel_case(allocations: list[dict]) -> list[dict]:
+    """Convert allocation dicts from snake_case to camelCase keys."""
+    return [
+        {
+            "portfolioId": a.get("portfolio_id"),
+            "portfolioName": a.get("portfolio_name"),
+            "allocationPercentage": a.get("allocation_percentage"),
+            "allocatedAmount": a.get("allocated_amount"),
+            "allocatedShares": a.get("allocated_shares"),
+            "allocatedCommission": a.get("allocated_commission"),
+        }
+        for a in allocations
+    ]
+
+
 # Define models
 ibkr_config_model = ns.model(
     "IBKRConfig",
     {
         "configured": fields.Boolean(required=True, description="Whether IBKR is configured"),
-        "flex_query_id": fields.String(description="Flex Query ID"),
-        "token_expires_at": fields.String(description="Token expiration date (ISO format)"),
-        "token_warning": fields.String(description="Token expiration warning"),
-        "last_import_date": fields.String(description="Last import date"),
-        "auto_import_enabled": fields.Boolean(description="Auto import enabled"),
+        "flexQueryId": fields.String(description="Flex Query ID"),
+        "tokenExpiresAt": fields.String(description="Token expiration date (ISO format)"),
+        "tokenWarning": fields.String(description="Token expiration warning"),
+        "lastImportDate": fields.String(description="Last import date"),
+        "autoImportEnabled": fields.Boolean(description="Auto import enabled"),
         "enabled": fields.Boolean(description="Configuration enabled"),
-        "default_allocation_enabled": fields.Boolean(description="Default allocation enabled"),
-        "default_allocations": fields.String(
-            description="JSON string of default allocation preset"
-        ),
-        "created_at": fields.String(description="Configuration creation date"),
-        "updated_at": fields.String(description="Last update date"),
+        "defaultAllocationEnabled": fields.Boolean(description="Default allocation enabled"),
+        "defaultAllocations": fields.String(description="JSON string of default allocation preset"),
+        "createdAt": fields.String(description="Configuration creation date"),
+        "updatedAt": fields.String(description="Last update date"),
     },
 )
 
 ibkr_config_create_model = ns.model(
     "IBKRConfigCreate",
     {
-        "flex_token": fields.String(
+        "flexToken": fields.String(
             required=True, description="Flex API token", example="XXXXXXXXXXXXXX"
         ),
-        "flex_query_id": fields.String(
-            required=True, description="Flex Query ID", example="123456"
-        ),
-        "token_expires_at": fields.String(description="Token expiration date (ISO format)"),
-        "auto_import_enabled": fields.Boolean(description="Enable automatic import", default=False),
+        "flexQueryId": fields.String(required=True, description="Flex Query ID", example="123456"),
+        "tokenExpiresAt": fields.String(description="Token expiration date (ISO format)"),
+        "autoImportEnabled": fields.Boolean(description="Enable automatic import", default=False),
         "enabled": fields.Boolean(description="Enable configuration", default=True),
-        "default_allocation_enabled": fields.Boolean(
+        "defaultAllocationAnabled": fields.Boolean(
             description="Enable default allocation on import", default=False
         ),
-        "default_allocations": fields.String(
+        "defaultAllocations": fields.String(
             description="JSON string of default allocation preset "
-            '(e.g., [{"portfolio_id": "...", "percentage": 60.0}])'
+            '(e.g., [{"portfolioId": "...", "percentage": 60.0}])'
         ),
     },
 )
@@ -89,7 +122,7 @@ ibkr_transaction_model = ns.model(
 allocation_model = ns.model(
     "Allocation",
     {
-        "portfolio_id": fields.String(
+        "portfolioId": fields.String(
             required=True, description="Portfolio ID", example="uuid-here"
         ),
         "percentage": fields.Float(
@@ -159,27 +192,27 @@ class IBKRConfig(Resource):
         """
         data = request.get_json()
 
-        if not data or "flex_token" not in data or "flex_query_id" not in data:
-            return {"error": "Missing required fields: flex_token and flex_query_id"}, 400
+        if not data or "flexToken" not in data or "flexQueryId" not in data:
+            return {"error": "Missing required fields: flexToken and flexQueryId"}, 400
 
         try:
             # Parse token expiration date if provided
             token_expires_at = None
-            if data.get("token_expires_at"):
+            if data.get("tokenExpiresAt"):
                 try:
-                    token_expires_at = datetime.fromisoformat(data["token_expires_at"])
+                    token_expires_at = datetime.fromisoformat(data["tokenExpiresAt"])
                 except (ValueError, TypeError):
                     return {"error": "Invalid token_expires_at format. Use ISO format."}, 400
 
             # Save config using service
             config = IBKRConfigService.save_config(
-                flex_token=data["flex_token"],
-                flex_query_id=data["flex_query_id"],
+                flex_token=data["flexToken"],
+                flex_query_id=data["flexQueryId"],
                 token_expires_at=token_expires_at,
-                auto_import_enabled=data.get("auto_import_enabled"),
+                auto_import_enabled=data.get("autoImportEnabled"),
                 enabled=data.get("enabled"),
-                default_allocation_enabled=data.get("default_allocation_enabled"),
-                default_allocations=data.get("default_allocations"),
+                default_allocation_enabled=data.get("defaultAllocationEnabled"),
+                default_allocations=data.get("defaultAllocations"),
             )
 
             logger.log(
@@ -258,12 +291,12 @@ class IBKRConfigTest(Resource):
         """
         data = request.get_json()
 
-        if not data or "flex_token" not in data or "flex_query_id" not in data:
-            return {"error": "Missing required fields: flex_token and flex_query_id"}, 400
+        if not data or "flexToken" not in data or "flexQueryId" not in data:
+            return {"error": "Missing required fields: flexToken and flexQueryId"}, 400
 
         try:
             service = IBKRFlexService()
-            result = service.test_connection(data["flex_token"], data["flex_query_id"])
+            result = service.test_connection(data["flexToken"], data["flexQueryId"])
 
             if result["success"]:
                 return result, 200
@@ -434,7 +467,7 @@ class IBKRBulkAllocate(Resource):
         {
             "transaction_ids": ["id1", "id2", ...],
             "allocations": [
-                {"portfolio_id": "uuid", "percentage": 50.0},
+                {"portfolioId": "uuid", "percentage": 50.0},
                 ...
             ]
         }
@@ -447,7 +480,12 @@ class IBKRBulkAllocate(Resource):
         transaction_ids = data["transaction_ids"]
         allocations = data["allocations"]
 
-        result = IBKRTransactionService.bulk_allocate_transactions(transaction_ids, allocations)
+        # Convert camelCase to snake_case for service layer
+        allocations_snake = _convert_allocations_to_snake_case(allocations)
+
+        result = IBKRTransactionService.bulk_allocate_transactions(
+            transaction_ids, allocations_snake
+        )
 
         if result["success"]:
             return result, 200
@@ -588,8 +626,11 @@ class IBKRTransactionAllocate(Resource):
             if not allocations:
                 return {"error": "No allocations provided"}, 400
 
+            # Convert camelCase to snake_case for service layer
+            allocations_snake = _convert_allocations_to_snake_case(allocations)
+
             result = IBKRTransactionService.process_transaction_allocation(
-                transaction_id, allocations
+                transaction_id, allocations_snake
             )
 
             if result["success"]:
@@ -774,6 +815,9 @@ class IBKRTransactionAllocations(Resource):
         combining stock and fee transactions.
         """
         response, status = IBKRTransactionService.get_transaction_allocations(transaction_id)
+        # Convert snake_case allocations to camelCase for API response
+        if status == 200 and "allocations" in response:
+            response["allocations"] = _convert_allocations_to_camel_case(response["allocations"])
         return response, status
 
     @ns.doc("modify_transaction_allocations")
@@ -791,8 +835,8 @@ class IBKRTransactionAllocations(Resource):
         Request body:
         {
             "allocations": [
-                {"portfolio_id": "uuid", "percentage": 60.0},
-                {"portfolio_id": "uuid", "percentage": 40.0}
+                {"portfolioId": "uuid", "percentage": 60.0},
+                {"portfolioId": "uuid", "percentage": 40.0}
             ]
         }
         """
@@ -802,7 +846,9 @@ class IBKRTransactionAllocations(Resource):
             return {"error": "Missing allocations"}, 400
 
         try:
-            result = IBKRTransactionService.modify_allocations(transaction_id, data["allocations"])
+            # Convert camelCase to snake_case for service layer
+            allocations_snake = _convert_allocations_to_snake_case(data["allocations"])
+            result = IBKRTransactionService.modify_allocations(transaction_id, allocations_snake)
             return result, 200
 
         except ValueError as e:
