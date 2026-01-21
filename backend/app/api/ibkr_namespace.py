@@ -61,6 +61,19 @@ def _convert_allocations_to_camel_case(allocations: list[dict]) -> list[dict]:
 
 
 # Define models
+# Define allocation model first so it can be used in other models
+allocation_model = ns.model(
+    "Allocation",
+    {
+        "portfolioId": fields.String(
+            required=True, description="Portfolio ID", example="uuid-here"
+        ),
+        "percentage": fields.Float(
+            required=True, description="Allocation percentage (0-100)", example=50.0
+        ),
+    },
+)
+
 ibkr_config_model = ns.model(
     "IBKRConfig",
     {
@@ -72,7 +85,10 @@ ibkr_config_model = ns.model(
         "autoImportEnabled": fields.Boolean(description="Auto import enabled"),
         "enabled": fields.Boolean(description="Configuration enabled"),
         "defaultAllocationEnabled": fields.Boolean(description="Default allocation enabled"),
-        "defaultAllocations": fields.String(description="JSON string of default allocation preset"),
+        "defaultAllocations": fields.List(
+            fields.Nested(allocation_model),
+            description="Array of default allocation preset objects",
+        ),
         "createdAt": fields.String(description="Configuration creation date"),
         "updatedAt": fields.String(description="Last update date"),
     },
@@ -88,12 +104,13 @@ ibkr_config_create_model = ns.model(
         "tokenExpiresAt": fields.String(description="Token expiration date (ISO format)"),
         "autoImportEnabled": fields.Boolean(description="Enable automatic import", default=False),
         "enabled": fields.Boolean(description="Enable configuration", default=True),
-        "defaultAllocationAnabled": fields.Boolean(
+        "defaultAllocationEnabled": fields.Boolean(
             description="Enable default allocation on import", default=False
         ),
-        "defaultAllocations": fields.String(
-            description="JSON string of default allocation preset "
-            '(e.g., [{"portfolioId": "...", "percentage": 60.0}])'
+        "defaultAllocations": fields.List(
+            fields.Nested(allocation_model),
+            description="Array of default allocation preset objects",
+            example=[{"portfolioId": "uuid-here", "percentage": 50.0}],
         ),
     },
 )
@@ -116,18 +133,6 @@ ibkr_transaction_model = ns.model(
         "status": fields.String(required=True, description="Processing status"),
         "imported_at": fields.String(description="Import timestamp"),
         "processed_at": fields.String(description="Processing timestamp"),
-    },
-)
-
-allocation_model = ns.model(
-    "Allocation",
-    {
-        "portfolioId": fields.String(
-            required=True, description="Portfolio ID", example="uuid-here"
-        ),
-        "percentage": fields.Float(
-            required=True, description="Allocation percentage (0-100)", example=50.0
-        ),
     },
 )
 
