@@ -417,4 +417,4 @@ if __name__ == "__main__":
             seed_database()
             print("Database seeded with initial data.")
 
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
