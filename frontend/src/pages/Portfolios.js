@@ -44,22 +44,17 @@ const Portfolios = () => {
 
     try {
       if (editingPortfolio) {
-        await fetchPortfolios(
-          () => api.put(`/portfolio/${editingPortfolio.id}`, editingPortfolio),
-          {
-            onSuccess: () => {
-              setIsModalOpen(false);
-              setEditingPortfolio(null);
-            },
-          }
-        );
+        await api.put(`/portfolio/${editingPortfolio.id}`, editingPortfolio);
+        setIsModalOpen(false);
+        setEditingPortfolio(null);
+        // Refetch the list after successful update
+        fetchPortfolios(() => api.get('/portfolio'));
       } else {
-        await fetchPortfolios(() => api.post('/portfolio', newPortfolio), {
-          onSuccess: () => {
-            setIsModalOpen(false);
-            setNewPortfolio({ name: '', description: '', excludeFromOverview: false });
-          },
-        });
+        await api.post('/portfolio', newPortfolio);
+        setIsModalOpen(false);
+        setNewPortfolio({ name: '', description: '', excludeFromOverview: false });
+        // Refetch the list after successful create
+        fetchPortfolios(() => api.get('/portfolio'));
       }
     } catch (error) {
       console.error('Error saving portfolio:', error);

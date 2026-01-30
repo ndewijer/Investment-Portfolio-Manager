@@ -91,7 +91,7 @@ export const usePortfolioData = (portfolioId) => {
 
   // Fetch available funds for adding to portfolio
   const loadAvailableFunds = useCallback(async () => {
-    await fetchAvailableFunds(() => api.get('/funds'));
+    await fetchAvailableFunds(() => api.get('/fund'));
   }, [fetchAvailableFunds]);
 
   // Refresh portfolio summary data
