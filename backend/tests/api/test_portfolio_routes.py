@@ -301,7 +301,7 @@ class TestPortfolioArchiving:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert data["is_archived"] is True
+        assert data["isArchived"] is True
 
         # Verify database
         db_session.refresh(portfolio)
@@ -323,7 +323,7 @@ class TestPortfolioArchiving:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert data["is_archived"] is False
+        assert data["isArchived"] is False
 
         # Verify database
         db_session.refresh(portfolio)
@@ -505,15 +505,15 @@ class TestPortfolioFunds:
         db_session.add_all([portfolio, fund])
         db_session.commit()
 
-        payload = {"portfolio_id": portfolio.id, "fund_id": fund.id}
+        payload = {"portfolioId": portfolio.id, "fundId": fund.id}
 
         response = client.post("/api/portfolio/funds", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
         assert "id" in data
-        assert data["portfolio_id"] == portfolio.id
-        assert data["fund_id"] == fund.id
+        assert data["portfolioId"] == portfolio.id
+        assert data["fundId"] == fund.id
 
         # Verify database
         pf = PortfolioFund.query.filter_by(portfolio_id=portfolio.id, fund_id=fund.id).first()
@@ -675,7 +675,7 @@ class TestPortfolioErrors:
         db_session.add(fund)
         db_session.commit()
 
-        payload = {"portfolio_id": make_id(), "fund_id": fund.id}
+        payload = {"portfolioId": make_id(), "fundId": fund.id}
 
         response = client.post("/api/portfolio/funds", json=payload)
 
@@ -695,7 +695,7 @@ class TestPortfolioErrors:
         db_session.add(portfolio)
         db_session.commit()
 
-        payload = {"portfolio_id": portfolio.id, "fund_id": make_id()}
+        payload = {"portfolioId": portfolio.id, "fundId": make_id()}
 
         response = client.post("/api/portfolio/funds", json=payload)
 

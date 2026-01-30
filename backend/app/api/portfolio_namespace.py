@@ -337,7 +337,13 @@ class PortfolioArchive(Resource):
                 details={"portfolio_id": portfolio_id},
             )
 
-            return PortfolioService.format_portfolio_list_item(portfolio), 200
+            return {
+                "id": portfolio.id,
+                "name": portfolio.name,
+                "description": portfolio.description,
+                "isArchived": portfolio.is_archived,
+                "excludeFromOverview": portfolio.exclude_from_overview,
+            }, 200
 
         except ValueError as e:
             return {"error": str(e)}, 404
@@ -378,7 +384,13 @@ class PortfolioUnarchive(Resource):
                 details={"portfolio_id": portfolio_id},
             )
 
-            return PortfolioService.format_portfolio_list_item(portfolio), 200
+            return {
+                "id": portfolio.id,
+                "name": portfolio.name,
+                "description": portfolio.description,
+                "isArchived": portfolio.is_archived,
+                "excludeFromOverview": portfolio.exclude_from_overview,
+            }, 200
 
         except ValueError as e:
             return {"error": str(e)}, 404
@@ -537,8 +549,8 @@ class PortfolioFundsCreate(Resource):
         ns.model(
             "PortfolioFundCreate",
             {
-                "portfolio_id": fields.String(required=True, description="Portfolio ID"),
-                "fund_id": fields.String(required=True, description="Fund ID"),
+                "portfolioId": fields.String(required=True, description="Portfolio ID"),
+                "fundId": fields.String(required=True, description="Fund ID"),
             },
         ),
         validate=True,
@@ -556,13 +568,13 @@ class PortfolioFundsCreate(Resource):
         try:
             data = request.json
             portfolio_fund = PortfolioService.create_portfolio_fund(
-                portfolio_id=data["portfolio_id"], fund_id=data["fund_id"]
+                portfolio_id=data["portfolioId"], fund_id=data["fundId"]
             )
 
             return {
                 "id": portfolio_fund.id,
-                "portfolio_id": portfolio_fund.portfolio_id,
-                "fund_id": portfolio_fund.fund_id,
+                "portfolioId": portfolio_fund.portfolio_id,
+                "fundId": portfolio_fund.fund_id,
             }, 201
         except ValueError as e:
             return {"error": str(e)}, 404
@@ -623,11 +635,11 @@ class PortfolioFundDetail(Resource):
 
                     return {
                         "error": "Confirmation required for deletion",
-                        "requires_confirmation": True,
-                        "transaction_count": transaction_count,
-                        "dividend_count": dividend_count,
-                        "fund_name": portfolio_fund.fund.name,
-                        "portfolio_name": portfolio_fund.portfolio.name,
+                        "requiresConfirmation": True,
+                        "transactionCount": transaction_count,
+                        "dividendCount": dividend_count,
+                        "fundName": portfolio_fund.fund.name,
+                        "portfolioName": portfolio_fund.portfolio.name,
                     }, 409
 
             return {"error": error_message}, 404
