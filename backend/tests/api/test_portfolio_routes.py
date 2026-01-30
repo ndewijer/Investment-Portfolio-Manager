@@ -76,7 +76,7 @@ class TestPortfolioListAndCreate:
         assert len(data) == 3
         assert all("id" in p for p in data)
         assert all("name" in p for p in data)
-        assert all("is_archived" in p for p in data)
+        assert all("isArchived" in p for p in data)
 
         # Verify structure
         names = {p["name"] for p in data}
@@ -99,8 +99,8 @@ class TestPortfolioListAndCreate:
         assert data["name"] == "My New Portfolio"
         assert data["description"] == "Test portfolio"
         assert "id" in data
-        assert data["is_archived"] is False
-        assert data["exclude_from_overview"] is False
+        assert data["isArchived"] is False
+        assert data["excludeFromOverview"] is False
 
         # Verify database
         portfolio = db.session.get(Portfolio, data["id"])
@@ -217,7 +217,7 @@ class TestPortfolioRetrieveUpdateDelete:
         payload = {
             "name": "Updated Name",
             "description": "Updated description",
-            "exclude_from_overview": True,
+            "excludeFromOverview": True,
         }
 
         response = client.put(f"/api/portfolio/{portfolio.id}", json=payload)
@@ -226,7 +226,7 @@ class TestPortfolioRetrieveUpdateDelete:
         data = response.get_json()
         assert data["name"] == "Updated Name"
         assert data["description"] == "Updated description"
-        assert data["exclude_from_overview"] is True
+        assert data["excludeFromOverview"] is True
 
         # Verify database
         db_session.refresh(portfolio)

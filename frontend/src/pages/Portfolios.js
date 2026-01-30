@@ -29,7 +29,7 @@ const Portfolios = () => {
   const [newPortfolio, setNewPortfolio] = useState({
     name: '',
     description: '',
-    exclude_from_overview: false,
+    excludeFromOverview: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -57,7 +57,7 @@ const Portfolios = () => {
         await fetchPortfolios(() => api.post('/portfolio', newPortfolio), {
           onSuccess: () => {
             setIsModalOpen(false);
-            setNewPortfolio({ name: '', description: '', exclude_from_overview: false });
+            setNewPortfolio({ name: '', description: '', excludeFromOverview: false });
           },
         });
       }
@@ -130,7 +130,7 @@ const Portfolios = () => {
                     id: portfolio.id,
                     name: portfolio.name,
                     description: portfolio.description,
-                    exclude_from_overview: portfolio.exclude_from_overview || false,
+                    excludeFromOverview: portfolio.excludeFromOverview || false,
                   });
                   setIsModalOpen(true);
                 }}
@@ -198,19 +198,19 @@ const Portfolios = () => {
           type="checkbox"
           value={
             editingPortfolio
-              ? editingPortfolio.exclude_from_overview
-              : newPortfolio.exclude_from_overview
+              ? editingPortfolio.excludeFromOverview
+              : newPortfolio.excludeFromOverview
           }
           onChange={(value) => {
             if (editingPortfolio) {
               setEditingPortfolio({
                 ...editingPortfolio,
-                exclude_from_overview: value,
+                excludeFromOverview: value,
               });
             } else {
               setNewPortfolio({
                 ...newPortfolio,
-                exclude_from_overview: value,
+                excludeFromOverview: value,
               });
             }
           }}
