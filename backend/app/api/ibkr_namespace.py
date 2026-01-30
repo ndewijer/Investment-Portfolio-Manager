@@ -60,6 +60,32 @@ def _convert_allocations_to_camel_case(allocations: list[dict]) -> list[dict]:
     ]
 
 
+def _convert_transaction_to_camel_case(transaction: dict) -> dict:
+    """Convert transaction dict from snake_case to camelCase keys."""
+    return {
+        "id": transaction.get("id"),
+        "ibkrTransactionId": transaction.get("ibkr_transaction_id"),
+        "transactionDate": transaction.get("transaction_date"),
+        "symbol": transaction.get("symbol"),
+        "isin": transaction.get("isin"),
+        "description": transaction.get("description"),
+        "transactionType": transaction.get("transaction_type"),
+        "quantity": transaction.get("quantity"),
+        "price": transaction.get("price"),
+        "totalAmount": transaction.get("total_amount"),
+        "currency": transaction.get("currency"),
+        "fees": transaction.get("fees"),
+        "status": transaction.get("status"),
+        "importedAt": transaction.get("imported_at"),
+        "processedAt": transaction.get("processed_at"),
+    }
+
+
+def _convert_transactions_to_camel_case(transactions: list[dict]) -> list[dict]:
+    """Convert list of transaction dicts from snake_case to camelCase keys."""
+    return [_convert_transaction_to_camel_case(t) for t in transactions]
+
+
 # Define models
 # Define allocation model first so it can be used in other models
 allocation_model = ns.model(
@@ -119,20 +145,20 @@ ibkr_transaction_model = ns.model(
     "IBKRTransaction",
     {
         "id": fields.String(required=True, description="Transaction ID"),
-        "ibkr_transaction_id": fields.String(required=True, description="IBKR Transaction ID"),
-        "transaction_date": fields.String(required=True, description="Transaction date"),
+        "ibkrTransactionId": fields.String(required=True, description="IBKR Transaction ID"),
+        "transactionDate": fields.String(required=True, description="Transaction date"),
         "symbol": fields.String(required=True, description="Security symbol"),
         "isin": fields.String(description="ISIN"),
         "description": fields.String(description="Description"),
-        "transaction_type": fields.String(required=True, description="Transaction type"),
+        "transactionType": fields.String(required=True, description="Transaction type"),
         "quantity": fields.Float(required=True, description="Quantity"),
         "price": fields.Float(required=True, description="Price"),
-        "total_amount": fields.Float(required=True, description="Total amount"),
+        "totalAmount": fields.Float(required=True, description="Total amount"),
         "currency": fields.String(required=True, description="Currency"),
         "fees": fields.Float(description="Fees"),
         "status": fields.String(required=True, description="Processing status"),
-        "imported_at": fields.String(description="Import timestamp"),
-        "processed_at": fields.String(description="Processing timestamp"),
+        "importedAt": fields.String(description="Import timestamp"),
+        "processedAt": fields.String(description="Processing timestamp"),
     },
 )
 
@@ -395,7 +421,10 @@ class IBKRInbox(Resource):
 
             transactions = IBKRTransactionService.get_inbox(status, transaction_type)
 
-            return transactions, 200
+            # Convert snake_case to camelCase for API response
+            transactions_camel = _convert_transactions_to_camel_case(transactions)
+
+            return transactions_camel, 200
 
         except HTTPException:
             raise
