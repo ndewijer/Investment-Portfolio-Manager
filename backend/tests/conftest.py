@@ -179,6 +179,7 @@ def db_session(app_context):
         # Import all models for cleanup
         from app.models import (
             Dividend,
+            ExchangeRate,
             Fund,
             FundHistoryMaterialized,
             FundPrice,
@@ -210,6 +211,7 @@ def db_session(app_context):
             Fund,
             Portfolio,
             IBKRConfig,
+            ExchangeRate,
             SystemSetting,
             Log,
         ]

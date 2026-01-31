@@ -156,7 +156,7 @@ class PortfolioFund(db.Model):
     portfolio_id = db.Column(
         db.String(36), db.ForeignKey("portfolio.id", ondelete="CASCADE"), nullable=False
     )
-    fund_id = db.Column(db.String(36), db.ForeignKey("fund.id"), nullable=False)
+    fund_id = db.Column(db.String(36), db.ForeignKey("fund.id", ondelete="CASCADE"), nullable=False)
     transactions = db.relationship(
         "Transaction", backref="portfolio_fund", lazy=True, cascade="all, delete-orphan"
     )
@@ -268,7 +268,9 @@ class Dividend(db.Model):
 
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     fund_id = db.Column(db.String(36), db.ForeignKey("fund.id"), nullable=False)
-    portfolio_fund_id = db.Column(db.String(36), db.ForeignKey("portfolio_fund.id"), nullable=False)
+    portfolio_fund_id = db.Column(
+        db.String(36), db.ForeignKey("portfolio_fund.id", ondelete="CASCADE"), nullable=False
+    )
     record_date = db.Column(db.Date, nullable=False)
     ex_dividend_date = db.Column(db.Date, nullable=False)
     shares_owned = db.Column(db.Float, nullable=False)
@@ -279,7 +281,7 @@ class Dividend(db.Model):
     )
     buy_order_date = db.Column(db.Date, nullable=True)
     reinvestment_transaction_id = db.Column(
-        db.String(36), db.ForeignKey("transaction.id"), nullable=True
+        db.String(36), db.ForeignKey("transaction.id", ondelete="CASCADE"), nullable=True
     )
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
