@@ -76,7 +76,7 @@ class TestPortfolioListAndCreate:
         assert len(data) == 3
         assert all("id" in p for p in data)
         assert all("name" in p for p in data)
-        assert all("is_archived" in p for p in data)
+        assert all("isArchived" in p for p in data)
 
         # Verify structure
         names = {p["name"] for p in data}
@@ -99,8 +99,8 @@ class TestPortfolioListAndCreate:
         assert data["name"] == "My New Portfolio"
         assert data["description"] == "Test portfolio"
         assert "id" in data
-        assert data["is_archived"] is False
-        assert data["exclude_from_overview"] is False
+        assert data["isArchived"] is False
+        assert data["excludeFromOverview"] is False
 
         # Verify database
         portfolio = db.session.get(Portfolio, data["id"])
@@ -217,7 +217,7 @@ class TestPortfolioRetrieveUpdateDelete:
         payload = {
             "name": "Updated Name",
             "description": "Updated description",
-            "exclude_from_overview": True,
+            "excludeFromOverview": True,
         }
 
         response = client.put(f"/api/portfolio/{portfolio.id}", json=payload)
@@ -226,7 +226,7 @@ class TestPortfolioRetrieveUpdateDelete:
         data = response.get_json()
         assert data["name"] == "Updated Name"
         assert data["description"] == "Updated description"
-        assert data["exclude_from_overview"] is True
+        assert data["excludeFromOverview"] is True
 
         # Verify database
         db_session.refresh(portfolio)
@@ -301,7 +301,7 @@ class TestPortfolioArchiving:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert data["is_archived"] is True
+        assert data["isArchived"] is True
 
         # Verify database
         db_session.refresh(portfolio)
@@ -323,7 +323,7 @@ class TestPortfolioArchiving:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert data["is_archived"] is False
+        assert data["isArchived"] is False
 
         # Verify database
         db_session.refresh(portfolio)
@@ -505,15 +505,15 @@ class TestPortfolioFunds:
         db_session.add_all([portfolio, fund])
         db_session.commit()
 
-        payload = {"portfolio_id": portfolio.id, "fund_id": fund.id}
+        payload = {"portfolioId": portfolio.id, "fundId": fund.id}
 
         response = client.post("/api/portfolio/funds", json=payload)
 
         assert response.status_code == 201
         data = response.get_json()
         assert "id" in data
-        assert data["portfolio_id"] == portfolio.id
-        assert data["fund_id"] == fund.id
+        assert data["portfolioId"] == portfolio.id
+        assert data["fundId"] == fund.id
 
         # Verify database
         pf = PortfolioFund.query.filter_by(portfolio_id=portfolio.id, fund_id=fund.id).first()
@@ -675,7 +675,7 @@ class TestPortfolioErrors:
         db_session.add(fund)
         db_session.commit()
 
-        payload = {"portfolio_id": make_id(), "fund_id": fund.id}
+        payload = {"portfolioId": make_id(), "fundId": fund.id}
 
         response = client.post("/api/portfolio/funds", json=payload)
 
@@ -695,7 +695,7 @@ class TestPortfolioErrors:
         db_session.add(portfolio)
         db_session.commit()
 
-        payload = {"portfolio_id": portfolio.id, "fund_id": make_id()}
+        payload = {"portfolioId": portfolio.id, "fundId": make_id()}
 
         response = client.post("/api/portfolio/funds", json=payload)
 

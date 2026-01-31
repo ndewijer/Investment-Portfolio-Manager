@@ -210,8 +210,8 @@ const IBKRInbox = () => {
       // Pre-populate allocations state from existing data
       setAllocations(
         response.data.allocations.map((a) => ({
-          portfolio_id: a.portfolio_id,
-          percentage: a.allocation_percentage,
+          portfolio_id: a.portfolioId,
+          percentage: a.allocationPercentage,
         }))
       );
     } catch (err) {
@@ -267,7 +267,7 @@ const IBKRInbox = () => {
   // Helper to calculate allocated amount for a percentage
   const calculateAllocatedAmount = (percentage) => {
     if (!selectedTransaction || modalMode === 'bulk') return null;
-    return (selectedTransaction.total_amount * percentage) / 100;
+    return (selectedTransaction.totalAmount * percentage) / 100;
   };
 
   // Helper to calculate allocated shares for a percentage
@@ -841,7 +841,7 @@ const IBKRInbox = () => {
               ]
             : []),
           {
-            key: 'transaction_date',
+            key: 'transactionDate',
             header: 'Date',
             render: (value) => new Date(value).toLocaleDateString(),
             sortable: true,
@@ -859,7 +859,7 @@ const IBKRInbox = () => {
             sortable: true,
           },
           {
-            key: 'transaction_type',
+            key: 'transactionType',
             header: 'Type',
             render: (value) => <span className={`transaction-type ${value}`}>{value}</span>,
             sortable: true,
@@ -899,7 +899,7 @@ const IBKRInbox = () => {
             sortable: true,
           },
           {
-            key: 'total_amount',
+            key: 'totalAmount',
             header: 'Total',
             cellClassName: 'number-cell cost-total',
             render: (value, item) => formatCurrencyWithCode(value, item.currency),
@@ -957,9 +957,9 @@ const IBKRInbox = () => {
             ) : (
               <div className="transaction-summary compact">
                 <strong>{selectedTransaction.symbol}</strong> • {selectedTransaction.description} •{' '}
-                {selectedTransaction.transaction_type} •{' '}
+                {selectedTransaction.transactionType} •{' '}
                 {formatCurrencyWithCode(
-                  selectedTransaction.total_amount,
+                  selectedTransaction.totalAmount,
                   selectedTransaction.currency
                 )}
                 {selectedTransaction.quantity && (
@@ -1005,28 +1005,27 @@ const IBKRInbox = () => {
                   <div key={index} className="allocation-detail-row">
                     <div className="allocation-detail-item">
                       <span className="label">Portfolio:</span>
-                      <span className="value">{allocation.portfolio_name}</span>
+                      <span className="value">{allocation.portfolioName}</span>
                     </div>
                     <div className="allocation-detail-item">
                       <span className="label">Percentage:</span>
-                      <span className="value">{allocation.allocation_percentage.toFixed(2)}%</span>
+                      <span className="value">{allocation.allocationPercentage.toFixed(2)}%</span>
                     </div>
                     <div className="allocation-detail-item">
                       <span className="label">Amount:</span>
                       <span className="value">
-                        {allocation.allocated_amount.toFixed(2)} {selectedTransaction.currency}
+                        {allocation.allocatedAmount.toFixed(2)} {selectedTransaction.currency}
                       </span>
                     </div>
                     <div className="allocation-detail-item">
                       <span className="label">Shares:</span>
-                      <span className="value">{allocation.allocated_shares.toFixed(6)}</span>
+                      <span className="value">{allocation.allocatedShares.toFixed(6)}</span>
                     </div>
-                    {allocation.allocated_commission > 0 && (
+                    {allocation.allocatedCommission > 0 && (
                       <div className="allocation-detail-item">
                         <span className="label">Commission:</span>
                         <span className="value">
-                          {allocation.allocated_commission.toFixed(2)}{' '}
-                          {selectedTransaction.currency}
+                          {allocation.allocatedCommission.toFixed(2)} {selectedTransaction.currency}
                         </span>
                       </div>
                     )}

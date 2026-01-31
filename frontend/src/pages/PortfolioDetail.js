@@ -82,8 +82,8 @@ const PortfolioDetail = () => {
     async (selectedFundId) => {
       try {
         await api.post('/portfolio/funds', {
-          portfolio_id: id,
-          fund_id: selectedFundId,
+          portfolioId: id,
+          fundId: selectedFundId,
         });
         fetchPortfolioData();
       } catch (error) {
@@ -103,10 +103,10 @@ const PortfolioDetail = () => {
         if (error.response && error.response.status === 409) {
           const data = error.response.data;
           const confirmMessage =
-            `Are you sure you want to remove ${data.fund_name} from this portfolio?\n\n` +
+            `Are you sure you want to remove ${data.fundName} from this portfolio?\n\n` +
             `This will also delete:\n` +
-            `- ${data.transaction_count} transaction(s)\n` +
-            `- ${data.dividend_count} dividend(s)\n\n` +
+            `- ${data.transactionCount} transaction(s)\n` +
+            `- ${data.dividendCount} dividend(s)\n\n` +
             `This action cannot be undone.`;
 
           if (window.confirm(confirmMessage)) {

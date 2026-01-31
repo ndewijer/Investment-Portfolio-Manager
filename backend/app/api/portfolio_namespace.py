@@ -26,8 +26,8 @@ portfolio_list_item_model = ns.model(
         "id": fields.String(required=True, description="Portfolio unique identifier (UUID)"),
         "name": fields.String(required=True, description="Portfolio name"),
         "description": fields.String(description="Portfolio description"),
-        "is_archived": fields.Boolean(required=True, description="Whether portfolio is archived"),
-        "exclude_from_overview": fields.Boolean(
+        "isArchived": fields.Boolean(required=True, description="Whether portfolio is archived"),
+        "excludeFromOverview": fields.Boolean(
             required=True, description="Whether to exclude from overview"
         ),
     },
@@ -39,7 +39,7 @@ portfolio_detail_model = ns.model(
         "id": fields.String(required=True, description="Portfolio unique identifier (UUID)"),
         "name": fields.String(required=True, description="Portfolio name"),
         "description": fields.String(description="Portfolio description"),
-        "is_archived": fields.Boolean(required=True, description="Whether portfolio is archived"),
+        "isArchived": fields.Boolean(required=True, description="Whether portfolio is archived"),
         "totalValue": fields.Float(required=True, description="Total current value"),
         "totalCost": fields.Float(required=True, description="Total cost basis"),
         "totalDividends": fields.Float(required=True, description="Total dividends received"),
@@ -72,7 +72,7 @@ portfolio_update_model = ns.model(
     {
         "name": fields.String(description="Portfolio name", example="Updated Portfolio Name"),
         "description": fields.String(description="Portfolio description"),
-        "exclude_from_overview": fields.Boolean(description="Whether to exclude from overview"),
+        "excludeFromOverview": fields.Boolean(description="Whether to exclude from overview"),
     },
 )
 
@@ -102,8 +102,8 @@ class PortfolioList(Resource):
                     "id": p.id,
                     "name": p.name,
                     "description": p.description,
-                    "is_archived": p.is_archived,
-                    "exclude_from_overview": p.exclude_from_overview,
+                    "isArchived": p.is_archived,
+                    "excludeFromOverview": p.exclude_from_overview,
                 }
                 for p in portfolios
             ], 200
@@ -147,8 +147,8 @@ class PortfolioList(Resource):
                 "id": portfolio.id,
                 "name": portfolio.name,
                 "description": portfolio.description,
-                "is_archived": portfolio.is_archived,
-                "exclude_from_overview": portfolio.exclude_from_overview,
+                "isArchived": portfolio.is_archived,
+                "excludeFromOverview": portfolio.exclude_from_overview,
             }, 201
 
         except ValueError as e:
@@ -239,7 +239,7 @@ class Portfolio(Resource):
                 portfolio_id=portfolio_id,
                 name=data.get("name"),
                 description=data.get("description"),
-                exclude_from_overview=data.get("exclude_from_overview"),
+                exclude_from_overview=data.get("excludeFromOverview"),
             )
 
             logger.log(
@@ -253,8 +253,8 @@ class Portfolio(Resource):
                 "id": portfolio.id,
                 "name": portfolio.name,
                 "description": portfolio.description,
-                "is_archived": portfolio.is_archived,
-                "exclude_from_overview": portfolio.exclude_from_overview,
+                "isArchived": portfolio.is_archived,
+                "excludeFromOverview": portfolio.exclude_from_overview,
             }, 200
 
         except ValueError as e:
@@ -337,7 +337,13 @@ class PortfolioArchive(Resource):
                 details={"portfolio_id": portfolio_id},
             )
 
-            return PortfolioService.format_portfolio_list_item(portfolio), 200
+            return {
+                "id": portfolio.id,
+                "name": portfolio.name,
+                "description": portfolio.description,
+                "isArchived": portfolio.is_archived,
+                "excludeFromOverview": portfolio.exclude_from_overview,
+            }, 200
 
         except ValueError as e:
             return {"error": str(e)}, 404
@@ -378,7 +384,13 @@ class PortfolioUnarchive(Resource):
                 details={"portfolio_id": portfolio_id},
             )
 
-            return PortfolioService.format_portfolio_list_item(portfolio), 200
+            return {
+                "id": portfolio.id,
+                "name": portfolio.name,
+                "description": portfolio.description,
+                "isArchived": portfolio.is_archived,
+                "excludeFromOverview": portfolio.exclude_from_overview,
+            }, 200
 
         except ValueError as e:
             return {"error": str(e)}, 404
@@ -537,8 +549,8 @@ class PortfolioFundsCreate(Resource):
         ns.model(
             "PortfolioFundCreate",
             {
-                "portfolio_id": fields.String(required=True, description="Portfolio ID"),
-                "fund_id": fields.String(required=True, description="Fund ID"),
+                "portfolioId": fields.String(required=True, description="Portfolio ID"),
+                "fundId": fields.String(required=True, description="Fund ID"),
             },
         ),
         validate=True,
@@ -556,13 +568,13 @@ class PortfolioFundsCreate(Resource):
         try:
             data = request.json
             portfolio_fund = PortfolioService.create_portfolio_fund(
-                portfolio_id=data["portfolio_id"], fund_id=data["fund_id"]
+                portfolio_id=data["portfolioId"], fund_id=data["fundId"]
             )
 
             return {
                 "id": portfolio_fund.id,
-                "portfolio_id": portfolio_fund.portfolio_id,
-                "fund_id": portfolio_fund.fund_id,
+                "portfolioId": portfolio_fund.portfolio_id,
+                "fundId": portfolio_fund.fund_id,
             }, 201
         except ValueError as e:
             return {"error": str(e)}, 404
@@ -623,11 +635,11 @@ class PortfolioFundDetail(Resource):
 
                     return {
                         "error": "Confirmation required for deletion",
-                        "requires_confirmation": True,
-                        "transaction_count": transaction_count,
-                        "dividend_count": dividend_count,
-                        "fund_name": portfolio_fund.fund.name,
-                        "portfolio_name": portfolio_fund.portfolio.name,
+                        "requiresConfirmation": True,
+                        "transactionCount": transaction_count,
+                        "dividendCount": dividend_count,
+                        "fundName": portfolio_fund.fund.name,
+                        "portfolioName": portfolio_fund.portfolio.name,
                     }, 409
 
             return {"error": error_message}, 404
