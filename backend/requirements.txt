@@ -12,8 +12,8 @@ Flask-Migrate==4.1.0
 Flask-RESTx==1.3.2
 Flask-SQLAlchemy==3.1.1
 python-dotenv==1.2.1
-SQLAlchemy==2.0.45
-Werkzeug==3.1.4
-yfinance==1.0
-cryptography==46.0.3
+SQLAlchemy==2.0.46
+Werkzeug==3.1.5
+yfinance==1.1.0
+cryptography==46.0.4
 requests==2.32.5
