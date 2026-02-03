@@ -69,24 +69,44 @@ class DeveloperLogs(Resource):
     """Developer logs endpoint."""
 
     @ns.doc("get_logs")
-    @ns.param("level", "Filter by log level", _in="query")
-    @ns.param("category", "Filter by category", _in="query")
-    @ns.param("limit", "Limit number of results", _in="query")
+    @ns.param("level", "Filter by log level (comma-separated)", _in="query")
+    @ns.param("category", "Filter by category (comma-separated)", _in="query")
+    @ns.param("startDate", "Filter logs after this date (ISO 8601 format)", _in="query")
+    @ns.param("endDate", "Filter logs before this date (ISO 8601 format)", _in="query")
+    @ns.param("source", "Filter by source (partial match)", _in="query")
+    @ns.param("message", "Filter by message content (partial match)", _in="query")
+    @ns.param("sortDir", "Sort direction: 'asc' or 'desc' (default: desc)", _in="query")
+    @ns.param("cursor", "Cursor for pagination (timestamp_id format)", _in="query")
+    @ns.param("perPage", "Items per page (default: 50)", _in="query", type="integer")
     @ns.response(200, "Success", [log_entry_model])
     def get(self):
         """
-        Get system logs.
+        Get system logs with cursor-based pagination.
 
         Returns recent system logs for debugging and monitoring.
-        Supports filtering by level, category, and limit.
+        Uses cursor-based pagination to prevent drift when new logs arrive.
 
         Warning: This endpoint can return sensitive information.
         Should be disabled or protected in production.
 
-        Query Parameters:
-        - level: Filter by log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        - category: Filter by category (SYSTEM, FUND, PORTFOLIO, TRANSACTION, etc.)
-        - limit: Maximum number of logs to return (default: 100)
+        Query Parameters (all in camelCase):
+        - level: Filter by log level (comma-separated: debug,info,warning,error,critical)
+        - category: Filter by category (comma-separated: system,fund,portfolio,transaction,etc.)
+        - startDate: Filter logs after this date (ISO 8601 format, e.g., 2024-01-01T00:00:00Z)
+        - endDate: Filter logs before this date (ISO 8601 format)
+        - source: Filter by source (partial match)
+        - message: Filter by message content (partial match)
+        - sortDir: Sort direction - 'asc' (oldest first) or 'desc' (newest first, default)
+        - cursor: Cursor for pagination (format: timestamp_id, e.g., 2024-01-01T12:00:00_abc123)
+        - perPage: Items per page (default: 50, max: 200)
+
+        Response (camelCase):
+        - logs: Array of log entries
+        - nextCursor: Cursor for next page (null if no more results)
+        - hasMore: Boolean indicating if more results available
+        - count: Number of logs in current page
+
+        Note: Always sorts by timestamp + id for deterministic ordering.
         """
         from ..services.logging_service import LoggingService
 
