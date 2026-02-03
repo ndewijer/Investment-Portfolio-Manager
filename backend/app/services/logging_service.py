@@ -363,9 +363,9 @@ class LoggingService:
             "logs": [
                 {
                     "id": log.id,
-                    "timestamp": log.timestamp.strftime("%Y-%m-%d %H:%M:%S.%f"),
-                    "level": log.level.value,
-                    "category": log.category.value,
+                    "timestamp": log.timestamp.isoformat(),
+                    "level": log.level.value.upper(),
+                    "category": log.category.value.upper(),
                     "message": log.message,
                     "details": json.loads(log.details) if log.details else None,
                     "source": log.source,

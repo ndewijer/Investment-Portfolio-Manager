@@ -71,21 +71,21 @@ const LogViewer = () => {
 
   // Filter options (matching original order)
   const levelOptions = [
-    { label: 'Debug', value: 'debug' },
-    { label: 'Info', value: 'info' },
-    { label: 'Warning', value: 'warning' },
-    { label: 'Error', value: 'error' },
-    { label: 'Critical', value: 'critical' },
+    { label: 'Debug', value: 'DEBUG' },
+    { label: 'Info', value: 'INFO' },
+    { label: 'Warning', value: 'WARNING' },
+    { label: 'Error', value: 'ERROR' },
+    { label: 'Critical', value: 'CRITICAL' },
   ];
 
   const categoryOptions = [
-    { label: 'Portfolio', value: 'portfolio' },
-    { label: 'Fund', value: 'fund' },
-    { label: 'Transaction', value: 'transaction' },
-    { label: 'Dividend', value: 'dividend' },
-    { label: 'System', value: 'system' },
-    { label: 'Database', value: 'database' },
-    { label: 'Security', value: 'security' },
+    { label: 'Portfolio', value: 'PORTFOLIO' },
+    { label: 'Fund', value: 'FUND' },
+    { label: 'Transaction', value: 'TRANSACTION' },
+    { label: 'Dividend', value: 'DIVIDEND' },
+    { label: 'System', value: 'SYSTEM' },
+    { label: 'Database', value: 'DATABASE' },
+    { label: 'Security', value: 'SECURITY' },
   ];
 
   // Load logs function with cursor-based pagination
@@ -188,11 +188,11 @@ const LogViewer = () => {
 
   const getLevelClass = (level) => {
     const classes = {
-      debug: 'level-debug',
-      info: 'level-info',
-      warning: 'level-warning',
-      error: 'level-error',
-      critical: 'level-critical',
+      DEBUG: 'level-debug',
+      INFO: 'level-info',
+      WARNING: 'level-warning',
+      ERROR: 'level-error',
+      CRITICAL: 'level-critical',
     };
     return classes[level] || '';
   };
@@ -241,7 +241,7 @@ const LogViewer = () => {
         }
         const timestamp = value || log.timestamp;
         try {
-          const date = new Date(timestamp + 'Z');
+          const date = new Date(timestamp);
           return (
             <span>
               {date.toLocaleString('en-GB', {
@@ -273,7 +273,7 @@ const LogViewer = () => {
         if (!level) {
           return <span className="level-badge">UNKNOWN</span>;
         }
-        return <span className={`level-badge ${getLevelClass(level)}`}>{level.toUpperCase()}</span>;
+        return <span className={`level-badge ${getLevelClass(level)}`}>{level}</span>;
       },
     },
     {

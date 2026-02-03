@@ -662,7 +662,7 @@ class TestGetLogs:
 
         # All returned logs should be ERROR level
         our_logs = [log for log in result["logs"] if log["source"] == unique_source]
-        assert all(log["level"] == "error" for log in our_logs)
+        assert all(log["level"] == "ERROR" for log in our_logs)
 
     def test_get_logs_with_category_filter(self, app_context, db_session):
         """Test filtering logs by category."""
@@ -690,7 +690,7 @@ class TestGetLogs:
 
         # All returned logs should be FUND category
         our_logs = [log for log in result["logs"] if log["source"] == unique_source]
-        assert all(log["category"] == "fund" for log in our_logs)
+        assert all(log["category"] == "FUND" for log in our_logs)
 
     def test_get_logs_with_pagination(self, app_context, db_session):
         """Test cursor-based pagination."""
@@ -947,7 +947,7 @@ class TestCursorPagination:
 
         # Should have 4 ERROR logs
         assert len(result1["logs"]) == 4
-        assert all(log["level"] == "error" for log in result1["logs"])
+        assert all(log["level"] == "ERROR" for log in result1["logs"])
         assert result1["has_more"] is True
 
         # Get second page
@@ -960,7 +960,7 @@ class TestCursorPagination:
 
         # Should have remaining ERROR logs (total 8 ERROR logs, already got 4)
         assert len(result2["logs"]) == 4
-        assert all(log["level"] == "error" for log in result2["logs"])
+        assert all(log["level"] == "ERROR" for log in result2["logs"])
 
         # No overlap
         first_ids = [log["id"] for log in result1["logs"]]
