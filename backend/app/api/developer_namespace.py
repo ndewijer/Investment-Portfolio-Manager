@@ -94,15 +94,21 @@ class DeveloperLogs(Resource):
             result = LoggingService.get_logs(
                 levels=request.args.get("level"),
                 categories=request.args.get("category"),
-                start_date=request.args.get("start_date"),
-                end_date=request.args.get("end_date"),
+                start_date=request.args.get("startDate"),
+                end_date=request.args.get("endDate"),
                 source=request.args.get("source"),
-                sort_by=request.args.get("sort_by", "timestamp"),
-                sort_dir=request.args.get("sort_dir", "desc"),
-                page=int(request.args.get("page", 1)),
-                per_page=int(request.args.get("per_page", 50)),
+                sort_dir=request.args.get("sortDir", "desc"),
+                cursor=request.args.get("cursor"),
+                per_page=int(request.args.get("perPage", 50)),
             )
-            return result, 200
+
+            # Convert response to camelCase for frontend
+            return {
+                "logs": result["logs"],
+                "nextCursor": result["next_cursor"],
+                "hasMore": result["has_more"],
+                "count": result["count"],
+            }, 200
         except Exception as e:
             logger.log(
                 level=LogLevel.ERROR,

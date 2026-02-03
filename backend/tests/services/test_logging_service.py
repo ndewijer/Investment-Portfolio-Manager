@@ -12,6 +12,7 @@ Tests logging functionality including:
 import json
 import logging
 import os
+from datetime import UTC
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -630,9 +631,9 @@ class TestGetLogs:
         result = LoggingService.get_logs(source=unique_source)
 
         assert "logs" in result
-        assert "total" in result
-        assert "pages" in result
-        assert "current_page" in result
+        assert "count" in result
+        assert "has_more" in result
+        assert "next_cursor" in result
         assert len(result["logs"]) >= 2
 
     def test_get_logs_with_level_filter(self, app_context, db_session):
@@ -692,9 +693,12 @@ class TestGetLogs:
         assert all(log["category"] == "fund" for log in our_logs)
 
     def test_get_logs_with_pagination(self, app_context, db_session):
-        """Test log pagination."""
+        """Test cursor-based pagination."""
+        from datetime import datetime, timedelta
+
         unique_source = f"test_pagination_{make_id()[:8]}"
-        # Create 15 logs
+        # Create 15 logs with explicit timestamps
+        base_time = datetime.now(UTC).replace(tzinfo=None)
         logs = [
             Log(
                 id=make_id(),
@@ -702,6 +706,7 @@ class TestGetLogs:
                 category=LogCategory.SYSTEM,
                 message=f"Log {i}",
                 source=unique_source,
+                timestamp=base_time + timedelta(seconds=i),
             )
             for i in range(15)
         ]
@@ -709,15 +714,18 @@ class TestGetLogs:
         db.session.commit()
 
         # Get first page with 10 items
-        result = LoggingService.get_logs(source=unique_source, page=1, per_page=10)
+        result = LoggingService.get_logs(source=unique_source, per_page=10)
 
-        assert result["current_page"] == 1
-        assert result["total"] >= 15
-        assert len(result["logs"]) <= 10
+        assert result["count"] == 10
+        assert result["has_more"] is True
+        assert len(result["logs"]) == 10
 
     def test_get_logs_with_sorting(self, app_context, db_session):
-        """Test log sorting."""
+        """Test log sorting (always by timestamp, but can change direction)."""
+        from datetime import datetime, timedelta
+
         unique_source = f"test_sorting_{make_id()[:8]}"
+        base_time = datetime.now(UTC).replace(tzinfo=None)
         logs = [
             Log(
                 id=make_id(),
@@ -725,6 +733,7 @@ class TestGetLogs:
                 category=LogCategory.SYSTEM,
                 message=f"Log {i}",
                 source=unique_source,
+                timestamp=base_time + timedelta(seconds=i),
             )
             for i in range(3)
         ]
@@ -732,13 +741,9 @@ class TestGetLogs:
         db.session.commit()
 
         # Test descending sort (default)
-        result_desc = LoggingService.get_logs(
-            source=unique_source, sort_by="timestamp", sort_dir="desc"
-        )
+        result_desc = LoggingService.get_logs(source=unique_source, sort_dir="desc")
         # Test ascending sort
-        result_asc = LoggingService.get_logs(
-            source=unique_source, sort_by="timestamp", sort_dir="asc"
-        )
+        result_asc = LoggingService.get_logs(source=unique_source, sort_dir="asc")
 
         our_logs_desc = [log for log in result_desc["logs"] if log["source"] == unique_source]
         our_logs_asc = [log for log in result_asc["logs"] if log["source"] == unique_source]
@@ -791,3 +796,252 @@ class TestClearLogs:
 
         # Verify count is still 0
         assert Log.query.count() == 0
+
+
+class TestCursorPagination:
+    """Tests for cursor-based pagination in get_logs."""
+
+    def test_get_logs_cursor_basic_navigation(self, app_context, db_session):
+        """Test basic cursor pagination navigation."""
+        from datetime import datetime, timedelta
+
+        # Create test logs with explicit different timestamps
+        base_time = datetime.now(UTC).replace(tzinfo=None)
+        for i in range(10):
+            log = Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source="test_cursor_basic",
+                timestamp=base_time + timedelta(seconds=i),  # Explicit timestamps
+            )
+            db.session.add(log)
+
+        db.session.commit()
+
+        # Get first page
+        result1 = LoggingService.get_logs(source="test_cursor_basic", per_page=5)
+
+        assert len(result1["logs"]) == 5
+        assert result1["has_more"] is True
+        assert result1["next_cursor"] is not None
+        first_page_ids = [log["id"] for log in result1["logs"]]
+
+        # Get second page using cursor
+        result2 = LoggingService.get_logs(
+            source="test_cursor_basic", cursor=result1["next_cursor"], per_page=5
+        )
+
+        assert len(result2["logs"]) == 5
+        assert result2["has_more"] is False  # No more results after this page
+        assert result2["next_cursor"] is None
+        second_page_ids = [log["id"] for log in result2["logs"]]
+
+        # Verify no overlap between pages
+        assert len(set(first_page_ids) & set(second_page_ids)) == 0
+
+    def test_get_logs_cursor_no_drift(self, app_context, db_session):
+        """Test that cursor pagination prevents drift when new logs are added."""
+        from datetime import datetime, timedelta
+
+        # Create initial logs with explicit timestamps
+        base_time = datetime.now(UTC).replace(tzinfo=None)
+        for i in range(20):
+            log = Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Original Log {i}",
+                source="test_cursor_drift",
+                timestamp=base_time + timedelta(seconds=i),
+            )
+            db.session.add(log)
+
+        db.session.commit()
+
+        # Get first page
+        result1 = LoggingService.get_logs(source="test_cursor_drift", per_page=10)
+        first_page_ids = [log["id"] for log in result1["logs"]]
+        next_cursor = result1["next_cursor"]
+
+        # Add new logs (simulating concurrent writes)
+        # These should have newer timestamps than existing logs
+        new_base_time = base_time + timedelta(seconds=100)
+        for i in range(5):
+            log = Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"New Log {i}",
+                source="test_cursor_drift",
+                timestamp=new_base_time + timedelta(seconds=i),
+            )
+            db.session.add(log)
+
+        db.session.commit()
+
+        # Get second page using cursor
+        result2 = LoggingService.get_logs(
+            source="test_cursor_drift", cursor=next_cursor, per_page=10
+        )
+        second_page_ids = [log["id"] for log in result2["logs"]]
+
+        # Verify no duplicates (no drift)
+        assert len(set(first_page_ids) & set(second_page_ids)) == 0
+
+        # Verify we got the correct continuation (original logs 11-20)
+        assert len(result2["logs"]) == 10
+        for log in result2["logs"]:
+            assert "Original Log" in log["message"]
+
+    def test_get_logs_cursor_at_end(self, app_context, db_session):
+        """Test cursor pagination at end of results."""
+        from datetime import datetime, timedelta
+
+        # Create exactly 10 logs with explicit timestamps
+        base_time = datetime.now(UTC).replace(tzinfo=None)
+        for i in range(10):
+            log = Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source="test_cursor_end",
+                timestamp=base_time + timedelta(seconds=i),
+            )
+            db.session.add(log)
+
+        db.session.commit()
+
+        # Get all logs in one page
+        result = LoggingService.get_logs(source="test_cursor_end", per_page=10)
+
+        assert len(result["logs"]) == 10
+        assert result["has_more"] is False
+        assert result["next_cursor"] is None
+        assert result["count"] == 10
+
+    def test_get_logs_cursor_with_filters(self, app_context, db_session):
+        """Test cursor pagination works correctly with filters."""
+        from datetime import datetime, timedelta
+
+        # Create logs with different levels and explicit timestamps
+        base_time = datetime.now(UTC).replace(tzinfo=None)
+        for i in range(15):
+            level = LogLevel.ERROR if i % 2 == 0 else LogLevel.INFO
+            log = Log(
+                id=make_id(),
+                level=level,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source="test_cursor_filters",
+                timestamp=base_time + timedelta(seconds=i),
+            )
+            db.session.add(log)
+
+        db.session.commit()
+
+        # Get first page of ERROR logs only
+        result1 = LoggingService.get_logs(source="test_cursor_filters", levels="error", per_page=4)
+
+        # Should have 4 ERROR logs
+        assert len(result1["logs"]) == 4
+        assert all(log["level"] == "error" for log in result1["logs"])
+        assert result1["has_more"] is True
+
+        # Get second page
+        result2 = LoggingService.get_logs(
+            source="test_cursor_filters",
+            levels="error",
+            cursor=result1["next_cursor"],
+            per_page=4,
+        )
+
+        # Should have remaining ERROR logs (total 8 ERROR logs, already got 4)
+        assert len(result2["logs"]) == 4
+        assert all(log["level"] == "error" for log in result2["logs"])
+
+        # No overlap
+        first_ids = [log["id"] for log in result1["logs"]]
+        second_ids = [log["id"] for log in result2["logs"]]
+        assert len(set(first_ids) & set(second_ids)) == 0
+
+    def test_get_logs_cursor_ascending_order(self, app_context, db_session):
+        """Test cursor pagination with ascending sort order."""
+        from datetime import datetime, timedelta
+
+        # Create test logs with explicit timestamps
+        base_time = datetime.now(UTC).replace(tzinfo=None)
+        for i in range(10):
+            log = Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source="test_cursor_asc",
+                timestamp=base_time + timedelta(seconds=i),
+            )
+            db.session.add(log)
+
+        db.session.commit()
+
+        # Get first page in ascending order
+        result1 = LoggingService.get_logs(source="test_cursor_asc", sort_dir="asc", per_page=5)
+
+        assert len(result1["logs"]) == 5
+        assert result1["has_more"] is True
+
+        # Get second page
+        result2 = LoggingService.get_logs(
+            source="test_cursor_asc",
+            sort_dir="asc",
+            cursor=result1["next_cursor"],
+            per_page=5,
+        )
+
+        assert len(result2["logs"]) == 5
+        assert result2["has_more"] is False
+
+        # Verify timestamps are in ascending order across pages
+        all_timestamps = [log["timestamp"] for log in result1["logs"]] + [
+            log["timestamp"] for log in result2["logs"]
+        ]
+        assert all_timestamps == sorted(all_timestamps)
+
+    def test_get_logs_cursor_invalid_format(self, app_context, db_session):
+        """Test that invalid cursor format is handled gracefully."""
+        from datetime import datetime, timedelta
+
+        # Create test logs with explicit timestamps
+        base_time = datetime.now(UTC).replace(tzinfo=None)
+        for i in range(5):
+            log = Log(
+                id=make_id(),
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Log {i}",
+                source="test_cursor_invalid",
+                timestamp=base_time + timedelta(seconds=i),
+            )
+            db.session.add(log)
+
+        db.session.commit()
+
+        # Try with invalid cursor - should start from beginning
+        result = LoggingService.get_logs(
+            source="test_cursor_invalid", cursor="invalid_cursor_format", per_page=5
+        )
+
+        # Should return results as if no cursor was provided
+        assert len(result["logs"]) == 5
+        assert result["has_more"] is False
+
+    def test_get_logs_cursor_empty_results(self, app_context, db_session):
+        """Test cursor pagination with no matching logs."""
+        result = LoggingService.get_logs(source="nonexistent_source", per_page=10)
+
+        assert len(result["logs"]) == 0
+        assert result["has_more"] is False
+        assert result["next_cursor"] is None
+        assert result["count"] == 0

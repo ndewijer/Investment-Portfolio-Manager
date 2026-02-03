@@ -248,13 +248,15 @@ class LoggingService:
         start_date: str | None = None,
         end_date: str | None = None,
         source: str | None = None,
-        sort_by: str = "timestamp",
         sort_dir: str = "desc",
-        page: int = 1,
+        cursor: str | None = None,
         per_page: int = 50,
     ) -> dict:
         """
-        Retrieve filtered, sorted, and paginated system logs.
+        Retrieve filtered, sorted, and cursor-paginated system logs.
+
+        Cursor pagination requires sorting by timestamp (with id as tiebreaker).
+        This ensures consistent, drift-free pagination when new logs arrive.
 
         Args:
             levels: Comma-separated list of log levels to filter
@@ -262,20 +264,20 @@ class LoggingService:
             start_date: Start date in ISO format
             end_date: End date in ISO format
             source: Source filter (partial match)
-            sort_by: Field to sort by (default: timestamp)
             sort_dir: Sort direction ('asc' or 'desc', default: desc)
-            page: Page number (default: 1)
+            cursor: Cursor for pagination (format: timestamp_id)
             per_page: Items per page (default: 50)
 
         Returns:
-            dict: Dictionary containing 'logs' list, 'total', 'pages', and 'current_page'
+            dict: Dictionary with 'logs' list, 'next_cursor', 'prev_cursor',
+                  'has_more', 'count'
 
         Raises:
             Exception: If unable to retrieve logs
         """
         from datetime import datetime
 
-        from sqlalchemy import or_, select
+        from sqlalchemy import and_, or_, select
 
         # Build base query
         stmt = select(Log)
@@ -304,14 +306,58 @@ class LoggingService:
         if source:
             stmt = stmt.where(Log.source.like(f"%{source}%"))
 
-        # Apply sorting
-        if sort_dir == "desc":
-            stmt = stmt.order_by(getattr(Log, sort_by).desc())
-        else:
-            stmt = stmt.order_by(getattr(Log, sort_by).asc())
+        # Parse cursor if provided
+        cursor_timestamp = None
+        cursor_id = None
+        if cursor:
+            try:
+                parts = cursor.split("_", 1)
+                cursor_timestamp = datetime.fromisoformat(parts[0])
+                cursor_id = parts[1]
+            except (ValueError, IndexError):
+                # Invalid cursor format - ignore and start from beginning
+                pass
 
-        # Get paginated results
-        pagination = db.paginate(stmt, page=page, per_page=per_page)
+        # Apply cursor-based pagination
+        if cursor_timestamp and cursor_id:
+            if sort_dir == "desc":
+                # For descending: get records where (timestamp, id) < (cursor_timestamp, cursor_id)
+                stmt = stmt.where(
+                    or_(
+                        Log.timestamp < cursor_timestamp,
+                        and_(Log.timestamp == cursor_timestamp, Log.id < cursor_id),
+                    )
+                )
+            else:
+                # For ascending: get records where (timestamp, id) > (cursor_timestamp, cursor_id)
+                stmt = stmt.where(
+                    or_(
+                        Log.timestamp > cursor_timestamp,
+                        and_(Log.timestamp == cursor_timestamp, Log.id > cursor_id),
+                    )
+                )
+
+        # Apply sorting - always include id as secondary sort for deterministic ordering
+        if sort_dir == "desc":
+            stmt = stmt.order_by(Log.timestamp.desc(), Log.id.desc())
+        else:
+            stmt = stmt.order_by(Log.timestamp.asc(), Log.id.asc())
+
+        # Fetch per_page + 1 to determine if there are more results
+        stmt = stmt.limit(per_page + 1)
+        logs = list(db.session.execute(stmt).scalars().all())
+
+        # Check if there are more results
+        has_more = len(logs) > per_page
+        if has_more:
+            # Remove the extra item we fetched for has_more check
+            logs = logs[:per_page]
+
+        # Generate next cursor from last item (only if there are more results)
+        next_cursor = None
+        if has_more:
+            last_log = logs[-1]
+            next_cursor = f"{last_log.timestamp.isoformat()}_{last_log.id}"
 
         return {
             "logs": [
@@ -328,11 +374,12 @@ class LoggingService:
                     "ip_address": log.ip_address,
                     "user_agent": log.user_agent,
                 }
-                for log in pagination.items
+                for log in logs
             ],
-            "total": pagination.total,
-            "pages": pagination.pages,
-            "current_page": pagination.page,
+            "next_cursor": next_cursor,
+            "prev_cursor": None,  # Frontend manages backward navigation via cursor history
+            "has_more": has_more,
+            "count": len(logs),
         }
 
     @staticmethod
