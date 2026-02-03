@@ -28,23 +28,30 @@ const LogViewer = () => {
     execute: fetchLogs,
   } = useApiState({
     logs: [],
-    current_page: 1,
-    pages: 1,
-    total: 0,
   });
 
-  const [sortConfig, setSortConfig] = useState({ key: 'timestamp', direction: 'desc' });
   const [clearing, setClearing] = useState(false);
 
-  // State matching original working code
+  // Filters state with embedded sort direction
   const [filters, setFilters] = useState({
     level: [],
     category: [],
-    startDate: null, // null, not empty string
-    endDate: null, // null, not empty string
+    startDate: null,
+    endDate: null,
     message: '',
     source: '',
+    sortDir: 'desc', // Always sort by timestamp, but allow direction change
   });
+
+  // Cursor-based pagination state
+  const [pagination, setPagination] = useState({
+    nextCursor: null,
+    hasMore: false,
+    currentPageNum: 1, // For display only, not sent to backend
+  });
+
+  // Cursor history for backward navigation
+  const [cursorHistory, setCursorHistory] = useState([null]); // Stack of cursors
 
   // State for FilterPopup components
   const [filterPopups, setFilterPopups] = useState({
@@ -64,28 +71,29 @@ const LogViewer = () => {
 
   // Filter options (matching original order)
   const levelOptions = [
-    { label: 'Debug', value: 'debug' },
-    { label: 'Info', value: 'info' },
-    { label: 'Warning', value: 'warning' },
-    { label: 'Error', value: 'error' },
-    { label: 'Critical', value: 'critical' },
+    { label: 'Debug', value: 'DEBUG' },
+    { label: 'Info', value: 'INFO' },
+    { label: 'Warning', value: 'WARNING' },
+    { label: 'Error', value: 'ERROR' },
+    { label: 'Critical', value: 'CRITICAL' },
   ];
 
   const categoryOptions = [
-    { label: 'Portfolio', value: 'portfolio' },
-    { label: 'Fund', value: 'fund' },
-    { label: 'Transaction', value: 'transaction' },
-    { label: 'Dividend', value: 'dividend' },
-    { label: 'System', value: 'system' },
-    { label: 'Database', value: 'database' },
-    { label: 'Security', value: 'security' },
+    { label: 'Portfolio', value: 'PORTFOLIO' },
+    { label: 'Fund', value: 'FUND' },
+    { label: 'Transaction', value: 'TRANSACTION' },
+    { label: 'Dividend', value: 'DIVIDEND' },
+    { label: 'System', value: 'SYSTEM' },
+    { label: 'Database', value: 'DATABASE' },
+    { label: 'Security', value: 'SECURITY' },
   ];
 
-  // Load logs function matching original pattern
+  // Load logs function with cursor-based pagination
   const loadLogs = useCallback(
-    async (page = 1, sortBy = 'timestamp', sortDir = 'desc') => {
+    async (cursor = null, direction = 'next') => {
       const params = new URLSearchParams();
 
+      // Apply filters (camelCase for API)
       if (filters.level.length > 0) {
         params.append('level', filters.level.map((l) => l.value).join(','));
       }
@@ -94,11 +102,11 @@ const LogViewer = () => {
       }
       if (filters.startDate) {
         const utcStart = new Date(filters.startDate).toISOString().split('.')[0] + 'Z';
-        params.append('start_date', utcStart);
+        params.append('startDate', utcStart);
       }
       if (filters.endDate) {
         const utcEnd = new Date(filters.endDate).toISOString().split('.')[0] + 'Z';
-        params.append('end_date', utcEnd);
+        params.append('endDate', utcEnd);
       }
       if (filters.message) {
         params.append('message', filters.message);
@@ -107,27 +115,69 @@ const LogViewer = () => {
         params.append('source', filters.source);
       }
 
-      params.append('sort_by', sortBy);
-      params.append('sort_dir', sortDir);
-      params.append('page', page);
-      params.append('per_page', 50);
+      // Add cursor if provided
+      if (cursor) {
+        params.append('cursor', cursor);
+      }
 
-      return api.get(`/developer/logs?${params.toString()}`);
+      params.append('sortDir', filters.sortDir);
+      params.append('perPage', 50);
+
+      const response = await api.get(`/developer/logs?${params.toString()}`);
+
+      // Update pagination state based on response
+      setPagination({
+        nextCursor: response.data.nextCursor,
+        hasMore: response.data.hasMore,
+        currentPageNum:
+          cursor === null
+            ? 1 // Initial load or reset - stay at page 1
+            : direction === 'next'
+              ? pagination.currentPageNum + 1
+              : Math.max(1, pagination.currentPageNum - 1),
+      });
+
+      // Update cursor history for backward navigation
+      if (direction === 'next' && cursor !== null) {
+        // Only add to history if we actually used a cursor
+        setCursorHistory((prev) => [...prev, cursor]);
+      } else if (direction === 'prev') {
+        setCursorHistory((prev) => prev.slice(0, -1));
+      }
+
+      return response;
     },
-    [filters]
+    [filters, pagination.currentPageNum]
   );
 
-  // Load logs on component mount and when filters change
+  // Load logs when filters change (reset to page 1)
   useEffect(() => {
-    fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
-  }, [fetchLogs, loadLogs, sortConfig.key, sortConfig.direction]);
+    // Reset pagination state
+    setPagination({
+      nextCursor: null,
+      hasMore: false,
+      currentPageNum: 1,
+    });
+    setCursorHistory([null]);
+
+    // Load first page
+    fetchLogs(() => loadLogs(null, 'next'));
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClearLogs = async () => {
     if (window.confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
       try {
         setClearing(true);
         await api.delete('/developer/logs');
-        fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction));
+
+        // Reset pagination and reload
+        setPagination({
+          nextCursor: null,
+          hasMore: false,
+          currentPageNum: 1,
+        });
+        setCursorHistory([null]);
+        fetchLogs(() => loadLogs(null, 'next'));
       } catch (err) {
         console.error('Error clearing logs:', err);
       } finally {
@@ -138,11 +188,11 @@ const LogViewer = () => {
 
   const getLevelClass = (level) => {
     const classes = {
-      debug: 'level-debug',
-      info: 'level-info',
-      warning: 'level-warning',
-      error: 'level-error',
-      critical: 'level-critical',
+      DEBUG: 'level-debug',
+      INFO: 'level-info',
+      WARNING: 'level-warning',
+      ERROR: 'level-error',
+      CRITICAL: 'level-critical',
     };
     return classes[level] || '';
   };
@@ -191,7 +241,7 @@ const LogViewer = () => {
         }
         const timestamp = value || log.timestamp;
         try {
-          const date = new Date(timestamp + 'Z');
+          const date = new Date(timestamp);
           return (
             <span>
               {date.toLocaleString('en-GB', {
@@ -223,7 +273,7 @@ const LogViewer = () => {
         if (!level) {
           return <span className="level-badge">UNKNOWN</span>;
         }
-        return <span className={`level-badge ${getLevelClass(level)}`}>{level.toUpperCase()}</span>;
+        return <span className={`level-badge ${getLevelClass(level)}`}>{level}</span>;
       },
     },
     {
@@ -271,6 +321,26 @@ const LogViewer = () => {
     },
   ];
 
+  const clearAllFilters = () => {
+    setFilters({
+      level: [],
+      category: [],
+      startDate: null,
+      endDate: null,
+      message: '',
+      source: '',
+      sortDir: 'desc',
+    });
+  };
+
+  const hasActiveFilters =
+    filters.level.length > 0 ||
+    filters.category.length > 0 ||
+    filters.startDate ||
+    filters.endDate ||
+    filters.message ||
+    filters.source;
+
   return (
     <div className="log-viewer">
       <div className="log-viewer-header">
@@ -285,30 +355,93 @@ const LogViewer = () => {
         </ActionButton>
       </div>
 
+      {/* Always-visible filter bar */}
+      <div className="filter-bar">
+        <div className="filter-summary">
+          {hasActiveFilters ? (
+            <>
+              {filters.level.length > 0 && (
+                <span className="filter-chip">
+                  Level: {filters.level.map((l) => l.label).join(', ')}
+                </span>
+              )}
+              {filters.category.length > 0 && (
+                <span className="filter-chip">
+                  Category: {filters.category.map((c) => c.label).join(', ')}
+                </span>
+              )}
+              {filters.startDate && <span className="filter-chip">From: {filters.startDate}</span>}
+              {filters.endDate && <span className="filter-chip">To: {filters.endDate}</span>}
+              {filters.message && (
+                <span className="filter-chip">Message: &quot;{filters.message}&quot;</span>
+              )}
+              {filters.source && (
+                <span className="filter-chip">Source: &quot;{filters.source}&quot;</span>
+              )}
+              <button className="clear-filters-btn" onClick={clearAllFilters}>
+                Clear All Filters
+              </button>
+            </>
+          ) : (
+            <span className="no-filters">No filters applied. Click column headers to filter.</span>
+          )}
+        </div>
+      </div>
+
       <DataTable
         data={logsData.logs || []}
         columns={columns}
         loading={loading}
         error={error}
-        onRetry={() => fetchLogs(() => loadLogs(1, sortConfig.key, sortConfig.direction))}
-        pagination={{
-          currentPage: logsData.current_page || 1,
-          totalPages: logsData.pages || 1,
-          totalItems: logsData.total || 0,
-          onPageChange: (page) =>
-            fetchLogs(() => loadLogs(page, sortConfig.key, sortConfig.direction)),
-        }}
-        sorting={{
-          sortBy: sortConfig.key,
-          sortDirection: sortConfig.direction,
-          onSort: (key, direction) => {
-            setSortConfig({ key, direction });
-            fetchLogs(() => loadLogs(logsData.current_page || 1, key, direction));
-          },
+        onRetry={() => {
+          setPagination({ nextCursor: null, hasMore: false, currentPageNum: 1 });
+          setCursorHistory([null]);
+          fetchLogs(() => loadLogs(null, 'next'));
         }}
         emptyMessage="No logs found"
         className="logs-table"
       />
+
+      {/* Custom cursor-based pagination controls */}
+      {logsData.logs && logsData.logs.length > 0 && (
+        <div className="table-pagination">
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="pagination-btn"
+              onClick={() => {
+                // Reset to first page
+                setPagination({ nextCursor: null, hasMore: false, currentPageNum: 1 });
+                setCursorHistory([null]);
+                fetchLogs(() => loadLogs(null, 'next'));
+              }}
+              disabled={pagination.currentPageNum === 1}
+              title="Go to first page (newest logs)"
+            >
+              First
+            </button>
+            <button
+              className="pagination-btn"
+              onClick={() => {
+                const prevCursor = cursorHistory[cursorHistory.length - 2];
+                fetchLogs(() => loadLogs(prevCursor, 'prev'));
+              }}
+              disabled={pagination.currentPageNum === 1}
+            >
+              Previous
+            </button>
+          </div>
+          <span className="pagination-info">Page {pagination.currentPageNum}</span>
+          <button
+            className="pagination-btn"
+            onClick={() => {
+              fetchLogs(() => loadLogs(pagination.nextCursor, 'next'));
+            }}
+            disabled={!pagination.hasMore}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* FilterPopups matching original working pattern */}
       <FilterPopup

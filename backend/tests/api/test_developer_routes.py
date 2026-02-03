@@ -1030,7 +1030,7 @@ class TestLogging:
         our_logs = [log for log in data["logs"] if log.get("source") == unique_source]
         assert len(our_logs) >= 1
         # All our logs should be ERROR level
-        assert all(log.get("level") == "error" for log in our_logs)
+        assert all(log.get("level") == "ERROR" for log in our_logs)
 
     def test_clear_logs(self, app_context, client, db_session):
         """
