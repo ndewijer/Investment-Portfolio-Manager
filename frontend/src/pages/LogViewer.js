@@ -321,6 +321,26 @@ const LogViewer = () => {
     },
   ];
 
+  const clearAllFilters = () => {
+    setFilters({
+      level: [],
+      category: [],
+      startDate: null,
+      endDate: null,
+      message: '',
+      source: '',
+      sortDir: 'desc',
+    });
+  };
+
+  const hasActiveFilters =
+    filters.level.length > 0 ||
+    filters.category.length > 0 ||
+    filters.startDate ||
+    filters.endDate ||
+    filters.message ||
+    filters.source;
+
   return (
     <div className="log-viewer">
       <div className="log-viewer-header">
@@ -333,6 +353,39 @@ const LogViewer = () => {
         >
           Clear All Logs
         </ActionButton>
+      </div>
+
+      {/* Always-visible filter bar */}
+      <div className="filter-bar">
+        <div className="filter-summary">
+          {hasActiveFilters ? (
+            <>
+              {filters.level.length > 0 && (
+                <span className="filter-chip">
+                  Level: {filters.level.map((l) => l.label).join(', ')}
+                </span>
+              )}
+              {filters.category.length > 0 && (
+                <span className="filter-chip">
+                  Category: {filters.category.map((c) => c.label).join(', ')}
+                </span>
+              )}
+              {filters.startDate && <span className="filter-chip">From: {filters.startDate}</span>}
+              {filters.endDate && <span className="filter-chip">To: {filters.endDate}</span>}
+              {filters.message && (
+                <span className="filter-chip">Message: &quot;{filters.message}&quot;</span>
+              )}
+              {filters.source && (
+                <span className="filter-chip">Source: &quot;{filters.source}&quot;</span>
+              )}
+              <button className="clear-filters-btn" onClick={clearAllFilters}>
+                Clear All Filters
+              </button>
+            </>
+          ) : (
+            <span className="no-filters">No filters applied. Click column headers to filter.</span>
+          )}
+        </div>
       </div>
 
       <DataTable
