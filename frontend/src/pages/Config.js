@@ -942,14 +942,14 @@ const UserPreferencesTab = () => {
  */
 const PowerUserTab = ({ setMessage, setError }) => {
   const [exchangeRate, setExchangeRate] = useState({
-    from_currency: 'USD',
-    to_currency: 'EUR',
+    fromCurrency: 'USD',
+    toCurrency: 'EUR',
     rate: '',
     date: new Date().toISOString().split('T')[0],
   });
 
   const [fundPrice, setFundPrice] = useState({
-    fund_id: '',
+    fundId: '',
     price: '',
     date: new Date().toISOString().split('T')[0],
   });
@@ -970,8 +970,8 @@ const PowerUserTab = ({ setMessage, setError }) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/developer/exchange-rate`, {
         params: {
-          from_currency: exchangeRate.from_currency,
-          to_currency: exchangeRate.to_currency,
+          fromCurrency: exchangeRate.fromCurrency,
+          toCurrency: exchangeRate.toCurrency,
           date: exchangeRate.date,
         },
       });
@@ -982,7 +982,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
     } catch (err) {
       console.error('Error fetching current exchange rate:', err);
     }
-  }, [exchangeRate.from_currency, exchangeRate.to_currency, exchangeRate.date]);
+  }, [exchangeRate.fromCurrency, exchangeRate.toCurrency, exchangeRate.date]);
 
   useEffect(() => {
     // Initial data load - wrapped to avoid direct setState in effect
@@ -1046,7 +1046,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('fund_id', selectedFundId);
+      formData.append('fundId', selectedFundId);
 
       try {
         const response = await axios.post(
@@ -1076,7 +1076,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
 
     const formData = new FormData();
     formData.append('file', fundPriceFile);
-    formData.append('fund_id', selectedPriceFundId);
+    formData.append('fundId', selectedPriceFundId);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/developer/import-fund-prices`, formData, {
@@ -1111,10 +1111,8 @@ const PowerUserTab = ({ setMessage, setError }) => {
               <label>From Currency:</label>
               <input
                 type="text"
-                value={exchangeRate.from_currency}
-                onChange={(e) =>
-                  setExchangeRate({ ...exchangeRate, from_currency: e.target.value })
-                }
+                value={exchangeRate.fromCurrency}
+                onChange={(e) => setExchangeRate({ ...exchangeRate, fromCurrency: e.target.value })}
                 required
               />
             </div>
@@ -1122,8 +1120,8 @@ const PowerUserTab = ({ setMessage, setError }) => {
               <label>To Currency:</label>
               <input
                 type="text"
-                value={exchangeRate.to_currency}
-                onChange={(e) => setExchangeRate({ ...exchangeRate, to_currency: e.target.value })}
+                value={exchangeRate.toCurrency}
+                onChange={(e) => setExchangeRate({ ...exchangeRate, toCurrency: e.target.value })}
                 required
               />
             </div>
@@ -1161,8 +1159,8 @@ const PowerUserTab = ({ setMessage, setError }) => {
           <div className="form-group">
             <label>Fund:</label>
             <select
-              value={fundPrice.fund_id}
-              onChange={(e) => setFundPrice({ ...fundPrice, fund_id: e.target.value })}
+              value={fundPrice.fundId}
+              onChange={(e) => setFundPrice({ ...fundPrice, fundId: e.target.value })}
               required
             >
               <option value="">Select a fund/stock...</option>
