@@ -39,8 +39,8 @@ log_entry_model = ns.model(
 exchange_rate_model = ns.model(
     "ExchangeRate",
     {
-        "from_currency": fields.String(required=True, description="Source currency"),
-        "to_currency": fields.String(required=True, description="Target currency"),
+        "fromCurrency": fields.String(required=True, description="Source currency"),
+        "toCurrency": fields.String(required=True, description="Target currency"),
         "rate": fields.Float(required=True, description="Exchange rate"),
         "date": fields.String(description="Rate date"),
     },
@@ -49,7 +49,7 @@ exchange_rate_model = ns.model(
 fund_price_model = ns.model(
     "FundPrice",
     {
-        "fund_id": fields.String(required=True, description="Fund ID"),
+        "fundId": fields.String(required=True, description="Fund ID"),
         "price": fields.Float(required=True, description="Price"),
         "date": fields.String(required=True, description="Price date"),
     },
@@ -177,41 +177,44 @@ class DeveloperExchangeRate(Resource):
     """Developer exchange rate endpoint."""
 
     @ns.doc("get_exchange_rate")
-    @ns.param("from_currency", "Source currency (e.g., USD)", required=True, _in="query")
-    @ns.param("to_currency", "Target currency (e.g., EUR)", required=True, _in="query")
+    @ns.param("fromCurrency", "Source currency (e.g., USD)", required=True, _in="query")
+    @ns.param("toCurrency", "Target currency (e.g., EUR)", required=True, _in="query")
     @ns.param("date", "Rate date (YYYY-MM-DD)", _in="query")
     @ns.response(200, "Success", exchange_rate_model)
     @ns.response(400, "Missing parameters", error_model)
     @ns.response(500, "Server error", error_model)
     def get(self):
         """
-        Get exchange rate for currency pair.
+        Get exchange rate for currency pair (camelCase API).
 
         Tests the exchange rate service with specific currency pairs.
         Useful for debugging currency conversion issues.
 
-        Query Parameters:
-        - from_currency: Source currency code (e.g., USD)
-        - to_currency: Target currency code (e.g., EUR)
+        Query Parameters (camelCase):
+        - fromCurrency: Source currency code (e.g., USD)
+        - toCurrency: Target currency code (e.g., EUR)
         - date: Optional date for historical rates (YYYY-MM-DD)
         """
-        from_currency = request.args.get("from_currency")
-        to_currency = request.args.get("to_currency")
+        # Read camelCase from query params
+        from_currency = request.args.get("fromCurrency")
+        to_currency = request.args.get("toCurrency")
         date_str = request.args.get("date")
 
         if not from_currency or not to_currency:
-            return {"error": "Missing required parameters: from_currency and to_currency"}, 400
+            return {"error": "Missing required parameters: fromCurrency and toCurrency"}, 400
 
         try:
             rate_date = None
             if date_str:
                 rate_date = date.fromisoformat(date_str)
 
+            # Service layer uses snake_case internally
             rate = DeveloperService.get_exchange_rate(from_currency, to_currency, rate_date)
 
+            # Return camelCase response
             return {
-                "from_currency": from_currency,
-                "to_currency": to_currency,
+                "fromCurrency": from_currency,
+                "toCurrency": to_currency,
                 "rate": rate,
                 "date": rate_date.isoformat() if rate_date else None,
             }, 200
@@ -232,7 +235,7 @@ class DeveloperExchangeRate(Resource):
     @ns.response(500, "Server error", error_model)
     def post(self):
         """
-        Set exchange rate for currency pair.
+        Set exchange rate for currency pair (camelCase API).
 
         Manually sets an exchange rate for testing or correction purposes.
 
@@ -240,6 +243,12 @@ class DeveloperExchangeRate(Resource):
         - Testing currency conversions
         - Correcting historical rates
         - Overriding automatic rate lookups
+
+        Request Body (camelCase):
+        - fromCurrency: Source currency code
+        - toCurrency: Target currency code
+        - rate: Exchange rate value
+        - date: Optional date (YYYY-MM-DD)
         """
         data = request.json
 
@@ -248,9 +257,10 @@ class DeveloperExchangeRate(Resource):
             if data.get("date"):
                 rate_date = date.fromisoformat(data["date"])
 
+            # Convert camelCase to snake_case for service layer
             DeveloperService.set_exchange_rate(
-                from_currency=data["from_currency"],
-                to_currency=data["to_currency"],
+                from_currency=data["fromCurrency"],
+                to_currency=data["toCurrency"],
                 rate=data["rate"],
                 date=rate_date,
             )
@@ -283,7 +293,7 @@ class DeveloperFundPrice(Resource):
     """Developer fund price management endpoint."""
 
     @ns.doc("get_fund_price")
-    @ns.param("fund_id", "Fund ID", required=True, _in="query")
+    @ns.param("fundId", "Fund ID", required=True, _in="query")
     @ns.param("date", "Price date (YYYY-MM-DD)", required=True, _in="query")
     @ns.response(200, "Success", fund_price_model)
     @ns.response(400, "Missing parameters", error_model)
@@ -291,26 +301,37 @@ class DeveloperFundPrice(Resource):
     @ns.response(500, "Server error", error_model)
     def get(self):
         """
-        Get fund price for specific date.
+        Get fund price for specific date (camelCase API).
 
         Retrieves the price for a fund on a specific date.
         Useful for debugging price lookup issues.
+
+        Query Parameters (camelCase):
+        - fundId: Fund identifier
+        - date: Price date (YYYY-MM-DD)
         """
-        fund_id = request.args.get("fund_id")
+        # Read camelCase from query params
+        fund_id = request.args.get("fundId")
         date_str = request.args.get("date")
 
         if not fund_id or not date_str:
-            return {"error": "Missing required parameters: fund_id and date"}, 400
+            return {"error": "Missing required parameters: fundId and date"}, 400
 
         try:
             price_date = date.fromisoformat(date_str)
+            # Service layer uses snake_case
             result = DeveloperService.get_fund_price(fund_id, price_date)
 
             # Return 404 if result is None (matching legacy behavior)
             if not result:
                 return {"message": "Fund price not found"}, 404
 
-            return result, 200
+            # Convert response to camelCase
+            return {
+                "fundId": result["fund_id"],
+                "price": result["price"],
+                "date": result["date"],
+            }, 200
 
         except ValueError as e:
             # Date format errors return 400
@@ -333,7 +354,7 @@ class DeveloperFundPrice(Resource):
     @ns.response(500, "Server error", error_model)
     def post(self):
         """
-        Set fund price for specific date.
+        Set fund price for specific date (camelCase API).
 
         Manually sets a fund price for testing or correction purposes.
 
@@ -341,6 +362,11 @@ class DeveloperFundPrice(Resource):
         - Testing portfolio calculations
         - Correcting historical prices
         - Filling gaps in price data
+
+        Request Body (camelCase):
+        - fundId: Fund identifier
+        - price: Price value
+        - date: Price date (YYYY-MM-DD)
         """
         data = request.json
 
@@ -349,8 +375,9 @@ class DeveloperFundPrice(Resource):
             if data.get("date"):
                 price_date = date.fromisoformat(data["date"])
 
+            # Convert camelCase to snake_case for service layer
             result = DeveloperService.set_fund_price(
-                fund_id=data["fund_id"], price=data["price"], date_=price_date
+                fund_id=data["fundId"], price=data["price"], date_=price_date
             )
 
             logger.log(
@@ -408,7 +435,12 @@ class DeveloperFundPriceById(Resource):
             if not result:
                 return {"message": "Fund price not found"}, 404
 
-            return result, 200
+            # Convert response to camelCase
+            return {
+                "fundId": result["fund_id"],
+                "price": result["price"],
+                "date": result["date"],
+            }, 200
 
         except Exception as e:
             # All exceptions return 500 (matching legacy behavior - ValueError also goes here)
@@ -518,7 +550,7 @@ class ImportTransactions(Resource):
             help="CSV file with transaction data",
         )
         .add_argument(
-            "fund_id",
+            "fundId",
             location="form",
             type=str,
             required=True,
@@ -530,7 +562,7 @@ class ImportTransactions(Resource):
     @ns.response(500, "Server error", error_model)
     def post(self):
         """
-        Import transactions from CSV file.
+        Import transactions from CSV file (camelCase API).
 
         Accepts a CSV file with transaction data and imports it into the system.
 
@@ -539,19 +571,20 @@ class ImportTransactions(Resource):
         - Date format: YYYY-MM-DD
         - Type: buy, sell, dividend, etc.
 
-        Form Data:
+        Form Data (camelCase):
         - file: CSV file containing transaction data
-        - fund_id: Portfolio-Fund relationship ID
+        - fundId: Portfolio-Fund relationship ID
         """
         try:
             if "file" not in request.files:
                 return {"message": "No file provided"}, 400
 
             file = request.files["file"]
-            portfolio_fund_id = request.form.get("fund_id")
+            # Read camelCase from form data
+            portfolio_fund_id = request.form.get("fundId")
 
             if not portfolio_fund_id:
-                return {"message": "No portfolio_fund_id provided"}, 400
+                return {"message": "No fundId provided"}, 400
 
             if not file.filename.endswith(".csv"):
                 return {"message": "File must be CSV"}, 400
@@ -595,14 +628,14 @@ class ImportFundPrices(Resource):
             required=True,
             help="CSV file with fund price data",
         )
-        .add_argument("fund_id", location="form", type=str, required=True, help="Fund ID")
+        .add_argument("fundId", location="form", type=str, required=True, help="Fund ID")
     )
     @ns.response(200, "Import successful")
     @ns.response(400, "Validation error", error_model)
     @ns.response(500, "Server error", error_model)
     def post(self):
         """
-        Import fund prices from CSV file.
+        Import fund prices from CSV file (camelCase API).
 
         Accepts a CSV file with fund price data and imports it into the system.
 
@@ -611,19 +644,20 @@ class ImportFundPrices(Resource):
         - Date format: YYYY-MM-DD
         - Price: Decimal number
 
-        Form Data:
+        Form Data (camelCase):
         - file: CSV file containing fund price data
-        - fund_id: Fund ID
+        - fundId: Fund ID
         """
         try:
             if "file" not in request.files:
                 return {"message": "No file provided"}, 400
 
             file = request.files["file"]
-            fund_id = request.form.get("fund_id")
+            # Read camelCase from form data
+            fund_id = request.form.get("fundId")
 
             if not fund_id:
-                return {"message": "No fund_id provided"}, 400
+                return {"message": "No fundId provided"}, 400
 
             if not file.filename.endswith(".csv"):
                 return {"message": "File must be CSV"}, 400

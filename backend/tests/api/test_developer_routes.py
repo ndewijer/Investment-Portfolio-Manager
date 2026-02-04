@@ -88,13 +88,13 @@ class TestExchangeRate:
         db_session.add(rate)
         db_session.commit()
 
-        response = client.get("/api/developer/exchange-rate?from_currency=USD&to_currency=EUR")
+        response = client.get("/api/developer/exchange-rate?fromCurrency=USD&toCurrency=EUR")
 
         assert response.status_code == 200
         data = response.get_json()
         assert "rate" in data
-        assert data["from_currency"] == "USD"
-        assert data["to_currency"] == "EUR"
+        assert data["fromCurrency"] == "USD"
+        assert data["toCurrency"] == "EUR"
 
     def test_set_exchange_rate(self, app_context, client, db_session):
         """
@@ -105,8 +105,8 @@ class TestExchangeRate:
         without relying on external exchange rate APIs.
         """
         payload = {
-            "from_currency": "USD",
-            "to_currency": "GBP",
+            "fromCurrency": "USD",
+            "toCurrency": "GBP",
             "rate": 0.75,
             "date": datetime.now().date().isoformat(),
         }
@@ -137,7 +137,7 @@ class TestFundPrice:
         db_session.commit()
 
         payload = {
-            "fund_id": fund.id,
+            "fundId": fund.id,
             "date": datetime.now().date().isoformat(),
             "price": 250.00,
         }
@@ -175,7 +175,7 @@ class TestFundPrice:
         assert isinstance(data, dict)
         assert "price" in data
         assert data["price"] == 450.00
-        assert data["fund_id"] == fund.id
+        assert data["fundId"] == fund.id
 
 
 class TestCSVTemplates:
@@ -295,7 +295,7 @@ class TestExchangeRateErrors:
         users in fixing their requests. This prevents database errors and invalid exchange rates
         from being stored without proper currency identification.
         """
-        payload = {"to_currency": "EUR", "rate": 0.85}
+        payload = {"toCurrency": "EUR", "rate": 0.85}
 
         response = client.post("/api/developer/exchange-rate", json=payload)
 
@@ -312,7 +312,7 @@ class TestExchangeRateErrors:
         requests prevents orphaned or unusable exchange rate records that would break
         currency conversion calculations.
         """
-        payload = {"from_currency": "USD", "rate": 0.85}
+        payload = {"fromCurrency": "USD", "rate": 0.85}
 
         response = client.post("/api/developer/exchange-rate", json=payload)
 
@@ -329,7 +329,7 @@ class TestExchangeRateErrors:
         This validation prevents division-by-zero errors and ensures all stored rates
         can be used for portfolio value conversions.
         """
-        payload = {"from_currency": "USD", "to_currency": "EUR"}
+        payload = {"fromCurrency": "USD", "toCurrency": "EUR"}
 
         response = client.post("/api/developer/exchange-rate", json=payload)
 
@@ -346,7 +346,7 @@ class TestExchangeRateErrors:
         the system and prevent typos that would break currency conversions. Invalid codes would
         make portfolio values impossible to calculate correctly.
         """
-        payload = {"from_currency": "INVALID", "to_currency": "EUR", "rate": 0.85}
+        payload = {"fromCurrency": "INVALID", "toCurrency": "EUR", "rate": 0.85}
 
         response = client.post("/api/developer/exchange-rate", json=payload)
 
@@ -363,8 +363,8 @@ class TestExchangeRateErrors:
         portfolio valuations on specific dates.
         """
         payload = {
-            "from_currency": "USD",
-            "to_currency": "EUR",
+            "fromCurrency": "USD",
+            "toCurrency": "EUR",
             "rate": 0.85,
             "date": "not-a-date",
         }
@@ -386,7 +386,7 @@ class TestExchangeRateErrors:
         with patch("app.api.developer_namespace.DeveloperService.set_exchange_rate") as mock_set:
             mock_set.side_effect = Exception("Database error")
 
-            payload = {"from_currency": "USD", "to_currency": "EUR", "rate": 0.85}
+            payload = {"fromCurrency": "USD", "toCurrency": "EUR", "rate": 0.85}
             response = client.post("/api/developer/exchange-rate", json=payload)
 
             assert response.status_code == 400
@@ -400,7 +400,7 @@ class TestExchangeRateErrors:
         calculations due to date parsing errors.
         """
         response = client.get(
-            "/api/developer/exchange-rate?from_currency=USD&to_currency=EUR&date=invalid-date"
+            "/api/developer/exchange-rate?fromCurrency=USD&toCurrency=EUR&date=invalid-date"
         )
 
         assert response.status_code == 500
@@ -418,7 +418,7 @@ class TestExchangeRateErrors:
         with patch("app.api.developer_namespace.DeveloperService.get_exchange_rate") as mock_get:
             mock_get.side_effect = Exception("Service error")
 
-            response = client.get("/api/developer/exchange-rate?from_currency=USD&to_currency=EUR")
+            response = client.get("/api/developer/exchange-rate?fromCurrency=USD&toCurrency=EUR")
 
             assert response.status_code == 500
 
@@ -455,7 +455,7 @@ class TestFundPriceErrors:
         db_session.add(fund)
         db_session.commit()
 
-        payload = {"fund_id": fund.id, "date": datetime.now().date().isoformat()}
+        payload = {"fundId": fund.id, "date": datetime.now().date().isoformat()}
 
         response = client.post("/api/developer/fund-price", json=payload)
 
@@ -473,7 +473,7 @@ class TestFundPriceErrors:
         and break portfolio value calculations.
         """
         payload = {
-            "fund_id": "nonexistent-fund-id",
+            "fundId": "nonexistent-fund-id",
             "price": 100.00,
             "date": datetime.now().date().isoformat(),
         }
@@ -496,7 +496,7 @@ class TestFundPriceErrors:
         db_session.add(fund)
         db_session.commit()
 
-        payload = {"fund_id": fund.id, "price": 100.00, "date": "invalid-date"}
+        payload = {"fundId": fund.id, "price": 100.00, "date": "invalid-date"}
 
         response = client.post("/api/developer/fund-price", json=payload)
 
@@ -519,7 +519,7 @@ class TestFundPriceErrors:
         with patch("app.api.developer_namespace.DeveloperService.set_fund_price") as mock_set:
             mock_set.side_effect = Exception("Service error")
 
-            payload = {"fund_id": fund.id, "price": 100.00}
+            payload = {"fundId": fund.id, "price": 100.00}
             response = client.post("/api/developer/fund-price", json=payload)
 
             assert response.status_code == 400
@@ -592,7 +592,7 @@ class TestCSVImportErrors:
         Clear error messages prevent user confusion when uploads fail and guide them to
         retry with proper file attachments.
         """
-        response = client.post("/api/developer/import-transactions", data={"fund_id": "test-id"})
+        response = client.post("/api/developer/import-transactions", data={"fundId": "test-id"})
 
         assert response.status_code == 400
         data = response.get_json()
@@ -618,7 +618,7 @@ class TestCSVImportErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "No portfolio_fund_id provided" in data["message"]
+        assert "No fundId provided" in data["message"]
 
     def test_import_transactions_invalid_file_format(self, client):
         """
@@ -634,7 +634,7 @@ class TestCSVImportErrors:
 
         response = client.post(
             "/api/developer/import-transactions",
-            data={"file": (file_data, "transactions.txt"), "fund_id": "test-id"},
+            data={"file": (file_data, "transactions.txt"), "fundId": "test-id"},
             content_type="multipart/form-data",
         )
 
@@ -656,7 +656,7 @@ class TestCSVImportErrors:
 
         response = client.post(
             "/api/developer/import-transactions",
-            data={"file": (file_data, "transactions.csv"), "fund_id": "test-id"},
+            data={"file": (file_data, "transactions.csv"), "fundId": "test-id"},
             content_type="multipart/form-data",
         )
 
@@ -678,7 +678,7 @@ class TestCSVImportErrors:
 
         response = client.post(
             "/api/developer/import-transactions",
-            data={"file": (file_data, "transactions.csv"), "fund_id": "nonexistent-id"},
+            data={"file": (file_data, "transactions.csv"), "fundId": "nonexistent-id"},
             content_type="multipart/form-data",
         )
 
@@ -694,7 +694,7 @@ class TestCSVImportErrors:
         to users who accidentally submit requests without attaching files. This improves the
         user experience during bulk price imports.
         """
-        response = client.post("/api/developer/import-fund-prices", data={"fund_id": "test-id"})
+        response = client.post("/api/developer/import-fund-prices", data={"fundId": "test-id"})
 
         assert response.status_code == 400
         data = response.get_json()
@@ -720,7 +720,7 @@ class TestCSVImportErrors:
 
         assert response.status_code == 400
         data = response.get_json()
-        assert "No fund_id provided" in data["message"]
+        assert "No fundId provided" in data["message"]
 
     def test_import_fund_prices_invalid_file_format(self, client):
         """
@@ -736,7 +736,7 @@ class TestCSVImportErrors:
 
         response = client.post(
             "/api/developer/import-fund-prices",
-            data={"file": (file_data, "prices.txt"), "fund_id": "test-id"},
+            data={"file": (file_data, "prices.txt"), "fundId": "test-id"},
             content_type="multipart/form-data",
         )
 
@@ -758,7 +758,7 @@ class TestCSVImportErrors:
 
         response = client.post(
             "/api/developer/import-fund-prices",
-            data={"file": (file_data, "prices.csv"), "fund_id": "test-id"},
+            data={"file": (file_data, "prices.csv"), "fundId": "test-id"},
             content_type="multipart/form-data",
         )
 
@@ -783,7 +783,7 @@ class TestCSVImportErrors:
 
         response = client.post(
             "/api/developer/import-fund-prices",
-            data={"file": (file_data, "transactions.csv"), "fund_id": "test-id"},
+            data={"file": (file_data, "transactions.csv"), "fundId": "test-id"},
             content_type="multipart/form-data",
         )
 
