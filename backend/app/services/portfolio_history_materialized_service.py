@@ -14,11 +14,14 @@ from sqlalchemy import func
 
 from ..models import (
     FundHistoryMaterialized,
+    LogCategory,
+    LogLevel,
     Portfolio,
     PortfolioFund,
     RealizedGainLoss,
     db,
 )
+from ..services.logging_service import logger
 from .portfolio_service import PortfolioService
 
 
@@ -448,6 +451,20 @@ class PortfolioHistoryMaterializedService:
         ).delete(synchronize_session=False)
 
         db.session.commit()
+
+        # Log invalidation results
+        logger.log(
+            level=LogLevel.INFO if deleted > 0 else LogLevel.DEBUG,
+            category=LogCategory.SYSTEM,
+            message=f"Materialized view invalidation for portfolio {portfolio_id}",
+            details={
+                "portfolio_id": portfolio_id,
+                "from_date": from_date.isoformat(),
+                "records_deleted": deleted,
+                "portfolio_funds_checked": len(portfolio_fund_ids),
+                "recalculate": recalculate,
+            },
+        )
 
         if recalculate and deleted > 0:
             # Recalculate from the invalidated date to today
