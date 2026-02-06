@@ -367,9 +367,9 @@ const IBKRInbox = () => {
       if (modalMode === 'bulk') {
         // Bulk allocate multiple transactions
         response = await api.post('ibkr/inbox/bulk-allocate', {
-          transaction_ids: selectedTransactions,
+          transactionIds: selectedTransactions,
           allocations: allocations.map((a) => ({
-            portfolio_id: a.portfolio_id,
+            portfolioId: a.portfolio_id,
             percentage: a.percentage,
           })),
         });
@@ -394,7 +394,7 @@ const IBKRInbox = () => {
         // Modify existing allocations
         response = await api.put(`ibkr/inbox/${selectedTransaction.id}/allocations`, {
           allocations: allocations.map((a) => ({
-            portfolio_id: a.portfolio_id,
+            portfolioId: a.portfolio_id,
             percentage: a.percentage,
           })),
         });
@@ -414,7 +414,7 @@ const IBKRInbox = () => {
         // Create new allocations (single transaction)
         response = await api.post(`ibkr/inbox/${selectedTransaction.id}/allocate`, {
           allocations: allocations.map((a) => ({
-            portfolio_id: a.portfolio_id,
+            portfolioId: a.portfolio_id,
             percentage: a.percentage,
           })),
         });
