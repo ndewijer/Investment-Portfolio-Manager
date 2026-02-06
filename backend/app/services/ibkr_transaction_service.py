@@ -442,10 +442,25 @@ class IBKRTransactionService:
 
                 # Invalidate from the transaction date forward for each affected portfolio
                 affected_portfolios = {alloc["portfolio_id"] for alloc in allocations}
+                invalidation_results = {}
                 for portfolio_id in affected_portfolios:
-                    PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                    deleted = PortfolioHistoryMaterializedService.invalidate_materialized_history(
                         portfolio_id, ibkr_txn.transaction_date, recalculate=False
                     )
+                    invalidation_results[portfolio_id] = deleted
+
+                logger.log(
+                    level=LogLevel.INFO,
+                    category=LogCategory.IBKR,
+                    message="Materialized view invalidation after IBKR allocation",
+                    details={
+                        "ibkr_transaction_id": ibkr_txn.ibkr_transaction_id,
+                        "transaction_date": ibkr_txn.transaction_date.isoformat(),
+                        "affected_portfolios": len(affected_portfolios),
+                        "total_records_deleted": sum(invalidation_results.values()),
+                        "per_portfolio": invalidation_results,
+                    },
+                )
             except Exception as e:
                 # Don't fail the transaction if invalidation fails
                 logger.log(

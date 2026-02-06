@@ -18,11 +18,14 @@ from ..models import (
     FundHistoryMaterialized,
     FundPrice,
     InvestmentType,
+    LogCategory,
+    LogLevel,
     Portfolio,
     PortfolioFund,
     Transaction,
     db,
 )
+from ..services.logging_service import logger
 
 
 class FundService:
@@ -451,29 +454,82 @@ class FundService:
         # Execute query
         results = query.all()
 
-        # If no results found, try to auto-materialize the portfolio history
+        # Check if we need to materialize/rematerialize
         # This handles cases where:
-        # 1. Materialized view wasn't populated after upgrade
-        # 2. Recent transactions invalidated old data but recalculation hasn't run yet
+        # 1. Materialized view wasn't populated after upgrade (no results)
+        # 2. Materialized view is stale (transactions newer than latest materialized date)
+        # 3. Recent transactions invalidated old data but recalculation hasn't run yet
+        needs_materialization = False
+        materialization_reason = None
+
         if not results:
+            needs_materialization = True
+            materialization_reason = "no_data"
+        else:
+            # Check if materialized data is stale
+            latest_mat_date_str = max(r[0].date for r in results)
+            latest_mat_date = datetime.strptime(latest_mat_date_str, "%Y-%m-%d").date()
+
+            # Check if there are transactions newer than the latest materialized date
+            portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
+            if portfolio_funds:
+                pf_ids = [pf.id for pf in portfolio_funds]
+                from sqlalchemy import func
+
+                latest_txn = (
+                    db.session.query(func.max(Transaction.date))
+                    .filter(Transaction.portfolio_fund_id.in_(pf_ids))
+                    .scalar()
+                )
+
+                if latest_txn and latest_txn > latest_mat_date:
+                    needs_materialization = True
+                    materialization_reason = "stale_data"
+                    logger.log(
+                        level=LogLevel.INFO,
+                        category=LogCategory.SYSTEM,
+                        message=f"Materialized view is stale for portfolio {portfolio_id}",
+                        details={
+                            "portfolio_id": portfolio_id,
+                            "latest_transaction": latest_txn.isoformat(),
+                            "latest_materialized": latest_mat_date.isoformat(),
+                            "days_behind": (latest_txn - latest_mat_date).days,
+                        },
+                    )
+
+        if needs_materialization:
             from ..services.portfolio_history_materialized_service import (
                 PortfolioHistoryMaterializedService,
             )
 
-            # Check if portfolio has any transactions (data to materialize)
             portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
             if portfolio_funds:
-                # Try to materialize this portfolio's history
                 try:
                     count = PortfolioHistoryMaterializedService.materialize_portfolio_history(
                         portfolio_id, force_recalculate=False
                     )
+
+                    logger.log(
+                        level=LogLevel.INFO,
+                        category=LogCategory.SYSTEM,
+                        message=f"Auto-materialized portfolio history ({materialization_reason})",
+                        details={
+                            "portfolio_id": portfolio_id,
+                            "reason": materialization_reason,
+                            "records_created": count,
+                        },
+                    )
+
                     if count > 0:
                         # Re-run the query after materialization
                         results = query.all()
-                except Exception:
-                    # If materialization fails, just return empty (don't break the API)
-                    pass
+                except Exception as e:
+                    logger.log(
+                        level=LogLevel.ERROR,
+                        category=LogCategory.SYSTEM,
+                        message="Failed to auto-materialize portfolio history",
+                        details={"portfolio_id": portfolio_id, "error": str(e)},
+                    )
 
         # Group results by date
         history_by_date = {}

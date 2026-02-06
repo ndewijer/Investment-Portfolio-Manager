@@ -5,6 +5,43 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-02-06
+
+### Fixed
+- **Critical: IBKR Transaction Allocation API Mismatch** - See [PR #148](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/148)
+  - Fixed frontend sending `portfolio_id` (snake_case) when backend expects `portfolioId` (camelCase)
+  - Affected operations: Single allocation, bulk allocation, and modify allocations
+  - Also fixed `transaction_ids` → `transactionIds` in bulk allocate endpoint
+  - **Impact**: IBKR transactions could not be allocated after v1.5.0 release
+  - **Root cause**: Incomplete camelCase migration in v1.5.0 - frontend IBKRInbox.js missed in the conversion
+
+- **Critical: Stale Materialized View Data** - See [PR #148](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/148)
+  - Fixed graphs showing outdated data when transactions exist but materialized view wasn't recalculated
+  - Added stale data detection: auto-materializes when latest transaction is newer than latest materialized date
+  - **Impact**: After allocation/unallocation, graphs could show incomplete data
+  - **Root cause**: Invalidation deleted 0 records (none existed for new transaction dates), no recalculation triggered
+
+### Added
+- **Comprehensive Materialized View Logging**
+  - Added logging to `invalidate_materialized_history()`: Shows records deleted, portfolios affected
+  - Added logging to IBKR allocation: Shows per-portfolio invalidation results
+  - Added logging to auto-materialization: Shows reason (no_data vs stale_data) and records created
+  - All invalidation operations now visible in logs for debugging
+
+### Technical Details
+- **Frontend Fix** - `frontend/src/pages/IBKRInbox.js`:
+  - Line 372: Bulk allocate - `portfolio_id` → `portfolioId`, `transaction_ids` → `transactionIds`
+  - Line 397: Modify allocations - `portfolio_id` → `portfolioId`
+  - Line 417: Single allocation - `portfolio_id` → `portfolioId`
+
+- **Backend Fixes**:
+  - `fund_service.py`: Enhanced auto-materialization with stale data detection
+  - `portfolio_history_materialized_service.py`: Added logging to invalidation operations
+  - `ibkr_transaction_service.py`: Enhanced logging with per-portfolio invalidation results
+
+- All 762 backend tests passing
+- All 575 frontend tests passing
+
 ## [1.5.1] - 2026-02-06
 
 ### Fixed

@@ -103,12 +103,90 @@ All invalidation calls are wrapped in try/except blocks with lazy imports to ens
 
 ### Auto-Materialization
 
-When the fund history endpoint (`/api/fund/history/{portfolioId}`) returns no data, it automatically attempts to materialize the portfolio history on-demand. This handles cases where:
+The fund history endpoint (`/api/fund/history/{portfolioId}`) automatically detects and fixes stale or missing data:
 
-1. The materialized view wasn't populated after an upgrade
-2. Recent transactions invalidated old data but recalculation hasn't run yet
+**Triggers auto-materialization when:**
+1. **No data exists** - Materialized view wasn't populated after an upgrade
+2. **Data is stale** - Latest transaction is newer than latest materialized date
 
-The auto-materialization is also wrapped in try/except to avoid breaking the API if materialization fails.
+**Stale Data Detection** (v1.5.2+):
+- Compares latest materialized date with latest transaction date
+- If transaction date > materialized date: auto-materializes from that point forward
+- Handles cases where invalidation deleted 0 records (e.g., transaction dated after latest materialized date)
+- Logs detection reason ("no_data" or "stale_data") and records created
+
+**Example scenario:**
+```
+1. Materialized view calculated through 2026-02-04
+2. User allocates IBKR transaction dated 2026-02-05
+3. Invalidation runs: deletes 0 records (none exist for 2026-02-05)
+4. User views graphs: stale data detected (transaction > materialized)
+5. Auto-materializes for 2026-02-05
+6. Graphs immediately show updated data
+```
+
+The auto-materialization is wrapped in try/except to avoid breaking the API if materialization fails.
+
+### Logging (v1.5.2+)
+
+All materialized view operations now include comprehensive logging for debugging and monitoring:
+
+**Invalidation Logging:**
+```json
+{
+  "level": "INFO",  // INFO if records deleted, DEBUG if 0 records
+  "category": "SYSTEM",
+  "message": "Materialized view invalidation for portfolio <id>",
+  "details": {
+    "portfolio_id": "...",
+    "from_date": "2026-02-05",
+    "records_deleted": 0,
+    "portfolio_funds_checked": 3,
+    "recalculate": false
+  }
+}
+```
+
+**IBKR Allocation Invalidation:**
+```json
+{
+  "level": "INFO",
+  "category": "IBKR",
+  "message": "Materialized view invalidation after IBKR allocation",
+  "details": {
+    "affected_portfolios": 3,
+    "total_records_deleted": 0,
+    "per_portfolio": {"portfolio-id": 0, ...}
+  }
+}
+```
+
+**Stale Data Detection:**
+```json
+{
+  "level": "INFO",
+  "category": "SYSTEM",
+  "message": "Materialized view is stale for portfolio <id>",
+  "details": {
+    "latest_transaction": "2026-02-05",
+    "latest_materialized": "2026-02-04",
+    "days_behind": 1
+  }
+}
+```
+
+**Auto-Materialization:**
+```json
+{
+  "level": "INFO",
+  "category": "SYSTEM",
+  "message": "Auto-materialized portfolio history (stale_data)",
+  "details": {
+    "reason": "stale_data",  // or "no_data"
+    "records_created": 12
+  }
+}
+```
 
 ## Usage
 

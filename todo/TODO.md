@@ -37,5 +37,5 @@ If you encounter these, fix them:
 ---
 
 **Last Updated**: 2026-02-06
-**Current Version**: 1.5.1
+**Current Version**: 1.5.2
 **Philosophy**: Feature complete - only add what's needed
