@@ -1,6 +1,6 @@
 {
   "name": "investment-portfolio-manager",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "private": true,
   "dependencies": {
     "@babel/cli": "^7.28.6",
