@@ -5,6 +5,93 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-02-06
+
+### Fixed
+- **Complete Materialized View Invalidation Coverage** - See [PR #146](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/146)
+  - Fixed stale graph data caused by missing materialized view invalidation
+  - Added invalidation for dividend CRUD operations (create, update, delete)
+  - Added invalidation for price updates (today's price and historical backfill)
+  - Added invalidation for sell transactions with realized gains
+  - Added invalidation for IBKR dividend matching
+  - Date change handling: ex_dividend_date changes now invalidate from both old and new dates
+  - All invalidation calls follow established pattern: after commit, try/except wrapped, lazy imports
+  - Invalidation failures never break primary operations
+
+### Added
+- **Auto-Materialization** for fund history endpoint
+  - Automatically materializes portfolio history when view is empty
+  - Handles cases after upgrade or full invalidation
+  - Self-healing behavior prevents empty graph issues
+- **Comprehensive Test Coverage** - 28 new integration tests
+  - `test_dividend_materialized_view_invalidation.py` (6 tests)
+  - `test_price_update_materialized_view_invalidation.py` (5 tests)
+  - `test_transaction_materialized_view_invalidation.py` (6 tests)
+  - `test_ibkr_materialized_view_invalidation.py` (5 tests)
+  - `test_fund_history_auto_materialization.py` (6 tests)
+  - All tests verify invalidation triggers and failure resilience
+
+### Documentation
+- Updated `MATERIALIZED_VIEW_IMPLEMENTATION.md` with complete invalidation trigger list
+- Added auto-materialization documentation
+- Created 3 new test documentation files with cross-references
+- Standardized version stamps to v1.5.1 across all documentation (8 files)
+
+### Technical Details
+- Helper methods in `portfolio_history_materialized_service.py` now properly called from all mutation operations
+- Materialized view invalidation now covers all data changes: transactions, dividends, prices, IBKR operations
+- Total test suite: 762 tests passing (745 existing + 17 new)
+
+## [1.5.0] - 2026-02-04
+
+### Changed
+- **Fund-Level Materialized View Architecture** - See [PR #137](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/137)
+  - Migrated from portfolio-level to fund-level materialized view storage
+  - New table: `fund_history_materialized` with daily snapshots (replaces `portfolio_history_materialized`)
+  - Single source of truth per fund, eliminates data duplication
+  - Enables atomic fund queries with reduced storage overhead
+  - New endpoint: `GET /api/fund/history/<portfolio_id>`
+  - **BREAKING CHANGE:** Fund history moved from `/portfolio/{id}/fund-history` to `/fund/history/{id}`
+  - Feature flag: `fund_level_materialized_view` (v1.5.0+)
+
+- **Complete camelCase API Migration**
+  - Comprehensive standardization across all endpoints
+  - External API: camelCase (`fundId`, `portfolioId`, `isArchived`)
+  - Service layer: snake_case internally (`fund_id`, `portfolio_id`)
+  - Database models: Unchanged
+  - Converted: portfolio, transaction, dividend, IBKR, and developer namespace endpoints
+  - **BREAKING CHANGE:** All API responses now use camelCase field names
+
+- **Cursor-Based Pagination for Log Viewer**
+  - Replaced offset-based pagination to eliminate drift issues
+  - Uses composite key `(timestamp, id)` for deterministic ordering
+  - Handles concurrent log updates without page drift
+  - **BREAKING CHANGE:** Log pagination response format changed
+
+### Added
+- **Enhanced Filter Bar** in log viewer
+  - Always-visible filter bar to prevent empty state lockout
+  - ISO 8601 timestamp format for consistency
+
+### Fixed
+- **CASCADE DELETE Constraints** - Fixed missing constraints preventing orphaned records
+- **Portfolio Operations** - Corrected `/api/funds` endpoint and refetch logic
+- **Log Viewer** - Enhanced filter bar visibility and timestamp standardization
+
+### Dependencies
+- **Python Packages** - 4 package updates
+- **JavaScript Packages** - 17 package updates
+- **ESLint** - Upgraded eslint-plugin-jsdoc
+
+### Technical Details
+- Database migration: Creates new table, migrates data, drops old table
+- Idempotent migration: Safe to run multiple times
+- Backend: 722+ tests passing
+- Frontend: 575+ tests passing
+- E2E: 45+ tests passing
+- Overall coverage: 90%+
+- **Recommendation:** Database backup advised before upgrading due to breaking changes
+
 ## [1.4.0] - 2026-01-11
 
 ### Added
