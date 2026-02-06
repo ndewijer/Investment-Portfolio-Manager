@@ -103,26 +103,95 @@ All invalidation calls are wrapped in try/except blocks with lazy imports to ens
 
 ### Auto-Materialization
 
-The fund history endpoint (`/api/fund/history/{portfolioId}`) automatically detects and fixes stale or missing data:
+The fund history endpoint (`/api/fund/history/{portfolioId}`) automatically detects and fixes stale or missing data by checking **ALL** data sources.
 
-**Triggers auto-materialization when:**
+#### Triggers Auto-Materialization When:
+
 1. **No data exists** - Materialized view wasn't populated after an upgrade
-2. **Data is stale** - Latest transaction is newer than latest materialized date
+2. **Data is stale** - Any of these conditions are true:
+   - Latest **transaction** is newer than latest materialized date
+   - Latest **price** is newer than latest materialized date (v1.5.3+)
+   - Latest **dividend** is newer than latest materialized date (v1.5.3+)
 
-**Stale Data Detection** (v1.5.2+):
-- Compares latest materialized date with latest transaction date
-- If transaction date > materialized date: auto-materializes from that point forward
-- Handles cases where invalidation deleted 0 records (e.g., transaction dated after latest materialized date)
-- Logs detection reason ("no_data" or "stale_data") and records created
+#### Stale Data Detection (v1.5.3+)
 
-**Example scenario:**
+The system checks **three** data sources to ensure completeness:
+
+```python
+latest_materialized_date = max(materialized_records.date)
+latest_transaction_date  = max(transactions.date)
+latest_price_date        = max(fund_prices.date)
+latest_dividend_date     = max(dividends.ex_dividend_date)
+
+# Stale if ANY source is newer
+if (latest_transaction > latest_materialized OR
+    latest_price > latest_materialized OR
+    latest_dividend > latest_materialized):
+    auto_materialize()
 ```
-1. Materialized view calculated through 2026-02-04
-2. User allocates IBKR transaction dated 2026-02-05
-3. Invalidation runs: deletes 0 records (none exist for 2026-02-05)
-4. User views graphs: stale data detected (transaction > materialized)
-5. Auto-materializes for 2026-02-05
-6. Graphs immediately show updated data
+
+**Why all three sources matter:**
+
+| Scenario | What Happens Without Check | Impact |
+|----------|---------------------------|--------|
+| Price updated, no new transactions | Invalidation deletes today's record, but no transaction to trigger re-materialization | Graphs miss today's price changes |
+| Dividend recorded, no transactions | Materialized view doesn't include dividend | Graphs show wrong dividend totals |
+| Transaction backdated | Invalidation deletes 0 records (none exist for that date) | Graphs miss backdated transactions |
+
+#### Example Scenarios
+
+**Scenario 1: Price Update (The Nightly Edge Case)**
+```
+Morning (Feb 6):
+  - View graphs → auto-materializes through Feb 6 (using Feb 5 prices)
+  - Materialized: Feb 6 row created
+
+Night (Feb 6):
+  - Price update runs → fetches Feb 6 closing price
+  - Invalidation runs → deletes Feb 6 materialized record
+  - Result: Materialized only through Feb 5
+
+Next Morning (Feb 7):
+  - View graphs
+  - Stale check: latest_price (Feb 6) > latest_mat (Feb 5)
+  - Auto-materializes Feb 6 with correct closing price ✅
+  - Graphs show accurate data
+```
+
+**Scenario 2: IBKR Allocation (Backdated Transaction)**
+```
+1. Materialized view calculated through Feb 4
+2. User allocates IBKR transaction dated Feb 5
+3. Invalidation runs: deletes 0 records (none exist for Feb 5)
+4. View graphs: stale check finds latest_txn (Feb 5) > latest_mat (Feb 4)
+5. Auto-materializes for Feb 5 ✅
+6. Graphs immediately show allocated transaction
+```
+
+**Scenario 3: Dividend Recorded**
+```
+1. Materialized through Feb 5
+2. User records dividend with ex_dividend_date = Feb 6
+3. Invalidation runs: deletes 0 records (none exist for Feb 6)
+4. View graphs: stale check finds latest_dividend (Feb 6) > latest_mat (Feb 5)
+5. Auto-materializes for Feb 6 with dividend included ✅
+6. Graphs show correct dividend totals
+```
+
+#### Logging
+
+Stale detection logs show exactly which data source triggered re-materialization:
+
+```json
+{
+  "message": "Materialized view is stale for portfolio <id>",
+  "details": {
+    "latest_materialized": "2026-02-05",
+    "stale_sources": ["prices"],
+    "latest_price": "2026-02-06",
+    "price_days_behind": 1
+  }
+}
 ```
 
 The auto-materialization is wrapped in try/except to avoid breaking the API if materialization fails.
@@ -187,6 +256,150 @@ All materialized view operations now include comprehensive logging for debugging
   }
 }
 ```
+
+## Edge Cases & Gotchas (IMPORTANT!)
+
+This section documents all the edge cases discovered and how they're handled.
+
+### 1. Invalidation Deletes 0 Records
+
+**Problem:** When transactions are backdated or created for future dates, invalidation may delete 0 records (because no materialized data exists for those dates yet).
+
+**Example:**
+```
+- Materialized through: Feb 4
+- Allocate transaction dated: Feb 5
+- Invalidation tries to delete records >= Feb 5
+- Finds: 0 records to delete
+- Result: View still only shows data through Feb 4
+```
+
+**Solution:** Stale detection checks if transactions exist beyond latest materialized date and triggers auto-materialization.
+
+**Status:** ✅ Fixed in v1.5.2
+
+---
+
+### 2. Price Updates Without Transactions (The Nightly Problem)
+
+**Problem:** Daily price updates invalidate the current day's materialized record, but if no new transactions exist, stale detection doesn't trigger recalculation.
+
+**Example:**
+```
+Morning: View graphs → materializes through today (with yesterday's prices)
+Night:   Price update → invalidates today's record
+Morning: View graphs → stale check compares transactions, not prices
+         latest_transaction == latest_materialized → NO stale detected!
+Result:  Missing today's price update in graphs
+```
+
+**Solution:** Stale detection now checks prices, not just transactions (v1.5.3+).
+
+**Status:** ✅ Fixed in v1.5.3
+
+---
+
+### 3. Dividend Recording Without Transactions
+
+**Problem:** Recording a dividend doesn't create a transaction, so transaction-only stale detection wouldn't trigger recalculation.
+
+**Example:**
+```
+- Materialized through: Feb 5
+- Record dividend with ex_dividend_date: Feb 6
+- Invalidation deletes 0 records (none exist for Feb 6)
+- Stale check only looks at transactions → no stale detected
+- Result: Dividend not reflected in graphs
+```
+
+**Solution:** Stale detection checks dividend dates (v1.5.3+).
+
+**Status:** ✅ Fixed in v1.5.3
+
+---
+
+### 4. Multi-Portfolio Price Updates
+
+**Problem:** One fund can be held by multiple portfolios. Price update must invalidate ALL portfolios.
+
+**Example:**
+```
+- Fund AAPL held by: Portfolio A, Portfolio B, Portfolio C
+- Price update for AAPL
+- Must invalidate: All three portfolios
+```
+
+**Solution:** `invalidate_from_price_update()` queries all portfolio_funds for the fund and invalidates each portfolio.
+
+**Status:** ✅ Working correctly since v1.5.1
+
+---
+
+### 5. Dividend Date Changes (Both Old and New)
+
+**Problem:** When changing a dividend's ex_dividend_date, BOTH the old date range and new date range need invalidation.
+
+**Example:**
+```
+- Original ex_dividend_date: Feb 10
+- Updated to: Feb 15
+- Must invalidate: From Feb 10 forward AND from Feb 15 forward
+```
+
+**Solution:** `update_dividend()` captures original date, invalidates from old date, then invalidates from new date.
+
+**Status:** ✅ Working correctly since v1.5.1
+
+---
+
+### 6. Historical Price Backfills
+
+**Problem:** When backfilling historical prices, must invalidate from the EARLIEST updated date, not just the latest.
+
+**Example:**
+```
+- Materialized through: Feb 10
+- Backfill prices for: Feb 5, Feb 6, Feb 7
+- Must invalidate from: Feb 5 (earliest), not Feb 7
+```
+
+**Solution:** `update_historical_prices()` tracks earliest date in the update range and invalidates from there.
+
+**Status:** ✅ Working correctly since v1.5.1
+
+---
+
+### 7. Sell Transactions with Realized Gains
+
+**Problem:** Sell transactions create realized gain/loss records which affect history calculations.
+
+**Example:**
+```
+- Sell 10 shares with $50 realized gain
+- Must recalculate history from sell date forward
+- Realized gain must appear in all subsequent dates
+```
+
+**Solution:** `process_sell_transaction()` triggers invalidation after creating realized gain record.
+
+**Status:** ✅ Working correctly since v1.5.1
+
+---
+
+### Summary: Complete Coverage Matrix
+
+| Data Change | Invalidation | Stale Detection | Version |
+|-------------|--------------|-----------------|---------|
+| Transaction CRUD | ✅ Yes | ✅ Transactions | v1.5.1 |
+| Price Update (Today) | ✅ Yes | ✅ Prices | v1.5.3 |
+| Price Update (Historical) | ✅ Yes | ✅ Prices | v1.5.3 |
+| Dividend CRUD | ✅ Yes | ✅ Dividends | v1.5.3 |
+| IBKR Allocation | ✅ Yes | ✅ Transactions | v1.5.2 |
+| IBKR Modify | ✅ Yes | ✅ Transactions | v1.5.1 |
+| IBKR Unallocate | ✅ Yes | ✅ Transactions | v1.5.1 |
+| IBKR Match Dividend | ✅ Yes | ✅ Dividends | v1.5.3 |
+
+**The key insight:** Every data change triggers invalidation (delete stale records), and every data source is checked during stale detection (trigger recalculation).
 
 ## Usage
 
