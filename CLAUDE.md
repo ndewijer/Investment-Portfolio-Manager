@@ -1,5 +1,24 @@
 # Claude Code Instructions
 
+## Development Tools
+
+**This project uses UV for Python package management and task running.**
+
+### Running Python Commands
+- Use `uv run python` instead of `python` or `python3`
+- Use `uv run pytest` instead of `pytest`
+- Examples:
+  ```bash
+  uv run python script.py
+  uv run pytest tests/
+  uv run flask materialize-history
+  ```
+
+### Backend Development
+- All backend Python commands should use `uv run`
+- Virtual environments are managed by UV automatically
+- No need to activate venv manually
+
 ## Memory System
 
 This project uses Claude's `.claudememory/` system for persistent context across sessions.

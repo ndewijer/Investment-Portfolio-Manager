@@ -434,6 +434,27 @@ class IBKRTransactionService:
             # Commit all changes
             db.session.commit()
 
+            # Invalidate materialized view for affected portfolios
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                # Invalidate from the transaction date forward for each affected portfolio
+                affected_portfolios = {alloc["portfolio_id"] for alloc in allocations}
+                for portfolio_id in affected_portfolios:
+                    PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                        portfolio_id, ibkr_txn.transaction_date, recalculate=False
+                    )
+            except Exception as e:
+                # Don't fail the transaction if invalidation fails
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.IBKR,
+                    message="Failed to invalidate materialized view after IBKR transaction",
+                    details={"ibkr_transaction_id": ibkr_txn.id, "error": str(e)},
+                )
+
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
@@ -671,6 +692,26 @@ class IBKRTransactionService:
 
             db.session.commit()
 
+            # Invalidate materialized view for all affected portfolios (old and new)
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                all_affected_portfolios = existing_portfolio_ids | new_portfolio_ids
+                for portfolio_id in all_affected_portfolios:
+                    PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                        portfolio_id, ibkr_txn.transaction_date, recalculate=False
+                    )
+            except Exception as e:
+                # Don't fail the transaction if invalidation fails
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.IBKR,
+                    message="Failed to invalidate materialized view after allocation modification",
+                    details={"ibkr_transaction_id": ibkr_txn.id, "error": str(e)},
+                )
+
             logger.log(
                 level=LogLevel.INFO,
                 category=LogCategory.IBKR,
@@ -781,6 +822,23 @@ class IBKRTransactionService:
             ibkr_txn.processed_at = datetime.now(UTC)
 
             db.session.commit()
+
+            # Invalidate materialized view for matched dividends
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                for dividend in dividends:
+                    PortfolioHistoryMaterializedService.invalidate_from_dividend(dividend)
+            except Exception as e:
+                # Don't fail the match if invalidation fails
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.IBKR,
+                    message="Failed to invalidate materialized view after dividend match",
+                    details={"ibkr_transaction_id": ibkr_txn.id, "error": str(e)},
+                )
 
             logger.log(
                 level=LogLevel.INFO,
@@ -894,6 +952,9 @@ class IBKRTransactionService:
                 ibkr_transaction_id=transaction_id
             ).all()
 
+            # Track affected portfolios for materialized view invalidation
+            affected_portfolios = {alloc.portfolio_id for alloc in allocations}
+
             deleted_count = 0
 
             # Delete all associated transactions - CASCADE will handle allocations
@@ -914,6 +975,25 @@ class IBKRTransactionService:
             ibkr_txn.processed_at = None
 
             db.session.commit()
+
+            # Invalidate materialized view for affected portfolios
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                for portfolio_id in affected_portfolios:
+                    PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                        portfolio_id, ibkr_txn.transaction_date, recalculate=False
+                    )
+            except Exception as e:
+                # Don't fail the transaction if invalidation fails
+                logger.log(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.IBKR,
+                    message="Failed to invalidate materialized view after unallocation",
+                    details={"ibkr_transaction_id": ibkr_txn.id, "error": str(e)},
+                )
 
             logger.log(
                 level=LogLevel.INFO,

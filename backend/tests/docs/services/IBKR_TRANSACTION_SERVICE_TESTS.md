@@ -161,8 +161,10 @@ pytest backend/tests/services/test_ibkr_transaction_service.py::TestDividendMatc
 - **Related Service Tests**: `IBKR_FLEX_SERVICE_TESTS.md`, `IBKR_CONFIG_SERVICE_TESTS.md`
 - **Testing Infrastructure**: `tests/docs/infrastructure/TESTING_INFRASTRUCTURE.md`
 - **Database Models**: `app/models.py` (IBKRTransaction, IBKRTransactionAllocation, Transaction, Dividend)
+- **Materialized View Invalidation Tests**: `test_ibkr_materialized_view_invalidation.py`
 
 ---
 
-**Last Updated**: Version 1.3.3 Phase 6 + Documentation Condensing
+**Document Version**: 1.5.1
+**Last Updated**: 2026-02-06
 **Coverage**: 90% (exceeds 85% target, all critical paths tested)

@@ -98,6 +98,19 @@ class TodayPriceService:
                     db.session.add(price)
                     db.session.commit()
 
+                    # Invalidate materialized view
+                    try:
+                        from .portfolio_history_materialized_service import (
+                            PortfolioHistoryMaterializedService,
+                        )
+
+                        PortfolioHistoryMaterializedService.invalidate_from_price_update(
+                            fund_id, last_date
+                        )
+                    except Exception:
+                        # Don't fail price update if invalidation fails
+                        pass
+
                     response, status = logger.log(
                         level=LogLevel.INFO,
                         category=LogCategory.FUND,
@@ -265,6 +278,20 @@ class HistoricalPriceService:
                     updated_count += 1
 
             db.session.commit()
+
+            # Invalidate materialized view if any prices were updated
+            if updated_count > 0:
+                try:
+                    from .portfolio_history_materialized_service import (
+                        PortfolioHistoryMaterializedService,
+                    )
+
+                    PortfolioHistoryMaterializedService.invalidate_from_price_update(
+                        fund_id, start_date
+                    )
+                except Exception:
+                    # Don't fail price update if invalidation fails
+                    pass
 
             response, status = logger.log(
                 level=LogLevel.INFO,
