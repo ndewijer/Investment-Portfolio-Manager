@@ -466,35 +466,72 @@ class FundService:
             needs_materialization = True
             materialization_reason = "no_data"
         else:
-            # Check if materialized data is stale
+            # Check if materialized data is stale by comparing against ALL data sources
             latest_mat_date_str = max(r[0].date for r in results)
             latest_mat_date = datetime.strptime(latest_mat_date_str, "%Y-%m-%d").date()
 
-            # Check if there are transactions newer than the latest materialized date
             portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
             if portfolio_funds:
                 pf_ids = [pf.id for pf in portfolio_funds]
+                fund_ids = [pf.fund_id for pf in portfolio_funds]
                 from sqlalchemy import func
 
+                # Check all three data sources that should trigger materialization
+                # 1. Latest transaction date
                 latest_txn = (
                     db.session.query(func.max(Transaction.date))
                     .filter(Transaction.portfolio_fund_id.in_(pf_ids))
                     .scalar()
                 )
 
+                # 2. Latest price date for any fund in this portfolio
+                latest_price = (
+                    db.session.query(func.max(FundPrice.date))
+                    .filter(FundPrice.fund_id.in_(fund_ids))
+                    .scalar()
+                )
+
+                # 3. Latest dividend ex-date for this portfolio
+                from ..models import Dividend
+
+                latest_dividend = (
+                    db.session.query(func.max(Dividend.ex_dividend_date))
+                    .filter(Dividend.portfolio_fund_id.in_(pf_ids))
+                    .scalar()
+                )
+
+                # Determine what's making the data stale
+                stale_sources = []
+                stale_details = {
+                    "portfolio_id": portfolio_id,
+                    "latest_materialized": latest_mat_date.isoformat(),
+                }
+
                 if latest_txn and latest_txn > latest_mat_date:
+                    stale_sources.append("transactions")
+                    stale_details["latest_transaction"] = latest_txn.isoformat()
+                    stale_details["transaction_days_behind"] = (latest_txn - latest_mat_date).days
+
+                if latest_price and latest_price > latest_mat_date:
+                    stale_sources.append("prices")
+                    stale_details["latest_price"] = latest_price.isoformat()
+                    stale_details["price_days_behind"] = (latest_price - latest_mat_date).days
+
+                if latest_dividend and latest_dividend > latest_mat_date:
+                    stale_sources.append("dividends")
+                    stale_details["latest_dividend"] = latest_dividend.isoformat()
+                    stale_details["dividend_days_behind"] = (latest_dividend - latest_mat_date).days
+
+                if stale_sources:
                     needs_materialization = True
-                    materialization_reason = "stale_data"
+                    materialization_reason = f"stale_data ({', '.join(stale_sources)})"
+                    stale_details["stale_sources"] = stale_sources
+
                     logger.log(
                         level=LogLevel.INFO,
                         category=LogCategory.SYSTEM,
                         message=f"Materialized view is stale for portfolio {portfolio_id}",
-                        details={
-                            "portfolio_id": portfolio_id,
-                            "latest_transaction": latest_txn.isoformat(),
-                            "latest_materialized": latest_mat_date.isoformat(),
-                            "days_behind": (latest_txn - latest_mat_date).days,
-                        },
+                        details=stale_details,
                     )
 
         if needs_materialization:
