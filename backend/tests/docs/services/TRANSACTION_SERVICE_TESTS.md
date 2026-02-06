@@ -592,3 +592,9 @@ pytest tests/test_transaction_service.py --cov=app.services.transaction_service 
 - **Test Index**: `README.md` - All test documentation
 - **Service Code**: `app/services/transaction_service.py`
 - **Test Code**: `tests/test_transaction_service.py`
+- **Materialized View Invalidation Tests**: `TRANSACTION_MATERIALIZED_VIEW_INVALIDATION_TESTS.md`
+
+---
+
+**Document Version**: 1.5.1
+**Last Updated**: 2026-02-06

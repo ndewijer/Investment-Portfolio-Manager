@@ -569,6 +569,17 @@ class TransactionService:
             # Commit the savepoint
             db.session.commit()
 
+            # Invalidate materialized view
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                PortfolioHistoryMaterializedService.invalidate_from_transaction(transaction)
+            except Exception:
+                # Don't fail transaction if invalidation fails
+                pass
+
         except Exception as e:
             db.session.rollback()
             raise e

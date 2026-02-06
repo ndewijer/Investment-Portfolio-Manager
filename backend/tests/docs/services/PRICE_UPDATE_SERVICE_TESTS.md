@@ -577,5 +577,11 @@ db.session.commit()  # Single commit for all prices
 - **Dependencies**: yfinance library
 - **Related Services**: `PortfolioService` (uses prices for valuation)
 - **Test Infrastructure**: `tests/docs/TESTING_INFRASTRUCTURE.md`
+- **Materialized View Invalidation Tests**: `PRICE_UPDATE_MATERIALIZED_VIEW_INVALIDATION_TESTS.md`
 
 The comprehensive test suite provides complete confidence in price update functionality, ensuring accurate portfolio valuations and performance tracking while maintaining data integrity through duplicate prevention and robust error handling.
+
+---
+
+**Document Version**: 1.5.1
+**Last Updated**: 2026-02-06

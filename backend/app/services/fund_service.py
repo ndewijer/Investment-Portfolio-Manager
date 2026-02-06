@@ -376,6 +376,11 @@ class FundService:
         fund_history_materialized table. Data is grouped by date with
         all funds for each date.
 
+        If no materialized data is found, this method automatically
+        attempts to materialize the portfolio history on-demand. This
+        handles cases where the view wasn't populated after upgrade or
+        was invalidated and not yet recalculated.
+
         Args:
             portfolio_id (str): Portfolio identifier
             start_date (str, optional): Start date in YYYY-MM-DD format
@@ -445,6 +450,30 @@ class FundService:
 
         # Execute query
         results = query.all()
+
+        # If no results found, try to auto-materialize the portfolio history
+        # This handles cases where:
+        # 1. Materialized view wasn't populated after upgrade
+        # 2. Recent transactions invalidated old data but recalculation hasn't run yet
+        if not results:
+            from ..services.portfolio_history_materialized_service import (
+                PortfolioHistoryMaterializedService,
+            )
+
+            # Check if portfolio has any transactions (data to materialize)
+            portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
+            if portfolio_funds:
+                # Try to materialize this portfolio's history
+                try:
+                    count = PortfolioHistoryMaterializedService.materialize_portfolio_history(
+                        portfolio_id, force_recalculate=False
+                    )
+                    if count > 0:
+                        # Re-run the query after materialization
+                        results = query.all()
+                except Exception:
+                    # If materialization fails, just return empty (don't break the API)
+                    pass
 
         # Group results by date
         history_by_date = {}

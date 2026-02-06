@@ -177,6 +177,18 @@ class DividendService:
 
         try:
             db.session.commit()
+
+            # Invalidate materialized view
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                PortfolioHistoryMaterializedService.invalidate_from_dividend(dividend)
+            except Exception:
+                # Don't fail dividend creation if invalidation fails
+                pass
+
             return dividend
         except Exception as e:
             db.session.rollback()
@@ -278,6 +290,28 @@ class DividendService:
                 dividend.reinvestment_status = ReinvestmentStatus.COMPLETED
 
             db.session.commit()
+
+            # Invalidate materialized view
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                PortfolioHistoryMaterializedService.invalidate_from_dividend(dividend)
+
+                # If ex_dividend_date changed, also invalidate from the original date
+                if original_values["ex_dividend_date"] != dividend.ex_dividend_date:
+                    portfolio_fund = db.session.get(PortfolioFund, dividend.portfolio_fund_id)
+                    if portfolio_fund:
+                        PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                            portfolio_fund.portfolio_id,
+                            original_values["ex_dividend_date"],
+                            recalculate=False,
+                        )
+            except Exception:
+                # Don't fail dividend update if invalidation fails
+                pass
+
             return dividend, original_values
 
         except Exception as e:
@@ -385,6 +419,10 @@ class DividendService:
 
             abort(404)
 
+        # Capture data needed for invalidation before deletion
+        invalidation_portfolio_fund_id = dividend.portfolio_fund_id
+        invalidation_ex_dividend_date = dividend.ex_dividend_date
+
         try:
             # Delete associated transaction if it exists
             if dividend.reinvestment_transaction_id:
@@ -400,6 +438,24 @@ class DividendService:
             print(f"Deleting dividend {dividend.id}")
             db.session.delete(dividend)
             db.session.commit()
+
+            # Invalidate materialized view
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                portfolio_fund = db.session.get(PortfolioFund, invalidation_portfolio_fund_id)
+                if portfolio_fund:
+                    PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                        portfolio_fund.portfolio_id,
+                        invalidation_ex_dividend_date,
+                        recalculate=False,
+                    )
+            except Exception:
+                # Don't fail dividend deletion if invalidation fails
+                pass
+
             return True
         except Exception as e:
             db.session.rollback()

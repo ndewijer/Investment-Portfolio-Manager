@@ -90,8 +90,25 @@ The `PortfolioService.get_portfolio_history()` method now intelligently routes b
 When source data changes, the materialized view is automatically invalidated:
 
 - **Transaction Create/Update/Delete**: Invalidates from transaction date forward
-- **Dividend Create/Update/Delete**: Invalidates from ex-dividend date forward
-- **Price Updates**: Invalidates from price date forward for all portfolios holding that fund
+- **Sell Transactions**: Invalidates from transaction date forward (includes realized gain changes)
+- **Dividend Create/Update/Delete**: Invalidates from ex-dividend date forward (date changes invalidate from both old and new dates)
+- **Price Updates (Today)**: Invalidates from price date forward for all portfolios holding that fund
+- **Price Updates (Historical)**: Invalidates from earliest updated date forward for all portfolios holding that fund
+- **IBKR Process Allocation**: Invalidates from transaction date forward for each affected portfolio
+- **IBKR Modify Allocations**: Invalidates for all affected portfolios (old and new)
+- **IBKR Unallocate Transaction**: Invalidates from transaction date forward for each affected portfolio
+- **IBKR Match Dividend**: Invalidates from ex-dividend date forward for each matched dividend
+
+All invalidation calls are wrapped in try/except blocks with lazy imports to ensure that invalidation failures never break primary operations.
+
+### Auto-Materialization
+
+When the fund history endpoint (`/api/fund/history/{portfolioId}`) returns no data, it automatically attempts to materialize the portfolio history on-demand. This handles cases where:
+
+1. The materialized view wasn't populated after an upgrade
+2. Recent transactions invalidated old data but recalculation hasn't run yet
+
+The auto-materialization is also wrapped in try/except to avoid breaking the API if materialization fails.
 
 ## Usage
 
@@ -443,6 +460,6 @@ Check the source code documentation:
 
 ---
 
-**Document Version**: 1.5.0
-**Last Updated**: 2026-01-19
+**Document Version**: 1.5.1
+**Last Updated**: 2026-02-06
 **Maintained By**: @ndewijer
