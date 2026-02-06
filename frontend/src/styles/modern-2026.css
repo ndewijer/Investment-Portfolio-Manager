@@ -1,0 +1,316 @@
+/**
+ * 2026 Modernization: Core Design Tokens
+ * Aesthetic: "Financial Precision"
+ *
+ * Design Philosophy:
+ * - Refined minimalism with purposeful density
+ * - Monospace numerals for financial authenticity
+ * - Glass-morphic elevated surfaces
+ * - Micro-interactions that feel earned
+ * - Editorial typography hierarchy
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Archivo:wght@600;700;800&display=swap');
+
+:root {
+  /* 2026 Typography System */
+  --font-display: 'Archivo', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+
+  /* Enhanced Color System - 2026 Palette */
+  --color-primary: #0066ff;
+  --color-primary-light: #3385ff;
+  --color-primary-dark: #0052cc;
+  --color-primary-alpha: rgba(0, 102, 255, 0.08);
+
+  --color-success: #00c896;
+  --color-success-light: #00f5b3;
+  --color-success-dark: #00a378;
+  --color-success-alpha: rgba(0, 200, 150, 0.08);
+
+  --color-error: #ff3b57;
+  --color-error-light: #ff6b7f;
+  --color-error-dark: #e6003d;
+  --color-error-alpha: rgba(255, 59, 87, 0.08);
+
+  --color-warning: #ffb020;
+  --color-warning-light: #ffc554;
+  --color-warning-dark: #e69a00;
+  --color-warning-alpha: rgba(255, 176, 32, 0.08);
+
+  /* Neutral Scale - 2026 Enhanced */
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+
+  /* Glass-morphism Effects */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+  --glass-blur: blur(20px);
+
+  /* Elevated Surfaces */
+  --surface-raised: #ffffff;
+  --surface-overlay: rgba(0, 0, 0, 0.02);
+
+  /* Shadows - Refined 2026 */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.12);
+
+  /* Spacing Scale (8px grid maintained) */
+  --space-px: 1px;
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Border Radius - 2026 Scale */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions - 2026 Timing */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Z-index Scale */
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-fixed: 1200;
+  --z-modal-backdrop: 1300;
+  --z-modal: 1400;
+  --z-popover: 1500;
+  --z-tooltip: 1600;
+}
+
+/* Dark Mode Tokens */
+[data-theme='dark'] {
+  /* Glass Effects */
+  --glass-bg: rgba(17, 24, 39, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+
+  /* Surfaces */
+  --surface-raised: #1f2937;
+  --surface-overlay: rgba(255, 255, 255, 0.03);
+
+  /* Semantic Colors - Brighter variants for dark backgrounds */
+  --color-primary: #3385ff;
+  --color-primary-light: #6ba3ff;
+  --color-primary-dark: #0052cc;
+
+  --color-success: #00f5b3;
+  --color-success-light: #33f5c4;
+  --color-success-dark: #00c896;
+
+  --color-error: #ff6b7f;
+  --color-error-light: #ff8fa0;
+  --color-error-dark: #ff3b57;
+
+  --color-warning: #ffc554;
+  --color-warning-light: #ffd97d;
+  --color-warning-dark: #ffb020;
+
+  /* Neutral Scale - Inverted for dark mode */
+  --color-neutral-50: #f9fafb;
+  --color-neutral-100: #f3f4f6;
+  --color-neutral-200: #e5e7eb;
+  --color-neutral-300: #d1d5db;
+  --color-neutral-400: #9ca3af;
+  --color-neutral-500: #6b7280;
+  --color-neutral-600: #4b5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1f2937;
+  --color-neutral-900: #111827;
+}
+
+/* Typography Base */
+body {
+  font-family: var(--font-body);
+  font-feature-settings:
+    'tnum' on,
+    'lnum' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings with Editorial Hierarchy */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+}
+
+h2 {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 700;
+}
+
+h3 {
+  font-size: clamp(18px, 2.5vw, 24px);
+  font-weight: 700;
+}
+
+/* Financial Numbers - Always Monospace */
+.financial-number,
+.value,
+.amount,
+.price,
+.performance,
+.percentage,
+[class*='currency'],
+[class*='gain'],
+[class*='loss'] {
+  font-family: var(--font-mono);
+  font-feature-settings:
+    'tnum' on,
+    'lnum' on;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Global Animation Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Micro-interaction Base */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Utility Classes */
+.glass-surface {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.elevated-surface {
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.interactive-scale {
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.interactive-scale:hover {
+  transform: translateY(-2px) scale(1.002);
+  box-shadow: var(--shadow-lg);
+}
+
+.interactive-scale:active {
+  transform: translateY(0) scale(0.998);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Focus Styles - 2026 Enhanced */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-primary-alpha);
+  color: var(--color-neutral-900);
+}
+
+/* Scrollbar Styling - 2026 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-300);
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-400);
+}

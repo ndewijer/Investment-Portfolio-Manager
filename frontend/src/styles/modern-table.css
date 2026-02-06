@@ -1,0 +1,518 @@
+/**
+ * 2026 Modernized Data Table
+ * Enhanced readability, better density control, refined interactions
+ */
+
+@import './modern-2026.css';
+
+/* Table Container */
+.modern-table-wrapper {
+  background: var(--surface-raised);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  animation: scaleIn var(--transition-base) ease-out backwards;
+}
+
+.modern-table-container {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* Modern Table */
+.modern-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+/* Table Header */
+.modern-table thead {
+  background: linear-gradient(180deg, var(--color-neutral-50) 0%, var(--color-neutral-100) 100%);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.modern-table thead::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-neutral-200);
+}
+
+.modern-table th {
+  padding: var(--space-4) var(--space-5);
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-neutral-600);
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+}
+
+.modern-table th:first-child {
+  padding-left: var(--space-6);
+}
+
+.modern-table th:last-child {
+  padding-right: var(--space-6);
+}
+
+/* Sortable Headers */
+.modern-table th.sortable {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.modern-table th.sortable:hover {
+  color: var(--color-primary);
+}
+
+.modern-table th.sortable:hover .sort-indicator {
+  opacity: 0.4;
+}
+
+.modern-table th.sorted {
+  color: var(--color-primary);
+}
+
+.modern-table .sort-indicator {
+  display: inline-block;
+  margin-left: var(--space-1);
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+  font-size: 10px;
+}
+
+.modern-table th.sorted .sort-indicator {
+  opacity: 1;
+}
+
+.modern-table th.sorted-desc .sort-indicator {
+  transform: rotate(180deg);
+}
+
+/* Table Body */
+.modern-table tbody tr {
+  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--color-neutral-200);
+}
+
+.modern-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.modern-table tbody tr:hover {
+  background-color: var(--color-neutral-50);
+}
+
+.modern-table tbody tr.clickable {
+  cursor: pointer;
+}
+
+.modern-table tbody tr.clickable:active {
+  background-color: var(--color-neutral-100);
+}
+
+.modern-table td {
+  padding: var(--space-4) var(--space-5);
+  color: var(--color-neutral-900);
+  vertical-align: middle;
+  position: relative;
+}
+
+.modern-table td:first-child {
+  padding-left: var(--space-6);
+  font-weight: 500;
+}
+
+.modern-table td:last-child {
+  padding-right: var(--space-6);
+}
+
+/* Financial Columns */
+.modern-table td.financial-cell,
+.modern-table td[class*='currency'],
+.modern-table td[class*='amount'],
+.modern-table td[class*='value'] {
+  font-family: var(--font-mono);
+  font-feature-settings:
+    'tnum' on,
+    'lnum' on;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+  letter-spacing: -0.01em;
+}
+
+/* Positive/Negative Values */
+.modern-table .positive,
+.modern-table .gain {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.modern-table .negative,
+.modern-table .loss {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+/* Value with Icon */
+.modern-table .value-with-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.modern-table .value-with-indicator::before {
+  font-size: 12px;
+}
+
+.modern-table .positive.value-with-indicator::before {
+  content: '↗';
+  color: var(--color-success);
+}
+
+.modern-table .negative.value-with-indicator::before {
+  content: '↘';
+  color: var(--color-error);
+}
+
+/* Badges in Table */
+.modern-table .table-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.modern-table .table-badge.primary {
+  background: var(--color-primary-alpha);
+  color: var(--color-primary);
+}
+
+.modern-table .table-badge.success {
+  background: var(--color-success-alpha);
+  color: var(--color-success-dark);
+}
+
+.modern-table .table-badge.warning {
+  background: var(--color-warning-alpha);
+  color: var(--color-warning-dark);
+}
+
+.modern-table .table-badge.error {
+  background: var(--color-error-alpha);
+  color: var(--color-error-dark);
+}
+
+/* Action Buttons in Table */
+.modern-table .table-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.modern-table .table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neutral-300);
+  background: var(--surface-raised);
+  color: var(--color-neutral-600);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 14px;
+}
+
+.modern-table .table-action-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-alpha);
+  transform: translateY(-1px);
+}
+
+.modern-table .table-action-btn:active {
+  transform: translateY(0);
+}
+
+/* Empty State */
+.modern-table-empty {
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  color: var(--color-neutral-500);
+}
+
+.modern-table-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-4);
+  opacity: 0.3;
+}
+
+.modern-table-empty-message {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-neutral-600);
+  margin-bottom: var(--space-2);
+}
+
+.modern-table-empty-description {
+  font-size: 14px;
+  color: var(--color-neutral-500);
+}
+
+/* Pagination */
+.modern-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-neutral-200);
+  background: var(--color-neutral-50);
+}
+
+.modern-table-pagination-info {
+  font-size: 13px;
+  color: var(--color-neutral-600);
+  font-family: var(--font-mono);
+}
+
+.modern-table-pagination-controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.modern-table-pagination-btn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-neutral-300);
+  background: var(--surface-raised);
+  color: var(--color-neutral-700);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modern-table-pagination-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-alpha);
+}
+
+.modern-table-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Loading Overlay */
+.modern-table-loading {
+  position: relative;
+  min-height: 200px;
+}
+
+.modern-table-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-fixed);
+}
+
+/* Skeleton Loading State */
+.modern-table-skeleton tbody tr {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(
+    90deg,
+    var(--color-neutral-100) 0%,
+    var(--color-neutral-200) 50%,
+    var(--color-neutral-100) 100%
+  );
+  background-size: 1000px 100%;
+}
+
+/* Responsive Mobile Cards */
+@media (max-width: 768px) {
+  .modern-table-wrapper {
+    border-radius: var(--radius-lg);
+  }
+
+  .modern-table {
+    display: none;
+  }
+
+  .modern-table-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .modern-table-mobile-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    transition: all var(--transition-fast);
+  }
+
+  .modern-table-mobile-card.clickable {
+    cursor: pointer;
+  }
+
+  .modern-table-mobile-card.clickable:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .modern-table-mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) 0;
+  }
+
+  .modern-table-mobile-card-row:not(:last-child) {
+    border-bottom: 1px solid var(--color-neutral-100);
+  }
+
+  .modern-table-mobile-card-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-neutral-500);
+  }
+
+  .modern-table-mobile-card-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-neutral-900);
+    text-align: right;
+  }
+
+  .modern-table-mobile-card-value.financial {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Dark Mode */
+[data-theme='dark'] .modern-table-wrapper {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
+}
+
+[data-theme='dark'] .modern-table {
+  background: var(--surface-raised);
+}
+
+[data-theme='dark'] .modern-table thead {
+  background: linear-gradient(180deg, var(--color-neutral-800) 0%, var(--color-neutral-900) 100%);
+}
+
+[data-theme='dark'] .modern-table thead::after {
+  background: var(--color-neutral-700);
+}
+
+[data-theme='dark'] .modern-table th {
+  color: var(--color-neutral-300);
+}
+
+[data-theme='dark'] .modern-table tbody tr {
+  border-bottom-color: var(--color-neutral-700);
+  background: var(--surface-raised);
+}
+
+[data-theme='dark'] .modern-table tbody tr:hover {
+  background-color: var(--color-neutral-800);
+}
+
+[data-theme='dark'] .modern-table td {
+  color: var(--color-neutral-200);
+}
+
+[data-theme='dark'] .modern-table td:first-child {
+  color: var(--color-neutral-50);
+}
+
+[data-theme='dark'] .modern-table-pagination {
+  background: var(--color-neutral-800);
+  border-top-color: var(--color-neutral-700);
+}
+
+[data-theme='dark'] .modern-table-pagination-info {
+  color: var(--color-neutral-400);
+}
+
+[data-theme='dark'] .modern-table-pagination-btn {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
+  color: var(--color-neutral-300);
+}
+
+[data-theme='dark'] .modern-table-pagination-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+[data-theme='dark'] .modern-table-mobile-card {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
+}
+
+[data-theme='dark'] .modern-table-mobile-card-row {
+  border-bottom-color: var(--color-neutral-700);
+}
+
+[data-theme='dark'] .modern-table-mobile-card-label {
+  color: var(--color-neutral-400);
+}
+
+[data-theme='dark'] .modern-table-mobile-card-value {
+  color: var(--color-neutral-200);
+}
+
+[data-theme='dark'] .modern-table .table-badge.primary {
+  background: var(--color-primary-alpha);
+  color: var(--color-primary);
+}
+
+[data-theme='dark'] .modern-table .table-badge.success {
+  background: var(--color-success-alpha);
+  color: var(--color-success);
+}
+
+[data-theme='dark'] .modern-table .table-badge.warning {
+  background: var(--color-warning-alpha);
+  color: var(--color-warning);
+}
+
+[data-theme='dark'] .modern-table .table-badge.error {
+  background: var(--color-error-alpha);
+  color: var(--color-error);
+}

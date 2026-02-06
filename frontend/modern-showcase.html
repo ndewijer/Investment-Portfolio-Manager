@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026 Modernization Showcase - Investment Portfolio Manager</title>
+  <link rel="stylesheet" href="src/styles/modern-2026.css">
+  <link rel="stylesheet" href="src/styles/modern-cards.css">
+  <link rel="stylesheet" href="src/styles/modern-table.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      padding: 40px 20px;
+      margin: 0;
+      transition: background 0.3s ease;
+    }
+
+    .showcase-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .showcase-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .showcase-title {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--color-neutral-900);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+      transition: color 0.3s ease;
+    }
+
+    .showcase-subtitle {
+      font-size: 18px;
+      color: var(--color-neutral-600);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+      transition: color 0.3s ease;
+    }
+
+    .showcase-section {
+      margin-bottom: 80px;
+    }
+
+    .section-header {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--color-neutral-900);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+      transition: color 0.3s ease;
+    }
+
+    .section-description {
+      font-size: 16px;
+      color: var(--color-neutral-600);
+      line-height: 1.6;
+      transition: color 0.3s ease;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      background: var(--surface-raised);
+      border: 1px solid var(--color-neutral-300);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-neutral-700);
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-fast);
+      z-index: var(--z-fixed);
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+
+    .comparison-box {
+      padding: 24px;
+      background: var(--surface-raised);
+      border: 1px solid var(--color-neutral-200);
+      border-radius: var(--radius-lg);
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .comparison-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-neutral-500);
+      margin-bottom: 16px;
+      transition: color 0.3s ease;
+    }
+
+    /* Dark Mode Styles for Showcase Page */
+    [data-theme='dark'] body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+
+    [data-theme='dark'] .showcase-title {
+      color: var(--color-neutral-50);
+    }
+
+    [data-theme='dark'] .showcase-subtitle {
+      color: var(--color-neutral-400);
+    }
+
+    [data-theme='dark'] .section-title {
+      color: var(--color-neutral-50);
+    }
+
+    [data-theme='dark'] .section-description {
+      color: var(--color-neutral-400);
+    }
+
+    [data-theme='dark'] .comparison-box {
+      background: var(--surface-raised);
+      border-color: var(--color-neutral-700);
+    }
+
+    [data-theme='dark'] .comparison-box h1,
+    [data-theme='dark'] .comparison-box h2,
+    [data-theme='dark'] .comparison-box h3 {
+      color: var(--color-neutral-50);
+    }
+
+    [data-theme='dark'] .comparison-label {
+      color: var(--color-neutral-400);
+    }
+
+    [data-theme='dark'] .theme-toggle {
+      background: var(--surface-raised);
+      border-color: var(--color-neutral-700);
+      color: var(--color-neutral-300);
+    }
+
+    [data-theme='dark'] code {
+      color: var(--color-neutral-400);
+    }
+
+    /* Ensure all text in color palette swatches stays white */
+    [data-theme='dark'] div[style*="background: #"] {
+      color: white;
+    }
+
+    /* Badge base styles - ensure they display properly in showcase */
+    .table-badge,
+    .modern-portfolio-card-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+    }
+
+    .table-badge.primary {
+      background: var(--color-primary-alpha);
+      color: var(--color-primary);
+    }
+
+    .table-badge.success {
+      background: var(--color-success-alpha);
+      color: var(--color-success-dark);
+    }
+
+    .table-badge.warning {
+      background: var(--color-warning-alpha);
+      color: var(--color-warning-dark);
+    }
+
+    .table-badge.error {
+      background: var(--color-error-alpha);
+      color: var(--color-error-dark);
+    }
+
+    .modern-portfolio-card-badge.positive {
+      background: var(--color-success-alpha);
+      color: var(--color-success-dark);
+    }
+
+    .modern-portfolio-card-badge.negative {
+      background: var(--color-error-alpha);
+      color: var(--color-error-dark);
+    }
+
+    @media (max-width: 768px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .showcase-title {
+        font-size: 32px;
+      }
+
+      .section-title {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    Toggle Dark Mode
+  </button>
+
+  <div class="showcase-container">
+    <!-- Header -->
+    <div class="showcase-header">
+      <h1 class="showcase-title">2026 Modernization Showcase</h1>
+      <p class="showcase-subtitle">
+        "Financial Precision" - A refined, professional design system for data-focused financial applications
+      </p>
+    </div>
+
+    <!-- Section 1: Summary Cards -->
+    <div class="showcase-section">
+      <div class="section-header">
+        <h2 class="section-title">Summary Cards</h2>
+        <p class="section-description">
+          Enhanced with gradient backgrounds, staggered entrance animations, and monospace financial displays.
+        </p>
+      </div>
+
+      <div class="modern-summary-cards-grid">
+        <div class="modern-summary-card">
+          <div class="modern-summary-card-label">
+            Total Portfolio Value
+          </div>
+          <div class="modern-summary-card-value">
+            $1,234,567.89
+          </div>
+          <div class="modern-summary-card-change positive">
+            +12.34%
+          </div>
+        </div>
+
+        <div class="modern-summary-card">
+          <div class="modern-summary-card-label">
+            Total Cost Basis
+          </div>
+          <div class="modern-summary-card-value">
+            $1,098,765.43
+          </div>
+          <div class="modern-summary-card-change positive">
+            +5.67%
+          </div>
+        </div>
+
+        <div class="modern-summary-card">
+          <div class="modern-summary-card-label">
+            Total Gain/Loss
+          </div>
+          <div class="modern-summary-card-value positive">
+            +$135,802.46
+          </div>
+          <div class="modern-summary-card-change positive">
+            +12.36%
+          </div>
+        </div>
+
+        <div class="modern-summary-card">
+          <div class="modern-summary-card-label">
+            Total Performance
+          </div>
+          <div class="modern-summary-card-value positive">
+            +12.36%
+          </div>
+          <div class="modern-summary-card-change positive">
+            +2.15%
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Portfolio Cards -->
+    <div class="showcase-section">
+      <div class="section-header">
+        <h2 class="section-title">Portfolio Cards</h2>
+        <p class="section-description">
+          Interactive cards with left border accent, metrics grid, and refined hover animations.
+        </p>
+      </div>
+
+      <div class="modern-cards-grid">
+        <div class="modern-portfolio-card">
+          <div class="modern-portfolio-card-header">
+            <h3 class="modern-portfolio-card-title">Growth Portfolio</h3>
+            <div class="modern-portfolio-card-badge positive">+15.2%</div>
+          </div>
+
+          <p class="modern-portfolio-card-description">
+            Aggressive growth strategy focused on technology and emerging markets with long-term capital appreciation goals.
+          </p>
+
+          <div class="modern-portfolio-card-metrics">
+            <div class="modern-portfolio-card-metric">
+              <div class="modern-portfolio-card-metric-label">Current Value</div>
+              <div class="modern-portfolio-card-metric-value">$542,890.23</div>
+            </div>
+            <div class="modern-portfolio-card-metric">
+              <div class="modern-portfolio-card-metric-label">Gain/Loss</div>
+              <div class="modern-portfolio-card-metric-value positive">+$71,890.23</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modern-portfolio-card">
+          <div class="modern-portfolio-card-header">
+            <h3 class="modern-portfolio-card-title">Income Portfolio</h3>
+            <div class="modern-portfolio-card-badge positive">+8.5%</div>
+          </div>
+
+          <p class="modern-portfolio-card-description">
+            Conservative dividend-focused portfolio with stable blue-chip stocks and high-yield bonds for steady income.
+          </p>
+
+          <div class="modern-portfolio-card-metrics">
+            <div class="modern-portfolio-card-metric">
+              <div class="modern-portfolio-card-metric-label">Current Value</div>
+              <div class="modern-portfolio-card-metric-value">$325,450.88</div>
+            </div>
+            <div class="modern-portfolio-card-metric">
+              <div class="modern-portfolio-card-metric-label">Gain/Loss</div>
+              <div class="modern-portfolio-card-metric-value positive">+$25,450.88</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modern-portfolio-card">
+          <div class="modern-portfolio-card-header">
+            <h3 class="modern-portfolio-card-title">International</h3>
+            <div class="modern-portfolio-card-badge negative">-3.2%</div>
+          </div>
+
+          <p class="modern-portfolio-card-description">
+            Diversified international exposure across developed and emerging markets with currency hedging strategies.
+          </p>
+
+          <div class="modern-portfolio-card-metrics">
+            <div class="modern-portfolio-card-metric">
+              <div class="modern-portfolio-card-metric-label">Current Value</div>
+              <div class="modern-portfolio-card-metric-value">$198,765.45</div>
+            </div>
+            <div class="modern-portfolio-card-metric">
+              <div class="modern-portfolio-card-metric-label">Gain/Loss</div>
+              <div class="modern-portfolio-card-metric-value negative">-$6,567.89</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Data Table -->
+    <div class="showcase-section">
+      <div class="section-header">
+        <h2 class="section-title">Data Tables</h2>
+        <p class="section-description">
+          Enhanced with sticky headers, monospace numerics, hover highlighting, and refined visual hierarchy.
+        </p>
+      </div>
+
+      <div class="modern-table-wrapper">
+        <div class="modern-table-container">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th class="sortable">Portfolio <span class="sort-indicator">▲</span></th>
+                <th class="sortable">Current Value</th>
+                <th class="sortable">Cost Basis</th>
+                <th class="sortable">Unrealized Gain/Loss</th>
+                <th class="sortable">Performance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="clickable">
+                <td>Growth Portfolio</td>
+                <td class="financial-cell">$542,890.23</td>
+                <td class="financial-cell">$471,000.00</td>
+                <td class="financial-cell positive value-with-indicator">+$71,890.23</td>
+                <td class="financial-cell positive value-with-indicator">+15.26%</td>
+              </tr>
+              <tr class="clickable">
+                <td>Income Portfolio</td>
+                <td class="financial-cell">$325,450.88</td>
+                <td class="financial-cell">$300,000.00</td>
+                <td class="financial-cell positive value-with-indicator">+$25,450.88</td>
+                <td class="financial-cell positive value-with-indicator">+8.48%</td>
+              </tr>
+              <tr class="clickable">
+                <td>International</td>
+                <td class="financial-cell">$198,765.45</td>
+                <td class="financial-cell">$205,333.34</td>
+                <td class="financial-cell negative value-with-indicator">-$6,567.89</td>
+                <td class="financial-cell negative value-with-indicator">-3.20%</td>
+              </tr>
+              <tr class="clickable">
+                <td>Retirement 401(k)</td>
+                <td class="financial-cell">$167,461.33</td>
+                <td class="financial-cell">$122,432.09</td>
+                <td class="financial-cell positive value-with-indicator">+$45,029.24</td>
+                <td class="financial-cell positive value-with-indicator">+36.77%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modern-table-pagination">
+          <span class="modern-table-pagination-info">Page 1 of 1 (4 items)</span>
+          <div class="modern-table-pagination-controls">
+            <button class="modern-table-pagination-btn" disabled>Previous</button>
+            <button class="modern-table-pagination-btn" disabled>Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Badges & Status Indicators -->
+    <div class="showcase-section">
+      <div class="section-header">
+        <h2 class="section-title">Badges & Indicators</h2>
+        <p class="section-description">
+          Status badges with refined styling and semantic color coding.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <span class="table-badge primary">Primary</span>
+        <span class="table-badge success">Success</span>
+        <span class="table-badge warning">Warning</span>
+        <span class="table-badge error">Error</span>
+        <span class="modern-portfolio-card-badge positive">+12.5%</span>
+        <span class="modern-portfolio-card-badge negative">-3.2%</span>
+      </div>
+    </div>
+
+    <!-- Section 5: Typography -->
+    <div class="showcase-section">
+      <div class="section-header">
+        <h2 class="section-title">Typography Scale</h2>
+        <p class="section-description">
+          Editorial hierarchy with distinctive font pairings and monospace financial numbers.
+        </p>
+      </div>
+
+      <div class="comparison-grid">
+        <div class="comparison-box">
+          <div class="comparison-label">Display Font (Archivo)</div>
+          <h1 style="margin: 0; font-size: 36px;">Portfolio Dashboard</h1>
+          <h2 style="margin: 16px 0 0 0;">Performance Overview</h2>
+        </div>
+
+        <div class="comparison-box">
+          <div class="comparison-label">Financial Numbers (JetBrains Mono)</div>
+          <div class="modern-summary-card-value" style="margin: 0;">
+            $1,234,567.89
+          </div>
+          <div class="financial-cell positive" style="margin-top: 16px; font-size: 20px;">
+            +12.34%
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: Color Palette -->
+    <div class="showcase-section">
+      <div class="section-header">
+        <h2 class="section-title">Color System</h2>
+        <p class="section-description">
+          2026 enhanced palette with semantic financial indicators.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+        <div style="padding: 24px; background: #0066FF; border-radius: 12px; color: white; text-align: center; font-weight: 600;">
+          Primary<br><code style="font-size: 11px; opacity: 0.9;">#0066FF</code>
+        </div>
+        <div style="padding: 24px; background: #00C896; border-radius: 12px; color: white; text-align: center; font-weight: 600;">
+          Success<br><code style="font-size: 11px; opacity: 0.9;">#00C896</code>
+        </div>
+        <div style="padding: 24px; background: #FF3B57; border-radius: 12px; color: white; text-align: center; font-weight: 600;">
+          Error<br><code style="font-size: 11px; opacity: 0.9;">#FF3B57</code>
+        </div>
+        <div style="padding: 24px; background: #FFB020; border-radius: 12px; color: white; text-align: center; font-weight: 600;">
+          Warning<br><code style="font-size: 11px; opacity: 0.9;">#FFB020</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute('data-theme');
+
+      if (currentTheme === 'dark') {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+
+    // System preference
+    if (!savedTheme) {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    }
+  </script>
+</body>
+</html>
