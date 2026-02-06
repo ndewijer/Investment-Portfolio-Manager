@@ -5,6 +5,36 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3] - 2026-02-06
+
+### Fixed
+- **Stale Data Detection for Prices and Dividends** - See [PR #149](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/149)
+  - Fixed the nightly edge case where price updates invalidate records but don't trigger recalculation
+  - Enhanced stale detection to check **all three data sources**: transactions, prices, and dividends
+  - **Impact**: After nightly price updates, graphs would show yesterday's prices until next transaction
+  - **Root cause**: Stale detection only checked transactions, missing price and dividend updates
+
+### Added
+- **Comprehensive Edge Case Documentation**
+  - Added "Edge Cases & Gotchas" section documenting all 7 discovered edge cases
+  - Complete coverage matrix showing invalidation + stale detection for every data change
+  - Each edge case includes problem, example, solution, and version that fixed it
+  - Ensures NO MORE GOTCHAS - every staleness scenario is now covered
+
+### Enhanced
+- **Stale Detection Logging**
+  - Now logs which data sources triggered re-materialization
+  - Shows `stale_sources: ["prices"]` or `["transactions", "prices", "dividends"]`
+  - Includes days behind for each stale source
+
+### Technical Details
+- Enhanced stale detection checks:
+  - Latest transaction date (existing, v1.5.2)
+  - Latest price date (NEW, v1.5.3)
+  - Latest dividend ex-date (NEW, v1.5.3)
+- If ANY source is newer than latest materialized date: auto-materializes
+- All 762 backend tests passing
+
 ## [1.5.2] - 2026-02-06
 
 ### Fixed
