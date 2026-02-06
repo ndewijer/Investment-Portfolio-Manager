@@ -106,8 +106,9 @@
 }
 
 .action-btn-primary:hover:not(:disabled) {
-  background-color: #45a049;
-  border-color: #45a049;
+  background-color: #4caf50;
+  border-color: #4caf50;
+  opacity: 0.9;
 }
 
 /* Edit buttons - Orange #ff9800 */
@@ -118,8 +119,9 @@
 }
 
 .action-btn-secondary:hover:not(:disabled) {
-  background-color: #e68900;
-  border-color: #e68900;
+  background-color: #ff9800;
+  border-color: #ff9800;
+  opacity: 0.9;
 }
 
 /* Add buttons (alternative) - Green #4caf50 */
@@ -130,8 +132,9 @@
 }
 
 .action-btn-success:hover:not(:disabled) {
-  background-color: #45a049;
-  border-color: #45a049;
+  background-color: #4caf50;
+  border-color: #4caf50;
+  opacity: 0.9;
 }
 
 /* Delete/Remove buttons - Red #f44336 */
@@ -142,8 +145,8 @@
 }
 
 .action-btn-danger:hover:not(:disabled) {
-  background-color: #da190b;
-  border-color: #da190b;
+  background-color: #c62828;
+  border-color: #c62828;
 }
 
 /* Edit buttons (alternative) - Orange #ff9800 */
@@ -154,8 +157,9 @@
 }
 
 .action-btn-warning:hover:not(:disabled) {
-  background-color: #e68900;
-  border-color: #e68900;
+  background-color: #ff9800;
+  border-color: #ff9800;
+  opacity: 0.9;
 }
 
 /* View buttons - Blue #2196f3 */
@@ -166,20 +170,21 @@
 }
 
 .action-btn-info:hover:not(:disabled) {
-  background-color: #0b7dda;
-  border-color: #0b7dda;
+  background-color: #1976d2;
+  border-color: #1976d2;
 }
 
 /* Archive/Cancel buttons - Light grey */
 .action-btn-cancel {
-  background-color: #d3d3d3;
+  background-color: #9e9e9e;
   color: #333333;
-  border: 1px solid #d3d3d3;
+  border: 1px solid #9e9e9e;
 }
 
 .action-btn-cancel:hover:not(:disabled) {
-  background-color: #c0c0c0;
-  border-color: #c0c0c0;
+  background-color: #9e9e9e;
+  border-color: #9e9e9e;
+  opacity: 0.9;
 }
 
 /* Outline variants */

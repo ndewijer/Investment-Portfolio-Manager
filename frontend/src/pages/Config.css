@@ -148,7 +148,7 @@
   padding: 0.2rem 0.5rem;
   background-color: #fff3cd;
   border: 1px solid #ffc107;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -437,7 +437,7 @@
   display: block;
   padding: 0.5rem;
   background-color: #e9ecef;
-  border-radius: 3px;
+  border-radius: 4px;
   font-family: 'Courier New', monospace;
   font-size: 0.875rem;
   line-height: 1.5;

@@ -9,7 +9,7 @@
 
 .health-check-error-content {
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 40px;
   max-width: 600px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -86,7 +86,7 @@
   border: none;
   padding: 12px 32px;
   font-size: 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   transition: background 0.2s;

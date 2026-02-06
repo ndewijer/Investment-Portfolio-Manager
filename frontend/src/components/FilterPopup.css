@@ -1,7 +1,7 @@
 .filter-popup {
   position: absolute;
   background-color: white;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
   border-radius: 4px;
   padding: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -23,13 +23,13 @@
 .date-range-inputs {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .date-input {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
 }
 
 .date-input label {
@@ -49,22 +49,22 @@
 }
 
 .react-select__control {
-  border: 1px solid #ccc !important;
+  border: 1px solid #ddd !important;
   border-radius: 4px !important;
   box-shadow: none !important;
 }
 
 .react-select__control:hover {
-  border-color: #888 !important;
+  border-color: #666 !important;
 }
 
 .react-select__control--is-focused {
-  border-color: #2684ff !important;
-  box-shadow: 0 0 0 1px #2684ff !important;
+  border-color: #2196f3 !important;
+  box-shadow: 0 0 0 1px #2196f3 !important;
 }
 
 .react-select__menu {
-  border: 1px solid #ccc !important;
+  border: 1px solid #ddd !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -73,7 +73,7 @@
 }
 
 .react-select__option--is-selected {
-  background-color: #2684ff !important;
+  background-color: #2196f3 !important;
 }
 
 .react-select__option--is-focused {
@@ -81,7 +81,7 @@
 }
 
 .react-select__clear-indicator {
-  color: #999 !important;
+  color: #9e9e9e !important;
 }
 
 .react-select__clear-indicator:hover {
