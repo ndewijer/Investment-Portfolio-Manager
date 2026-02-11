@@ -485,7 +485,7 @@ class TestSystemServiceLogging:
 
             # Should log the version check request (verify last call)
             mock_log.assert_called_with(
-                level=LogLevel.INFO,
+                level=LogLevel.DEBUG,
                 category=LogCategory.SYSTEM,
                 message="Version check requested",
                 details={

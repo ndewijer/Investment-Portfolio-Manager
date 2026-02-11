@@ -300,12 +300,11 @@ class PortfolioHistoryMaterializedService:
         if end_date is None:
             end_date = datetime.now().date()
 
-        # If force recalculate, delete existing records in this range
+        # If force recalculate, delete ALL existing records for this portfolio
+        # This ensures no conflicts from partial invalidation leaving old records
         if force_recalculate:
             FundHistoryMaterialized.query.filter(
                 FundHistoryMaterialized.portfolio_fund_id.in_(portfolio_fund_ids),
-                FundHistoryMaterialized.date >= start_date.isoformat(),
-                FundHistoryMaterialized.date <= end_date.isoformat(),
             ).delete(synchronize_session=False)
             db.session.commit()
 
@@ -336,102 +335,106 @@ class PortfolioHistoryMaterializedService:
 
         # Insert fund-level records
         records_inserted = 0
-        for daily_data in fund_history:
-            date_str = daily_data["date"]
 
-            for fund_data in daily_data.get("funds", []):
-                portfolio_fund_id = fund_data["portfolioFundId"]
-                fund_id = fund_data["fundId"]
+        # Use no_autoflush to prevent premature flushing during existing record checks
+        # This avoids UNIQUE constraint errors from partially invalidated data
+        with db.session.no_autoflush:
+            for daily_data in fund_history:
+                date_str = daily_data["date"]
 
-                # Check if record already exists
-                existing = FundHistoryMaterialized.query.filter_by(
-                    portfolio_fund_id=portfolio_fund_id, date=date_str
-                ).first()
+                for fund_data in daily_data.get("funds", []):
+                    portfolio_fund_id = fund_data["portfolioFundId"]
+                    fund_id = fund_data["fundId"]
 
-                if existing and not force_recalculate:
-                    continue
+                    # Check if record already exists
+                    existing = FundHistoryMaterialized.query.filter_by(
+                        portfolio_fund_id=portfolio_fund_id, date=date_str
+                    ).first()
 
-                # Calculate cumulative realized gains for this fund up to this date
-                realized_gain = 0
-                if fund_id in realized_gains_by_fund:
-                    for rg in realized_gains_by_fund[fund_id]:
-                        rg_date = (
-                            rg.transaction_date.isoformat()
-                            if hasattr(rg.transaction_date, "isoformat")
-                            else str(rg.transaction_date)
-                        )
-                        if rg_date <= date_str:
-                            realized_gain += rg.realized_gain_loss
+                    if existing and not force_recalculate:
+                        continue
 
-                # Calculate cumulative dividends for this fund up to this date
-                total_dividends = 0
-                if portfolio_fund_id in dividends_by_pf:
-                    for d in dividends_by_pf[portfolio_fund_id]:
-                        d_date = (
-                            d.ex_dividend_date.isoformat()
-                            if hasattr(d.ex_dividend_date, "isoformat")
-                            else str(d.ex_dividend_date)
-                        )
-                        if d_date <= date_str:
-                            total_dividends += d.total_amount
+                    # Calculate cumulative realized gains for this fund up to this date
+                    realized_gain = 0
+                    if fund_id in realized_gains_by_fund:
+                        for rg in realized_gains_by_fund[fund_id]:
+                            rg_date = (
+                                rg.transaction_date.isoformat()
+                                if hasattr(rg.transaction_date, "isoformat")
+                                else str(rg.transaction_date)
+                            )
+                            if rg_date <= date_str:
+                                realized_gain += rg.realized_gain_loss
 
-                # Calculate unrealized gain
-                unrealized_gain = fund_data.get(
-                    "unrealizedGain", fund_data["value"] - fund_data["cost"]
-                )
+                    # Calculate cumulative dividends for this fund up to this date
+                    total_dividends = 0
+                    if portfolio_fund_id in dividends_by_pf:
+                        for d in dividends_by_pf[portfolio_fund_id]:
+                            d_date = (
+                                d.ex_dividend_date.isoformat()
+                                if hasattr(d.ex_dividend_date, "isoformat")
+                                else str(d.ex_dividend_date)
+                            )
+                            if d_date <= date_str:
+                                total_dividends += d.total_amount
 
-                # Calculate total gain/loss
-                total_gain_loss = realized_gain + unrealized_gain
-
-                if existing:
-                    # Update existing record
-                    existing.fund_id = fund_id
-                    existing.shares = fund_data["shares"]
-                    existing.price = fund_data["price"]
-                    existing.value = fund_data["value"]
-                    existing.cost = fund_data["cost"]
-                    existing.realized_gain = realized_gain
-                    existing.unrealized_gain = unrealized_gain
-                    existing.total_gain_loss = total_gain_loss
-                    existing.dividends = total_dividends
-                    existing.fees = 0  # Fees can be added later if needed
-                    existing.calculated_at = datetime.now()
-                else:
-                    # Create new record
-                    record = FundHistoryMaterialized(
-                        portfolio_fund_id=portfolio_fund_id,
-                        fund_id=fund_id,
-                        date=date_str,
-                        shares=fund_data["shares"],
-                        price=fund_data["price"],
-                        value=fund_data["value"],
-                        cost=fund_data["cost"],
-                        realized_gain=realized_gain,
-                        unrealized_gain=unrealized_gain,
-                        total_gain_loss=total_gain_loss,
-                        dividends=total_dividends,
-                        fees=0,
+                    # Calculate unrealized gain
+                    unrealized_gain = fund_data.get(
+                        "unrealizedGain", fund_data["value"] - fund_data["cost"]
                     )
-                    db.session.add(record)
 
-                records_inserted += 1
+                    # Calculate total gain/loss
+                    total_gain_loss = realized_gain + unrealized_gain
+
+                    if existing:
+                        # Update existing record
+                        existing.fund_id = fund_id
+                        existing.shares = fund_data["shares"]
+                        existing.price = fund_data["price"]
+                        existing.value = fund_data["value"]
+                        existing.cost = fund_data["cost"]
+                        existing.realized_gain = realized_gain
+                        existing.unrealized_gain = unrealized_gain
+                        existing.total_gain_loss = total_gain_loss
+                        existing.dividends = total_dividends
+                        existing.fees = 0  # Fees can be added later if needed
+                        existing.calculated_at = datetime.now()
+                    else:
+                        # Create new record
+                        record = FundHistoryMaterialized(
+                            portfolio_fund_id=portfolio_fund_id,
+                            fund_id=fund_id,
+                            date=date_str,
+                            shares=fund_data["shares"],
+                            price=fund_data["price"],
+                            value=fund_data["value"],
+                            cost=fund_data["cost"],
+                            realized_gain=realized_gain,
+                            unrealized_gain=unrealized_gain,
+                            total_gain_loss=total_gain_loss,
+                            dividends=total_dividends,
+                            fees=0,
+                        )
+                        db.session.add(record)
+
+                    records_inserted += 1
 
         db.session.commit()
         return records_inserted
 
     @staticmethod
     def invalidate_materialized_history(
-        portfolio_id: str, from_date: date, recalculate: bool = False
+        portfolio_id: str, from_date: date | None = None, recalculate: bool = False
     ) -> int:
         """
-        Invalidate (delete) materialized history from a certain date forward.
+        Invalidate (delete) materialized history for a portfolio.
 
         This should be called when source data changes (transactions, prices, etc.)
         to ensure the materialized view stays in sync.
 
         Args:
             portfolio_id: Portfolio ID
-            from_date: Delete all records on or after this date
+            from_date: Delete records from this date forward. If None, delete ALL records.
             recalculate: If True, immediately recalculate after invalidation
 
         Returns:
@@ -445,25 +448,35 @@ class PortfolioHistoryMaterializedService:
         if not portfolio_fund_ids:
             return 0
 
-        deleted = FundHistoryMaterialized.query.filter(
-            FundHistoryMaterialized.portfolio_fund_id.in_(portfolio_fund_ids),
-            FundHistoryMaterialized.date >= from_date.isoformat(),
-        ).delete(synchronize_session=False)
+        # Build query to delete records
+        query = FundHistoryMaterialized.query.filter(
+            FundHistoryMaterialized.portfolio_fund_id.in_(portfolio_fund_ids)
+        )
 
+        # If from_date is provided, only delete from that date forward
+        # Otherwise delete ALL records for this portfolio (full invalidation)
+        if from_date is not None:
+            query = query.filter(FundHistoryMaterialized.date >= from_date.isoformat())
+
+        deleted = query.delete(synchronize_session=False)
         db.session.commit()
 
         # Log invalidation results
+        log_details = {
+            "portfolio_id": portfolio_id,
+            "records_deleted": deleted,
+            "portfolio_funds_checked": len(portfolio_fund_ids),
+            "recalculate": recalculate,
+            "invalidation_type": "full" if from_date is None else "partial",
+        }
+        if from_date is not None:
+            log_details["from_date"] = from_date.isoformat()
+
         logger.log(
             level=LogLevel.INFO if deleted > 0 else LogLevel.DEBUG,
             category=LogCategory.SYSTEM,
             message=f"Materialized view invalidation for portfolio {portfolio_id}",
-            details={
-                "portfolio_id": portfolio_id,
-                "from_date": from_date.isoformat(),
-                "records_deleted": deleted,
-                "portfolio_funds_checked": len(portfolio_fund_ids),
-                "recalculate": recalculate,
-            },
+            details=log_details,
         )
 
         if recalculate and deleted > 0:
@@ -516,10 +529,10 @@ class PortfolioHistoryMaterializedService:
             return 0
 
         portfolio_id = portfolio_fund.portfolio_id
-        transaction_date = transaction.date
 
+        # Use full invalidation (delete all records for portfolio)
         return PortfolioHistoryMaterializedService.invalidate_materialized_history(
-            portfolio_id, transaction_date, recalculate=False
+            portfolio_id, from_date=None, recalculate=False
         )
 
     @staticmethod
@@ -541,10 +554,10 @@ class PortfolioHistoryMaterializedService:
             return 0
 
         portfolio_id = portfolio_fund.portfolio_id
-        dividend_date = dividend.ex_dividend_date
 
+        # Use full invalidation (delete all records for portfolio)
         return PortfolioHistoryMaterializedService.invalidate_materialized_history(
-            portfolio_id, dividend_date, recalculate=False
+            portfolio_id, from_date=None, recalculate=False
         )
 
     @staticmethod
@@ -554,7 +567,7 @@ class PortfolioHistoryMaterializedService:
 
         Args:
             fund_id: Fund ID that had a price update
-            price_date: Date of the price update
+            price_date: Date of the price update (unused with full invalidation)
 
         Returns:
             Total number of records deleted
@@ -564,8 +577,9 @@ class PortfolioHistoryMaterializedService:
 
         total_deleted = 0
         for pf in portfolio_funds:
+            # Use full invalidation (delete all records for portfolio)
             deleted = PortfolioHistoryMaterializedService.invalidate_materialized_history(
-                pf.portfolio_id, price_date, recalculate=False
+                pf.portfolio_id, from_date=None, recalculate=False
             )
             total_deleted += deleted
 

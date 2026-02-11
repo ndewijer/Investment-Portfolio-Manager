@@ -223,7 +223,7 @@ class SystemService:
                 )
 
         logger.log(
-            level=LogLevel.INFO,
+            level=LogLevel.DEBUG,
             category=LogCategory.SYSTEM,
             message="Version check requested",
             details={

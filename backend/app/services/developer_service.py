@@ -410,6 +410,21 @@ class DeveloperService:
         try:
             db.session.add_all(transactions)
             db.session.commit()
+
+            # Invalidate materialized view for the affected portfolio
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                # Invalidate for the portfolio containing these transactions
+                PortfolioHistoryMaterializedService.invalidate_materialized_history(
+                    portfolio_fund.portfolio_id, from_date=None, recalculate=False
+                )
+            except Exception:
+                # Don't fail import if invalidation fails
+                pass
+
             return len(transactions)
         except Exception as e:
             db.session.rollback()
@@ -488,9 +503,43 @@ class DeveloperService:
         )
 
         try:
-            db.session.add_all(prices)
+            # Use upsert logic: update existing or insert new
+            # This prevents UNIQUE constraint errors on (fund_id, date)
+            inserted_count = 0
+            updated_count = 0
+
+            for price_obj in prices:
+                existing_price = FundPrice.query.filter_by(
+                    fund_id=price_obj.fund_id, date=price_obj.date
+                ).first()
+
+                if existing_price:
+                    # Update existing price
+                    existing_price.price = price_obj.price
+                    updated_count += 1
+                else:
+                    # Insert new price
+                    db.session.add(price_obj)
+                    inserted_count += 1
+
             db.session.commit()
-            return len(prices)
+
+            # Invalidate materialized view for affected portfolios
+            try:
+                from .portfolio_history_materialized_service import (
+                    PortfolioHistoryMaterializedService,
+                )
+
+                # Use the first price date as reference (doesn't matter with full invalidation)
+                if prices:
+                    PortfolioHistoryMaterializedService.invalidate_from_price_update(
+                        fund_id, prices[0].date
+                    )
+            except Exception:
+                # Don't fail import if invalidation fails
+                pass
+
+            return inserted_count + updated_count
         except Exception as e:
             db.session.rollback()
             raise ValueError(f"Database error: {e!s}") from e

@@ -38,6 +38,7 @@ const PortfolioDetail = () => {
     fundHistory,
     availableFunds,
     loading: portfolioLoading,
+    historyLoading,
     error: portfolioError,
     fetchPortfolioData,
     loadAvailableFunds,
@@ -149,7 +150,11 @@ const PortfolioDetail = () => {
 
       <PortfolioSummary portfolio={portfolio} />
 
-      <PortfolioChart fundHistory={fundHistory} portfolioFunds={portfolioFunds} />
+      <PortfolioChart
+        fundHistory={fundHistory}
+        portfolioFunds={portfolioFunds}
+        loading={historyLoading}
+      />
 
       <FundsTable
         portfolioFunds={portfolioFunds}

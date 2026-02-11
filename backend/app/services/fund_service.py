@@ -550,8 +550,10 @@ class FundService:
             portfolio_funds = PortfolioFund.query.filter_by(portfolio_id=portfolio_id).all()
             if portfolio_funds:
                 try:
+                    # When auto-materializing, use force_recalculate=True to avoid
+                    # unique constraint errors from partially invalidated data
                     count = PortfolioHistoryMaterializedService.materialize_portfolio_history(
-                        portfolio_id, force_recalculate=False
+                        portfolio_id, force_recalculate=True
                     )
 
                     logger.log(
