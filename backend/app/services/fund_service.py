@@ -159,10 +159,16 @@ class FundService:
             IntegrityError: If ISIN is not unique
         """
         # Get investment_type from request, default to 'FUND' if not provided
-        investment_type_str = data.get("investmentType", "FUND")
+        # Normalize to uppercase for case-insensitive input
+        investment_type_str = data.get("investmentType", "FUND").upper()
         investment_type = (
             InvestmentType.STOCK if investment_type_str == "STOCK" else InvestmentType.FUND
         )
+
+        # Get dividend_type from request, default to 'NONE' if not provided
+        # Normalize to uppercase for case-insensitive input
+        dividend_type_str = data.get("dividendType", "NONE").upper()
+        dividend_type = DividendType(dividend_type_str)
 
         fund = Fund(
             name=data["name"],
@@ -171,7 +177,7 @@ class FundService:
             currency=data["currency"],
             exchange=data["exchange"],
             investment_type=investment_type,
-            dividend_type=DividendType.NONE,
+            dividend_type=dividend_type,
         )
         db.session.add(fund)
         db.session.commit()
@@ -221,10 +227,12 @@ class FundService:
         fund.exchange = data["exchange"]
 
         if "dividendType" in data:
-            fund.dividend_type = DividendType(data["dividendType"])
+            # Normalize to uppercase for case-insensitive input
+            fund.dividend_type = DividendType(data["dividendType"].upper())
 
         if "investmentType" in data:
-            investment_type_str = data["investmentType"]
+            # Normalize to uppercase for case-insensitive input
+            investment_type_str = data["investmentType"].upper()
             fund.investment_type = (
                 InvestmentType.STOCK if investment_type_str == "STOCK" else InvestmentType.FUND
             )
@@ -249,7 +257,7 @@ class FundService:
         """
         portfolio_funds = PortfolioFund.query.filter_by(fund_id=fund_id).all()
         if not portfolio_funds:
-            return {"in_use": False}
+            return {"inUse": False}
 
         # Get portfolios and their transaction counts
         portfolio_data = []
@@ -260,14 +268,14 @@ class FundService:
                     {
                         "id": pf.portfolio.id,
                         "name": pf.portfolio.name,
-                        "transaction_count": transaction_count,
+                        "transactionCount": transaction_count,
                     }
                 )
 
         if portfolio_data:
-            return {"in_use": True, "portfolios": portfolio_data}
+            return {"inUse": True, "portfolios": portfolio_data}
 
-        return {"in_use": False}
+        return {"inUse": False}
 
     @staticmethod
     def delete_fund(fund_id):

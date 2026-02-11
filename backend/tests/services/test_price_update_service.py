@@ -121,7 +121,10 @@ class TestTodayPriceService:
 
         # Should succeed
         assert status == 200
-        assert "Updated latest price" in response["message"]
+        assert (
+            "Updated latest price" in response["message"]
+            or "Added latest price" in response["message"]
+        )
 
         # Verify price created in database
         yesterday = datetime.now().date() - timedelta(days=1)

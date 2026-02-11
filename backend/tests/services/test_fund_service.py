@@ -244,6 +244,36 @@ class TestFundCreation:
 
         assert fund.investment_type == InvestmentType.FUND
 
+    def test_create_fund_with_dividend_type(self, app_context, db_session):
+        """Test creating fund with explicit dividend type."""
+        data = {
+            "name": "Dividend Fund",
+            "isin": make_isin("US"),
+            "currency": "USD",
+            "exchange": "NYSE",
+            "dividendType": "CASH",
+        }
+
+        fund = FundService.create_fund(data)
+
+        assert fund.dividend_type == DividendType.CASH
+
+    def test_create_fund_case_insensitive(self, app_context, db_session):
+        """Test creating fund with lowercase enum values (case normalization)."""
+        data = {
+            "name": "Mixed Case Fund",
+            "isin": make_isin("US"),
+            "currency": "USD",
+            "exchange": "NYSE",
+            "investmentType": "stock",  # lowercase
+            "dividendType": "cash",  # lowercase
+        }
+
+        fund = FundService.create_fund(data)
+
+        assert fund.investment_type == InvestmentType.STOCK
+        assert fund.dividend_type == DividendType.CASH
+
 
 class TestFundUpdate:
     """Tests for fund update operations."""
@@ -375,13 +405,13 @@ class TestFundUpdate:
         db_session.commit()
         fund_id = fund.id
 
-        # Update dividend type (use lowercase enum value)
+        # Update dividend type
         update_data = {
             "name": "Test Fund",
             "isin": fund.isin,
             "currency": "USD",
             "exchange": "NYSE",
-            "dividendType": "CASH",  # Lowercase enum value
+            "dividendType": "CASH",
         }
         updated_fund, _ = FundService.update_fund(fund_id, update_data)
 
@@ -414,6 +444,36 @@ class TestFundUpdate:
 
         assert updated_fund.investment_type == InvestmentType.STOCK
         assert updated_fund.name == "Test Stock"
+
+    def test_update_fund_case_insensitive(self, app_context, db_session):
+        """Test updating with lowercase enum values (case normalization)."""
+        # Create fund
+        fund = Fund(
+            id=make_id(),
+            name="Test Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+            investment_type=InvestmentType.FUND,
+            dividend_type=DividendType.NONE,
+        )
+        db_session.add(fund)
+        db_session.commit()
+        fund_id = fund.id
+
+        # Update with lowercase values
+        update_data = {
+            "name": "Updated Fund",
+            "isin": fund.isin,
+            "currency": "USD",
+            "exchange": "NYSE",
+            "investmentType": "stock",  # lowercase
+            "dividendType": "cash",  # lowercase
+        }
+        updated_fund, _ = FundService.update_fund(fund_id, update_data)
+
+        assert updated_fund.investment_type == InvestmentType.STOCK
+        assert updated_fund.dividend_type == DividendType.CASH
 
     def test_update_fund_not_found(self, app_context, db_session):
         """Test update raises ValueError for nonexistent fund."""
@@ -448,7 +508,7 @@ class TestFundDeletion:
         # Check usage
         usage = FundService.check_fund_usage(fund.id)
 
-        assert usage["in_use"] is False
+        assert usage["inUse"] is False
         assert "portfolios" not in usage
 
     def test_check_fund_usage_in_portfolio_no_transactions(self, app_context, db_session):
@@ -470,7 +530,7 @@ class TestFundDeletion:
         usage = FundService.check_fund_usage(fund.id)
 
         # Not considered "in use" if no transactions
-        assert usage["in_use"] is False
+        assert usage["inUse"] is False
 
     def test_check_fund_usage_with_transactions(self, app_context, db_session):
         """Test fund with transactions shows as in use."""
@@ -504,11 +564,11 @@ class TestFundDeletion:
         # Check usage
         usage = FundService.check_fund_usage(fund.id)
 
-        assert usage["in_use"] is True
+        assert usage["inUse"] is True
         assert "portfolios" in usage
         assert len(usage["portfolios"]) == 1
         assert usage["portfolios"][0]["name"] == "Active Portfolio"
-        assert usage["portfolios"][0]["transaction_count"] == 1
+        assert usage["portfolios"][0]["transactionCount"] == 1
 
     def test_delete_fund_success(self, app_context, db_session):
         """Test deleting fund not in any portfolio."""
@@ -684,7 +744,7 @@ class TestEdgeCases:
         # Check usage
         usage = FundService.check_fund_usage(fund.id)
 
-        assert usage["in_use"] is True
+        assert usage["inUse"] is True
         assert len(usage["portfolios"]) == 2
         portfolio_names = {p["name"] for p in usage["portfolios"]}
         assert "Portfolio 1" in portfolio_names

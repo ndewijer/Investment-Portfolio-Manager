@@ -90,15 +90,26 @@ class TodayPriceService:
             if not history.empty:
                 # Get the last available price
                 last_date = history.index[-1].date()
+                last_price = float(history["Close"].iloc[-1])
 
-                # Only add if we don't already have this date
-                if not FundPrice.query.filter_by(fund_id=fund_id, date=last_date).first():
-                    last_price = float(history["Close"].iloc[-1])
+                # Upsert: Update existing price or create new one
+                existing_price = FundPrice.query.filter_by(fund_id=fund_id, date=last_date).first()
+
+                if existing_price:
+                    # Update existing price
+                    price_changed = existing_price.price != last_price
+                    existing_price.price = last_price
+                    price = existing_price
+                else:
+                    # Create new price record
                     price = FundPrice(fund_id=fund_id, date=last_date, price=last_price)
                     db.session.add(price)
-                    db.session.commit()
+                    price_changed = True
 
-                    # Invalidate materialized view
+                db.session.commit()
+
+                # Invalidate materialized view only if price changed
+                if price_changed:
                     try:
                         from .portfolio_history_materialized_service import (
                             PortfolioHistoryMaterializedService,
@@ -111,27 +122,20 @@ class TodayPriceService:
                         # Don't fail price update if invalidation fails
                         pass
 
-                    response, status = logger.log(
-                        level=LogLevel.INFO,
-                        category=LogCategory.FUND,
-                        message=f"Updated latest price for fund {fund.name}",
-                        details={
-                            "fund_id": fund_id,
-                            "date": last_date.isoformat(),
-                            "price": last_price,
-                        },
-                        http_status=200,
-                    )
-                    return response, status
-                else:
-                    response, status = logger.log(
-                        level=LogLevel.INFO,
-                        category=LogCategory.FUND,
-                        message="Price for latest available date already exists",
-                        details={"fund_id": fund_id, "date": last_date.isoformat()},
-                        http_status=200,
-                    )
-                    return response, status
+                action = "Updated" if existing_price else "Added"
+                response, status = logger.log(
+                    level=LogLevel.INFO,
+                    category=LogCategory.FUND,
+                    message=f"{action} latest price for fund {fund.name}",
+                    details={
+                        "fund_id": fund_id,
+                        "date": last_date.isoformat(),
+                        "price": last_price,
+                        "updated": existing_price is not None,
+                    },
+                    http_status=200,
+                )
+                return response, status
             else:
                 response, status = logger.log(
                     level=LogLevel.WARNING,
@@ -253,6 +257,7 @@ class HistoricalPriceService:
                     details={"fund_id": fund_id},
                     http_status=200,
                 )
+                response["newPrices"] = False
                 return response, status
 
             # Fetch historical data
@@ -264,18 +269,27 @@ class HistoricalPriceService:
             # Convert history index dates to date objects for comparison
             history_dates = {pd_date.date(): pd_date for pd_date in history.index}
 
-            # Update prices
+            # Update prices with upsert logic
             updated_count = 0
             for date in missing_dates:
                 if date in history_dates:
                     pd_date = history_dates[date]  # Get the original pandas datetime
-                    price = FundPrice(
-                        fund_id=fund_id,
-                        date=date,
-                        price=float(history.loc[pd_date]["Close"]),
-                    )
-                    db.session.add(price)
-                    updated_count += 1
+                    new_price = float(history.loc[pd_date]["Close"])
+
+                    # Upsert: Update existing or create new
+                    existing_price = FundPrice.query.filter_by(fund_id=fund_id, date=date).first()
+
+                    if existing_price:
+                        # Update existing price
+                        # (shouldn't happen for "missing" dates, but safety net)
+                        if existing_price.price != new_price:
+                            existing_price.price = new_price
+                            updated_count += 1
+                    else:
+                        # Create new price record
+                        price = FundPrice(fund_id=fund_id, date=date, price=new_price)
+                        db.session.add(price)
+                        updated_count += 1
 
             db.session.commit()
 
@@ -305,6 +319,8 @@ class HistoricalPriceService:
                 },
                 http_status=200,
             )
+            # Add newPrices field for frontend auto-refresh
+            response["newPrices"] = updated_count > 0
             return response, status
 
         except Exception as e:

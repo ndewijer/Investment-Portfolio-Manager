@@ -13,7 +13,7 @@ Tests Developer API endpoints:
 - PUT /api/developer/system-settings/logging - Update logging settings ✅
 - GET /api/logs - Get logs ✅
 - GET /api/logs?level=ERROR - Get logs with filters ✅
-- GET /api/developer/fund-price/<fund_id> - Get fund price ✅
+- GET /api/developer/fund-price/<fund_id> - Get fund price ⚠️ DISABLED (duplicate endpoint)
 - POST /api/logs/clear - Clear logs ✅
 
 Test Summary: 11 happy path tests, 34 error path tests
@@ -151,6 +151,7 @@ class TestFundPrice:
         assert price is not None
         assert price.price == 250.00
 
+    @pytest.mark.skip(reason="Endpoint disabled - duplicate of /fund-price GET with query params")
     def test_get_fund_price(self, app_context, client, db_session):
         """
         Test GET /developer/fund-price/<fund_id> returns fund price.
@@ -524,6 +525,7 @@ class TestFundPriceErrors:
 
             assert response.status_code == 400
 
+    @pytest.mark.skip(reason="Endpoint disabled - duplicate of /fund-price GET with query params")
     def test_get_fund_price_not_found(self, client, db_session):
         """
         Test GET /fund-price/<fund_id> returns 404 when not found.
@@ -543,6 +545,7 @@ class TestFundPriceErrors:
         data = response.get_json()
         assert "Fund price not found" in data["message"]
 
+    @pytest.mark.skip(reason="Endpoint disabled - duplicate of /fund-price GET with query params")
     def test_get_fund_price_invalid_date_format(self, client, db_session):
         """
         Test GET /fund-price/<fund_id> rejects invalid date format.
@@ -559,6 +562,7 @@ class TestFundPriceErrors:
 
         assert response.status_code == 500
 
+    @pytest.mark.skip(reason="Endpoint disabled - duplicate of /fund-price GET with query params")
     def test_get_fund_price_service_error(self, client, db_session):
         """
         Test GET /fund-price/<fund_id> handles service errors.
