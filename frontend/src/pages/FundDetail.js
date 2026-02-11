@@ -144,7 +144,7 @@ const FundDetail = () => {
       const response = await api.post(`/fund/fund-prices/${id}/update?type=historical`);
 
       // Check if new prices were added
-      if (response.data && response.data.new_prices) {
+      if (response.data && response.data.newPrices) {
         // Only fetch new data if prices were actually updated
         try {
           const pricesRes = await api.get(`/fund/fund-prices/${id}`);

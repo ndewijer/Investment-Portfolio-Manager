@@ -403,54 +403,58 @@ class DeveloperFundPrice(Resource):
             return {"message": f"Error setting fund price: {e!s}"}, 400
 
 
-@ns.route("/fund-price/<string:fund_id>")
-class DeveloperFundPriceById(Resource):
-    """Get fund price by ID endpoint."""
-
-    @ns.doc("get_fund_price_by_id")
-    @ns.param("date", "Price date (YYYY-MM-DD)", _in="query")
-    @ns.response(200, "Success", fund_price_model)
-    @ns.response(404, "Price not found", error_model)
-    @ns.response(500, "Server error", error_model)
-    def get(self, fund_id):
-        """
-        Get fund price for specific fund and date.
-
-        Retrieves the price for a fund on a specific date.
-        If date is not provided, returns today's price.
-        """
-        date_str = request.args.get("date")
-
-        try:
-            from datetime import datetime
-
-            if date_str:
-                price_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-            else:
-                price_date = datetime.now().date()
-
-            result = DeveloperService.get_fund_price(fund_id, price_date)
-
-            # Return 404 if result is None (matching legacy behavior)
-            if not result:
-                return {"message": "Fund price not found"}, 404
-
-            # Convert response to camelCase
-            return {
-                "fundId": result["fund_id"],
-                "price": result["price"],
-                "date": result["date"],
-            }, 200
-
-        except Exception as e:
-            # All exceptions return 500 (matching legacy behavior - ValueError also goes here)
-            logger.log(
-                level=LogLevel.ERROR,
-                category=LogCategory.DEVELOPER,
-                message="Error retrieving fund price",
-                details={"error": str(e)},
-            )
-            return {"message": f"Error retrieving fund price: {e!s}"}, 500
+# DISABLED: Duplicate of /fund-price GET endpoint (unused, query params version is used instead)
+# Duplicates GET functionality with path param instead of query param
+# The /fund-price endpoint (without path param) is actively used in Config.js
+#
+# @ns.route("/fund-price/<string:fund_id>")
+# class DeveloperFundPriceById(Resource):
+#     """Get fund price by ID endpoint."""
+#
+#     @ns.doc("get_fund_price_by_id")
+#     @ns.param("date", "Price date (YYYY-MM-DD)", _in="query")
+#     @ns.response(200, "Success", fund_price_model)
+#     @ns.response(404, "Price not found", error_model)
+#     @ns.response(500, "Server error", error_model)
+#     def get(self, fund_id):
+#         """
+#         Get fund price for specific fund and date.
+#
+#         Retrieves the price for a fund on a specific date.
+#         If date is not provided, returns today's price.
+#         """
+#         date_str = request.args.get("date")
+#
+#         try:
+#             from datetime import datetime
+#
+#             if date_str:
+#                 price_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+#             else:
+#                 price_date = datetime.now().date()
+#
+#             result = DeveloperService.get_fund_price(fund_id, price_date)
+#
+#             # Return 404 if result is None (matching legacy behavior)
+#             if not result:
+#                 return {"message": "Fund price not found"}, 404
+#
+#             # Convert response to camelCase
+#             return {
+#                 "fundId": result["fund_id"],
+#                 "price": result["price"],
+#                 "date": result["date"],
+#             }, 200
+#
+#         except Exception as e:
+#             # All exceptions return 500 (matching legacy behavior - ValueError also goes here)
+#             logger.log(
+#                 level=LogLevel.ERROR,
+#                 category=LogCategory.DEVELOPER,
+#                 message="Error retrieving fund price",
+#                 details={"error": str(e)},
+#             )
+#             return {"message": f"Error retrieving fund price: {e!s}"}, 500
 
 
 @ns.route("/csv/transactions/template")
@@ -497,42 +501,46 @@ class FundPriceCSVTemplate(Resource):
             return {"error": "Error generating template", "details": str(e)}, 500
 
 
-@ns.route("/data/funds")
-class DeveloperFunds(Resource):
-    """Developer funds data endpoint."""
-
-    @ns.doc("get_funds_data")
-    @ns.response(200, "Success")
-    def get(self):
-        """
-        Get all funds data.
-
-        Returns complete fund data for debugging and inspection.
-        """
-        try:
-            funds = DeveloperService.get_funds()
-            return funds, 200
-        except Exception as e:
-            return {"error": "Error retrieving funds", "details": str(e)}, 500
-
-
-@ns.route("/data/portfolios")
-class DeveloperPortfolios(Resource):
-    """Developer portfolios data endpoint."""
-
-    @ns.doc("get_portfolios_data")
-    @ns.response(200, "Success")
-    def get(self):
-        """
-        Get all portfolios data.
-
-        Returns complete portfolio data for debugging and inspection.
-        """
-        try:
-            portfolios = DeveloperService.get_portfolios()
-            return portfolios, 200
-        except Exception as e:
-            return {"error": "Error retrieving portfolios", "details": str(e)}, 500
+# DISABLED: These endpoints cannot serialize SQLAlchemy objects to JSON
+# If needed in the future, update DeveloperService.get_funds() and get_portfolios()
+# to return serialized dictionaries instead of ORM objects
+#
+# @ns.route("/data/funds")
+# class DeveloperFunds(Resource):
+#     """Developer funds data endpoint."""
+#
+#     @ns.doc("get_funds_data")
+#     @ns.response(200, "Success")
+#     def get(self):
+#         """
+#         Get all funds data.
+#
+#         Returns complete fund data for debugging and inspection.
+#         """
+#         try:
+#             funds = DeveloperService.get_funds()
+#             return funds, 200
+#         except Exception as e:
+#             return {"error": "Error retrieving funds", "details": str(e)}, 500
+#
+#
+# @ns.route("/data/portfolios")
+# class DeveloperPortfolios(Resource):
+#     """Developer portfolios data endpoint."""
+#
+#     @ns.doc("get_portfolios_data")
+#     @ns.response(200, "Success")
+#     def get(self):
+#         """
+#         Get all portfolios data.
+#
+#         Returns complete portfolio data for debugging and inspection.
+#         """
+#         try:
+#             portfolios = DeveloperService.get_portfolios()
+#             return portfolios, 200
+#         except Exception as e:
+#             return {"error": "Error retrieving portfolios", "details": str(e)}, 500
 
 
 @ns.route("/import-transactions")

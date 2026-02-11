@@ -459,7 +459,7 @@ class FundUsage(Resource):
         try:
             usage_info = FundService.check_fund_usage(fund_id)
 
-            if usage_info["in_use"]:
+            if usage_info["inUse"]:
                 logger.log(
                     level=LogLevel.INFO,
                     category=LogCategory.FUND,

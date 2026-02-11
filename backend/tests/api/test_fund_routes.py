@@ -350,7 +350,7 @@ class TestFundUsage:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert data["in_use"] is True
+        assert data["inUse"] is True
         assert "portfolios" in data
         assert len(data["portfolios"]) >= 1
 
@@ -370,7 +370,7 @@ class TestFundUsage:
 
         assert response.status_code == 200
         data = response.get_json()
-        assert data["in_use"] is False
+        assert data["inUse"] is False
         # portfolios key might not be present if not in use
         assert "portfolios" not in data or data["portfolios"] == []
 

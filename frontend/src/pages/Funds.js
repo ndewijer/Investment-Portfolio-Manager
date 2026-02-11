@@ -41,7 +41,8 @@ const Funds = () => {
     symbol: '',
     currency: '',
     exchange: '',
-    investmentType: 'fund',
+    investmentType: 'FUND',
+    dividendType: 'NONE',
   });
   const [editingFund, setEditingFund] = useState(null);
   const [symbolInfo, setSymbolInfo] = useState({});
@@ -107,7 +108,8 @@ const Funds = () => {
           symbol: '',
           currency: '',
           exchange: '',
-          investmentType: 'fund',
+          investmentType: 'FUND',
+          dividendType: 'NONE',
         });
         // Refetch the full list of funds
         await fetchFunds(() => api.get('/fund'));
@@ -123,9 +125,9 @@ const Funds = () => {
   const handleDeleteFund = async (id) => {
     try {
       const usageResponse = await api.get(`/fund/${id}/check-usage`);
-      if (usageResponse.data.in_use) {
+      if (usageResponse.data.inUse) {
         const portfolioInfo = usageResponse.data.portfolios
-          .map((p) => `${p.name} (${p.transaction_count} transactions)`)
+          .map((p) => `${p.name} (${p.transactionCount} transactions)`)
           .join('\n');
         alert(
           `Cannot delete fund because it has transactions in the following portfolios:\n\n${portfolioInfo}`
@@ -151,7 +153,8 @@ const Funds = () => {
       symbol: '',
       currency: '',
       exchange: '',
-      investmentType: 'fund',
+      investmentType: 'FUND',
+      dividendType: 'NONE',
     });
     setIsModalOpen(true);
   };
@@ -163,7 +166,8 @@ const Funds = () => {
       symbol: '',
       currency: '',
       exchange: '',
-      investmentType: 'stock',
+      investmentType: 'STOCK',
+      dividendType: 'NONE',
     });
     setIsModalOpen(true);
   };
@@ -288,7 +292,10 @@ const Funds = () => {
       ) : (
         <div className="funds-grid">
           {funds.map((fund) => (
-            <div key={fund.id} className={`fund-card ${fund.investmentType || 'fund'}`}>
+            <div
+              key={fund.id}
+              className={`fund-card ${(fund.investmentType || 'FUND').toLowerCase()}`}
+            >
               <h3>{fund.name}</h3>
               <div className="fund-details">
                 {fund.investmentType === 'FUND' ? (
@@ -332,18 +339,18 @@ const Funds = () => {
                 <p>
                   <strong>Exchange:</strong> {fund.exchange}
                 </p>
-                {fund.dividendType !== 'none' && (
+                {fund.dividendType && fund.dividendType !== 'NONE' && (
                   <p>
                     <strong>Dividend Type:</strong>{' '}
                     {fund.dividendType === 'CASH' ? (
                       <>
                         <FontAwesomeIcon icon={faMoneyBill} /> Cash
                       </>
-                    ) : (
+                    ) : fund.dividendType === 'STOCK' ? (
                       <>
                         <FontAwesomeIcon icon={faChartLine} /> Stock
                       </>
-                    )}
+                    ) : null}
                   </p>
                 )}
               </div>
@@ -401,79 +408,43 @@ const Funds = () => {
           </div>
         </div>
 
-        {/* ISIN field - show for both funds and stocks */}
-        <div className="form-field">
-          <label className="field-label">
-            ISIN{' '}
-            {(editingFund?.investmentType || newFund.investmentType) === 'stock'
-              ? '(optional)'
-              : ''}
-          </label>
-          <input
-            type="text"
-            value={editingFund?.isin || newFund.isin}
-            onChange={handleIsinChange}
-            required={(editingFund?.investmentType || newFund.investmentType) === 'fund'}
-          />
-        </div>
+        {/* ISIN field - ALWAYS REQUIRED for both funds and stocks */}
+        <FormField
+          label="ISIN"
+          type="text"
+          value={editingFund?.isin || newFund.isin}
+          onChange={(value) => {
+            if (editingFund) {
+              setEditingFund({ ...editingFund, isin: value });
+            } else {
+              handleIsinChange({ target: { value } });
+            }
+          }}
+          required={true}
+        />
 
-        {/* Show symbol group for funds, or stock-specific symbol for stocks */}
-        {(editingFund?.investmentType || newFund.investmentType) === 'fund' ? (
-          <>
-            <div className="form-field">
-              <label className="field-label">Symbol (optional)</label>
-              <div className="symbol-input-container">
+        {/* Symbol field - ALWAYS OPTIONAL for both funds and stocks */}
+        <div className="form-field">
+          <label className="field-label">Symbol (optional)</label>
+          <div className="symbol-input-container">
+            <input
+              type="text"
+              value={editingFund?.symbol || newFund.symbol}
+              onChange={handleSymbolChange}
+            />
+            {symbolValidation.isValid && (
+              <div className="symbol-validation">
                 <input
-                  type="text"
-                  value={editingFund?.symbol || newFund.symbol}
-                  onChange={handleSymbolChange}
+                  type="checkbox"
+                  checked={symbolValidation.useInfo}
+                  onChange={handleUseSymbolInfo}
+                  id="useSymbolInfo"
                 />
-                {symbolValidation.isValid && (
-                  <div className="symbol-validation">
-                    <input
-                      type="checkbox"
-                      checked={symbolValidation.useInfo}
-                      onChange={handleUseSymbolInfo}
-                      id="useSymbolInfo"
-                    />
-                    <label htmlFor="useSymbolInfo">Use symbol information</label>
-                  </div>
-                )}
+                <label htmlFor="useSymbolInfo">Use symbol information</label>
               </div>
-            </div>
-          </>
-        ) : (
-          <div className="form-field">
-            <label className="field-label">Symbol</label>
-            <div className="symbol-input-container">
-              <input
-                type="text"
-                value={editingFund?.symbol || newFund.symbol}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (editingFund) {
-                    setEditingFund({ ...editingFund, symbol: value });
-                  } else {
-                    setNewFund({ ...newFund, symbol: value });
-                  }
-                  handleSymbolChange(e);
-                }}
-                required
-              />
-              {symbolValidation.isValid && (
-                <div className="symbol-validation">
-                  <input
-                    type="checkbox"
-                    checked={symbolValidation.useInfo}
-                    onChange={handleUseSymbolInfo}
-                    id="useSymbolInfo"
-                  />
-                  <label htmlFor="useSymbolInfo">Use symbol information</label>
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         <FormField
           label="Currency"
@@ -515,9 +486,9 @@ const Funds = () => {
             }
           }}
           options={[
-            { label: 'No Dividend', value: 'none' },
-            { label: 'Cash Dividend', value: 'cash' },
-            { label: 'Stock Dividend', value: 'stock' },
+            { label: 'No Dividend', value: 'NONE' },
+            { label: 'Cash Dividend', value: 'CASH' },
+            { label: 'Stock Dividend', value: 'STOCK' },
           ]}
         />
       </FormModal>

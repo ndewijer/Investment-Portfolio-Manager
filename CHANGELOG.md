@@ -5,6 +5,42 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] - 2026-02-10
+
+### Added
+- **Fund Price Unique Constraint** - Database-level data integrity
+  - Added unique constraint on `(fund_id, date)` in `fund_price` table
+  - Prevents duplicate price records for the same fund on the same date
+  - Matches pattern already established in `exchange_rate` table
+  - Enforces "one price per fund per day" business rule at database level
+
+### Changed
+- **Price Update Services - Upsert Logic**
+  - `TodayPriceService` now uses proper upsert (update if exists, insert if not)
+  - `HistoricalPriceService` now uses proper upsert for safety
+  - Only invalidates materialized view when price actually changes
+  - Previous behavior: skip if exists or blindly insert (could create duplicates)
+
+### Fixed
+- **Standardized API to camelCase**
+  - Fixed `check_fund_usage` endpoint: `in_use` → `inUse`, `transaction_count` → `transactionCount`
+  - Fixed `create_fund` to accept `dividendType` from request (was hardcoded to NONE)
+  - Added case-insensitive input for `investmentType` and `dividendType` (accepts lowercase, normalizes to uppercase)
+  - Fixed ISIN field: Now always required with red asterisk for both funds and stocks
+  - Fixed Symbol field: Now always optional for both funds and stocks
+  - Fixed dividend type display: Properly shows Cash/Stock/None instead of showing "Stock" for everything
+
+### Technical Details
+- **Migration**: `1.5.4_add_fund_price_unique_constraint.py`
+  - SQLite table recreation with unique constraint
+  - Automatic duplicate cleanup (keeps most recent record per fund/date)
+  - Rollback support included
+- **Documentation**: `docs/FUND_PRICE_UNIQUE_CONSTRAINT.md` with cleanup SQL queries
+- **Tests**: All 762 backend tests passing, including new case-insensitive input tests
+
+### Breaking Changes
+None - all changes are backward compatible with proper upsert logic
+
 ## [1.5.3] - 2026-02-06
 
 ### Fixed

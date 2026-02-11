@@ -215,6 +215,7 @@ class FundPrice(db.Model):
     price = db.Column(db.Float, nullable=False)
 
     __table_args__ = (
+        db.UniqueConstraint("fund_id", "date", name="unique_fund_price"),
         db.Index("ix_fund_price_date", "date"),
         db.Index("ix_fund_price_fund_id", "fund_id"),
         db.Index("ix_fund_price_fund_id_date", "fund_id", "date"),
