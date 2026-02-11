@@ -627,8 +627,8 @@ class TestPortfolioHistoryMaterializedService:
         # Invalidate from dividend
         deleted = PortfolioHistoryMaterializedService.invalidate_from_dividend(dividend)
 
-        # Should have deleted records from dividend date forward
-        assert deleted == 5
+        # Should have deleted all records for the portfolio (full invalidation)
+        assert deleted == 10
 
     def test_invalidate_from_dividend_no_portfolio_fund(self, app, db_session):
         """Test invalidation from dividend with invalid portfolio_fund returns 0."""

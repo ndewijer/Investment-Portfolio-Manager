@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import ValueChart from '../ValueChart';
 import { formatChartData, getChartLines } from '../../utils/portfolio/portfolioCalculations';
+import { LoadingSpinner } from '../shared';
 
 /**
  * PortfolioChart component - Interactive portfolio value visualization
@@ -19,15 +20,17 @@ import { formatChartData, getChartLines } from '../../utils/portfolio/portfolioC
  * @param {Object} props - Component props object
  * @param {Array} props.fundHistory - Historical fund data array with dates and values
  * @param {Array} props.portfolioFunds - Portfolio funds for chart line configuration
+ * @param {boolean} [props.loading=false] - Whether data is currently loading
  * @returns {JSX.Element} Interactive chart with metric toggles
  *
  * @example
  * <PortfolioChart
  *   fundHistory={historyData}
  *   portfolioFunds={portfolioFunds}
+ *   loading={isLoading}
  * />
  */
-const PortfolioChart = ({ fundHistory, portfolioFunds }) => {
+const PortfolioChart = ({ fundHistory, portfolioFunds, loading = false }) => {
   const [visibleMetrics, setVisibleMetrics] = useState({
     value: true,
     cost: true,
@@ -44,6 +47,19 @@ const PortfolioChart = ({ fundHistory, portfolioFunds }) => {
     () => getChartLines(portfolioFunds, visibleMetrics),
     [portfolioFunds, visibleMetrics]
   );
+
+  // Show loading state while data is being fetched
+  // This is important when auto-materialization takes time (e.g., 800ms+)
+  if (loading) {
+    return (
+      <div className="chart-section">
+        <div className="chart-container">
+          <h2>Portfolio Value Over Time</h2>
+          <LoadingSpinner message="Loading portfolio history..." />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="chart-section">

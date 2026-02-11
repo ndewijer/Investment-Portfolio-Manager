@@ -115,12 +115,23 @@ class TodayPriceService:
                             PortfolioHistoryMaterializedService,
                         )
 
-                        PortfolioHistoryMaterializedService.invalidate_from_price_update(
+                        deleted = PortfolioHistoryMaterializedService.invalidate_from_price_update(
                             fund_id, last_date
                         )
-                    except Exception:
-                        # Don't fail price update if invalidation fails
-                        pass
+                        logger.log(
+                            level=LogLevel.INFO,
+                            category=LogCategory.SYSTEM,
+                            message=f"Invalidated materialized records for {deleted} portfolio(s)",
+                            details={"fund_id": fund_id, "invalidation_type": "full"},
+                        )
+                    except Exception as e:
+                        # Don't fail price update if invalidation fails, but log the error
+                        logger.log(
+                            level=LogLevel.ERROR,
+                            category=LogCategory.SYSTEM,
+                            message=f"Failed to invalidate materialized view: {e!s}",
+                            details={"fund_id": fund_id, "error": str(e)},
+                        )
 
                 action = "Updated" if existing_price else "Added"
                 response, status = logger.log(
@@ -300,12 +311,23 @@ class HistoricalPriceService:
                         PortfolioHistoryMaterializedService,
                     )
 
-                    PortfolioHistoryMaterializedService.invalidate_from_price_update(
+                    deleted = PortfolioHistoryMaterializedService.invalidate_from_price_update(
                         fund_id, start_date
                     )
-                except Exception:
-                    # Don't fail price update if invalidation fails
-                    pass
+                    logger.log(
+                        level=LogLevel.INFO,
+                        category=LogCategory.SYSTEM,
+                        message=f"Invalidated materialized records for {deleted} portfolio(s)",
+                        details={"fund_id": fund_id, "invalidation_type": "full"},
+                    )
+                except Exception as e:
+                    # Don't fail price update if invalidation fails, but log the error
+                    logger.log(
+                        level=LogLevel.ERROR,
+                        category=LogCategory.SYSTEM,
+                        message=f"Failed to invalidate materialized view: {e!s}",
+                        details={"fund_id": fund_id, "error": str(e)},
+                    )
 
             response, status = logger.log(
                 level=LogLevel.INFO,
