@@ -540,13 +540,17 @@ class IBKRTransactionService:
             raise ValueError(error_message)
 
         try:
-            # Get existing allocations
-            existing_allocations = {
-                alloc.portfolio_id: alloc
-                for alloc in IBKRTransactionAllocation.query.filter_by(
-                    ibkr_transaction_id=transaction_id
-                ).all()
-            }
+            # Get existing allocations - group by portfolio_id since each portfolio
+            # can have multiple allocation records (stock + fee)
+            all_existing_allocations = IBKRTransactionAllocation.query.filter_by(
+                ibkr_transaction_id=transaction_id
+            ).all()
+
+            existing_allocations = {}
+            for alloc in all_existing_allocations:
+                if alloc.portfolio_id not in existing_allocations:
+                    existing_allocations[alloc.portfolio_id] = []
+                existing_allocations[alloc.portfolio_id].append(alloc)
 
             # Track which portfolios are in the new allocation list
             new_portfolio_ids = {a["portfolio_id"] for a in allocations}
@@ -555,25 +559,17 @@ class IBKRTransactionService:
             # Delete allocations for portfolios no longer in the list
             portfolios_to_remove = existing_portfolio_ids - new_portfolio_ids
             for portfolio_id in portfolios_to_remove:
-                allocation = existing_allocations[portfolio_id]
-                if allocation.transaction_id:
-                    transaction = db.session.get(Transaction, allocation.transaction_id)
-                    if transaction:
-                        # Also delete any fee transactions for this portfolio_fund
-                        fee_transactions = Transaction.query.filter_by(
-                            portfolio_fund_id=transaction.portfolio_fund_id,
-                            date=ibkr_txn.transaction_date,
-                            type="fee",
-                        ).all()
-                        for fee_txn in fee_transactions:
-                            db.session.delete(fee_txn)
-
-                        # Delete main transaction - CASCADE DELETE will automatically
-                        # delete the corresponding ibkr_transaction_allocation record
-                        db.session.delete(transaction)
-                else:
-                    # If no transaction_id, delete the allocation directly
-                    db.session.delete(allocation)
+                # Delete all allocations for this portfolio (stock + fee)
+                for allocation in existing_allocations[portfolio_id]:
+                    if allocation.transaction_id:
+                        transaction = db.session.get(Transaction, allocation.transaction_id)
+                        if transaction:
+                            # Delete the transaction - CASCADE DELETE will automatically
+                            # delete the corresponding ibkr_transaction_allocation record
+                            db.session.delete(transaction)
+                    else:
+                        # If no transaction_id, delete the allocation directly
+                        db.session.delete(allocation)
 
             # Find fund for this IBKR transaction
             from ..services.fund_matching_service import FundMatchingService
@@ -594,61 +590,25 @@ class IBKRTransactionService:
                 )
 
                 if portfolio_id in existing_allocations:
-                    # Update existing allocation
-                    allocation = existing_allocations[portfolio_id]
-                    allocation.allocation_percentage = percentage
-                    allocation.allocated_amount = allocated_amount
-                    allocation.allocated_shares = allocated_shares
+                    # Update all existing allocations for this portfolio (stock + fee)
+                    allocated_fee = (ibkr_txn.fees * percentage) / 100.0 if ibkr_txn.fees else 0
 
-                    # Update associated transaction
-                    if allocation.transaction_id:
-                        transaction = db.session.get(Transaction, allocation.transaction_id)
-                        if transaction:
-                            transaction.shares = allocated_shares
-                            # Cost per share stays the same, shares change
+                    for allocation in existing_allocations[portfolio_id]:
+                        # Update allocation percentage on all records
+                        allocation.allocation_percentage = percentage
 
-                            # Update fee transaction if commission exists
-                            if ibkr_txn.fees and ibkr_txn.fees > 0:
-                                allocated_fee = (ibkr_txn.fees * percentage) / 100.0
-
-                                # Find existing fee transaction
-                                fee_transaction = Transaction.query.filter_by(
-                                    portfolio_fund_id=transaction.portfolio_fund_id,
-                                    date=ibkr_txn.transaction_date,
-                                    type="fee",
-                                ).first()
-
-                                if fee_transaction:
-                                    # Update existing fee transaction
-                                    fee_transaction.cost_per_share = allocated_fee
-                                    # Update the IBKR allocation record for fee transaction
-                                    fee_allocation = IBKRTransactionAllocation.query.filter_by(
-                                        transaction_id=fee_transaction.id
-                                    ).first()
-                                    if fee_allocation:
-                                        fee_allocation.allocated_amount = allocated_fee
+                        if allocation.transaction_id:
+                            transaction = db.session.get(Transaction, allocation.transaction_id)
+                            if transaction:
+                                if transaction.type == "fee":
+                                    # Update fee allocation
+                                    allocation.allocated_amount = allocated_fee
+                                    transaction.cost_per_share = allocated_fee
                                 else:
-                                    # Create new fee transaction if it doesn't exist
-                                    fee_transaction = Transaction(
-                                        portfolio_fund_id=transaction.portfolio_fund_id,
-                                        date=ibkr_txn.transaction_date,
-                                        type="fee",
-                                        shares=0,
-                                        cost_per_share=allocated_fee,
-                                    )
-                                    db.session.add(fee_transaction)
-                                    db.session.flush()
-
-                                    # Create IBKR allocation for new fee transaction
-                                    fee_allocation = IBKRTransactionAllocation(
-                                        ibkr_transaction_id=transaction_id,
-                                        portfolio_id=portfolio_id,
-                                        allocation_percentage=percentage,
-                                        allocated_amount=allocated_fee,
-                                        allocated_shares=0,
-                                        transaction_id=fee_transaction.id,
-                                    )
-                                    db.session.add(fee_allocation)
+                                    # Update stock allocation
+                                    allocation.allocated_amount = allocated_amount
+                                    allocation.allocated_shares = allocated_shares
+                                    transaction.shares = allocated_shares
                 else:
                     # Create new allocation
                     # Get or create portfolio fund
@@ -716,7 +676,7 @@ class IBKRTransactionService:
                 all_affected_portfolios = existing_portfolio_ids | new_portfolio_ids
                 for portfolio_id in all_affected_portfolios:
                     PortfolioHistoryMaterializedService.invalidate_materialized_history(
-                        portfolio_id, ibkr_txn.transaction_date, recalculate=False
+                        portfolio_id, from_date=None, recalculate=False
                     )
             except Exception as e:
                 # Don't fail the transaction if invalidation fails
