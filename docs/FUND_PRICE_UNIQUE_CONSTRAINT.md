@@ -131,3 +131,8 @@ If issues arise:
 ✅ All 17 price update service tests passing
 ✅ Upsert logic tested for both create and update scenarios
 ✅ No duplicate creation possible with constraint in place
+
+---
+
+**Last Updated**: 2026-02-11 (Version 1.5.4)
+**Maintained By**: @ndewijer

@@ -67,3 +67,8 @@ When these endpoints are ready for permanent removal:
 - Service layer methods remain intact for potential future use
 - Consider implementing proper serialization for data endpoints if needed in future
 - The query param version of fund-price endpoint should remain the standard approach
+
+---
+
+**Last Updated**: 2026-02-11 (Version 1.5.4)
+**Maintained By**: @ndewijer
