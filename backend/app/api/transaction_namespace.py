@@ -274,7 +274,13 @@ class Transaction(Resource):
         Note: Modifying transactions may affect historical calculations
         and should be done with caution.
 
-        Request body should use camelCase (portfolioFundId, costPerShare).
+        Request body fields (camelCase):
+        - date: Transaction date (YYYY-MM-DD)
+        - type: Transaction type (buy, sell, dividend, fee)
+        - shares: Number of shares
+        - costPerShare: Cost per share
+
+        Note: portfolioFundId is derived from the transaction UUID and cannot be changed.
         """
         try:
             data = request.json
