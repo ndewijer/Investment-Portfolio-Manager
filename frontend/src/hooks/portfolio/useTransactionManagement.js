@@ -197,7 +197,14 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
     async (e) => {
       e.preventDefault();
       try {
-        const response = await api.put(`/transaction/${editingTransaction.id}`, editingTransaction);
+        // Only send editable fields - portfolioFundId is derived from transaction UUID
+        const updateData = {
+          date: editingTransaction.date,
+          type: editingTransaction.type,
+          shares: editingTransaction.shares,
+          costPerShare: editingTransaction.costPerShare,
+        };
+        const response = await api.put(`/transaction/${editingTransaction.id}`, updateData);
 
         // Update transactions state incrementally
         const updatedTransactions = transactions.map((t) =>

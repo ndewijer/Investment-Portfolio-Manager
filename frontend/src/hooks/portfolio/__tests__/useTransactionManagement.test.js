@@ -329,7 +329,13 @@ describe('useTransactionManagement', () => {
         await result.current.handleUpdateTransaction({ preventDefault: jest.fn() });
       });
 
-      expect(api.put).toHaveBeenCalledWith(`/transaction/${mockTransaction.id}`, mockTransaction);
+      // Should only send editable fields, not portfolioFundId or id
+      expect(api.put).toHaveBeenCalledWith(`/transaction/${mockTransaction.id}`, {
+        date: mockTransaction.date,
+        type: mockTransaction.type,
+        shares: mockTransaction.shares,
+        costPerShare: mockTransaction.costPerShare,
+      });
       expect(mockOnDataChange).toHaveBeenCalled();
       expect(result.current.isTransactionEditModalOpen).toBe(false);
       expect(result.current.editingTransaction).toBeNull();
