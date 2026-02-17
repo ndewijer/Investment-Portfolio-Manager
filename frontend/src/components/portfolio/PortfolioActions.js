@@ -218,7 +218,7 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
         <div className="form-group">
           <label>Fund:</label>
           <div className="static-field">
-            {portfolioFunds.find((pf) => pf.id === newDividend.portfolio_fund_id)?.fundName}
+            {portfolioFunds.find((pf) => pf.id === newDividend.portfolioFundId)?.fundName}
           </div>
         </div>
         <div className="form-group">
@@ -241,11 +241,11 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
           <label>Record Date:</label>
           <input
             type="date"
-            value={newDividend.record_date}
+            value={newDividend.recordDate}
             onChange={(e) =>
               setNewDividend({
                 ...newDividend,
-                record_date: e.target.value,
+                recordDate: e.target.value,
               })
             }
             required
@@ -255,11 +255,11 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
           <label>Ex-Dividend Date:</label>
           <input
             type="date"
-            value={newDividend.ex_dividend_date}
+            value={newDividend.exDividendDate}
             onChange={(e) =>
               setNewDividend({
                 ...newDividend,
-                ex_dividend_date: e.target.value,
+                exDividendDate: e.target.value,
               })
             }
             required
@@ -268,11 +268,11 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
         <div className="form-group">
           <label>Dividend per Share:</label>
           <NumericInput
-            value={newDividend.dividend_per_share}
+            value={newDividend.dividendPerShare}
             onChange={(value) => {
               setNewDividend((prev) => ({
                 ...prev,
-                dividend_per_share: value,
+                dividendPerShare: value,
               }));
             }}
             decimals={2}
@@ -281,54 +281,47 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
         </div>
         {selectedFund?.dividendType === 'STOCK' && (
           <div className="reinvestment-fields">
-            <h3>Reinvestment Details</h3>
+            <h3>
+              Reinvestment Details{' '}
+              {isDateInFuture(newDividend.exDividendDate) ? '(Optional)' : '(Required)'}
+            </h3>
             <div className="form-group">
               <label>Buy Order Date:</label>
               <input
                 type="date"
-                value={newDividend.buy_order_date || ''}
-                onChange={(e) => {
-                  const newDate = e.target.value;
-                  const isFutureDate = isDateInFuture(newDate);
-
+                value={newDividend.buyOrderDate || ''}
+                onChange={(e) =>
                   setNewDividend({
                     ...newDividend,
-                    buy_order_date: newDate,
-                    reinvestment_shares: isFutureDate ? '' : newDividend.reinvestment_shares,
-                    reinvestment_price: isFutureDate ? '' : newDividend.reinvestment_price,
-                  });
-                }}
-                required
+                    buyOrderDate: e.target.value,
+                  })
+                }
               />
             </div>
             <div className="form-group">
               <label>Reinvestment Shares:</label>
               <NumericInput
-                value={newDividend.reinvestment_shares}
+                value={newDividend.reinvestmentShares}
                 onChange={(value) => {
                   setNewDividend((prev) => ({
                     ...prev,
-                    reinvestment_shares: value,
+                    reinvestmentShares: value,
                   }));
                 }}
                 decimals={6}
-                disabled={isDateInFuture(newDividend.buy_order_date)}
-                required={!isDateInFuture(newDividend.buy_order_date)}
-                className={isDateInFuture(newDividend.buy_order_date) ? 'disabled-input' : ''}
               />
             </div>
             <div className="form-group">
               <label>Reinvestment Cost per Share:</label>
               <NumericInput
-                value={newDividend.reinvestment_price}
+                value={newDividend.reinvestmentPrice}
                 onChange={(value) => {
                   setNewDividend((prev) => ({
                     ...prev,
-                    reinvestment_price: value,
+                    reinvestmentPrice: value,
                   }));
                 }}
                 decimals={2}
-                required
               />
             </div>
           </div>
@@ -346,17 +339,17 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
           <>
             <div className="form-group">
               <label>Fund:</label>
-              <div className="static-field">{editingDividend.fund_name}</div>
+              <div className="static-field">{editingDividend.fundName}</div>
             </div>
             <div className="form-group">
               <label>Record Date:</label>
               <input
                 type="date"
-                value={editingDividend.record_date}
+                value={editingDividend.recordDate}
                 onChange={(e) =>
                   setEditingDividend({
                     ...editingDividend,
-                    record_date: e.target.value,
+                    recordDate: e.target.value,
                   })
                 }
                 required
@@ -366,11 +359,11 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
               <label>Ex-Dividend Date:</label>
               <input
                 type="date"
-                value={editingDividend.ex_dividend_date}
+                value={editingDividend.exDividendDate}
                 onChange={(e) =>
                   setEditingDividend({
                     ...editingDividend,
-                    ex_dividend_date: e.target.value,
+                    exDividendDate: e.target.value,
                   })
                 }
                 required
@@ -379,11 +372,11 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
             <div className="form-group">
               <label>Dividend per Share:</label>
               <NumericInput
-                value={editingDividend.dividend_per_share}
+                value={editingDividend.dividendPerShare}
                 onChange={(value) => {
                   setEditingDividend((prev) => ({
                     ...prev,
-                    dividend_per_share: value,
+                    dividendPerShare: value,
                   }));
                 }}
                 decimals={2}
@@ -392,52 +385,47 @@ const PortfolioActions = ({ transactionState, dividendState, portfolioFunds }) =
             </div>
             {selectedFund?.dividendType === 'STOCK' && (
               <div className="reinvestment-fields">
-                <h3>Reinvestment Details</h3>
+                <h3>
+                  Reinvestment Details{' '}
+                  {isDateInFuture(editingDividend.exDividendDate) ? '(Optional)' : '(Required)'}
+                </h3>
                 <div className="form-group">
                   <label>Buy Order Date:</label>
                   <input
                     type="date"
-                    value={editingDividend.buy_order_date || ''}
-                    onChange={(e) => {
-                      const newDate = e.target.value;
+                    value={editingDividend.buyOrderDate || ''}
+                    onChange={(e) =>
                       setEditingDividend({
                         ...editingDividend,
-                        buy_order_date: newDate,
-                      });
-                    }}
-                    required
+                        buyOrderDate: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="form-group">
                   <label>Reinvestment Shares:</label>
                   <NumericInput
-                    value={editingDividend.reinvestment_shares}
+                    value={editingDividend.reinvestmentShares}
                     onChange={(value) => {
                       setEditingDividend((prev) => ({
                         ...prev,
-                        reinvestment_shares: value,
+                        reinvestmentShares: value,
                       }));
                     }}
                     decimals={6}
-                    disabled={isDateInFuture(editingDividend.buy_order_date)}
-                    required={!isDateInFuture(editingDividend.buy_order_date)}
-                    className={
-                      isDateInFuture(editingDividend.buy_order_date) ? 'disabled-input' : ''
-                    }
                   />
                 </div>
                 <div className="form-group">
                   <label>Reinvestment Price:</label>
                   <NumericInput
-                    value={editingDividend.reinvestment_price}
+                    value={editingDividend.reinvestmentPrice}
                     onChange={(value) => {
                       setEditingDividend((prev) => ({
                         ...prev,
-                        reinvestment_price: value,
+                        reinvestmentPrice: value,
                       }));
                     }}
                     decimals={2}
-                    required
                   />
                 </div>
               </div>
