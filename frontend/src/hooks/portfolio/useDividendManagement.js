@@ -122,21 +122,16 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
     async (e) => {
       e.preventDefault();
       try {
-        if (selectedFund?.dividendType === 'STOCK') {
-          const isFutureOrder = isDateInFuture(newDividend.buyOrderDate);
-
+        if (selectedFund?.dividendType === 'STOCK' && !isDateInFuture(newDividend.exDividendDate)) {
+          // Ex-dividend date has passed — reinvestment should have occurred
           if (
-            !isFutureOrder &&
-            (!newDividend.reinvestmentShares || !newDividend.reinvestmentPrice)
+            !newDividend.buyOrderDate ||
+            !newDividend.reinvestmentShares ||
+            !newDividend.reinvestmentPrice
           ) {
             alert(
-              'Please fill in both reinvestment shares and price for completed stock dividends'
+              'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
             );
-            return;
-          }
-
-          if (!newDividend.buyOrderDate) {
-            alert('Please specify a buy order date for stock dividends');
             return;
           }
         }
@@ -144,13 +139,9 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
         const dividendData = {
           ...newDividend,
           reinvestmentShares:
-            selectedFund?.dividendType === 'STOCK' && !isDateInFuture(newDividend.buyOrderDate)
-              ? newDividend.reinvestmentShares
-              : undefined,
+            selectedFund?.dividendType === 'STOCK' ? newDividend.reinvestmentShares : undefined,
           reinvestmentPrice:
-            selectedFund?.dividendType === 'STOCK' && !isDateInFuture(newDividend.buyOrderDate)
-              ? newDividend.reinvestmentPrice
-              : undefined,
+            selectedFund?.dividendType === 'STOCK' ? newDividend.reinvestmentPrice : undefined,
           buyOrderDate:
             selectedFund?.dividendType === 'STOCK' ? newDividend.buyOrderDate : undefined,
         };
@@ -229,10 +220,18 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
       try {
         if (
           selectedFund?.dividendType === 'STOCK' &&
-          (!editingDividend.reinvestmentShares || !editingDividend.reinvestmentPrice)
+          !isDateInFuture(editingDividend.exDividendDate)
         ) {
-          alert('Please fill in both reinvestment shares and price for stock dividends');
-          return;
+          if (
+            !editingDividend.buyOrderDate ||
+            !editingDividend.reinvestmentShares ||
+            !editingDividend.reinvestmentPrice
+          ) {
+            alert(
+              'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
+            );
+            return;
+          }
         }
 
         const response = await api.put(`/dividend/${editingDividend.id}`, {

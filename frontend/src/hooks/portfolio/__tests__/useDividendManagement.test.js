@@ -271,15 +271,21 @@ describe('useDividendManagement', () => {
       expect(mockOnDataChange).toHaveBeenCalled();
     });
 
-    test('validates buyOrderDate is required for stock dividends', async () => {
-      // Mock as future date to bypass reinvestment validation
+    test('allows submission without reinvestment details when ex-dividend date is in the future', async () => {
+      // Future ex-dividend date: reinvestment details are optional
       dateHelpers.isDateInFuture.mockReturnValue(true);
 
       const mockDividendData = {
         portfolioFundId: 'pf-1',
+        recordDate: '2099-06-01',
+        exDividendDate: '2099-06-01',
         dividendPerShare: '1.50',
-        buyOrderDate: '', // Missing
+        buyOrderDate: '',
+        reinvestmentShares: '',
+        reinvestmentPrice: '',
       };
+
+      api.post.mockResolvedValue({ data: { ...mockDividendData, id: 1 } });
 
       const { result } = renderHook(() => useDividendManagement(mockPortfolioId, mockOnDataChange));
 
@@ -292,10 +298,8 @@ describe('useDividendManagement', () => {
         await result.current.handleCreateDividend({ preventDefault: jest.fn() });
       });
 
-      expect(global.window.alert).toHaveBeenCalledWith(
-        'Please specify a buy order date for stock dividends'
-      );
-      expect(api.post).not.toHaveBeenCalled();
+      expect(global.window.alert).not.toHaveBeenCalled();
+      expect(api.post).toHaveBeenCalled();
     });
   });
 
@@ -338,12 +342,14 @@ describe('useDividendManagement', () => {
     });
 
     test('validates reinvestment fields for past stock dividends', async () => {
+      // Past ex-dividend date: reinvestment details are required
       dateHelpers.isDateInFuture.mockReturnValue(false);
 
       const mockDividendData = {
         portfolioFundId: 'pf-1',
+        exDividendDate: '2024-01-10',
         dividendPerShare: '1.50',
-        buyOrderDate: '2024-01-10',
+        buyOrderDate: '', // Missing
         reinvestmentShares: '', // Missing
         reinvestmentPrice: '', // Missing
       };
@@ -360,7 +366,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(global.window.alert).toHaveBeenCalledWith(
-        'Please fill in both reinvestment shares and price for completed stock dividends'
+        'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
       );
       expect(api.post).not.toHaveBeenCalled();
     });
@@ -493,9 +499,13 @@ describe('useDividendManagement', () => {
       expect(result.current.isDividendEditModalOpen).toBe(false);
     });
 
-    test('handleUpdateDividend validates stock dividend reinvestment fields', async () => {
+    test('handleUpdateDividend validates stock dividend reinvestment fields when ex-dividend date has passed', async () => {
+      dateHelpers.isDateInFuture.mockReturnValue(false);
+
       const mockDividend = {
         id: 1,
+        exDividendDate: '2024-01-10', // Past date
+        buyOrderDate: '', // Missing
         reinvestmentShares: '', // Missing
         reinvestmentPrice: '', // Missing
       };
@@ -512,7 +522,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(global.window.alert).toHaveBeenCalledWith(
-        'Please fill in both reinvestment shares and price for stock dividends'
+        'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
       );
       expect(api.put).not.toHaveBeenCalled();
     });
