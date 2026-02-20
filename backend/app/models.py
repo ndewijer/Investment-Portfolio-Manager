@@ -282,7 +282,7 @@ class Dividend(db.Model):
     )
     buy_order_date = db.Column(db.Date, nullable=True)
     reinvestment_transaction_id = db.Column(
-        db.String(36), db.ForeignKey("transaction.id", ondelete="CASCADE"), nullable=True
+        db.String(36), db.ForeignKey("transaction.id", ondelete="RESTRICT"), nullable=True
     )
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 

@@ -421,21 +421,22 @@ class DividendService:
 
         # Capture data needed for invalidation before deletion
         invalidation_portfolio_fund_id = dividend.portfolio_fund_id
-        invalidation_ex_dividend_date = dividend.ex_dividend_date
 
         try:
-            # Delete associated transaction if it exists
+            # Delete in explicit sequence within a single transaction:
+            # 1. Clear FK reference on dividend (required before deleting transaction
+            #    since reinvestment_transaction_id has ON DELETE RESTRICT)
+            # 2. Delete the transaction
+            # 3. Delete the dividend
             if dividend.reinvestment_transaction_id:
-                transaction = db.session.get(Transaction, dividend.reinvestment_transaction_id)
-                if transaction:
-                    print(f"Deleting associated transaction {transaction.id}")
-                    db.session.delete(transaction)
-                else:
-                    print(
-                        f"Associated transaction {dividend.reinvestment_transaction_id} not found"
-                    )
+                transaction_id = dividend.reinvestment_transaction_id
+                dividend.reinvestment_transaction_id = None
+                db.session.flush()
 
-            print(f"Deleting dividend {dividend.id}")
+                transaction = db.session.get(Transaction, transaction_id)
+                if transaction:
+                    db.session.delete(transaction)
+
             db.session.delete(dividend)
             db.session.commit()
 
@@ -449,7 +450,7 @@ class DividendService:
                 if portfolio_fund:
                     PortfolioHistoryMaterializedService.invalidate_materialized_history(
                         portfolio_fund.portfolio_id,
-                        invalidation_ex_dividend_date,
+                        from_date=None,
                         recalculate=False,
                     )
             except Exception:
