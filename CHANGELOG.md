@@ -5,6 +5,49 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5] - 2026-02-20
+
+### Fixed
+- **IBKR Allocation Percentage Updates** - ([PR #153](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/153))
+  - Fixed critical bug where modifying IBKR allocation percentages appeared to succeed but changes were silently ignored
+  - Root cause: each portfolio has two allocation records (stock + fee); dict comprehension was overwriting the first with the second, so only one record was ever updated
+  - Fixed by switching from a dict keyed by `portfolio_id` to a list-per-portfolio, ensuring both records are updated
+
+- **Dividend Form Blank Fund and Reinvestment Logic** - ([PR #155](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/155))
+  - Fixed Fund field showing blank in the dividend Add and Edit modals
+  - Root cause: form bindings used `snake_case` keys but hook state stores `camelCase` (e.g. `portfolio_fund_id` vs `portfolioFundId`)
+  - All form field bindings corrected to use camelCase consistently across both modals
+  - Reinvestment details are now conditionally required based on ex-dividend date: optional if ex-date is in the future (dividend not yet processed), required if ex-date has passed
+
+- **Dividend Reinvestment FK: CASCADE → RESTRICT** - ([PR #156](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/156))
+  - Changed `ON DELETE CASCADE` to `ON DELETE RESTRICT` on `dividend.reinvestment_transaction_id`
+  - Previously, deleting a reinvestment transaction directly would silently cascade-delete the parent dividend — wrong direction for the relationship
+  - With RESTRICT, direct deletion of a transaction linked to a dividend is blocked at the database level
+  - `delete_dividend()` now handles both deletions explicitly in sequence: clear FK → flush → delete transaction → delete dividend → commit
+
+### Refactored
+- **Transaction PUT Request Cleanup** - ([PR #154](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/154))
+  - Frontend now only sends editable fields in the transaction update request: `{date, type, shares, costPerShare}`
+  - Previously sent the full transaction object including `portfolioFundId`, which is immutable and derivable from the transaction UUID in the URL
+
+### Changed
+- **Materialized View Full Invalidation Strategy** - ([PR #152](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/152))
+  - Changed from partial invalidation (delete records from a date forward) to full invalidation (delete all records for the portfolio)
+  - Eliminates UNIQUE constraint errors that occurred when auto-materializing after partial invalidation
+  - Import endpoints now properly invalidate the materialized view after price or transaction imports
+  - Chart loading: added spinner to prevent rendering an empty chart during auto-materialization delay
+  - Price update responses now include `newPrices` boolean to trigger frontend auto-refresh
+
+### Technical Details
+- **Migration**: `1.5.5_dividend_reinvestment_restrict_fk.py`
+  - SQLite table recreation pattern (create new → copy → drop old → rename)
+  - Idempotent: skips if FK constraint is already RESTRICT
+  - Explicit `DROP INDEX IF EXISTS` before table drop; `CREATE INDEX IF NOT EXISTS` after rename
+- **Tests**: Updated frontend tests for new validation logic and trimmed PUT request body
+
+### Breaking Changes
+None — all API contracts unchanged
+
 ## [1.5.4] - 2026-02-10
 
 ### Added

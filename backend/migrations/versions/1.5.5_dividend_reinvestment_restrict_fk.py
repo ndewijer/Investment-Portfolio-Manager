@@ -38,10 +38,25 @@ def upgrade():
     if "dividend" not in inspector.get_table_names():
         return
 
+    # Check if FK is already RESTRICT — skip if already correct
+    pragma_result = conn.execute(sa.text("PRAGMA foreign_key_list(dividend)"))
+    for row in pragma_result:
+        # Row format: (id, seq, table, from, to, on_update, on_delete, match)
+        if row[2] == "transaction" and row[6] == "RESTRICT":
+            return
+
     conn.execute(sa.text("PRAGMA foreign_keys=OFF"))
 
     try:
-        # Step 1: Create new table with RESTRICT instead of CASCADE
+        # Step 1: Drop existing indexes (idempotent)
+        for index_name in [
+            "ix_dividend_fund_id",
+            "ix_dividend_portfolio_fund_id",
+            "ix_dividend_record_date",
+        ]:
+            conn.execute(sa.text(f"DROP INDEX IF EXISTS {index_name}"))
+
+        # Step 2: Create new table with RESTRICT instead of CASCADE
         conn.execute(
             sa.text("""
             CREATE TABLE dividend_new (
@@ -67,7 +82,7 @@ def upgrade():
         """)
         )
 
-        # Step 2: Copy all data
+        # Step 3: Copy all data
         conn.execute(
             sa.text("""
             INSERT INTO dividend_new
@@ -75,18 +90,23 @@ def upgrade():
         """)
         )
 
-        # Step 3: Drop old table
+        # Step 4: Drop old table
         conn.execute(sa.text("DROP TABLE dividend"))
 
-        # Step 4: Rename new table
+        # Step 5: Rename new table
         conn.execute(sa.text("ALTER TABLE dividend_new RENAME TO dividend"))
 
-        # Step 5: Recreate indexes
-        conn.execute(sa.text("CREATE INDEX ix_dividend_fund_id ON dividend(fund_id)"))
+        # Step 6: Recreate indexes
+        conn.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_dividend_fund_id ON dividend(fund_id)"))
         conn.execute(
-            sa.text("CREATE INDEX ix_dividend_portfolio_fund_id ON dividend(portfolio_fund_id)")
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_dividend_portfolio_fund_id"
+                " ON dividend(portfolio_fund_id)"
+            )
         )
-        conn.execute(sa.text("CREATE INDEX ix_dividend_record_date ON dividend(record_date)"))
+        conn.execute(
+            sa.text("CREATE INDEX IF NOT EXISTS ix_dividend_record_date ON dividend(record_date)")
+        )
 
     finally:
         conn.execute(sa.text("PRAGMA foreign_keys=ON"))
@@ -100,9 +120,23 @@ def downgrade():
     if "dividend" not in inspector.get_table_names():
         return
 
+    # Check if FK is already CASCADE — skip if already correct
+    pragma_result = conn.execute(sa.text("PRAGMA foreign_key_list(dividend)"))
+    for row in pragma_result:
+        if row[2] == "transaction" and row[6] == "CASCADE":
+            return
+
     conn.execute(sa.text("PRAGMA foreign_keys=OFF"))
 
     try:
+        # Drop existing indexes (idempotent)
+        for index_name in [
+            "ix_dividend_fund_id",
+            "ix_dividend_portfolio_fund_id",
+            "ix_dividend_record_date",
+        ]:
+            conn.execute(sa.text(f"DROP INDEX IF EXISTS {index_name}"))
+
         conn.execute(
             sa.text("""
             CREATE TABLE dividend_new (
@@ -138,11 +172,16 @@ def downgrade():
         conn.execute(sa.text("DROP TABLE dividend"))
         conn.execute(sa.text("ALTER TABLE dividend_new RENAME TO dividend"))
 
-        conn.execute(sa.text("CREATE INDEX ix_dividend_fund_id ON dividend(fund_id)"))
+        conn.execute(sa.text("CREATE INDEX IF NOT EXISTS ix_dividend_fund_id ON dividend(fund_id)"))
         conn.execute(
-            sa.text("CREATE INDEX ix_dividend_portfolio_fund_id ON dividend(portfolio_fund_id)")
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_dividend_portfolio_fund_id"
+                " ON dividend(portfolio_fund_id)"
+            )
         )
-        conn.execute(sa.text("CREATE INDEX ix_dividend_record_date ON dividend(record_date)"))
+        conn.execute(
+            sa.text("CREATE INDEX IF NOT EXISTS ix_dividend_record_date ON dividend(record_date)")
+        )
 
     finally:
         conn.execute(sa.text("PRAGMA foreign_keys=ON"))
