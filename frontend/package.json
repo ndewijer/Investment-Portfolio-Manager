@@ -74,5 +74,8 @@
     "vitest": "^4.0.18",
     "webpack-bundle-analyzer": "^5.2.0",
     "webpack-dev-server": "^5.2.3"
+  },
+  "overrides": {
+    "@noble/hashes": "^2.0.1"
   }
 }

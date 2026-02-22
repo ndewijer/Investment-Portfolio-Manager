@@ -78,8 +78,8 @@ repos:
   # They run against Docker stack along with integration tests.
   - repo: local
     hooks:
-      - id: jest-frontend
-        name: jest-frontend
+      - id: vitest-frontend
+        name: vitest-frontend
         entry: bash -c 'cd frontend && npm run test:ci'
         language: system
         types: [javascript]
