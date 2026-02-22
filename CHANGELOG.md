@@ -5,6 +5,24 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.6] - 2026-02-22
+
+### Security
+- **Dependency Updates** - ([PR #157](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/157))
+  - Flask 3.1.2 → 3.1.3 (CVE: missing `Vary: Cookie` header)
+  - Werkzeug 3.1.4 → 3.1.6 (safe_join Windows device name bypass)
+  - cryptography 46.0.3 → 46.0.5 (SECT curve subgroup attack)
+  - urllib3 2.5.0 → 2.6.0 (decompression bomb / redirect bypass)
+  - protobuf 6.33.1 → 6.33.5 (JSON recursion depth bypass)
+  - axios ^1.13.4 → ^1.13.5 (prototype pollution via `__proto__`)
+
+- **Jest → Vitest Migration** - ([PR #158](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/158))
+  - Replaced Jest with Vitest as the frontend test runner
+  - Eliminates 18 high-severity npm vulnerabilities caused by `minimatch@3` in the `babel-jest → babel-plugin-istanbul → test-exclude` chain
+  - Removed unused `@babel/cli` dependency
+  - Node.js CI updated from 23 → 24 (vitest@4 requires `^20 || ^22 || >=24`)
+  - Remaining 6 high-severity vulnerabilities in ESLint's minimatch@3 chain are blocked on upstream package updates (`eslint-plugin-react` and `eslint-plugin-jsx-a11y` do not yet support eslint@10)
+
 ## [1.5.5] - 2026-02-20
 
 ### Fixed
