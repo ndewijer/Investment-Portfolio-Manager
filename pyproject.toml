@@ -19,7 +19,7 @@ dependencies = [
     "yfinance==0.2.66",
     "cryptography==46.0.5",
     "requests==2.32.5",
-    "urllib3==2.6.0",
+    "urllib3==2.6.3",
     "protobuf==6.33.5",
 ]
 
