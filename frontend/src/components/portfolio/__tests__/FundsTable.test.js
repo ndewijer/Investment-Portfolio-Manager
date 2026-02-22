@@ -11,13 +11,16 @@ import { FormatProvider } from '../../../context/FormatContext';
 
 // Mock useNavigate hook
 const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock shared components
-jest.mock('../../shared', () => ({
+vi.mock('../../shared', () => ({
   DataTable: ({ columns, data, loading, error, headerActions }) => {
     if (loading) return <div data-testid="loading">Loading...</div>;
     if (error) return <div data-testid="error">{error.message}</div>;

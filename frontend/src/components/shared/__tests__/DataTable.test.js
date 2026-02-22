@@ -29,7 +29,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import DataTable from '../DataTable';
 
 // Mock FontAwesome icons
-jest.mock('@fortawesome/react-fontawesome', () => ({
+vi.mock('@fortawesome/react-fontawesome', () => ({
   FontAwesomeIcon: ({ icon, className, onClick }) => (
     <i
       className={className}

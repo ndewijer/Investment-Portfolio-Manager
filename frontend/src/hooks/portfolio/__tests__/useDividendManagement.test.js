@@ -27,9 +27,16 @@ import api from '../../../utils/api';
 import * as dateHelpers from '../../../utils/portfolio/dateHelpers';
 
 // Mock dependencies
-jest.mock('../../useApiState');
-jest.mock('../../../utils/api');
-jest.mock('../../../utils/portfolio/dateHelpers');
+vi.mock('../../useApiState', () => ({ default: vi.fn() }));
+vi.mock('../../../utils/api', () => ({
+  default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn(), patch: vi.fn() },
+}));
+vi.mock('../../../utils/portfolio/dateHelpers', () => ({
+  getTodayString: vi.fn(),
+  toDateString: vi.fn(),
+  isDateInFuture: vi.fn(),
+  formatDisplayDate: vi.fn(),
+}));
 
 describe('useDividendManagement', () => {
   let mockExecute;

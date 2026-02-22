@@ -21,7 +21,7 @@ import { usePortfolioData } from '../usePortfolioData';
 import useApiState from '../../useApiState';
 
 // Mock dependencies
-jest.mock('../../useApiState');
+vi.mock('../../useApiState', () => ({ default: vi.fn() }));
 
 describe('usePortfolioData', () => {
   const mockPortfolioId = 'test-portfolio-id';

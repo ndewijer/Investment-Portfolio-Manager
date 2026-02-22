@@ -77,6 +77,7 @@ export default [...fixupConfigRules(compat.extends(
     languageOptions: {
         globals: {
             ...globals.jest,
+            ...globals.vitest,
         },
     },
 }];

@@ -9,21 +9,23 @@ import PortfolioChart from '../PortfolioChart';
 import * as portfolioCalculations from '../../../utils/portfolio/portfolioCalculations';
 
 // Mock the ValueChart component since it's complex and not the focus
-jest.mock('../../ValueChart', () => {
-  return function MockValueChart({ data, lines, visibleMetrics }) {
-    return (
-      <div data-testid="value-chart">
-        <div data-testid="chart-data-length">{data?.length || 0}</div>
-        <div data-testid="chart-lines-count">{lines?.length || 0}</div>
-        <div data-testid="visible-value">{visibleMetrics?.value ? 'true' : 'false'}</div>
-        <div data-testid="visible-cost">{visibleMetrics?.cost ? 'true' : 'false'}</div>
-      </div>
-    );
+vi.mock('../../ValueChart', () => {
+  return {
+    default: function MockValueChart({ data, lines, visibleMetrics }) {
+      return (
+        <div data-testid="value-chart">
+          <div data-testid="chart-data-length">{data?.length || 0}</div>
+          <div data-testid="chart-lines-count">{lines?.length || 0}</div>
+          <div data-testid="visible-value">{visibleMetrics?.value ? 'true' : 'false'}</div>
+          <div data-testid="visible-cost">{visibleMetrics?.cost ? 'true' : 'false'}</div>
+        </div>
+      );
+    },
   };
 });
 
 // Mock portfolio calculations utilities
-jest.mock('../../../utils/portfolio/portfolioCalculations', () => ({
+vi.mock('../../../utils/portfolio/portfolioCalculations', () => ({
   formatChartData: jest.fn((data) => data),
   getChartLines: jest.fn(() => [
     { key: 'line1', dataKey: 'value', color: '#667eea' },

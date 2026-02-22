@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
 
+// Jest compatibility shim for vitest
+global.jest = vi;
+
 // Polyfill for TextEncoder/TextDecoder (needed for react-router-dom)
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;

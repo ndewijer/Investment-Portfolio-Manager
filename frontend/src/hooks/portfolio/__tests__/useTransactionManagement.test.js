@@ -26,8 +26,10 @@ import api from '../../../utils/api';
 import { getTodayString } from '../../../utils/portfolio/dateHelpers';
 
 // Mock dependencies
-jest.mock('../../useApiState');
-jest.mock('../../../utils/api');
+vi.mock('../../useApiState', () => ({ default: vi.fn() }));
+vi.mock('../../../utils/api', () => ({
+  default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn(), patch: vi.fn() },
+}));
 
 describe('useTransactionManagement', () => {
   let mockExecute;
