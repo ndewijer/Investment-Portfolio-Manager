@@ -9,17 +9,21 @@ import { AppProvider, useApp } from '../AppContext';
 import api from '../../utils/api';
 
 // Mock the API module
-jest.mock('../../utils/api');
+vi.mock('../../utils/api', () => ({
+  default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn(), patch: vi.fn() },
+}));
 
 // Mock HealthCheckError component
-jest.mock('../../components/HealthCheckError', () => {
-  return function MockHealthCheckError({ error, onRetry }) {
-    return (
-      <div data-testid="health-check-error">
-        {error}
-        <button onClick={onRetry}>Retry</button>
-      </div>
-    );
+vi.mock('../../components/HealthCheckError', () => {
+  return {
+    default: function MockHealthCheckError({ error, onRetry }) {
+      return (
+        <div data-testid="health-check-error">
+          {error}
+          <button onClick={onRetry}>Retry</button>
+        </div>
+      );
+    },
   };
 });
 
