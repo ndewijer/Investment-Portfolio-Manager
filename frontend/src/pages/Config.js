@@ -1058,7 +1058,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
             },
           }
         );
-        setMessage(response.data.message);
+        setMessage(`Successfully imported ${response.data.imported} transactions`);
       } catch (err) {
         setError(err.response?.data?.message || 'Error importing transactions');
       }
@@ -1084,7 +1084,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setMessage(response.data.message);
+      setMessage(`Successfully imported ${response.data.imported} fund prices`);
     } catch (err) {
       setError(err.response?.data?.message || 'Error importing fund prices');
     }
