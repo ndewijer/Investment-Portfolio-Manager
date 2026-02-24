@@ -608,7 +608,7 @@ class ImportTransactions(Resource):
                 details={"transaction_count": count, "portfolio_fund_id": portfolio_fund_id},
             )
 
-            return {"message": f"Successfully imported {count} transactions"}, 200
+            return {"imported": count}, 200
 
         except ValueError as e:
             return {"message": str(e)}, 400
@@ -681,7 +681,7 @@ class ImportFundPrices(Resource):
                 details={"fund_id": fund_id, "price_count": count},
             )
 
-            return {"message": f"Successfully imported {count} fund prices"}, 200
+            return {"imported": count}, 200
 
         except ValueError as e:
             return {"message": str(e)}, 400
