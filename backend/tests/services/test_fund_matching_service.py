@@ -125,6 +125,8 @@ class TestFindFundByTransaction:
             total_amount=-15000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -167,6 +169,8 @@ class TestFindFundByTransaction:
             total_amount=-15000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -208,6 +212,8 @@ class TestFindFundByTransaction:
             total_amount=-5000.00,
             currency="EUR",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -251,6 +257,8 @@ class TestFindFundByTransaction:
             total_amount=-2000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -302,6 +310,8 @@ class TestFindFundByTransaction:
             total_amount=-15000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -497,6 +507,8 @@ class TestGetEligiblePortfoliosForTransaction:
             total_amount=-15000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -529,6 +541,8 @@ class TestGetEligiblePortfoliosForTransaction:
             total_amount=-2000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -573,6 +587,8 @@ class TestGetEligiblePortfoliosForTransaction:
             total_amount=-15000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -630,6 +646,8 @@ class TestGetEligiblePortfoliosForTransaction:
             total_amount=-15000.00,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -682,6 +700,8 @@ class TestGetEligiblePortfoliosForTransaction:
             total_amount=-5000.00,
             currency="EUR",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()

@@ -62,6 +62,8 @@ class TestIBKRTransactionMaterializedViewInvalidation:
             currency="USD",
             fees=1.0,
             status="pending",
+            report_date=transaction_date,
+            notes="",
         )
         db_session.add(ibkr_txn)
         db_session.commit()
@@ -160,6 +162,8 @@ class TestIBKRTransactionMaterializedViewInvalidation:
             currency="USD",
             fees=1.0,
             status="pending",
+            report_date=transaction_date,
+            notes="",
         )
         db_session.add(ibkr_txn)
         db_session.commit()
@@ -261,6 +265,8 @@ class TestIBKRTransactionMaterializedViewInvalidation:
             currency="USD",
             fees=1.0,
             status="pending",
+            report_date=transaction_date,
+            notes="",
         )
         db_session.add(ibkr_txn)
         db_session.commit()
@@ -355,6 +361,8 @@ class TestIBKRTransactionMaterializedViewInvalidation:
                 currency="USD",
                 fees=1.0,
                 status="pending",
+                report_date=txn_date,
+                notes="",
             )
             db_session.add(ibkr_txn)
             transaction_ids.append(ibkr_txn.id)
@@ -447,6 +455,8 @@ class TestIBKRTransactionMaterializedViewInvalidation:
             currency="USD",
             fees=1.0,
             status="pending",
+            report_date=transaction_date,
+            notes="",
         )
         db_session.add(ibkr_txn)
         db_session.commit()

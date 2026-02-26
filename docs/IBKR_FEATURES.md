@@ -4,12 +4,66 @@ This document describes the features available for processing IBKR transactions 
 
 ## Table of Contents
 
+- [Transaction Fields](#transaction-fields)
 - [Single Transaction Processing](#single-transaction-processing)
 - [Bulk Transaction Processing](#bulk-transaction-processing)
 - [Allocation Presets](#allocation-presets)
 - [Default Allocation on Import](#default-allocation-on-import)
 - [Transaction Lifecycle](#transaction-lifecycle)
 - [Best Practices](#best-practices)
+
+---
+
+## Transaction Fields
+
+Each imported IBKR transaction stores the following fields:
+
+| Field | Description |
+|-------|-------------|
+| `transactionDate` | Trade execution date |
+| `reportDate` | Settlement/reporting date (useful for reconciliation) |
+| `symbol` | Trading ticker symbol |
+| `isin` | ISIN code |
+| `description` | Security description |
+| `transactionType` | `buy`, `sell`, `dividend`, or `fee` |
+| `buySell` | Explicit buy/sell indicator from IBKR (`BUY` or `SELL`). Used to determine transaction type for trades. Falls back to quantity sign if absent. |
+| `quantity` | Number of shares |
+| `price` | Price per share |
+| `totalAmount` | Total transaction amount (absolute value) |
+| `currency` | Currency code |
+| `fees` | Commission/fees |
+| `notes` | Semicolon-separated IBKR transaction classification codes (e.g. `IA;P`) |
+| `status` | `pending`, `processed`, or `ignored` |
+
+### IBKR Notes Codes
+
+The `notes` field stores IBKR's transaction classification codes, separated by semicolons. Codes are matched as **whole tokens** — `RI` is a single code (Recurring Investment), not `R` + `I`. Capitalisation matters: `Ri` (Reimbursement) and `RI` (Recurring Investment) are distinct codes.
+
+#### Confirmed codes (seen in real data)
+
+| Code | Meaning |
+|------|---------|
+| `RI` | Recurring Investment (IBKR auto-invest feature) |
+| `IA` | Executed against an IB affiliate |
+| `FP` | IB acted as principal for the fractional share portion |
+| `P`  | Partial execution (order filled in multiple legs) |
+| `""` | Regular manual order — no special classification |
+
+#### Other codes likely to be encountered
+
+| Code | Meaning | Notes |
+|------|---------|-------|
+| `R`  | Dividend Reinvestment (DRIP) | Useful for identifying DRIP buys |
+| `O`  | Opening Trade | Regular buy opening a new position |
+| `C`  | Closing Trade | Regular sell closing a position |
+| `Co` | Corrected Trade | Amended version of a prior trade; check for re-imports |
+| `Ca` | Cancelled | Should not appear if Flex Query has "Include Cancelled Trades = NO" |
+| `B`  | Automatic Buy-in | IB-forced purchase to close a short position |
+| `M`  | Entered manually by IB | Manual correction by IB operations |
+| `Ri` | Reimbursement | Distinct from `RI` — capitalisation matters |
+| `RP` | Riskless principal for fractional share portion | Similar to `FP` |
+| `D`  | IB acted as Dual Agent | |
+| `AFx`| AutoFX conversion from trading | |
 
 ---
 
@@ -616,5 +670,5 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2025-12-17 (Version 1.3.5)
+**Last Updated**: 2026-02-26 (Version 1.5.7)
 **Maintained By**: @ndewijer

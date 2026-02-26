@@ -869,6 +869,8 @@ class TestImportTransactions:
                 "currency": "USD",
                 "fees": 1.00,
                 "raw_data": "{}",
+                "report_date": datetime(2025, 1, 15).date(),
+                "notes": "",
             }
         ]
 
@@ -901,6 +903,8 @@ class TestImportTransactions:
             "currency": "USD",
             "fees": 1.00,
             "raw_data": "{}",
+            "report_date": datetime(2025, 1, 15).date(),
+            "notes": "",
         }
 
         # Import first time
@@ -930,6 +934,8 @@ class TestImportTransactions:
             currency="USD",
             fees=1.00,
             raw_data="{}",
+            report_date=datetime(2025, 1, 15).date(),
+            notes="",
         )
         db.session.add(existing_txn)
         db.session.commit()
@@ -949,6 +955,8 @@ class TestImportTransactions:
                 "currency": "USD",
                 "fees": 1.00,
                 "raw_data": "{}",
+                "report_date": datetime(2025, 1, 15).date(),
+                "notes": "",
             },
             {
                 "ibkr_transaction_id": new_id,
@@ -963,6 +971,8 @@ class TestImportTransactions:
                 "currency": "USD",
                 "fees": 1.00,
                 "raw_data": "{}",
+                "report_date": datetime(2025, 1, 16).date(),
+                "notes": "",
             },
         ]
 
@@ -997,6 +1007,8 @@ class TestImportTransactions:
                 "currency": "USD",
                 "fees": 1.00,
                 "raw_data": "{}",
+                "report_date": datetime(2025, 1, 15).date(),
+                "notes": "",
             },
             {
                 "ibkr_transaction_id": invalid_id,
@@ -1011,6 +1023,8 @@ class TestImportTransactions:
                 "currency": "USD",
                 "fees": 1.00,
                 "raw_data": "{}",
+                "report_date": datetime(2025, 1, 16).date(),
+                "notes": "",
             },
         ]
 
@@ -1038,6 +1052,8 @@ class TestImportTransactions:
                 "currency": "USD",
                 "fees": 1.00,
                 "raw_data": "{}",
+                "report_date": datetime(2025, 1, 15).date(),
+                "notes": "",
             }
         ]
 

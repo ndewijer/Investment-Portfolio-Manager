@@ -129,6 +129,8 @@ class TestGetTransactions:
             total_amount=-1000.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         db_session.add(ibkr_txn)
         db_session.commit()
@@ -219,6 +221,8 @@ class TestFormatTransaction:
             total_amount=-1000.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         db_session.add(ibkr_txn)
 
@@ -592,6 +596,8 @@ class TestDeleteTransaction:
             total_amount=-1000.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         db_session.add(ibkr_txn)
 
