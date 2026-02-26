@@ -25,6 +25,9 @@ Include all trade executions. Select these fields in your Flex Query:
 - **IB Commission** (Commission fees)
 - **Transaction ID** (For tracking - recommended)
 - **IB Order ID** (For tracking - recommended)
+- **Notes/Codes** (Transaction classification codes - e.g. `R` for dividend reinvestment, `O` for opening trade)
+- **Buy/Sell** (Explicit buy/sell indicator, more reliable than inferring from quantity sign)
+- **Report Date** (Settlement/reporting date - useful for reconciliation alongside Trade Date)
 
 #### Cash Transactions Section
 Include cash movements for dividends and fees. Select these fields:
@@ -230,5 +233,5 @@ For application issues:
 
 ---
 
-**Last Updated**: 2025-11-22 (Version 1.3.0)
+**Last Updated**: 2026-02-26 (Version 1.5.7)
 **Maintained By**: @ndewijer

@@ -623,7 +623,8 @@ class IBKRTransaction(db.Model):
     Attributes:
         id (str): Unique identifier (UUID)
         ibkr_transaction_id (str): IBKR's unique transaction ID
-        transaction_date (date): Transaction date
+        transaction_date (date): Transaction date (trade date)
+        report_date (date): Settlement/reporting date from IBKR
         symbol (str): Trading symbol
         isin (str): ISIN code
         description (str): Transaction description
@@ -633,6 +634,7 @@ class IBKRTransaction(db.Model):
         total_amount (float): Total transaction amount
         currency (str): Currency code
         fees (float): Transaction fees
+        notes (str): Semicolon-separated IBKR transaction classification codes (e.g. 'IA;P')
         status (str): Status: 'pending', 'processed', 'ignored'
         imported_at (datetime): Import timestamp
         processed_at (datetime): Processing timestamp
@@ -644,6 +646,7 @@ class IBKRTransaction(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     ibkr_transaction_id = db.Column(db.String(100), unique=True, nullable=False)
     transaction_date = db.Column(db.Date, nullable=False)
+    report_date = db.Column(db.Date, nullable=False)
     symbol = db.Column(db.String(10), nullable=True)
     isin = db.Column(db.String(12), nullable=True)
     description = db.Column(db.Text, nullable=True)
@@ -653,6 +656,7 @@ class IBKRTransaction(db.Model):
     total_amount = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(3), nullable=False)
     fees = db.Column(db.Float, default=0.0, nullable=False)
+    notes = db.Column(db.String(255), nullable=False, default="")
     status = db.Column(db.String(20), default="pending", nullable=False)
     imported_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     processed_at = db.Column(db.DateTime, nullable=True)

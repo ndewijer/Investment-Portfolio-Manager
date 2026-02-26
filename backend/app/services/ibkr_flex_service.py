@@ -8,6 +8,7 @@ This module handles:
 - Transforming IBKR data to internal format
 """
 
+import contextlib
 import json
 import os
 import sys
@@ -716,33 +717,54 @@ class IBKRFlexService:
             isin = trade_element.get("isin")
             description = trade_element.get("description", "")
             date_str = trade_element.get("tradeDate")
+            report_date_str = trade_element.get("reportDate")
             quantity = float(trade_element.get("quantity", 0))
             price = float(trade_element.get("tradePrice", 0))
             amount = float(trade_element.get("netCash", 0))  # Negative for purchases
             # IBKR may use either 'currency' or 'currencyPrimary'
             currency = trade_element.get("currencyPrimary") or trade_element.get("currency", "USD")
             commission = abs(float(trade_element.get("ibCommission", 0)))
+            buy_sell = trade_element.get("buySell")  # Used to determine type; not stored
+            notes = trade_element.get("notes") or trade_element.get("Notes") or ""
 
             # Generate unique transaction ID
             ibkr_transaction_id = (
                 f"{trade_element.get('transactionID', '')}_{trade_element.get('ibOrderID', '')}"
             )
 
-            # Determine transaction type
-            if quantity > 0:
-                transaction_type = "buy"
-            elif quantity < 0:
-                transaction_type = "sell"
-                quantity = abs(quantity)
+            # Determine transaction type: use buySell if available, else fall back to quantity sign
+            if buy_sell:
+                buy_sell_upper = buy_sell.upper()
+                if buy_sell_upper in ("BUY", "B"):
+                    transaction_type = "buy"
+                    quantity = abs(quantity)
+                elif buy_sell_upper in ("SELL", "S"):
+                    transaction_type = "sell"
+                    quantity = abs(quantity)
+                else:
+                    return None
             else:
-                return None
+                if quantity > 0:
+                    transaction_type = "buy"
+                elif quantity < 0:
+                    transaction_type = "sell"
+                    quantity = abs(quantity)
+                else:
+                    return None
 
-            # Parse date
+            # Parse trade date
             transaction_date = datetime.strptime(date_str, "%Y%m%d").date()
+
+            # Parse report date if available
+            report_date = None
+            if report_date_str:
+                with contextlib.suppress(ValueError):
+                    report_date = datetime.strptime(report_date_str, "%Y%m%d").date()
 
             return {
                 "ibkr_transaction_id": ibkr_transaction_id,
                 "transaction_date": transaction_date,
+                "report_date": report_date or transaction_date,
                 "symbol": symbol,
                 "isin": isin,
                 "description": description,
@@ -752,6 +774,7 @@ class IBKRFlexService:
                 "total_amount": abs(amount),
                 "currency": currency,
                 "fees": commission,
+                "notes": notes,
                 "raw_data": json.dumps(trade_element.attrib),
             }
 
@@ -779,7 +802,8 @@ class IBKRFlexService:
             symbol = cash_element.get("symbol")
             isin = cash_element.get("isin")
             description = cash_element.get("description", "")
-            date_str = cash_element.get("reportDate") or cash_element.get("dateTime", "")
+            report_date_str = cash_element.get("reportDate")
+            date_str = report_date_str or cash_element.get("dateTime", "")
             amount = float(cash_element.get("amount", 0))
             # IBKR may use either 'currency' or 'currencyPrimary'
             currency = cash_element.get("currencyPrimary") or cash_element.get("currency", "USD")
@@ -805,13 +829,24 @@ class IBKRFlexService:
                 # Skip other cash transaction types
                 return None
 
-            # Parse date (handle both date formats)
-            if ";" in date_str:
-                date_str = date_str.split(";")[0]
-            if len(date_str) == 8:
-                transaction_date = datetime.strptime(date_str, "%Y%m%d").date()
+            # Parse transaction date (handle both date formats)
+            date_for_parsing = date_str
+            if ";" in date_for_parsing:
+                date_for_parsing = date_for_parsing.split(";")[0]
+            if len(date_for_parsing) == 8:
+                transaction_date = datetime.strptime(date_for_parsing, "%Y%m%d").date()
             else:
-                transaction_date = datetime.strptime(date_str.split(",")[0], "%Y-%m-%d").date()
+                transaction_date = datetime.strptime(
+                    date_for_parsing.split(",")[0], "%Y-%m-%d"
+                ).date()
+
+            # Parse report date if available (separate from transaction date)
+            report_date = None
+            if report_date_str:
+                with contextlib.suppress(ValueError):
+                    report_date_clean = report_date_str.split(";")[0]
+                    if len(report_date_clean) == 8:
+                        report_date = datetime.strptime(report_date_clean, "%Y%m%d").date()
 
             # Enhance description with additional details
             enhanced_description = description
@@ -823,6 +858,7 @@ class IBKRFlexService:
             return {
                 "ibkr_transaction_id": ibkr_transaction_id,
                 "transaction_date": transaction_date,
+                "report_date": report_date or transaction_date,
                 "symbol": symbol,
                 "isin": isin,
                 "description": enhanced_description,
@@ -832,6 +868,7 @@ class IBKRFlexService:
                 "total_amount": abs(amount),
                 "currency": currency,
                 "fees": 0.0,
+                "notes": code or "",
                 "raw_data": json.dumps(cash_element.attrib),
             }
 

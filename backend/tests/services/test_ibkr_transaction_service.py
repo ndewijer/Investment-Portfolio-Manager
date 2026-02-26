@@ -90,6 +90,8 @@ def sample_ibkr_transaction(app_context, db_session):
         fees=1.50,
         status="pending",
         raw_data="{}",
+        report_date=date(2025, 1, 15),
+        notes="",
     )
     db.session.add(txn)
     db.session.commit()
@@ -505,6 +507,8 @@ class TestProcessTransactionAllocation:
             fees=1.50,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -638,6 +642,8 @@ class TestDividendMatching:
             fees=0,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -711,6 +717,8 @@ class TestDividendMatching:
             currency="USD",
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -750,6 +758,8 @@ class TestDividendMatching:
             currency="USD",
             status="processed",  # Already processed
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -781,6 +791,8 @@ class TestModifyAllocations:
             currency="USD",
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -846,6 +858,8 @@ class TestModifyAllocations:
             currency="USD",
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -886,6 +900,8 @@ class TestModifyAllocations:
             currency="USD",
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -932,6 +948,8 @@ class TestModifyAllocations:
             currency="USD",
             status="pending",  # Not processed
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -959,6 +977,8 @@ class TestModifyAllocations:
             currency="USD",
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1003,6 +1023,8 @@ class TestCommissionAllocation:
             fees=0,  # No commission
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1043,6 +1065,8 @@ class TestCommissionAllocation:
             fees=3.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1092,6 +1116,8 @@ class TestCommissionAllocation:
             fees=2.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1140,6 +1166,8 @@ class TestCommissionAllocation:
             fees=3.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1191,6 +1219,8 @@ class TestCommissionAllocation:
             fees=3.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1236,6 +1266,8 @@ class TestCommissionAllocation:
             fees=3.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1283,6 +1315,8 @@ class TestCommissionAllocation:
             fees=1.50,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1321,6 +1355,8 @@ class TestCommissionAllocation:
             fees=1.50,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1364,6 +1400,8 @@ class TestCommissionAllocation:
             fees=3.00,  # $3 commission
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1534,6 +1572,8 @@ class TestGetInbox:
             total_amount=1500.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
@@ -1546,6 +1586,8 @@ class TestGetInbox:
             total_amount=10000.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 2),
+            notes="",
         )
         txn3 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
@@ -1558,6 +1600,8 @@ class TestGetInbox:
             total_amount=6000.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 3),
+            notes="",
         )
         db.session.add_all([txn1, txn2, txn3])
         db.session.commit()
@@ -1583,6 +1627,8 @@ class TestGetInbox:
             total_amount=1500.0,
             currency="USD",
             status="ignored",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
@@ -1595,6 +1641,8 @@ class TestGetInbox:
             total_amount=10000.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 2),
+            notes="",
         )
         db.session.add_all([txn1, txn2])
         db.session.commit()
@@ -1618,6 +1666,8 @@ class TestGetInbox:
             total_amount=1500.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
@@ -1630,6 +1680,8 @@ class TestGetInbox:
             total_amount=50.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 2),
+            notes="",
         )
         db.session.add_all([txn1, txn2])
         db.session.commit()
@@ -1660,6 +1712,8 @@ class TestGetInbox:
             currency="USD",
             fees=5.0,
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(txn)
         db.session.commit()
@@ -1700,6 +1754,8 @@ class TestGetInboxCount:
             total_amount=1500.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
@@ -1712,6 +1768,8 @@ class TestGetInboxCount:
             total_amount=10000.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 2),
+            notes="",
         )
         txn3 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
@@ -1724,6 +1782,8 @@ class TestGetInboxCount:
             total_amount=6000.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 3),
+            notes="",
         )
         db.session.add_all([txn1, txn2, txn3])
         db.session.commit()
@@ -1745,6 +1805,8 @@ class TestGetInboxCount:
             total_amount=1500.0,
             currency="USD",
             status="ignored",
+            report_date=date(2024, 1, 1),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_ibkr_txn_id(),
@@ -1757,6 +1819,8 @@ class TestGetInboxCount:
             total_amount=10000.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 2),
+            notes="",
         )
         db.session.add_all([txn1, txn2])
         db.session.commit()
@@ -1791,6 +1855,8 @@ class TestUnallocateTransaction:
             total_amount=1500.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1860,6 +1926,8 @@ class TestUnallocateTransaction:
             total_amount=1500.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1913,6 +1981,8 @@ class TestUnallocateTransaction:
             total_amount=1500.0,
             currency="USD",
             status="pending",  # Not processed
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -1943,6 +2013,8 @@ class TestGetTransactionAllocations:
             total_amount=1500.0,
             currency="USD",
             status="processed",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -2005,6 +2077,8 @@ class TestGetTransactionAllocations:
             total_amount=1500.0,
             currency="USD",
             status="pending",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn)
         db.session.commit()
@@ -2070,6 +2144,8 @@ class TestGroupedAllocations:
             currency="USD",
             fees=3.00,
             status="processed",
+            report_date=date(2024, 1, 15),
+            notes="",
         )
         db_session.add(ibkr_txn)
         db_session.commit()
@@ -2182,6 +2258,8 @@ class TestBulkAllocateTransactions:
             fees=1.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         ibkr_txn2 = IBKRTransaction(
             id=make_id(),
@@ -2197,6 +2275,8 @@ class TestBulkAllocateTransactions:
             fees=1.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add_all([ibkr_txn1, ibkr_txn2])
         db.session.commit()
@@ -2264,6 +2344,8 @@ class TestBulkAllocateTransactions:
             fees=1.00,
             status="pending",
             raw_data="{}",
+            report_date=date(2025, 1, 15),
+            notes="",
         )
         db.session.add(ibkr_txn1)
         db.session.commit()

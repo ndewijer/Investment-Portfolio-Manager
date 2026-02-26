@@ -44,11 +44,13 @@ SAMPLE_FLEX_STATEMENT = """<?xml version="1.0" encoding="UTF-8"?>
     <FlexStatement accountId="U1234567" fromDate="2025-01-01" toDate="2025-01-31">
       <Trades>
         <Trade accountId="U1234567" symbol="AAPL" isin="US0378331005" description="APPLE INC"
-               tradeDate="20250115" quantity="10" tradePrice="150.00" netCash="-1500.00"
-               currency="USD" ibCommission="-1.00" transactionID="12345" ibOrderID="67890"/>
+               tradeDate="20250115" reportDate="20250117" quantity="10" tradePrice="150.00"
+               netCash="-1500.00" currency="USD" ibCommission="-1.00" transactionID="12345"
+               ibOrderID="67890" buySell="BUY" notes="O"/>
         <Trade accountId="U1234567" symbol="MSFT" isin="US5949181045" description="MICROSOFT CORP"
-               tradeDate="20250116" quantity="-5" tradePrice="380.00" netCash="1900.00"
-               currency="USD" ibCommission="-1.00" transactionID="12346" ibOrderID="67891"/>
+               tradeDate="20250116" reportDate="20250118" quantity="-5" tradePrice="380.00"
+               netCash="1900.00" currency="USD" ibCommission="-1.00" transactionID="12346"
+               ibOrderID="67891" buySell="SELL" notes="C"/>
       </Trades>
       <CashTransactions>
         <CashTransaction accountId="U1234567" symbol="AAPL" isin="US0378331005"
@@ -77,7 +79,7 @@ SAMPLE_STATEMENT_NO_CURRENCY = """<?xml version="1.0" encoding="UTF-8"?>
       <Trades>
         <Trade accountId="U1234567" symbol="AAPL" isin="US0378331005" description="APPLE INC"
                tradeDate="20250115" quantity="10" tradePrice="150.00" netCash="-1500.00"
-               ibCommission="-1.00" transactionID="12345" ibOrderID="67890"/>
+               ibCommission="-1.00" transactionID="12345" ibOrderID="67890" buySell="BUY"/>
       </Trades>
       <CashTransactions>
         <CashTransaction accountId="U1234567" symbol="AAPL" isin="US0378331005"

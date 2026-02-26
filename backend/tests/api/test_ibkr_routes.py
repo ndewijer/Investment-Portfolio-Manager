@@ -217,6 +217,8 @@ class TestIBKRInbox:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -247,6 +249,8 @@ class TestIBKRInbox:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_id(),
@@ -259,6 +263,8 @@ class TestIBKRInbox:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add_all([txn1, txn2])
         db_session.commit()
@@ -288,6 +294,8 @@ class TestIBKRInbox:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -317,6 +325,8 @@ class TestIBKRInbox:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -348,6 +358,8 @@ class TestIBKRInbox:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -413,6 +425,8 @@ class TestIBKRAllocation:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -459,6 +473,8 @@ class TestIBKRAllocation:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -554,6 +570,8 @@ class TestIBKRAllocation:
             total_amount=float(Decimal("50.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -596,6 +614,8 @@ class TestIBKRAllocation:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="processed",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -648,6 +668,8 @@ class TestIBKRAllocation:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="processed",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -699,6 +721,8 @@ class TestIBKRAllocation:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -755,6 +779,8 @@ class TestIBKRBulkOperations:
             total_amount=float(Decimal("1500.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_id(),
@@ -768,6 +794,8 @@ class TestIBKRBulkOperations:
             total_amount=float(Decimal("750.00")),
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add_all([txn1, txn2])
         db_session.commit()
@@ -1194,6 +1222,8 @@ class TestIBKRInboxErrors:
             total_amount=1000.0,
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -1254,6 +1284,8 @@ class TestIBKRInboxErrors:
             total_amount=1000.0,
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -1304,6 +1336,8 @@ class TestIBKRAllocationErrors:
             total_amount=1000.0,
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -1344,6 +1378,8 @@ class TestIBKRAllocationErrors:
             total_amount=100.0,
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -1395,6 +1431,8 @@ class TestIBKRAllocationErrors:
             total_amount=1000.0,
             currency="USD",
             status="processed",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -1425,6 +1463,8 @@ class TestIBKRAllocationErrors:
             total_amount=1000.0,
             currency="USD",
             status="processed",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -1459,6 +1499,8 @@ class TestIBKRAllocationErrors:
             total_amount=1000.0,
             currency="USD",
             status="processed",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add(txn)
         db_session.commit()
@@ -1576,6 +1618,8 @@ class TestIBKRBulkOperationsErrors:
             total_amount=1000.0,
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         txn2 = IBKRTransaction(
             ibkr_transaction_id=make_id(),
@@ -1589,6 +1633,8 @@ class TestIBKRBulkOperationsErrors:
             total_amount=1000.0,
             currency="USD",
             status="pending",
+            report_date=datetime.now(),
+            notes="",
         )
         db_session.add_all([txn1, txn2])
         db_session.commit()
