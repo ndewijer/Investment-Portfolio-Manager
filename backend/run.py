@@ -13,7 +13,7 @@ from apscheduler.triggers.cron import CronTrigger
 from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
-from flask_migrate import Migrate
+from flask_migrate import Migrate, stamp
 from flask_restx import Api
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -327,6 +327,9 @@ def create_app(config=None):
             except Exception:
                 # If query fails, database doesn't exist yet
                 db.create_all()
+                # Stamp as current migration head so flask db upgrade won't
+                # try to re-apply migrations for tables just created by create_all
+                stamp()
             else:
                 # Database exists, set default settings if needed
                 if not SystemSetting.query.filter_by(key=SystemSettingKey.LOGGING_ENABLED).first():
