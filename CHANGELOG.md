@@ -8,15 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.5.7] - 2026-02-26
 
 ### Added
-- **IBKR Transaction Schema Extension** - Extended `IBKRTransaction` model with 3 new fields from IBKR Flex report:
-  - `report_date`: Settlement/reporting date (separate from trade date, useful for reconciliation)
-  - `buy_sell`: Explicit buy/sell indicator from IBKR (`BUY`/`SELL`). Now used to determine transaction type instead of inferring from quantity sign. Falls back to quantity sign if field is absent.
-  - `notes`: Semicolon-separated IBKR transaction classification codes (e.g. `RI;P`). `RI` (Recurring Investment) is stored as a whole token, not split.
-- **Database migration** `ea02071b6a89` adds the three new nullable columns to `ibkr_transaction`
+- **IBKR Transaction Schema Extension** - ([PR #160](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/160)) Extended `IBKRTransaction` model with 2 new fields from IBKR Flex report:
+  - `report_date`: Settlement/reporting date (separate from trade date, useful for reconciliation). Backfilled from `transaction_date` for existing rows.
+  - `notes`: Semicolon-separated IBKR transaction classification codes (e.g. `RI;P`). Whole-token matching — `RI` (Recurring Investment) is distinct from `R`+`I`. Backfilled as `""` for existing rows.
+- **`buySell` field parsing**: Transaction type now determined from the `buySell` XML attribute (`BUY`/`B` or `SELL`/`S`) instead of inferring from quantity sign. Falls back to quantity sign when `buySell` is absent.
+- **Database migration** `1.5.7` adds the new columns to `ibkr_transaction` (nullable → backfill → NOT NULL)
 - **Documentation**: Added Transaction Fields section with Notes Codes reference table to `docs/IBKR_FEATURES.md`
+- **Fixed fresh-install migration**: `db.create_all()` in app factory now stamps the Alembic revision to HEAD, preventing "duplicate column" errors when migrations run against a schema already created by `create_all`
 
 ### Changed
-- **Import response separation**: `import-transactions` and `import-fund-prices` endpoints now return `{"imported": N}` instead of a pre-formatted message string; frontend constructs the user-facing message
+- **Import response separation** - ([PR #159](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/159)) `import-transactions` and `import-fund-prices` endpoints now return `{"imported": N}` instead of a pre-formatted message string; frontend constructs the user-facing message
 
 ## [1.5.6] - 2026-02-22
 
