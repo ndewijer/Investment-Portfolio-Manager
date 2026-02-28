@@ -269,7 +269,7 @@ class IBKRConfig(Resource):
             return {"error": "Failed to save configuration", "details": str(e)}, 500
 
     @ns.doc("delete_ibkr_config")
-    @ns.response(200, "Configuration deleted")
+    @ns.response(204, "Configuration deleted")
     @ns.response(404, "Configuration not found", error_model)
     @ns.response(500, "Server error", error_model)
     def delete(self):
@@ -289,7 +289,7 @@ class IBKRConfig(Resource):
                 details=config_details,
             )
 
-            return {"success": True, "message": "Configuration deleted successfully"}, 200
+            return "", 204
 
         except ValueError as e:
             return {"error": str(e)}, 404
