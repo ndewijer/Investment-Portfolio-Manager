@@ -78,7 +78,7 @@ class IBKRConfigService:
 
         return {
             "configured": True,
-            "flexQueryId": config.flex_query_id,
+            "flexQueryId": str(config.flex_query_id) if config.flex_query_id is not None else None,
             "tokenExpiresAt": (
                 config.token_expires_at.isoformat() if config.token_expires_at else None
             ),

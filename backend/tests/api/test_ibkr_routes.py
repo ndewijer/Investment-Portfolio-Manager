@@ -156,7 +156,7 @@ class TestIBKRConfig:
 
         response = client.delete("/api/ibkr/config")
 
-        assert response.status_code == 200
+        assert response.status_code == 204
 
         # Verify database
         configs = IBKRConfig.query.all()
