@@ -3,10 +3,9 @@
  * @description Test suite for PortfolioChart component
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import PortfolioChart from '../PortfolioChart';
 import * as portfolioCalculations from '../../../utils/portfolio/portfolioCalculations';
+import PortfolioChart from '../PortfolioChart';
 
 // Mock the ValueChart component since it's complex and not the focus
 vi.mock('../../ValueChart', () => {
@@ -92,7 +91,7 @@ describe('PortfolioChart Component', () => {
           realizedGain: false,
           unrealizedGain: false,
           totalGain: false,
-        })
+        }),
       );
     });
 
@@ -137,7 +136,7 @@ describe('PortfolioChart Component', () => {
           realizedGain: false,
           unrealizedGain: false,
           totalGain: false,
-        })
+        }),
       );
     });
   });
@@ -145,14 +144,14 @@ describe('PortfolioChart Component', () => {
   describe('Memoization', () => {
     test('does not reformat chart data on re-render with same fundHistory', () => {
       const { rerender } = render(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       expect(portfolioCalculations.formatChartData).toHaveBeenCalledTimes(1);
 
       // Re-render with same props
       rerender(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       // formatChartData should not be called again due to memoization
@@ -161,7 +160,7 @@ describe('PortfolioChart Component', () => {
 
     test('reformats chart data when fundHistory changes', () => {
       const { rerender } = render(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       expect(portfolioCalculations.formatChartData).toHaveBeenCalledTimes(1);
@@ -185,14 +184,14 @@ describe('PortfolioChart Component', () => {
 
     test('does not recalculate chart lines on re-render with same portfolioFunds', () => {
       const { rerender } = render(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       const initialCallCount = portfolioCalculations.getChartLines.mock.calls.length;
 
       // Re-render with same props
       rerender(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       // getChartLines should not be called again due to memoization
@@ -231,7 +230,7 @@ describe('PortfolioChart Component', () => {
   describe('Component Structure', () => {
     test('has chart-section wrapper', () => {
       const { container } = render(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       const chartSection = container.querySelector('.chart-section');
@@ -240,7 +239,7 @@ describe('PortfolioChart Component', () => {
 
     test('has chart-container inside chart-section', () => {
       const { container } = render(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       const chartContainer = container.querySelector('.chart-container');
@@ -249,7 +248,7 @@ describe('PortfolioChart Component', () => {
 
     test('renders title inside chart-container', () => {
       const { container } = render(
-        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />
+        <PortfolioChart fundHistory={mockFundHistory} portfolioFunds={mockPortfolioFunds} />,
       );
 
       const chartContainer = container.querySelector('.chart-container');

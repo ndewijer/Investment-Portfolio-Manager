@@ -170,11 +170,11 @@
   margin-left: 0.25rem;
 }
 
-.form-group input[type='text'],
-.form-group input[type='password'],
-.form-group input[type='date'],
-.form-group input[type='number'],
-.form-group input[type='file'],
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group input[type="file"],
 .form-group select {
   width: 100%;
   padding: 0.5rem;
@@ -207,11 +207,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 400 !important;
+  font-weight: 400;
   cursor: pointer;
 }
 
-.checkbox-label input[type='checkbox'] {
+.checkbox-label input[type="checkbox"] {
   width: auto;
   cursor: pointer;
 }
@@ -438,138 +438,138 @@
   padding: 0.5rem;
   background-color: #e9ecef;
   border-radius: 3px;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
 /* Dark mode support */
-[data-theme='dark'] .config-page {
+[data-theme="dark"] .config-page {
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .config-tabs {
+[data-theme="dark"] .config-tabs {
   border-bottom-color: #444;
 }
 
-[data-theme='dark'] .tab-button {
+[data-theme="dark"] .tab-button {
   color: #aaa;
 }
 
-[data-theme='dark'] .tab-button:hover {
+[data-theme="dark"] .tab-button:hover {
   color: #e0e0e0;
   background-color: #2d2d2d;
 }
 
-[data-theme='dark'] .tab-button.active {
+[data-theme="dark"] .tab-button.active {
   color: #5fa3ff;
   border-bottom-color: #5fa3ff;
 }
 
-[data-theme='dark'] .config-section,
-[data-theme='dark'] .config-form {
+[data-theme="dark"] .config-section,
+[data-theme="dark"] .config-form {
   background-color: #2d2d2d;
   border-color: #444;
 }
 
-[data-theme='dark'] .form-group input,
-[data-theme='dark'] .form-group select {
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select {
   background-color: #1a1a1a;
   border-color: #444;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .form-help {
+[data-theme="dark"] .form-help {
   color: #aaa;
 }
 
-[data-theme='dark'] .version-card {
+[data-theme="dark"] .version-card {
   background-color: #1a1a1a;
   border-color: #444;
 }
 
-[data-theme='dark'] .version-card:hover {
+[data-theme="dark"] .version-card:hover {
   border-color: #5fa3ff;
 }
 
-[data-theme='dark'] .version-card h5 {
+[data-theme="dark"] .version-card h5 {
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .version-card p {
+[data-theme="dark"] .version-card p {
   color: #aaa;
 }
 
-[data-theme='dark'] .token-warning {
+[data-theme="dark"] .token-warning {
   background-color: #664d03;
   border-color: #856404;
 }
 
-[data-theme='dark'] .token-warning p {
+[data-theme="dark"] .token-warning p {
   color: #ffe69c;
 }
 
-[data-theme='dark'] .config-info {
+[data-theme="dark"] .config-info {
   background-color: #0c5460;
   border-color: #0a3d47;
 }
 
-[data-theme='dark'] .config-info p {
+[data-theme="dark"] .config-info p {
   color: #d1ecf1;
 }
 
-[data-theme='dark'] .settings-info,
-[data-theme='dark'] .dark-mode-info,
-[data-theme='dark'] .format-example {
+[data-theme="dark"] .settings-info,
+[data-theme="dark"] .dark-mode-info,
+[data-theme="dark"] .format-example {
   background-color: #1a1a1a;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .warning-text {
+[data-theme="dark"] .warning-text {
   background-color: #664d03;
   color: #ffe69c;
 }
 
-[data-theme='dark'] .csv-example {
+[data-theme="dark"] .csv-example {
   background-color: #1a1a1a;
 }
 
-[data-theme='dark'] .csv-example code {
+[data-theme="dark"] .csv-example code {
   background-color: #0d0d0d;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .config-form .config-section {
+[data-theme="dark"] .config-form .config-section {
   background-color: #1a1a1a;
   border-color: #444;
 }
 
-[data-theme='dark'] .config-form .section-title {
+[data-theme="dark"] .config-form .section-title {
   color: #e0e0e0;
   border-bottom-color: #444;
 }
 
-[data-theme='dark'] .config-form .section-description {
+[data-theme="dark"] .config-form .section-description {
   color: #aaa;
 }
 
-[data-theme='dark'] .config-form .form-help-note {
+[data-theme="dark"] .config-form .form-help-note {
   background-color: #1a3a52;
   border-left-color: #5fa3ff;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .allocation-summary {
+[data-theme="dark"] .allocation-summary {
   background-color: #1a1a1a;
   border-color: #444;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .allocation-pending {
+[data-theme="dark"] .allocation-pending {
   color: #ffe69c;
 }
 
-[data-theme='dark'] .pending-badge {
+[data-theme="dark"] .pending-badge {
   background-color: #664d03;
   border-color: #856404;
   color: #ffe69c;
@@ -659,7 +659,7 @@
 }
 
 .status-value {
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   color: #333;
 }
 

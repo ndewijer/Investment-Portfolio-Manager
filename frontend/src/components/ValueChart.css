@@ -520,27 +520,27 @@
 }
 
 .chart-fullscreen-container .recharts-responsive-container {
-  width: 100% !important;
-  height: 100% !important;
-  margin: 0 !important;
+  width: 100%;
+  height: 100%;
+  margin: 0;
 }
 
 /* Smaller legend text in fullscreen */
 .chart-fullscreen-container .recharts-legend-wrapper {
-  font-size: 10px !important;
+  font-size: 10px;
 }
 
 .chart-fullscreen-container .recharts-legend-item-text {
-  font-size: 10px !important;
+  font-size: 10px;
 }
 
 /* Ensure tooltip appears above toggle buttons in fullscreen */
 .chart-fullscreen-container .recharts-tooltip-wrapper {
-  z-index: 10004 !important;
+  z-index: 10004;
 }
 
 .chart-fullscreen-container .recharts-default-tooltip {
-  z-index: 10004 !important;
+  z-index: 10004;
 }
 
 /* Mobile minimal fullscreen button - small icon in corner */
@@ -583,11 +583,11 @@
 
   /* Reduce legend font size in normal mobile view */
   .mobile-chart-wrapper .recharts-legend-wrapper {
-    font-size: 10px !important;
+    font-size: 10px;
   }
 
   .mobile-chart-wrapper .recharts-legend-item-text {
-    font-size: 10px !important;
+    font-size: 10px;
   }
 
   /* In fullscreen, controls are overlays at top */

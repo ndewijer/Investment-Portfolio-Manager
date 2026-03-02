@@ -1,4 +1,3 @@
-import React from 'react';
 import { useApp } from '../context/AppContext';
 import './VersionBanner.css';
 

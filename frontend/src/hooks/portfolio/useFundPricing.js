@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import api from '../../utils/api';
 
 /**
@@ -73,7 +73,7 @@ export const useFundPricing = () => {
         }
       }
 
-      if (priceMap && priceMap[date]) {
+      if (priceMap?.[date]) {
         setPriceFound(true);
         return priceMap[date];
       } else {
@@ -81,7 +81,7 @@ export const useFundPricing = () => {
         return null;
       }
     },
-    [fundPrices, fetchFundPrice]
+    [fundPrices, fetchFundPrice],
   );
 
   // Check if price exists for a fund and date
@@ -90,7 +90,7 @@ export const useFundPricing = () => {
       const priceMap = fundPrices[fundId];
       return priceMap && priceMap[date] !== undefined;
     },
-    [fundPrices]
+    [fundPrices],
   );
 
   // Clear price found indicator

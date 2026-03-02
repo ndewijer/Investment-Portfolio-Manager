@@ -3,10 +3,9 @@
  * @description Simplified test suite for AppContext focusing on core functionality
  */
 
-import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import { AppProvider, useApp } from '../AppContext';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import api from '../../utils/api';
+import { AppProvider, useApp } from '../AppContext';
 
 // Mock the API module
 vi.mock('../../utils/api', () => ({
@@ -74,14 +73,14 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(
         () => {
           expect(screen.getByTestId('app-version')).toHaveTextContent('1.3.5');
         },
-        { timeout: 3000 }
+        { timeout: 3000 },
       );
     });
 
@@ -100,7 +99,7 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       // Should show the connecting message from AppProvider
@@ -124,7 +123,7 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(() => {
@@ -151,7 +150,7 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(() => {
@@ -169,12 +168,12 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(() => {
         expect(screen.getByTestId('error')).toHaveTextContent(
-          'Failed to load application version information'
+          'Failed to load application version information',
         );
       });
 
@@ -189,7 +188,7 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(() => {
@@ -203,7 +202,7 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(() => {
@@ -240,7 +239,7 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(() => {
@@ -279,7 +278,7 @@ describe('AppContext - Core Functionality', () => {
       render(
         <AppProvider>
           <TestComponent />
-        </AppProvider>
+        </AppProvider>,
       );
 
       await waitFor(() => {

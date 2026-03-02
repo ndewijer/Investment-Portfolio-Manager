@@ -1,18 +1,17 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { FormatProvider } from './context/FormatContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { AppProvider } from './context/AppContext';
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import VersionBanner from './components/VersionBanner';
-import Overview from './pages/Overview';
-import Portfolios from './pages/Portfolios';
-import PortfolioDetail from './pages/PortfolioDetail';
-import Funds from './pages/Funds';
-import FundDetail from './pages/FundDetail';
+import { AppProvider } from './context/AppContext';
+import { FormatProvider } from './context/FormatContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Config from './pages/Config';
-import LogViewer from './pages/LogViewer';
+import FundDetail from './pages/FundDetail';
+import Funds from './pages/Funds';
 import IBKRInbox from './pages/IBKRInbox';
+import LogViewer from './pages/LogViewer';
+import Overview from './pages/Overview';
+import PortfolioDetail from './pages/PortfolioDetail';
+import Portfolios from './pages/Portfolios';
 
 // Import global CSS first
 import './App.css';

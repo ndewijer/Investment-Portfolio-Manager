@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { DataTable, ActionButton, FormModal } from '../shared';
-import { useFormat } from '../../context/FormatContext';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useFormat } from '../../context/FormatContext';
+import { ActionButton, DataTable, FormModal } from '../shared';
 
 /**
  * FundsTable component - Portfolio funds/stocks management table
@@ -139,7 +139,7 @@ const FundsTable = ({
     {
       key: 'actions',
       header: 'Actions',
-      render: (value, fund) => (
+      render: (_value, fund) => (
         <div className="action-buttons">
           <ActionButton variant="primary" size="small" onClick={() => onAddTransaction(fund.id)}>
             Add Transaction

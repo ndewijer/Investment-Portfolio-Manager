@@ -159,7 +159,7 @@ const FilterPopup = ({
             onChange={(e) => {
               const selectedOptions = Array.from(
                 e.target.selectedOptions,
-                (option) => option.value
+                (option) => option.value,
               );
               onChange(selectedOptions);
             }}
@@ -179,7 +179,6 @@ const FilterPopup = ({
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Filter..."
-            autoFocus
           />
         );
 

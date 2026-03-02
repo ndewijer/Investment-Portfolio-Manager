@@ -18,9 +18,9 @@
  *
  * Total: 17 tests (all passing)
  */
-import { renderHook, act } from '@testing-library/react';
-import { useNumericInput } from '../useNumericInput';
+import { act, renderHook } from '@testing-library/react';
 import { FormatProvider } from '../../context/FormatContext';
+import { useNumericInput } from '../useNumericInput';
 
 // Wrapper component to provide FormatContext
 const wrapper = ({ children }) => <FormatProvider>{children}</FormatProvider>;
@@ -176,7 +176,7 @@ describe('useNumericInput', () => {
       {
         wrapper,
         initialProps: { initialValue: 1234.56 },
-      }
+      },
     );
 
     // User types

@@ -42,7 +42,7 @@ export const useNumericInput = (initialValue, decimals, onValueChange) => {
       .replace('X', '.');
 
     const numericValue = parseFloat(cleanValue);
-    onValueChange(isNaN(numericValue) ? 0 : numericValue);
+    onValueChange(Number.isNaN(numericValue) ? 0 : numericValue);
     setRawValue('');
   };
 

@@ -13,10 +13,10 @@
  * Total: 80+ tests covering happy paths, validation errors, and edge cases
  */
 import {
-  validateTransaction,
-  validateDividend,
-  validateDateRange,
   canRemoveFund,
+  validateDateRange,
+  validateDividend,
+  validateTransaction,
 } from '../transactionValidation';
 
 describe('Transaction Validation', () => {
@@ -269,10 +269,10 @@ describe('Transaction Validation', () => {
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
-        'Reinvestment shares are required for completed stock dividends'
+        'Reinvestment shares are required for completed stock dividends',
       );
       expect(result.errors).toContain(
-        'Reinvestment price is required for completed stock dividends'
+        'Reinvestment price is required for completed stock dividends',
       );
     });
 
@@ -292,7 +292,7 @@ describe('Transaction Validation', () => {
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
-        'Reinvestment shares are required for completed stock dividends'
+        'Reinvestment shares are required for completed stock dividends',
       );
     });
 
@@ -312,7 +312,7 @@ describe('Transaction Validation', () => {
       const result = validateDividend(dividend, fund);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
-        'Reinvestment price is required for completed stock dividends'
+        'Reinvestment price is required for completed stock dividends',
       );
     });
   });

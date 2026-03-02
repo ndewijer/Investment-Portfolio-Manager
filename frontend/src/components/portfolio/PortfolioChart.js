@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import ValueChart from '../ValueChart';
+import { useMemo, useState } from 'react';
 import { formatChartData, getChartLines } from '../../utils/portfolio/portfolioCalculations';
 import { LoadingSpinner } from '../shared';
+import ValueChart from '../ValueChart';
 
 /**
  * PortfolioChart component - Interactive portfolio value visualization
@@ -45,7 +45,7 @@ const PortfolioChart = ({ fundHistory, portfolioFunds, loading = false }) => {
   // Memoize chart lines configuration
   const chartLines = useMemo(
     () => getChartLines(portfolioFunds, visibleMetrics),
-    [portfolioFunds, visibleMetrics]
+    [portfolioFunds, visibleMetrics],
   );
 
   // Show loading state while data is being fetched

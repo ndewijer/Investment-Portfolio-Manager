@@ -13,8 +13,8 @@
  * This component is rendered by AppContext when healthCheckFailed is true.
  */
 
-import React from 'react';
 import PropTypes from 'prop-types';
+import React from 'react';
 import './HealthCheckError.css';
 
 /**

@@ -5,6 +5,19 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-03-02
+
+### Changed
+- **Replaced ESLint + Prettier with Biome** — Single Rust-based tool for linting and formatting
+  - Removed 11 packages: eslint, @eslint/js, @eslint/eslintrc, @eslint/compat, eslint-plugin-react, eslint-plugin-react-hooks, eslint-plugin-jsdoc, eslint-plugin-jsx-a11y, eslint-config-prettier, globals, prettier
+  - Added 1 package: @biomejs/biome
+  - Eliminates all 3 remaining minimatch@3 high-severity vulnerabilities
+  - Removes need for `legacy-peer-deps` workaround and `.npmrc`
+  - Pre-commit hooks simplified from eslint + prettier to single biome-check hook
+  - CI workflow simplified: `npm run check` replaces separate lint + format steps
+  - JSDoc enforcement moved to standalone `jsdoc-coverage.sh` with threshold gating
+  - Webpack JSX transform set to `automatic` runtime (aligns with `.babelrc`)
+
 ## [1.5.7] - 2026-02-26
 
 ### Added

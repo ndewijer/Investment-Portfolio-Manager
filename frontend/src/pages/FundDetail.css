@@ -1,5 +1,5 @@
 /* Remove duplicate button styles and import common styles */
-@import '../styles/common.css';
+@import "../styles/common.css";
 
 /* Keep only page-specific styles */
 .fund-detail-container {

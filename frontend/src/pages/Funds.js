@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { faChartLine, faMoneyBill } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
-import api from '../utils/api';
+import { useEffect, useState } from 'react';
 import {
-  useApiState,
-  FormModal,
-  FormField,
-  ActionButtons,
   ActionButton,
-  LoadingSpinner,
+  ActionButtons,
   ErrorMessage,
+  FormField,
+  FormModal,
+  LoadingSpinner,
+  useApiState,
 } from '../components/shared';
+import api from '../utils/api';
 import './Funds.css';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
@@ -130,7 +130,7 @@ const Funds = () => {
           .map((p) => `${p.name} (${p.transactionCount} transactions)`)
           .join('\n');
         alert(
-          `Cannot delete fund because it has transactions in the following portfolios:\n\n${portfolioInfo}`
+          `Cannot delete fund because it has transactions in the following portfolios:\n\n${portfolioInfo}`,
         );
         return;
       }

@@ -37,7 +37,7 @@ cd frontend && npm install
 ```
 
 ## Code Style
-- Frontend: ESLint & Prettier
+- Frontend: Biome (lint + format)
 - Backend: Ruff (linting and formatting)
 - Pre-commit hooks enforce style
 
@@ -63,8 +63,7 @@ cd frontend && npm test
 
    # Frontend
    cd frontend
-   npm run lint
-   npm run format
+   npm run check
    npm test
    ```
 5. Commit your changes (pre-commit hooks will run automatically)
@@ -78,5 +77,5 @@ cd frontend && npm test
 
 ---
 
-**Last Updated**: 2025-12-02 (Version 1.3.4)
+**Last Updated**: 2026-03-02 (Version 1.6.0)
 **Maintained By**: @ndewijer

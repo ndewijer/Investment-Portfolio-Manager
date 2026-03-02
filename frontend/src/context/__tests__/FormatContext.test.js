@@ -3,8 +3,7 @@
  * @description Test suite for FormatContext provider and useFormat hook
  */
 
-import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { FormatProvider, useFormat } from '../FormatContext';
 
 /**
@@ -43,7 +42,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       expect(screen.getByTestId('number')).toBeInTheDocument();
@@ -54,7 +53,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       expect(screen.getByTestId('is-european')).toHaveTextContent('true');
@@ -79,7 +78,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // European format: 1.234,56
@@ -90,7 +89,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // European format with 3 decimals: 1.234,567
@@ -101,7 +100,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // European format: € 1.234,56
@@ -113,7 +112,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // European format with USD: $1.234,56
@@ -125,7 +124,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // European format with SEK: 1.234,56 kr
@@ -136,7 +135,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // European format: 12,50%
@@ -147,7 +146,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // European format with 3 decimals: 12,567%
@@ -160,7 +159,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // Switch to US format
@@ -177,7 +176,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // Switch to US format
@@ -195,7 +194,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // Switch to US format
@@ -214,7 +213,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <TestComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       // Initially European
@@ -267,7 +266,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <EdgeCaseComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       expect(screen.getByTestId('zero')).toHaveTextContent('0,00');
@@ -279,7 +278,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <EdgeCaseComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       expect(screen.getByTestId('null')).toHaveTextContent('');
@@ -290,7 +289,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <EdgeCaseComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       expect(screen.getByTestId('undefined')).toHaveTextContent('');
@@ -300,7 +299,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <EdgeCaseComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       expect(screen.getByTestId('string-number')).toHaveTextContent('1.234,56');
@@ -310,7 +309,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <EdgeCaseComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       expect(screen.getByTestId('negative')).toHaveTextContent(/-1\.234,56/);
@@ -341,7 +340,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <CurrencySymbolComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       const usdText = screen.getByTestId('usd').textContent;
@@ -352,7 +351,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <CurrencySymbolComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       const eurText = screen.getByTestId('eur').textContent;
@@ -363,7 +362,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <CurrencySymbolComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       const sekText = screen.getByTestId('sek').textContent;
@@ -374,7 +373,7 @@ describe('FormatContext', () => {
       render(
         <FormatProvider>
           <CurrencySymbolComponent />
-        </FormatProvider>
+        </FormatProvider>,
       );
 
       const chfText = screen.getByTestId('chf').textContent;

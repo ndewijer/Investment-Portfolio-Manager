@@ -1,4 +1,3 @@
-import React from 'react';
 import { useFormat } from '../../context/FormatContext';
 
 /**

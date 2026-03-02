@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
-import useApiState from '../useApiState';
+import { useCallback, useState } from 'react';
 import api from '../../utils/api';
 import { getTodayString, toDateString } from '../../utils/portfolio/dateHelpers';
+import useApiState from '../useApiState';
 
 /**
  * Custom hook for managing portfolio transactions (buy/sell operations)
@@ -128,7 +128,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
             }));
           }
 
-          if (priceMap && priceMap[date]) {
+          if (priceMap?.[date]) {
             setNewTransaction((prev) => ({
               ...prev,
               date: date,
@@ -149,7 +149,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
         }));
       }
     },
-    [newTransaction.portfolioFundId, newTransaction.type, fundPrices, fetchFundPrice]
+    [newTransaction.portfolioFundId, newTransaction.type, fundPrices, fetchFundPrice],
   );
 
   // Create new transaction
@@ -180,7 +180,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
         alert(error.response?.data?.user_message || 'Error creating transaction');
       }
     },
-    [newTransaction, transactions, fetchTransactions, onDataChange]
+    [newTransaction, transactions, fetchTransactions, onDataChange],
   );
 
   // Edit transaction
@@ -208,7 +208,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
 
         // Update transactions state incrementally
         const updatedTransactions = transactions.map((t) =>
-          t.id === editingTransaction.id ? response.data : t
+          t.id === editingTransaction.id ? response.data : t,
         );
         fetchTransactions(() => Promise.resolve({ data: updatedTransactions }));
 
@@ -224,7 +224,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
         alert(error.response?.data?.user_message || 'Error updating transaction');
       }
     },
-    [editingTransaction, transactions, fetchTransactions, onDataChange]
+    [editingTransaction, transactions, fetchTransactions, onDataChange],
   );
 
   // Delete transaction
@@ -248,7 +248,7 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
         }
       }
     },
-    [transactions, fetchTransactions, onDataChange]
+    [transactions, fetchTransactions, onDataChange],
   );
 
   // Open transaction modal for specific fund

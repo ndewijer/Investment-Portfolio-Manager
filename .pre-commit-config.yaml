@@ -50,28 +50,12 @@ repos:
         files: ^(frontend/src/|frontend/e2e/|frontend/Dockerfile|frontend/nginx\.conf)
         exclude: ^backend/
 
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.39.1
+  - repo: https://github.com/biomejs/pre-commit
+    rev: v2.4.4
     hooks:
-      - id: eslint
-        files: ^frontend/src/.*\.(js|jsx)$
-        additional_dependencies:
-          - eslint@9.39.1
-          - eslint-plugin-react@7.37.5
-          - eslint-plugin-react-hooks@7.0.1
-          - eslint-plugin-jsdoc@61.4.0
-          - eslint-config-prettier@10.1.8
-          - "@eslint/compat@1.4.1"
-          - "@eslint/eslintrc@3.3.1"
-          - "@eslint/js@9.39.1"
-          - globals@16.5.0
-        args: [--config, frontend/eslint.config.mjs]
-
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
-    hooks:
-      - id: prettier
-        files: ^frontend/.*\.(js|jsx|ts|tsx|css|scss|json|yaml)$
+      - id: biome-check
+        additional_dependencies: ["@biomejs/biome@2.4.4"]
+        files: ^frontend/src/.*\.(js|jsx|ts|tsx|css|json)$
 
   # Frontend unit testing
   # Note: E2E tests (Playwright) run automatically in pre-commit when frontend files change.

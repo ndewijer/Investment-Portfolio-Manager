@@ -1,14 +1,14 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  LineChart,
+  CartesianGrid,
+  Legend,
   Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  ReferenceLine,
 } from 'recharts';
 import './ValueChart.css';
 import { useFormat } from '../context/FormatContext';
@@ -206,9 +206,9 @@ const ValueChart = ({
 
     let formattedValue;
     if (maxValue >= 1000000) {
-      formattedValue = formatCurrency(roundedValue / 1000000, 0) + 'M';
+      formattedValue = `${formatCurrency(roundedValue / 1000000, 0)}M`;
     } else if (maxValue >= 1000) {
-      formattedValue = formatCurrency(roundedValue / 1000, 0) + 'k';
+      formattedValue = `${formatCurrency(roundedValue / 1000, 0)}k`;
     } else {
       formattedValue = formatCurrency(roundedValue, 0);
     }
@@ -223,7 +223,7 @@ const ValueChart = ({
       if (!value && value !== 0) return 'N/A';
       return formatCurrency(value);
     },
-    [formatCurrency]
+    [formatCurrency],
   );
 
   // Zoom reset function - defined early to avoid circular dependencies
@@ -353,7 +353,7 @@ const ValueChart = ({
         // Period buttons (1Y, 3M, 1M) should only adjust the view, not load more data
       }
     },
-    [data]
+    [data],
   );
 
   const handlePan = useCallback(
@@ -382,7 +382,7 @@ const ValueChart = ({
         yDomain: null,
       }));
     },
-    [data, zoomState]
+    [data, zoomState],
   );
 
   // Mouse wheel zoom
@@ -398,7 +398,7 @@ const ValueChart = ({
         handleZoomOut();
       }
     },
-    [handleZoomIn, handleZoomOut]
+    [handleZoomIn, handleZoomOut],
   );
 
   // Detect if device is mobile
@@ -406,7 +406,7 @@ const ValueChart = ({
     const checkIsMobile = () => {
       const isMobileDevice =
         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
+          navigator.userAgent,
         ) || window.innerWidth <= 768;
       setIsMobile(isMobileDevice);
     };
@@ -462,8 +462,8 @@ const ValueChart = ({
         }
       } else if (e.touches.length === 2) {
         const distance = Math.sqrt(
-          Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
-            Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2)
+          (e.touches[0].clientX - e.touches[1].clientX) ** 2 +
+            (e.touches[0].clientY - e.touches[1].clientY) ** 2,
         );
         lastTouchDistanceRef.current = distance;
         isPanningRef.current = false;
@@ -475,7 +475,7 @@ const ValueChart = ({
         }
       }
     },
-    [isMobile, showTooltipTemporarily, tooltipPinned]
+    [isMobile, showTooltipTemporarily, tooltipPinned],
   );
 
   const handleTouchMove = useCallback(
@@ -483,8 +483,8 @@ const ValueChart = ({
       if (e.touches.length === 2) {
         e.preventDefault();
         const distance = Math.sqrt(
-          Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
-            Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2)
+          (e.touches[0].clientX - e.touches[1].clientX) ** 2 +
+            (e.touches[0].clientY - e.touches[1].clientY) ** 2,
         );
 
         if (lastTouchDistanceRef.current) {
@@ -513,7 +513,7 @@ const ValueChart = ({
         }
       }
     },
-    [zoomState.isZoomed, handleZoomIn, handleZoomOut, handlePan, isMobile]
+    [zoomState.isZoomed, handleZoomIn, handleZoomOut, handlePan, isMobile],
   );
 
   const handleTouchEnd = useCallback(() => {
@@ -564,7 +564,7 @@ const ValueChart = ({
         }
       }
     },
-    [isMobile, showTooltip, showTooltipTemporarily, tooltipTimeout]
+    [isMobile, showTooltip, showTooltipTemporarily, tooltipTimeout],
   );
 
   // Custom tooltip component that respects mobile visibility state
@@ -591,7 +591,7 @@ const ValueChart = ({
         </div>
       );
     },
-    [isMobile, showTooltip, formatTooltip]
+    [isMobile, showTooltip, formatTooltip],
   );
 
   const getVisibleData = useCallback(() => {
@@ -694,7 +694,7 @@ const ValueChart = ({
         const startIndex = Math.max(0, Math.floor(startRatio * (dataLength - 1) + startAdjustment));
         const endIndex = Math.min(
           dataLength - 1,
-          Math.floor(endRatio * (dataLength - 1) + endAdjustment)
+          Math.floor(endRatio * (dataLength - 1) + endAdjustment),
         );
 
         // Ensure we have a meaningful selection
@@ -758,7 +758,7 @@ const ValueChart = ({
       shouldApplyInitialZoom.current = true;
 
       // Check if we should apply initial zoom
-      const shouldApplyZoom = !(totalDataRange && totalDataRange.isFullDataset);
+      const shouldApplyZoom = !totalDataRange?.isFullDataset;
 
       // Schedule state updates for next render cycle to avoid cascading renders
       queueMicrotask(() => {

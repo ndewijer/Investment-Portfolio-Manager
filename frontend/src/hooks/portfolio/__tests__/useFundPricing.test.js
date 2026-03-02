@@ -17,9 +17,9 @@
  *
  * Total: 20+ tests
  */
-import { renderHook, act } from '@testing-library/react';
-import { useFundPricing } from '../useFundPricing';
+import { act, renderHook } from '@testing-library/react';
 import api from '../../../utils/api';
+import { useFundPricing } from '../useFundPricing';
 
 // Mock dependencies
 vi.mock('../../../utils/api', () => ({
@@ -108,7 +108,7 @@ describe('useFundPricing', () => {
       expect(priceMap).toBeNull();
       expect(global.console.error).toHaveBeenCalledWith(
         'Error fetching fund prices:',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 

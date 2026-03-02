@@ -16,7 +16,6 @@
  * Total: 13 tests
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import LoadingSpinner from '../LoadingSpinner';
 
@@ -169,7 +168,7 @@ describe('LoadingSpinner Component', () => {
           message="Processing large dataset..."
           overlay={true}
           className="processing-overlay"
-        />
+        />,
       );
 
       // Check spinner size

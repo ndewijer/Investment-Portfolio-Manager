@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
-import useApiState from '../useApiState';
+import { useCallback, useState } from 'react';
 import api from '../../utils/api';
-import { getTodayString, toDateString, isDateInFuture } from '../../utils/portfolio/dateHelpers';
+import { getTodayString, isDateInFuture, toDateString } from '../../utils/portfolio/dateHelpers';
+import useApiState from '../useApiState';
 
 /**
  * Custom hook for managing portfolio dividends and reinvestments
@@ -130,7 +130,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
             !newDividend.reinvestmentPrice
           ) {
             alert(
-              'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
+              'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).',
             );
             return;
           }
@@ -172,11 +172,11 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
         alert(
           error.response?.data?.user_message ||
             error.response?.data?.error ||
-            'Error creating dividend'
+            'Error creating dividend',
         );
       }
     },
-    [newDividend, selectedFund, dividends, fetchDividends, onDataChange]
+    [newDividend, selectedFund, dividends, fetchDividends, onDataChange],
   );
 
   // Edit dividend
@@ -195,7 +195,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
       if (fundData.dividendType === 'STOCK' && dividend.reinvestmentTransactionId) {
         try {
           const transactionResponse = await api.get(
-            `/transaction/${dividend.reinvestmentTransactionId}`
+            `/transaction/${dividend.reinvestmentTransactionId}`,
           );
           const transactionData = transactionResponse.data;
           editData.reinvestmentShares = transactionData.shares;
@@ -228,7 +228,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
             !editingDividend.reinvestmentPrice
           ) {
             alert(
-              'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
+              'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).',
             );
             return;
           }
@@ -241,7 +241,7 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
 
         // Update dividends state incrementally
         const updatedDividends = dividends.map((d) =>
-          d.id === editingDividend.id ? response.data : d
+          d.id === editingDividend.id ? response.data : d,
         );
         fetchDividends(() => Promise.resolve({ data: updatedDividends }));
 
@@ -258,11 +258,11 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
         alert(
           error.response?.data?.user_message ||
             error.response?.data?.error ||
-            'Error updating dividend'
+            'Error updating dividend',
         );
       }
     },
-    [editingDividend, selectedFund, dividends, fetchDividends, onDataChange]
+    [editingDividend, selectedFund, dividends, fetchDividends, onDataChange],
   );
 
   // Delete dividend
@@ -285,12 +285,12 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
           alert(
             error.response?.data?.user_message ||
               error.response?.data?.error ||
-              'Error deleting dividend'
+              'Error deleting dividend',
           );
         }
       }
     },
-    [dividends, fetchDividends, onDataChange]
+    [dividends, fetchDividends, onDataChange],
   );
 
   // Close dividend modal

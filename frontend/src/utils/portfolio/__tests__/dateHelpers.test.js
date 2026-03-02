@@ -5,7 +5,7 @@
  * These are pure functions that should achieve 100% coverage.
  */
 
-import { isDateInFuture, formatDisplayDate, getTodayString, toDateString } from '../dateHelpers';
+import { formatDisplayDate, getTodayString, isDateInFuture, toDateString } from '../dateHelpers';
 
 describe('dateHelpers', () => {
   describe('isDateInFuture', () => {
@@ -244,7 +244,7 @@ describe('dateHelpers', () => {
 
     it('preserves date when converting from Date object', () => {
       const original = '2024-06-15';
-      const date = new Date(original + 'T00:00:00Z');
+      const date = new Date(`${original}T00:00:00Z`);
       const result = toDateString(date);
 
       expect(result).toBe(original);
@@ -252,7 +252,7 @@ describe('dateHelpers', () => {
 
     it('preserves date when extracting from ISO string', () => {
       const original = '2024-06-15';
-      const withTime = original + 'T10:30:45.123Z';
+      const withTime = `${original}T10:30:45.123Z`;
       const result = toDateString(withTime);
 
       expect(result).toBe(original);
@@ -266,7 +266,7 @@ describe('dateHelpers', () => {
 
     it('returns consistent format for both input types', () => {
       const dateStr = '2024-06-15';
-      const dateObj = new Date(dateStr + 'T00:00:00Z');
+      const dateObj = new Date(`${dateStr}T00:00:00Z`);
 
       expect(toDateString(dateStr)).toBe('2024-06-15');
       expect(toDateString(dateObj)).toBe('2024-06-15');

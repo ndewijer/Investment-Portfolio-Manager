@@ -1,4 +1,4 @@
-@import '../styles/common.css';
+@import "../styles/common.css";
 
 .ibkr-inbox {
   padding: 2rem;
@@ -381,7 +381,7 @@
   border-radius: 4px;
 }
 
-.allocation-row input[type='number'] {
+.allocation-row input[type="number"] {
   flex: 1;
   padding: 0.5rem;
   border: 1px solid #ced4da;
@@ -437,7 +437,7 @@
   margin: 0;
 }
 
-.bulk-actions .checkbox-label input[type='checkbox'] {
+.bulk-actions .checkbox-label input[type="checkbox"] {
   cursor: pointer;
   width: 18px;
   height: 18px;
@@ -455,7 +455,7 @@
   text-align: center;
 }
 
-.checkbox-cell input[type='checkbox'] {
+.checkbox-cell input[type="checkbox"] {
   cursor: pointer;
   width: 18px;
   height: 18px;
@@ -473,7 +473,7 @@
     justify-content: center;
   }
 
-  .bulk-actions .checkbox-label input[type='checkbox'] {
+  .bulk-actions .checkbox-label input[type="checkbox"] {
     width: 20px;
     height: 20px;
     min-width: 20px;
@@ -490,25 +490,25 @@
   }
 
   /* Hide the colon in mobile card checkboxes */
-  .mobile-cards .card-field .field-label:has(+ .field-value input[type='checkbox'])::after {
+  .mobile-cards .card-field .field-label:has(+ .field-value input[type="checkbox"])::after {
     content: none;
   }
 
   /* Adjust checkbox field layout in mobile cards */
-  .mobile-cards .card-field:has(input[type='checkbox']) {
+  .mobile-cards .card-field:has(input[type="checkbox"]) {
     flex-direction: row;
     justify-content: flex-start;
   }
 
-  .mobile-cards .card-field:has(input[type='checkbox']) .field-label {
+  .mobile-cards .card-field:has(input[type="checkbox"]) .field-label {
     display: none;
   }
 
-  .mobile-cards .card-field:has(input[type='checkbox']) .field-value {
+  .mobile-cards .card-field:has(input[type="checkbox"]) .field-value {
     text-align: left;
   }
 
-  .mobile-cards .card-field input[type='checkbox'] {
+  .mobile-cards .card-field input[type="checkbox"] {
     width: 20px;
     height: 20px;
     min-width: 20px;
@@ -652,99 +652,99 @@
 }
 
 /* Dark mode support */
-[data-theme='dark'] .ibkr-inbox {
+[data-theme="dark"] .ibkr-inbox {
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .feature-unavailable {
+[data-theme="dark"] .feature-unavailable {
   background-color: #664d03;
   border-color: #856404;
 }
 
-[data-theme='dark'] .feature-unavailable p {
+[data-theme="dark"] .feature-unavailable p {
   color: #ffe69c;
 }
 
-[data-theme='dark'] .empty-state {
+[data-theme="dark"] .empty-state {
   background-color: #2d2d2d;
   border-color: #444;
 }
 
-[data-theme='dark'] .empty-state p {
+[data-theme="dark"] .empty-state p {
   color: #aaa;
 }
 
-[data-theme='dark'] .transactions-table table {
+[data-theme="dark"] .transactions-table table {
   background-color: #1a1a1a;
 }
 
-[data-theme='dark'] .transactions-table th {
+[data-theme="dark"] .transactions-table th {
   background-color: #2d2d2d;
   color: #e0e0e0;
   border-color: #444;
 }
 
-[data-theme='dark'] .transactions-table td {
+[data-theme="dark"] .transactions-table td {
   border-color: #444;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .transactions-table tbody tr:nth-child(even) {
+[data-theme="dark"] .transactions-table tbody tr:nth-child(even) {
   background-color: #252525;
 }
 
-[data-theme='dark'] .transactions-table tbody tr:hover {
+[data-theme="dark"] .transactions-table tbody tr:hover {
   background-color: #2d2d2d;
 }
 
-[data-theme='dark'] .transaction-summary {
+[data-theme="dark"] .transaction-summary {
   background-color: #2d2d2d;
   border-color: #444;
 }
 
-[data-theme='dark'] .allocation-row select,
-[data-theme='dark'] .allocation-row input {
+[data-theme="dark"] .allocation-row select,
+[data-theme="dark"] .allocation-row input {
   background-color: #1a1a1a;
   border-color: #444;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .allocation-total {
+[data-theme="dark"] .allocation-total {
   background-color: #2d2d2d;
   border-color: #444;
 }
 
-[data-theme='dark'] .modal-actions {
+[data-theme="dark"] .modal-actions {
   border-top-color: #444;
 }
 
-[data-theme='dark'] .allocation-details h3 {
+[data-theme="dark"] .allocation-details h3 {
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .allocation-detail-row {
+[data-theme="dark"] .allocation-detail-row {
   background-color: #2d2d2d;
   border-color: #444;
 }
 
-[data-theme='dark'] .allocation-detail-item .label {
+[data-theme="dark"] .allocation-detail-item .label {
   color: #aaa;
 }
 
-[data-theme='dark'] .allocation-detail-item .value {
+[data-theme="dark"] .allocation-detail-item .value {
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .allocation-modal .modal-description {
+[data-theme="dark"] .allocation-modal .modal-description {
   color: #aaa;
 }
 
-[data-theme='dark'] .allocation-modal .modal-note {
+[data-theme="dark"] .allocation-modal .modal-note {
   background-color: #1a3a52;
   border-left-color: #5fa3ff;
   color: #e0e0e0;
 }
 
-[data-theme='dark'] .allocation-modal .modal-note strong {
+[data-theme="dark"] .allocation-modal .modal-note strong {
   color: #fff;
 }

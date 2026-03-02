@@ -1,18 +1,18 @@
-import React, { useEffect, useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { LoadingSpinner, ErrorMessage } from '../components/shared';
 import {
-  PortfolioSummary,
-  PortfolioChart,
-  FundsTable,
-  TransactionsTable,
   DividendsTable,
+  FundsTable,
   PortfolioActions,
+  PortfolioChart,
+  PortfolioSummary,
+  TransactionsTable,
 } from '../components/portfolio';
+import { ErrorMessage, LoadingSpinner } from '../components/shared';
 import {
+  useDividendManagement,
   usePortfolioData,
   useTransactionManagement,
-  useDividendManagement,
 } from '../hooks/portfolio';
 import api from '../utils/api';
 import './PortfolioDetail.css';
@@ -92,7 +92,7 @@ const PortfolioDetail = () => {
         alert(error.response?.data?.user_message || 'Error adding fund to portfolio');
       }
     },
-    [id, fetchPortfolioData]
+    [id, fetchPortfolioData],
   );
 
   const handleRemoveFund = useCallback(
@@ -119,7 +119,7 @@ const PortfolioDetail = () => {
             } catch (confirmError) {
               console.error('Error removing fund after confirmation:', confirmError);
               alert(
-                confirmError.response?.data?.user_message || 'Error removing fund from portfolio'
+                confirmError.response?.data?.user_message || 'Error removing fund from portfolio',
               );
             }
           }
@@ -129,7 +129,7 @@ const PortfolioDetail = () => {
         }
       }
     },
-    [fetchPortfolioData, loadTransactions, loadDividends]
+    [fetchPortfolioData, loadTransactions, loadDividends],
   );
 
   // Check for loading and error states
