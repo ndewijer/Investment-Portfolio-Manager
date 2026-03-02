@@ -17,12 +17,12 @@
  */
 import {
   calculateTransactionTotal,
-  getFundColor,
-  sortTransactions,
   filterTransactions,
-  getUniqueFundNames,
   formatChartData,
   getChartLines,
+  getFundColor,
+  getUniqueFundNames,
+  sortTransactions,
 } from '../portfolioCalculations';
 
 describe('Portfolio Calculations', () => {

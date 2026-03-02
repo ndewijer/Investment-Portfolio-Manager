@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../utils/api';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import HealthCheckError from '../components/HealthCheckError';
+import api from '../utils/api';
 
 /**
  * Application-level context that provides global state for version information,
@@ -190,7 +190,7 @@ export const AppProvider = ({ children }) => {
         return true;
       } else {
         setHealthCheckFailed(true);
-        setHealthCheckError('Backend is unhealthy: ' + JSON.stringify(response.data));
+        setHealthCheckError(`Backend is unhealthy: ${JSON.stringify(response.data)}`);
         setHealthCheckComplete(true);
         return false;
       }
@@ -221,7 +221,7 @@ export const AppProvider = ({ children }) => {
         // Health check failures are handled by HealthCheckError component
         console.debug(
           'App initialization error (expected when backend unavailable):',
-          error.message
+          error.message,
         );
       }
     };

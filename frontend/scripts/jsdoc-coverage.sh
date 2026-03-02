@@ -3,7 +3,9 @@
 # JSDoc Coverage Report
 # Counts documented vs undocumented functions/components in the codebase
 
-echo "🔍 JSDoc Coverage Report"
+THRESHOLD=${JSDOC_THRESHOLD:-70}
+
+echo "JSDoc Coverage Report"
 echo "========================"
 echo ""
 
@@ -12,8 +14,8 @@ total_components=$(grep -rE "^(export default|export )?(const|function) [A-Z]" s
 total_functions=$(grep -rE "^(export )?(const|function) [a-z]" src --include="*.js" | wc -l)
 total=$((total_components + total_functions))
 
-# Count JSDoc blocks (/** ... */)
-jsdoc_blocks=$(grep -rB1 "^(export default|export )?(const|function)" src --include="*.js" | grep -c "/\*\*")
+# Count JSDoc blocks — look for */ on the line immediately before a function/component declaration
+jsdoc_blocks=$(grep -rB1 -E "^(export default|export )?(const|function)" src --include="*.js" | grep -c " \*/$")
 
 # Calculate coverage
 if [ $total -gt 0 ]; then
@@ -22,20 +24,18 @@ else
   coverage=0
 fi
 
-echo "📊 Statistics:"
+echo "Statistics:"
 echo "  Total Components: $total_components"
 echo "  Total Functions:  $total_functions"
 echo "  Total Items:      $total"
 echo "  Documented:       $jsdoc_blocks"
 echo ""
-echo "📈 Coverage: ${coverage}%"
+echo "Coverage: ${coverage}% (threshold: ${THRESHOLD}%)"
 echo ""
 
-# Run eslint to show missing JSDoc warnings
-echo "⚠️  ESLint JSDoc Warnings:"
-echo "========================"
-npm run lint --silent 2>&1 | grep -E "(jsdoc/require-jsdoc|Missing JSDoc)" | head -20
-
-echo ""
-echo "💡 To see all JSDoc warnings: npm run lint"
-echo "💡 To enforce JSDoc coverage: npm run lint:jsdoc"
+if [ "$coverage" -lt "$THRESHOLD" ]; then
+  echo "FAIL: JSDoc coverage ${coverage}% is below threshold of ${THRESHOLD}%"
+  exit 1
+else
+  echo "PASS: JSDoc coverage ${coverage}% meets threshold of ${THRESHOLD}%"
+fi

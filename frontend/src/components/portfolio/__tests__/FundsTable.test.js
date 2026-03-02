@@ -3,11 +3,10 @@
  * @description Test suite for FundsTable component
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import FundsTable from '../FundsTable';
 import { FormatProvider } from '../../../context/FormatContext';
+import FundsTable from '../FundsTable';
 
 // Mock useNavigate hook
 const mockNavigate = jest.fn();
@@ -79,7 +78,7 @@ const renderWithProviders = (props) => {
       <FormatProvider>
         <FundsTable {...props} />
       </FormatProvider>
-    </BrowserRouter>
+    </BrowserRouter>,
   );
 };
 
@@ -220,7 +219,7 @@ describe('FundsTable Component', () => {
         expect.objectContaining({
           id: 1,
           fundName: 'Vanguard Total Stock Market ETF',
-        })
+        }),
       );
     });
 
@@ -234,7 +233,7 @@ describe('FundsTable Component', () => {
         expect.objectContaining({
           id: 1,
           fundName: 'Vanguard Total Stock Market ETF',
-        })
+        }),
       );
     });
 

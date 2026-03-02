@@ -1,9 +1,8 @@
-import React from 'react';
-import { FormModal } from '../shared';
+import { faChartLine, faCheck, faMoneyBill } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoneyBill, faChartLine, faCheck } from '@fortawesome/free-solid-svg-icons';
-import NumericInput from '../NumericInput';
 import { isDateInFuture } from '../../utils/portfolio/dateHelpers';
+import NumericInput from '../NumericInput';
+import { FormModal } from '../shared';
 
 /**
  * PortfolioActions component - Modal collection for portfolio transactions and dividends

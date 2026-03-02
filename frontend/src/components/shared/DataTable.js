@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import { faFilter, faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilter, faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorMessage from './ErrorMessage';
+import { useMemo, useState } from 'react';
 import FilterPopup from '../FilterPopup';
+import ErrorMessage from './ErrorMessage';
+import LoadingSpinner from './LoadingSpinner';
 import './DataTable.css';
 
 /**
@@ -95,7 +95,7 @@ const DataTable = ({
     Object.entries(filters).forEach(([key, filterValue]) => {
       if (filterValue !== null && filterValue !== undefined && filterValue !== '') {
         const column = columns.find((col) => col.key === key);
-        if (column && column.filter) {
+        if (column?.filter) {
           result = result.filter((item) => column.filter(item, filterValue));
         }
       }
@@ -109,7 +109,7 @@ const DataTable = ({
         let bVal = b[sortConfig.key];
 
         // Use custom sort function if provided
-        if (column && column.sortFn) {
+        if (column?.sortFn) {
           return column.sortFn(a, b, sortConfig.direction);
         }
 
@@ -146,7 +146,7 @@ const DataTable = ({
 
     // Check if the column has a custom onFilterClick handler
     const column = columns.find((col) => col.key === columnKey);
-    if (column && column.onFilterClick) {
+    if (column?.onFilterClick) {
       column.onFilterClick(e);
       return;
     }

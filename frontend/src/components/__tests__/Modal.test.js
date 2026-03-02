@@ -20,8 +20,7 @@
  * Total: 18 tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import Modal from '../Modal';
 
 describe('Modal Component', () => {
@@ -42,7 +41,7 @@ describe('Modal Component', () => {
       render(
         <Modal isOpen={true} onClose={() => {}} title="Test Modal">
           <div>Modal Content</div>
-        </Modal>
+        </Modal>,
       );
 
       expect(screen.getByText('Test Modal')).toBeInTheDocument();
@@ -56,7 +55,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={false} onClose={() => {}} title="Test Modal">
           <div>Modal Content</div>
-        </Modal>
+        </Modal>,
       );
 
       expect(container.firstChild).toBeNull();
@@ -69,7 +68,7 @@ describe('Modal Component', () => {
       render(
         <Modal isOpen={true} onClose={() => {}} title="Confirm Action">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const title = screen.getByRole('heading', { name: 'Confirm Action' });
@@ -84,7 +83,7 @@ describe('Modal Component', () => {
         <Modal isOpen={true} onClose={() => {}} title="Test">
           <p>First paragraph</p>
           <button>Action Button</button>
-        </Modal>
+        </Modal>,
       );
 
       expect(screen.getByText('First paragraph')).toBeInTheDocument();
@@ -101,7 +100,7 @@ describe('Modal Component', () => {
       render(
         <Modal isOpen={true} onClose={onClose} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const closeButton = screen.getByRole('button', { name: 'Close modal' });
@@ -117,7 +116,7 @@ describe('Modal Component', () => {
       render(
         <Modal isOpen={true} onClose={onClose} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const closeButton = screen.getByRole('button', { name: 'Close modal' });
@@ -136,7 +135,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={true} onClose={onClose} title="Test" closeOnOverlayClick={true}>
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const overlay = container.querySelector('.modal-overlay');
@@ -153,7 +152,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={true} onClose={onClose} title="Test" closeOnOverlayClick={false}>
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const overlay = container.querySelector('.modal-overlay');
@@ -170,7 +169,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={true} onClose={onClose} title="Test" closeOnOverlayClick={true}>
           <p>Click me</p>
-        </Modal>
+        </Modal>,
       );
 
       const modalContent = container.querySelector('.modal-content');
@@ -189,7 +188,7 @@ describe('Modal Component', () => {
       render(
         <Modal isOpen={true} onClose={onClose} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       fireEvent.keyDown(document, { key: 'Escape' });
@@ -205,7 +204,7 @@ describe('Modal Component', () => {
       render(
         <Modal isOpen={true} onClose={onClose} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       fireEvent.keyDown(document, { key: 'Enter' });
@@ -224,7 +223,7 @@ describe('Modal Component', () => {
       const { rerender } = render(
         <Modal isOpen={false} onClose={() => {}} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       // Initially body should allow scrolling
@@ -234,7 +233,7 @@ describe('Modal Component', () => {
       rerender(
         <Modal isOpen={true} onClose={() => {}} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       // Body scroll should be locked
@@ -248,7 +247,7 @@ describe('Modal Component', () => {
       const { unmount } = render(
         <Modal isOpen={true} onClose={() => {}} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       expect(document.body.style.overflow).toBe('hidden');
@@ -269,7 +268,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={true} onClose={() => {}} title="Test" size="small">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const modalContent = container.querySelector('.modal-content');
@@ -283,7 +282,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={true} onClose={() => {}} title="Test">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const modalContent = container.querySelector('.modal-content');
@@ -297,7 +296,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={true} onClose={() => {}} title="Test" size="large">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const modalContent = container.querySelector('.modal-content');
@@ -313,7 +312,7 @@ describe('Modal Component', () => {
       const { container } = render(
         <Modal isOpen={true} onClose={() => {}} title="Test" className="custom-modal">
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const modalContent = container.querySelector('.modal-content');
@@ -333,7 +332,7 @@ describe('Modal Component', () => {
           className="custom-class another-class"
         >
           <p>Content</p>
-        </Modal>
+        </Modal>,
       );
 
       const modalContent = container.querySelector('.modal-content');

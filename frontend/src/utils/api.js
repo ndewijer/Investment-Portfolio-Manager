@@ -14,7 +14,7 @@ axios.interceptors.request.use(
     }
     console.error('Global Request Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 axios.interceptors.response.use(
@@ -32,7 +32,7 @@ axios.interceptors.response.use(
     }
     console.error('Global Response Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 const api = axios.create({
@@ -64,7 +64,7 @@ api.interceptors.request.use(
   (error) => {
     console.error('Request Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add more detailed logging to the response interceptor
@@ -101,7 +101,7 @@ api.interceptors.response.use(
       console.error('Error:', error.message);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

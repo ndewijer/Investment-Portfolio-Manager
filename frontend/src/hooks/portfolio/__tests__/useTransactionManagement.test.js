@@ -19,11 +19,11 @@
  *
  * Total: 25+ tests
  */
-import { renderHook, act } from '@testing-library/react';
-import { useTransactionManagement } from '../useTransactionManagement';
-import useApiState from '../../useApiState';
+import { act, renderHook } from '@testing-library/react';
 import api from '../../../utils/api';
 import { getTodayString } from '../../../utils/portfolio/dateHelpers';
+import useApiState from '../../useApiState';
+import { useTransactionManagement } from '../useTransactionManagement';
 
 // Mock dependencies
 vi.mock('../../useApiState', () => ({ default: vi.fn() }));
@@ -67,7 +67,7 @@ describe('useTransactionManagement', () => {
   describe('Initialization', () => {
     test('initializes with correct default state', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       expect(result.current.transactions).toEqual([]);
@@ -81,7 +81,7 @@ describe('useTransactionManagement', () => {
 
     test('initializes newTransaction with correct defaults', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       expect(result.current.newTransaction).toMatchObject({
@@ -97,7 +97,7 @@ describe('useTransactionManagement', () => {
   describe('Modal Management', () => {
     test('openTransactionModal sets fund ID and opens modal', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {
@@ -112,7 +112,7 @@ describe('useTransactionManagement', () => {
 
     test('closeTransactionModal resets form and closes modal', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       // Open modal first
@@ -133,7 +133,7 @@ describe('useTransactionManagement', () => {
 
     test('handleEditTransaction opens edit modal with transaction data', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       const mockTransaction = {
@@ -162,7 +162,7 @@ describe('useTransactionManagement', () => {
 
     test('closeEditModal closes edit modal and clears editing state', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       // Open edit modal first
@@ -187,7 +187,7 @@ describe('useTransactionManagement', () => {
   describe('Load Transactions', () => {
     test('loadTransactions fetches transactions for portfolio', async () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       await act(async () => {
@@ -233,7 +233,7 @@ describe('useTransactionManagement', () => {
       });
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       // Set form data
@@ -263,7 +263,7 @@ describe('useTransactionManagement', () => {
       api.post.mockRejectedValue(mockError);
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       await act(async () => {
@@ -279,7 +279,7 @@ describe('useTransactionManagement', () => {
       api.post.mockRejectedValue(mockError);
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       await act(async () => {
@@ -318,7 +318,7 @@ describe('useTransactionManagement', () => {
       });
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       // Set editing transaction
@@ -355,7 +355,7 @@ describe('useTransactionManagement', () => {
       api.put.mockRejectedValue(mockError);
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {
@@ -388,7 +388,7 @@ describe('useTransactionManagement', () => {
       });
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       await act(async () => {
@@ -396,7 +396,7 @@ describe('useTransactionManagement', () => {
       });
 
       expect(global.window.confirm).toHaveBeenCalledWith(
-        'Are you sure you want to delete this transaction?'
+        'Are you sure you want to delete this transaction?',
       );
       expect(api.delete).toHaveBeenCalledWith('/transaction/1');
       expect(mockOnDataChange).toHaveBeenCalled();
@@ -406,7 +406,7 @@ describe('useTransactionManagement', () => {
       global.window.confirm = jest.fn(() => false);
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       await act(async () => {
@@ -429,7 +429,7 @@ describe('useTransactionManagement', () => {
       api.delete.mockRejectedValue(mockError);
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       await act(async () => {
@@ -444,7 +444,7 @@ describe('useTransactionManagement', () => {
   describe('Price Lookup', () => {
     test('handleTransactionDateChange sets date for sell transactions without price lookup', async () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {
@@ -477,7 +477,7 @@ describe('useTransactionManagement', () => {
       const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {
@@ -493,7 +493,7 @@ describe('useTransactionManagement', () => {
       await act(async () => {
         await result.current.handleTransactionDateChange(
           { target: { value: '2024-01-15' } },
-          mockPortfolioFunds
+          mockPortfolioFunds,
         );
       });
 
@@ -511,7 +511,7 @@ describe('useTransactionManagement', () => {
       const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {
@@ -528,7 +528,7 @@ describe('useTransactionManagement', () => {
       await act(async () => {
         await result.current.handleTransactionDateChange(
           { target: { value: '2024-01-15' } },
-          mockPortfolioFunds
+          mockPortfolioFunds,
         );
       });
 
@@ -538,7 +538,7 @@ describe('useTransactionManagement', () => {
       await act(async () => {
         await result.current.handleTransactionDateChange(
           { target: { value: '2024-01-15' } },
-          mockPortfolioFunds
+          mockPortfolioFunds,
         );
       });
 
@@ -554,7 +554,7 @@ describe('useTransactionManagement', () => {
       const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {
@@ -570,7 +570,7 @@ describe('useTransactionManagement', () => {
       await act(async () => {
         await result.current.handleTransactionDateChange(
           { target: { value: '2024-01-16' } }, // Date not in prices
-          mockPortfolioFunds
+          mockPortfolioFunds,
         );
       });
 
@@ -585,7 +585,7 @@ describe('useTransactionManagement', () => {
       const mockPortfolioFunds = [{ id: 'pf-1', fundId: 'fund-123' }];
 
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {
@@ -601,7 +601,7 @@ describe('useTransactionManagement', () => {
       await act(async () => {
         await result.current.handleTransactionDateChange(
           { target: { value: '2024-01-15' } },
-          mockPortfolioFunds
+          mockPortfolioFunds,
         );
       });
 
@@ -614,7 +614,7 @@ describe('useTransactionManagement', () => {
   describe('State Setters', () => {
     test('setNewTransaction updates new transaction state', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       const newData = {
@@ -634,7 +634,7 @@ describe('useTransactionManagement', () => {
 
     test('setEditingTransaction updates editing transaction state', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       const editData = {
@@ -655,7 +655,7 @@ describe('useTransactionManagement', () => {
 
     test('setPriceFound updates price found state', () => {
       const { result } = renderHook(() =>
-        useTransactionManagement(mockPortfolioId, mockOnDataChange)
+        useTransactionManagement(mockPortfolioId, mockOnDataChange),
       );
 
       act(() => {

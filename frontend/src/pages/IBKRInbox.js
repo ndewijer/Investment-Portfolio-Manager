@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import api from '../utils/api';
-import Toast from '../components/Toast';
+import { useCallback, useEffect, useState } from 'react';
 import Modal from '../components/Modal';
 import DataTable from '../components/shared/DataTable';
+import Toast from '../components/Toast';
 import { useApp } from '../context/AppContext';
 import { useFormat } from '../context/FormatContext';
+import api from '../utils/api';
 import './IBKRInbox.css';
 
 /**
@@ -68,7 +68,7 @@ const IBKRInbox = () => {
         setIsLoading(false);
       }
     },
-    [selectedStatus]
+    [selectedStatus],
   );
 
   const fetchPortfolios = useCallback(async () => {
@@ -98,7 +98,7 @@ const IBKRInbox = () => {
 
       if (response.data.success) {
         setMessage(
-          `Import completed: ${response.data.imported} imported, ${response.data.skipped} skipped`
+          `Import completed: ${response.data.imported} imported, ${response.data.skipped} skipped`,
         );
         fetchTransactions();
         refreshIBKRTransactionCount();
@@ -212,7 +212,7 @@ const IBKRInbox = () => {
         response.data.allocations.map((a) => ({
           portfolio_id: a.portfolioId,
           percentage: a.allocationPercentage,
-        }))
+        })),
       );
     } catch (err) {
       console.error('Failed to fetch allocation data:', err);
@@ -223,7 +223,7 @@ const IBKRInbox = () => {
   const handleUnallocate = async (transactionId) => {
     if (
       !window.confirm(
-        'Are you sure you want to unallocate this transaction? This will delete all portfolio transactions and revert the IBKR transaction to pending status.'
+        'Are you sure you want to unallocate this transaction? This will delete all portfolio transactions and revert the IBKR transaction to pending status.',
       )
     ) {
       return;
@@ -300,7 +300,7 @@ const IBKRInbox = () => {
     if (Math.abs(total - 100) > 0.01) {
       newAllocations[newAllocations.length - 1].percentage += 100 - total;
       newAllocations[newAllocations.length - 1].percentage = parseFloat(
-        newAllocations[newAllocations.length - 1].percentage.toFixed(2)
+        newAllocations[newAllocations.length - 1].percentage.toFixed(2),
       );
     }
 
@@ -378,7 +378,7 @@ const IBKRInbox = () => {
           setMessage(
             `${response.data.processed} transaction(s) processed successfully${
               response.data.failed > 0 ? `, ${response.data.failed} failed` : ''
-            }`
+            }`,
           );
           setSelectedTransaction(null);
           setSelectedTransactions([]);
@@ -503,7 +503,7 @@ const IBKRInbox = () => {
     try {
       // Check eligibility for all selected transactions using helper function
       const eligibilityChecks = await Promise.all(
-        selectedTransactions.map((txnId) => fetchTransactionEligibility(txnId))
+        selectedTransactions.map((txnId) => fetchTransactionEligibility(txnId)),
       );
 
       // Analyze results
@@ -511,11 +511,11 @@ const IBKRInbox = () => {
       const successfulChecks = eligibilityChecks.filter((check) => check.success);
       const fundsNotFound = successfulChecks.filter((check) => !check.matchInfo.found);
       const noEligiblePortfolios = successfulChecks.filter(
-        (check) => check.matchInfo.found && check.eligiblePortfolios.length === 0
+        (check) => check.matchInfo.found && check.eligiblePortfolios.length === 0,
       );
 
       // Build warning messages
-      let warnings = [];
+      const warnings = [];
 
       if (failedChecks.length > 0) {
         warnings.push(`⚠️ ${failedChecks.length} transaction(s) failed eligibility check`);
@@ -523,19 +523,19 @@ const IBKRInbox = () => {
 
       if (fundsNotFound.length > 0) {
         warnings.push(
-          `⚠️ ${fundsNotFound.length} transaction(s) have funds not found in the system. Please add these funds first.`
+          `⚠️ ${fundsNotFound.length} transaction(s) have funds not found in the system. Please add these funds first.`,
         );
       }
 
       if (noEligiblePortfolios.length > 0) {
         warnings.push(
-          `⚠️ ${noEligiblePortfolios.length} transaction(s) have funds that are not assigned to any portfolio. Please add these funds to portfolios first.`
+          `⚠️ ${noEligiblePortfolios.length} transaction(s) have funds that are not assigned to any portfolio. Please add these funds to portfolios first.`,
         );
       }
 
       // Find common eligible portfolios (portfolios that can handle ALL transactions)
       const transactionsWithPortfolios = successfulChecks.filter(
-        (check) => check.eligiblePortfolios.length > 0
+        (check) => check.eligiblePortfolios.length > 0,
       );
 
       let commonPortfolios = [];
@@ -555,7 +555,7 @@ const IBKRInbox = () => {
         if (commonPortfolios && commonPortfolios.length > 0) {
           // Use portfolios from first successful check as reference
           commonPortfolioObjects = transactionsWithPortfolios[0].eligiblePortfolios.filter((p) =>
-            commonPortfolios.includes(p.id)
+            commonPortfolios.includes(p.id),
           );
         }
       }
@@ -567,12 +567,12 @@ const IBKRInbox = () => {
 
         if (warnings.length === 0) {
           warnings.push(
-            `✓ All transactions can be allocated to ${commonPortfolioObjects.length} portfolio(s)`
+            `✓ All transactions can be allocated to ${commonPortfolioObjects.length} portfolio(s)`,
           );
         } else {
           // Some transactions have issues but others can still be processed
           warnings.push(
-            `✓ ${transactionsWithPortfolios.length} transaction(s) can be allocated to ${commonPortfolioObjects.length} portfolio(s)`
+            `✓ ${transactionsWithPortfolios.length} transaction(s) can be allocated to ${commonPortfolioObjects.length} portfolio(s)`,
           );
         }
       } else {
@@ -581,7 +581,7 @@ const IBKRInbox = () => {
 
         if (warnings.length === 0) {
           warnings.push(
-            '⚠️ No common portfolios found. Transactions have funds in different portfolios.'
+            '⚠️ No common portfolios found. Transactions have funds in different portfolios.',
           );
         }
       }
@@ -607,7 +607,7 @@ const IBKRInbox = () => {
 
     if (
       !window.confirm(
-        `Are you sure you want to ignore ${selectedTransactions.length} transaction(s)?`
+        `Are you sure you want to ignore ${selectedTransactions.length} transaction(s)?`,
       )
     ) {
       return;
@@ -628,7 +628,7 @@ const IBKRInbox = () => {
       }
 
       setMessage(
-        `${successCount} transaction(s) ignored${errorCount > 0 ? `, ${errorCount} failed` : ''}`
+        `${successCount} transaction(s) ignored${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
       );
       setSelectedTransactions([]);
       fetchTransactions();
@@ -646,7 +646,7 @@ const IBKRInbox = () => {
 
     if (
       !window.confirm(
-        `Are you sure you want to delete ${selectedTransactions.length} transaction(s)?`
+        `Are you sure you want to delete ${selectedTransactions.length} transaction(s)?`,
       )
     ) {
       return;
@@ -667,7 +667,7 @@ const IBKRInbox = () => {
       }
 
       setMessage(
-        `${successCount} transaction(s) deleted${errorCount > 0 ? `, ${errorCount} failed` : ''}`
+        `${successCount} transaction(s) deleted${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
       );
       setSelectedTransactions([]);
       fetchTransactions();
@@ -960,7 +960,7 @@ const IBKRInbox = () => {
                 {selectedTransaction.transactionType} •{' '}
                 {formatCurrencyWithCode(
                   selectedTransaction.totalAmount,
-                  selectedTransaction.currency
+                  selectedTransaction.currency,
                 )}
                 {selectedTransaction.quantity && (
                   <> • {formatNumber(selectedTransaction.quantity, 4)} shares</>
@@ -1111,16 +1111,13 @@ const IBKRInbox = () => {
                             <>
                               {formatCurrencyWithCode(
                                 calculateAllocatedAmount(allocation.percentage),
-                                selectedTransaction.currency
+                                selectedTransaction.currency,
                               )}
                               {calculateAllocatedShares(allocation.percentage) !== null && (
                                 <>
                                   {' '}
                                   •{' '}
-                                  {formatNumber(
-                                    calculateAllocatedShares(allocation.percentage),
-                                    4
-                                  )}{' '}
+                                  {formatNumber(calculateAllocatedShares(allocation.percentage), 4)}{' '}
                                   shares
                                 </>
                               )}
@@ -1132,7 +1129,7 @@ const IBKRInbox = () => {
                                     <span className="commission-preview">
                                       {formatCurrencyWithCode(
                                         calculateAllocatedCommission(allocation.percentage),
-                                        selectedTransaction.currency
+                                        selectedTransaction.currency,
                                       )}{' '}
                                       commission
                                     </span>

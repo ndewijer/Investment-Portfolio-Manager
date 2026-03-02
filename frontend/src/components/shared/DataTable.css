@@ -78,7 +78,7 @@
 }
 
 .clickable-row:hover {
-  background-color: #e9ecef !important;
+  background-color: #e9ecef;
 }
 
 /* Mobile cards - hidden on desktop */
@@ -274,7 +274,7 @@
 }
 
 .dark-theme .clickable-row:hover {
-  background-color: #6c757d !important;
+  background-color: #6c757d;
 }
 
 .dark-theme .field-label {
@@ -322,7 +322,7 @@
 }
 
 .light-theme .clickable-row:hover {
-  background-color: #e9ecef !important;
+  background-color: #e9ecef;
 }
 
 .light-theme .field-label {
@@ -369,11 +369,11 @@
 /* Print styles */
 @media print {
   .mobile-cards {
-    display: none !important;
+    display: none;
   }
 
   .desktop-table {
-    display: table !important;
+    display: table;
   }
 
   .filter-icon,

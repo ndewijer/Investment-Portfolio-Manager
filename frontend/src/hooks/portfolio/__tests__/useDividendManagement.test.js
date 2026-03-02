@@ -20,11 +20,11 @@
  *
  * Total: 30+ tests
  */
-import { renderHook, act } from '@testing-library/react';
-import { useDividendManagement } from '../useDividendManagement';
-import useApiState from '../../useApiState';
+import { act, renderHook } from '@testing-library/react';
 import api from '../../../utils/api';
 import * as dateHelpers from '../../../utils/portfolio/dateHelpers';
+import useApiState from '../../useApiState';
+import { useDividendManagement } from '../useDividendManagement';
 
 // Mock dependencies
 vi.mock('../../useApiState', () => ({ default: vi.fn() }));
@@ -210,7 +210,7 @@ describe('useDividendManagement', () => {
         expect.objectContaining({
           portfolioFundId: 'pf-1',
           dividendPerShare: '1.50',
-        })
+        }),
       );
       expect(mockOnDataChange).toHaveBeenCalled();
       expect(result.current.isDividendModalOpen).toBe(false);
@@ -273,7 +273,7 @@ describe('useDividendManagement', () => {
           buyOrderDate: '2024-02-01',
           reinvestmentShares: undefined,
           reinvestmentPrice: undefined,
-        })
+        }),
       );
       expect(mockOnDataChange).toHaveBeenCalled();
     });
@@ -343,7 +343,7 @@ describe('useDividendManagement', () => {
           buyOrderDate: '2024-01-10',
           reinvestmentShares: '10',
           reinvestmentPrice: '50.00',
-        })
+        }),
       );
       expect(mockOnDataChange).toHaveBeenCalled();
     });
@@ -373,7 +373,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(global.window.alert).toHaveBeenCalledWith(
-        'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
+        'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).',
       );
       expect(api.post).not.toHaveBeenCalled();
     });
@@ -500,7 +500,7 @@ describe('useDividendManagement', () => {
 
       expect(api.put).toHaveBeenCalledWith(
         '/dividend/1',
-        expect.objectContaining({ id: 1, dividendPerShare: '2.00' })
+        expect.objectContaining({ id: 1, dividendPerShare: '2.00' }),
       );
       expect(mockOnDataChange).toHaveBeenCalled();
       expect(result.current.isDividendEditModalOpen).toBe(false);
@@ -529,7 +529,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(global.window.alert).toHaveBeenCalledWith(
-        'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).'
+        'Ex-dividend date has passed. Please fill in the reinvestment details (buy order date, shares, and price).',
       );
       expect(api.put).not.toHaveBeenCalled();
     });
@@ -584,7 +584,7 @@ describe('useDividendManagement', () => {
       });
 
       expect(global.window.confirm).toHaveBeenCalledWith(
-        'Are you sure you want to delete this dividend?'
+        'Are you sure you want to delete this dividend?',
       );
       expect(api.delete).toHaveBeenCalledWith('/dividend/1');
       expect(mockOnDataChange).toHaveBeenCalled();

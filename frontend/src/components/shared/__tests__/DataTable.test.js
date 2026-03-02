@@ -24,14 +24,14 @@
  * Total: 40 tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import DataTable from '../DataTable';
 
 // Mock FontAwesome icons
 vi.mock('@fortawesome/react-fontawesome', () => ({
   FontAwesomeIcon: ({ icon, className, onClick }) => (
     <i
+      role="img"
       className={className}
       onClick={onClick}
       data-testid={`icon-${icon.iconName}`}
@@ -68,7 +68,7 @@ describe('DataTable Component', () => {
      */
     test('does not render table when loading', () => {
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} loading={true} />
+        <DataTable data={sampleData} columns={sampleColumns} loading={true} />,
       );
 
       expect(container.querySelector('.data-table')).not.toBeInTheDocument();
@@ -116,7 +116,7 @@ describe('DataTable Component', () => {
      */
     test('does not render table when error present', () => {
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} error="Error" />
+        <DataTable data={sampleData} columns={sampleColumns} error="Error" />,
       );
 
       expect(container.querySelector('.data-table')).not.toBeInTheDocument();
@@ -238,7 +238,7 @@ describe('DataTable Component', () => {
      */
     test('hides sort icons when sortable is false', () => {
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} sortable={false} />
+        <DataTable data={sampleData} columns={sampleColumns} sortable={false} />,
       );
 
       const sortIcons = container.querySelectorAll('.sort-icon');
@@ -295,7 +295,7 @@ describe('DataTable Component', () => {
           data={sampleData}
           columns={sampleColumns}
           defaultSort={{ key: 'name', direction: 'desc' }}
-        />
+        />,
       );
 
       const rows = container.querySelectorAll('tbody tr');
@@ -320,7 +320,7 @@ describe('DataTable Component', () => {
      */
     test('hides filter icons when filterable is false', () => {
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} filterable={false} />
+        <DataTable data={sampleData} columns={sampleColumns} filterable={false} />,
       );
 
       const filterIcons = container.querySelectorAll('.filter-icon');
@@ -351,7 +351,7 @@ describe('DataTable Component', () => {
     test('calls onRowClick when row is clicked', () => {
       const onRowClick = jest.fn();
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />
+        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />,
       );
 
       const rows = container.querySelectorAll('tbody tr');
@@ -366,7 +366,7 @@ describe('DataTable Component', () => {
     test('adds clickable-row class when onRowClick provided', () => {
       const onRowClick = jest.fn();
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />
+        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />,
       );
 
       const rows = container.querySelectorAll('tbody tr');
@@ -401,7 +401,7 @@ describe('DataTable Component', () => {
           columns={sampleColumns}
           pagination={paginationConfig}
           onPaginationChange={jest.fn()}
-        />
+        />,
       );
 
       expect(screen.getByRole('button', { name: 'Previous' })).toBeInTheDocument();
@@ -420,7 +420,7 @@ describe('DataTable Component', () => {
           columns={sampleColumns}
           pagination={paginationConfig}
           onPaginationChange={onPaginationChange}
-        />
+        />,
       );
 
       const prevButton = screen.getByRole('button', { name: 'Previous' });
@@ -440,7 +440,7 @@ describe('DataTable Component', () => {
           columns={sampleColumns}
           pagination={paginationConfig}
           onPaginationChange={onPaginationChange}
-        />
+        />,
       );
 
       const nextButton = screen.getByRole('button', { name: 'Next' });
@@ -460,7 +460,7 @@ describe('DataTable Component', () => {
           columns={sampleColumns}
           pagination={firstPageConfig}
           onPaginationChange={jest.fn()}
-        />
+        />,
       );
 
       const prevButton = screen.getByRole('button', { name: 'Previous' });
@@ -478,7 +478,7 @@ describe('DataTable Component', () => {
           columns={sampleColumns}
           pagination={lastPageConfig}
           onPaginationChange={jest.fn()}
-        />
+        />,
       );
 
       const nextButton = screen.getByRole('button', { name: 'Next' });
@@ -523,7 +523,7 @@ describe('DataTable Component', () => {
           data={sampleData}
           columns={sampleColumns}
           mobileCardRenderer={mobileCardRenderer}
-        />
+        />,
       );
 
       const customCards = container.querySelectorAll('.custom-card');
@@ -536,7 +536,7 @@ describe('DataTable Component', () => {
     test('calls onRowClick when mobile card is clicked', () => {
       const onRowClick = jest.fn();
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />
+        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />,
       );
 
       const cards = container.querySelectorAll('.mobile-cards > div');
@@ -551,7 +551,7 @@ describe('DataTable Component', () => {
     test('adds clickable-card class when onRowClick provided', () => {
       const onRowClick = jest.fn();
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />
+        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />,
       );
 
       const cards = container.querySelectorAll('.mobile-cards > div');
@@ -565,7 +565,7 @@ describe('DataTable Component', () => {
      */
     test('applies custom className to wrapper', () => {
       const { container } = render(
-        <DataTable data={sampleData} columns={sampleColumns} className="custom-table" />
+        <DataTable data={sampleData} columns={sampleColumns} className="custom-table" />,
       );
 
       const wrapper = container.querySelector('.data-table-wrapper');
@@ -640,7 +640,7 @@ describe('DataTable Component', () => {
           className="full-featured-table"
           pagination={pagination}
           onPaginationChange={onPaginationChange}
-        />
+        />,
       );
 
       // Verify key elements are present

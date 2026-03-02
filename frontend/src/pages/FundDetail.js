@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { faChartLine, faMoneyBill } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
-import { useFormat } from '../context/FormatContext';
+import { useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
+import { useParams } from 'react-router-dom';
+import { useFormat } from '../context/FormatContext';
 import 'react-datepicker/dist/react-datepicker.css';
-import api from '../utils/api';
 import DataTable from '../components/shared/DataTable';
+import api from '../utils/api';
 import './FundDetail.css';
 import { subMonths } from 'date-fns';
 import Toast from '../components/Toast';
@@ -66,7 +66,7 @@ const FundDetail = () => {
 
           // Update price history (sorted newest to oldest for table display)
           const sortedPrices = pricesResponse.data.sort(
-            (a, b) => new Date(b.date) - new Date(a.date)
+            (a, b) => new Date(b.date) - new Date(a.date),
           );
           setPriceHistory(sortedPrices);
           setFilteredPriceHistory(sortedPrices);
@@ -144,7 +144,7 @@ const FundDetail = () => {
       const response = await api.post(`/fund/fund-prices/${id}/update?type=historical`);
 
       // Check if new prices were added
-      if (response.data && response.data.newPrices) {
+      if (response.data?.newPrices) {
         // Only fetch new data if prices were actually updated
         try {
           const pricesRes = await api.get(`/fund/fund-prices/${id}`);

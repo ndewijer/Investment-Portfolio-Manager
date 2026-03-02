@@ -16,8 +16,7 @@
  * Total: 12 tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import Toast from '../Toast';
 
 // Mock timers for testing auto-dismiss
@@ -84,7 +83,7 @@ describe('Toast Component', () => {
      */
     test('applies error type class', () => {
       const { container } = render(
-        <Toast message="Error occurred" type="error" onClose={() => {}} />
+        <Toast message="Error occurred" type="error" onClose={() => {}} />,
       );
 
       const toast = container.querySelector('.toast');
@@ -168,7 +167,7 @@ describe('Toast Component', () => {
     test('resets timer when message changes', () => {
       const onClose = jest.fn();
       const { rerender } = render(
-        <Toast message="First message" type="success" onClose={onClose} />
+        <Toast message="First message" type="success" onClose={onClose} />,
       );
 
       // Fast-forward 3 seconds

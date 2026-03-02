@@ -20,8 +20,7 @@
  * Total: 20 tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import ErrorMessage from '../ErrorMessage';
 
 describe('ErrorMessage Component', () => {
@@ -224,7 +223,7 @@ describe('ErrorMessage Component', () => {
      */
     test('combines variant and custom classes', () => {
       const { container } = render(
-        <ErrorMessage error="Test error" variant="inline" className="custom-error another-class" />
+        <ErrorMessage error="Test error" variant="inline" className="custom-error another-class" />,
       );
 
       const errorDiv = container.querySelector('.error-message');
@@ -263,7 +262,7 @@ describe('ErrorMessage Component', () => {
           className="critical-error"
           showRetry={true}
           showDismiss={true}
-        />
+        />,
       );
 
       // Check error message

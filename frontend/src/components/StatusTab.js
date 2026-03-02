@@ -18,8 +18,8 @@
  * @returns {React.ReactElement} Status tab content
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import api from '../utils/api';
 import LoadingSpinner from './shared/LoadingSpinner';
@@ -116,7 +116,7 @@ const StatusTab = ({ setError }) => {
                 <span className="status-label">Database:</span>
                 <span
                   className={`status-value status-${getStatusColor(
-                    healthData.database === 'connected' ? 'healthy' : 'unhealthy'
+                    healthData.database === 'connected' ? 'healthy' : 'unhealthy',
                   )}`}
                 >
                   {healthData.database === 'connected' ? '✓' : '✗'}{' '}

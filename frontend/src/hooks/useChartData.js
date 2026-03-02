@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../utils/api';
 
 /**
@@ -128,7 +128,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
         isLoadingRef.current = false;
       }
     },
-    [endpoint, params]
+    [endpoint, params],
   );
 
   // Initial data load - only run once when the hook is first used
@@ -169,7 +169,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
           fetchDataRange(
             newStartDate.toISOString().split('T')[0],
             loadedRange.start,
-            true // append to existing data
+            true, // append to existing data
           );
         }
 
@@ -186,13 +186,13 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
             fetchDataRange(
               loadedRange.end,
               newEndDate.toISOString().split('T')[0],
-              true // append to existing data
+              true, // append to existing data
             );
           }
         }
       }
     },
-    [data, loadedRange, defaultZoomDays, fetchDataRange]
+    [data, loadedRange, defaultZoomDays, fetchDataRange],
   );
 
   // Function to handle zoom state changes from the chart
@@ -203,7 +203,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
         checkAndLoadMoreData(zoomState);
       }, 100);
     },
-    [checkAndLoadMoreData]
+    [checkAndLoadMoreData],
   );
 
   // Function to manually load a specific date range
@@ -211,7 +211,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
     (startDate, endDate) => {
       fetchDataRange(startDate, endDate, false);
     },
-    [fetchDataRange]
+    [fetchDataRange],
   );
 
   // Function to reset to initial data range
@@ -223,7 +223,7 @@ const useChartData = (endpoint, params = {}, defaultZoomDays = 365) => {
     fetchDataRange(
       startDate.toISOString().split('T')[0],
       endDate.toISOString().split('T')[0],
-      false
+      false,
     );
   }, [defaultZoomDays, fetchDataRange]);
 

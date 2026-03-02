@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { DataTable, ActionButton } from '../shared';
+import { useMemo, useState } from 'react';
+import Select from 'react-select';
 import { useFormat } from '../../context/FormatContext';
+import { formatDisplayDate } from '../../utils/portfolio/dateHelpers';
 import {
-  sortTransactions,
+  calculateTransactionTotal,
   filterTransactions,
   getUniqueFundNames,
-  calculateTransactionTotal,
+  sortTransactions,
 } from '../../utils/portfolio/portfolioCalculations';
-import { formatDisplayDate } from '../../utils/portfolio/dateHelpers';
 import FilterPopup from '../FilterPopup';
-import Select from 'react-select';
+import { ActionButton, DataTable } from '../shared';
 
 const TYPE_OPTIONS = [
   { label: 'Buy', value: 'buy' },
@@ -140,7 +140,7 @@ const TransactionsTable = ({
       key: 'ibkrLinked',
       header: 'Source',
       sortable: false,
-      render: (value, transaction) =>
+      render: (_value, transaction) =>
         transaction.ibkrLinked ? (
           <span className="ibkr-badge" title="Imported from IBKR">
             IBKR
@@ -166,20 +166,20 @@ const TransactionsTable = ({
     {
       key: 'total',
       header: 'Total',
-      render: (value, transaction) => {
+      render: (_value, transaction) => {
         // For fee transactions, total is just the costPerShare value (not shares * costPerShare)
         if (transaction.type === 'fee') {
           return formatCurrency(transaction.costPerShare);
         }
         return formatCurrency(
-          calculateTransactionTotal(transaction.shares, transaction.costPerShare)
+          calculateTransactionTotal(transaction.shares, transaction.costPerShare),
         );
       },
     },
     {
       key: 'actions',
       header: 'Actions',
-      render: (value, transaction) =>
+      render: (_value, transaction) =>
         transaction.type !== 'dividend' && (
           <div className="action-buttons">
             <ActionButton

@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useCallback, useEffect, useState } from 'react';
 import './Config.css';
 import CollapsibleInfo from '../components/CollapsibleInfo';
-import Toast from '../components/Toast';
 import Modal from '../components/Modal';
 import StatusTab from '../components/StatusTab';
+import { useApiState } from '../components/shared';
+import Toast from '../components/Toast';
+import { API_BASE_URL } from '../config';
+import { useApp } from '../context/AppContext';
 import { useFormat } from '../context/FormatContext';
 import { useTheme } from '../context/ThemeContext';
-import { useApp } from '../context/AppContext';
-import { API_BASE_URL } from '../config';
-import { useApiState } from '../components/shared';
 
 /**
  * System configuration page with tabbed interface
@@ -161,7 +161,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
             response.data.defaultAllocations.map((a) => ({
               portfolioId: a.portfolioId,
               percentage: a.percentage,
-            }))
+            })),
           );
         }
       }
@@ -198,7 +198,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     // Check if disabling with auto-import enabled - show warning
     if (existingConfig && !config.enabled && existingConfig.enabled && config.autoImportEnabled) {
       const confirmed = window.confirm(
-        'Warning: Disabling IBKR integration will also disable automated imports. Are you sure you want to continue?'
+        'Warning: Disabling IBKR integration will also disable automated imports. Are you sure you want to continue?',
       );
       if (!confirmed) {
         return;
@@ -335,7 +335,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
     if (Math.abs(total - 100) > 0.01) {
       newAllocations[newAllocations.length - 1].percentage += 100 - total;
       newAllocations[newAllocations.length - 1].percentage = parseFloat(
-        newAllocations[newAllocations.length - 1].percentage.toFixed(2)
+        newAllocations[newAllocations.length - 1].percentage.toFixed(2),
       );
     }
 
@@ -371,7 +371,7 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
 
     setConfig({ ...config, defaultAllocations: allocationsArray });
     setMessage(
-      'Default allocation preset configured. Click "Update Configuration" below to save these changes.'
+      'Default allocation preset configured. Click "Update Configuration" below to save these changes.',
     );
     setShowAllocationModal(false);
   };
@@ -458,14 +458,14 @@ const IBKRConfigTab = ({ setMessage, setError, refreshIBKRConfig }) => {
         </div>
       </CollapsibleInfo>
 
-      {existingConfig && existingConfig.tokenWarning && (
+      {existingConfig?.tokenWarning && (
         <div className="token-warning">
           <span>⚠️</span>
           <p>{existingConfig.tokenWarning}</p>
         </div>
       )}
 
-      {existingConfig && existingConfig.lastImportDate && (
+      {existingConfig?.lastImportDate && (
         <div className="config-info">
           <p>
             <strong>Last Import:</strong> {new Date(existingConfig.lastImportDate).toLocaleString()}
@@ -780,7 +780,7 @@ const SystemSettingsTab = ({ setMessage, setError }) => {
           onSuccess: () => {
             setMessage('Logging settings updated successfully');
           },
-        }
+        },
       );
     } catch (err) {
       setError(err.response?.data?.message || 'Error updating logging settings');
@@ -1039,7 +1039,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
 
       if (headers.length === 2 && headers.includes('date') && headers.includes('price')) {
         setError(
-          'This appears to be a fund price file. Please use the "Import Fund Prices" section to import fund prices.'
+          'This appears to be a fund price file. Please use the "Import Fund Prices" section to import fund prices.',
         );
         return;
       }
@@ -1056,7 +1056,7 @@ const PowerUserTab = ({ setMessage, setError }) => {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
-          }
+          },
         );
         setMessage(`Successfully imported ${response.data.imported} transactions`);
       } catch (err) {

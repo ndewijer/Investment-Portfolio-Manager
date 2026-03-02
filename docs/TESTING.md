@@ -1014,8 +1014,8 @@ Frontend tests run automatically in GitHub Actions (`.github/workflows/frontend-
 - name: Run tests with coverage
   run: npm run test:ci
 
-- name: Run linting
-  run: npm run lint
+- name: Run linting and formatting
+  run: npm run check
 ```
 
 **CI Requirements for PR Merge:**
@@ -1078,8 +1078,8 @@ test.skip('clearError clears error state', async () => {
 
 **Linter fails on test files:**
 - Test files require JSDoc documentation
-- ESLint recognizes Jest globals (`describe`, `test`, `expect`)
-- Check `eslint.config.mjs` has test file configuration
+- Biome recognizes test globals (`describe`, `test`, `expect`)
+- Check `biome.json` configuration
 
 ### Detailed Frontend Test Documentation
 
@@ -1382,5 +1382,5 @@ When adding new features:
 
 ---
 
-**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Last Updated**: 2026-03-02 (Version 1.6.0)
 **Maintained By**: @ndewijer

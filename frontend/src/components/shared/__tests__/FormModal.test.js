@@ -33,8 +33,7 @@
  * Total: 30 tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import FormModal, { FormField } from '../FormModal';
 
 describe('FormField Component', () => {
@@ -96,7 +95,7 @@ describe('FormField Component', () => {
           value=""
           onChange={onChange}
           placeholder="Enter username"
-        />
+        />,
       );
 
       expect(screen.getByPlaceholderText('Enter username')).toBeInTheDocument();
@@ -122,7 +121,7 @@ describe('FormField Component', () => {
           value="option1"
           onChange={onChange}
           options={options}
-        />
+        />,
       );
 
       const select = screen.getByLabelText('Choose Option');
@@ -145,7 +144,7 @@ describe('FormField Component', () => {
           value="option1"
           onChange={onChange}
           options={options}
-        />
+        />,
       );
 
       const select = screen.getByLabelText('Choose Option');
@@ -167,7 +166,7 @@ describe('FormField Component', () => {
           onChange={onChange}
           options={options}
           placeholder="Select an option"
-        />
+        />,
       );
 
       expect(screen.getByText('Select an option')).toBeInTheDocument();
@@ -252,7 +251,7 @@ describe('FormField Component', () => {
           value=""
           onChange={onChange}
           error="Invalid email format"
-        />
+        />,
       );
 
       expect(screen.getByText('Invalid email format')).toBeInTheDocument();
@@ -265,7 +264,7 @@ describe('FormField Component', () => {
     test('applies error class to input when error present', () => {
       const onChange = jest.fn();
       render(
-        <FormField label="Email" type="email" value="" onChange={onChange} error="Invalid email" />
+        <FormField label="Email" type="email" value="" onChange={onChange} error="Invalid email" />,
       );
 
       expect(screen.getByLabelText('Email')).toHaveClass('error');
@@ -284,7 +283,7 @@ describe('FormModal Component', () => {
       render(
         <FormModal isOpen={true} onClose={onClose} onSubmit={onSubmit} title="Add Item">
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       expect(screen.getByRole('heading', { name: 'Add Item' })).toBeInTheDocument();
@@ -300,7 +299,7 @@ describe('FormModal Component', () => {
       const { container } = render(
         <FormModal isOpen={false} onClose={onClose} onSubmit={onSubmit} title="Add Item">
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       expect(container.firstChild).toBeNull();
@@ -317,7 +316,7 @@ describe('FormModal Component', () => {
       render(
         <FormModal isOpen={true} onClose={onClose} onSubmit={onSubmit} title="Add Item">
           <FormField label="Name" type="text" value="Test" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       const submitButton = screen.getByRole('button', { name: 'Submit' });
@@ -343,7 +342,7 @@ describe('FormModal Component', () => {
           loading={true}
         >
           <FormField label="Name" type="text" value="Test" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       // When loading, the submit button has no text content (shows spinner instead)
@@ -370,7 +369,7 @@ describe('FormModal Component', () => {
           submitDisabled={true}
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       const submitButton = screen.getByRole('button', { name: 'Submit' });
@@ -394,7 +393,7 @@ describe('FormModal Component', () => {
           loading={true}
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       expect(container.querySelector('.loading-overlay')).toBeInTheDocument();
@@ -415,7 +414,7 @@ describe('FormModal Component', () => {
           loading={true}
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       const cancelButton = screen.getByRole('button', { name: 'Cancel' });
@@ -439,7 +438,7 @@ describe('FormModal Component', () => {
           error="Failed to save item"
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       expect(screen.getByText('Failed to save item')).toBeInTheDocument();
@@ -462,7 +461,7 @@ describe('FormModal Component', () => {
           title="Add Item"
         >
           <FormField label="Name" type="text" value="Test" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       const submitButton = screen.getByRole('button', { name: 'Submit' });
@@ -490,7 +489,7 @@ describe('FormModal Component', () => {
           submitText="Save"
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
@@ -511,7 +510,7 @@ describe('FormModal Component', () => {
           cancelText="Close"
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
@@ -532,7 +531,7 @@ describe('FormModal Component', () => {
           showCancel={false}
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
@@ -547,7 +546,7 @@ describe('FormModal Component', () => {
       render(
         <FormModal isOpen={true} onClose={onClose} onSubmit={onSubmit} title="Add Item">
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       const cancelButton = screen.getByRole('button', { name: 'Cancel' });
@@ -573,7 +572,7 @@ describe('FormModal Component', () => {
           size="large"
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       const modal = container.querySelector('.modal-content');
@@ -595,7 +594,7 @@ describe('FormModal Component', () => {
           className="custom-form"
         >
           <FormField label="Name" type="text" value="" onChange={() => {}} />
-        </FormModal>
+        </FormModal>,
       );
 
       const modal = container.querySelector('.modal-content');

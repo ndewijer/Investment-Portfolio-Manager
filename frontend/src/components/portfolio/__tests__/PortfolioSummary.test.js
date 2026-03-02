@@ -3,10 +3,9 @@
  * @description Test suite for PortfolioSummary component
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import PortfolioSummary from '../PortfolioSummary';
 import { FormatProvider } from '../../../context/FormatContext';
+import PortfolioSummary from '../PortfolioSummary';
 
 /**
  * Helper function to render component with FormatProvider
@@ -18,7 +17,7 @@ const renderWithContext = (props) => {
   return render(
     <FormatProvider>
       <PortfolioSummary {...props} />
-    </FormatProvider>
+    </FormatProvider>,
   );
 };
 

@@ -1,9 +1,8 @@
-import React from 'react';
-import { DataTable, ActionButton } from '../shared';
+import { faChartLine, faMoneyBill } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useFormat } from '../../context/FormatContext';
 import { formatDisplayDate } from '../../utils/portfolio/dateHelpers';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoneyBill, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { ActionButton, DataTable } from '../shared';
 
 /**
  * DividendsTable component - Dividend history and status tracking
@@ -106,7 +105,7 @@ const DividendsTable = ({
     {
       key: 'status',
       header: 'Dividend Status',
-      render: (value, dividend) => {
+      render: (_value, dividend) => {
         let status;
         if (dividend.dividendType === 'CASH') {
           status = 'PAID OUT';
@@ -119,7 +118,7 @@ const DividendsTable = ({
     {
       key: 'actions',
       header: 'Actions',
-      render: (value, dividend) => (
+      render: (_value, dividend) => (
         <div className="action-buttons">
           <ActionButton variant="secondary" size="small" onClick={() => onEditDividend(dividend)}>
             Edit

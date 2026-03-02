@@ -21,9 +21,9 @@
  *
  * Total: 30+ tests
  */
-import { renderHook, act, waitFor } from '@testing-library/react';
-import useChartData from '../useChartData';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import api from '../../utils/api';
+import useChartData from '../useChartData';
 
 // Mock dependencies
 vi.mock('../../utils/api', () => ({
@@ -140,7 +140,7 @@ describe('useChartData', () => {
       expect(result.current.error).toBe('Error fetching chart data');
       expect(global.console.error).toHaveBeenCalledWith(
         'Error fetching chart data:',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 

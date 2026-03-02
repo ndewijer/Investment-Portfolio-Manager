@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
+import { DataTable, useApiState } from '../components/shared';
 import ValueChart from '../components/ValueChart';
 import useChartData from '../hooks/useChartData';
-import { useApiState, DataTable } from '../components/shared';
+import api from '../utils/api';
 import './Overview.css';
 import { useFormat } from '../context/FormatContext';
 
@@ -79,7 +79,7 @@ const Overview = () => {
         totalSaleProceeds: 0,
         totalOriginalCost: 0,
         totalGainLoss: 0,
-      }
+      },
     );
 
     const performance = (
@@ -108,11 +108,11 @@ const Overview = () => {
       const totalCost = day.portfolios.reduce((sum, p) => sum + p.totalCost, 0);
       const totalRealizedGain = day.portfolios.reduce(
         (sum, p) => sum + (p.totalRealizedGainLoss || 0),
-        0
+        0,
       );
       const totalUnrealizedGain = day.portfolios.reduce(
         (sum, p) => sum + (p.totalUnrealizedGainLoss || 0),
-        0
+        0,
       );
 
       // Only add totals if there are any portfolios on this day
@@ -281,7 +281,7 @@ const Overview = () => {
       key: 'performance',
       header: 'Performance',
       sortable: true,
-      render: (value, portfolio) => {
+      render: (_value, portfolio) => {
         const performance = calculatePortfolioPerformance(portfolio);
         return (
           <span className={performance >= 0 ? 'positive' : 'negative'}>

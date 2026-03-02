@@ -76,7 +76,7 @@ npm run test:e2e
 **Note**: E2E tests are **NOT** run in pre-commit hooks by default (too slow). They run in CI automatically.
 
 ## Development Tools
-- ESLint and Prettier for frontend
+- Biome for frontend (linting and formatting)
 - Ruff for backend (linting and formatting)
 - uv for Python package management
 - Pre-commit hooks for code quality
@@ -95,7 +95,7 @@ pre-commit install
 - **Code formatting**: Trailing whitespace, end-of-file fixer
 - **Validation**: YAML and JSON syntax checking
 - **Python**: Ruff linting and formatting, pytest tests
-- **Frontend**: ESLint, Prettier
+- **Frontend**: Biome (lint + format)
 - **Docker**: Integration tests (when Docker-related files change)
 
 **Docker Integration Tests:**
@@ -318,5 +318,5 @@ def downgrade():
 
 ---
 
-**Last Updated**: 2026-01-09 (Version 1.4.0)
+**Last Updated**: 2026-03-02 (Version 1.6.0)
 **Maintained By**: @ndewijer

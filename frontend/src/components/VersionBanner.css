@@ -37,12 +37,12 @@
 }
 
 /* Dark mode support */
-[data-theme='dark'] .version-banner {
+[data-theme="dark"] .version-banner {
   background-color: #664d03;
   border-bottom-color: #856404;
 }
 
-[data-theme='dark'] .version-banner-message strong,
-[data-theme='dark'] .version-banner-message p {
+[data-theme="dark"] .version-banner-message strong,
+[data-theme="dark"] .version-banner-message p {
   color: #ffe69c;
 }

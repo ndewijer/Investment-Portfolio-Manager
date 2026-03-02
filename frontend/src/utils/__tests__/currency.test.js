@@ -9,7 +9,7 @@
  *
  * Total: 27 tests
  */
-import { getCurrencySymbol, formatCurrency } from '../currency';
+import { formatCurrency, getCurrencySymbol } from '../currency';
 
 describe('Currency Utilities', () => {
   describe('getCurrencySymbol', () => {

@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { ActionButton, DataTable, useApiState } from '../components/shared';
 import api from '../utils/api';
-import { useApiState, DataTable, ActionButton } from '../components/shared';
 import './LogViewer.css';
-import FilterPopup from '../components/FilterPopup';
 import Select from 'react-select';
+import FilterPopup from '../components/FilterPopup';
 
 /**
  * System logs viewer page
@@ -101,11 +101,11 @@ const LogViewer = () => {
         params.append('category', filters.category.map((c) => c.value).join(','));
       }
       if (filters.startDate) {
-        const utcStart = new Date(filters.startDate).toISOString().split('.')[0] + 'Z';
+        const utcStart = `${new Date(filters.startDate).toISOString().split('.')[0]}Z`;
         params.append('startDate', utcStart);
       }
       if (filters.endDate) {
-        const utcEnd = new Date(filters.endDate).toISOString().split('.')[0] + 'Z';
+        const utcEnd = `${new Date(filters.endDate).toISOString().split('.')[0]}Z`;
         params.append('endDate', utcEnd);
       }
       if (filters.message) {
@@ -147,7 +147,7 @@ const LogViewer = () => {
 
       return response;
     },
-    [filters, pagination.currentPageNum]
+    [filters, pagination.currentPageNum],
   );
 
   // Load logs when filters change (reset to page 1)
@@ -162,7 +162,11 @@ const LogViewer = () => {
 
     // Load first page
     fetchLogs(() => loadLogs(null, 'next'));
-  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    // Load first page
+    fetchLogs,
+    loadLogs,
+  ]); // biome-ignore lint/correctness/useExhaustiveDependencies: intentional filter-only dependency
 
   const handleClearLogs = async () => {
     if (window.confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {

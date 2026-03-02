@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import useApiState from '../useApiState';
 import api from '../../utils/api';
+import useApiState from '../useApiState';
 
 /**
  * Custom hook for managing portfolio data fetching and state

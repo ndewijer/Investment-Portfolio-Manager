@@ -16,9 +16,9 @@
  *
  * Total: 15+ tests
  */
-import { renderHook, act } from '@testing-library/react';
-import { usePortfolioData } from '../usePortfolioData';
+import { act, renderHook } from '@testing-library/react';
 import useApiState from '../../useApiState';
+import { usePortfolioData } from '../usePortfolioData';
 
 // Mock dependencies
 vi.mock('../../useApiState', () => ({ default: vi.fn() }));

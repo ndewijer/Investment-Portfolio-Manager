@@ -25,7 +25,7 @@
  *
  * Total: 18 tests (15 passing, 3 skipped)
  */
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import useApiState from '../useApiState';
 
 describe('useApiState', () => {

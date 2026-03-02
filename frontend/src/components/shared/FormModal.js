@@ -1,8 +1,8 @@
 import React from 'react';
 import Modal from '../Modal';
 import ActionButtons, { ActionButton } from './ActionButtons';
-import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
+import LoadingSpinner from './LoadingSpinner';
 import './FormModal.css';
 
 /**
