@@ -6,6 +6,7 @@
 !public/
 !package.json
 !package-lock.json
+!.npmrc
 !nginx.conf
 !webpack.config.js
 !.babelrc
