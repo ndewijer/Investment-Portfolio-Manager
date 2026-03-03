@@ -1,6 +1,6 @@
 {
   "name": "investment-portfolio-manager",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "private": true,
   "dependencies": {
     "@babel/core": "^7.29.0",
@@ -61,6 +61,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
     "babel-loader": "^10.0.0",
+    "copy-webpack-plugin": "^14.0.0",
     "dotenv": "^17.3.1",
     "identity-obj-proxy": "^3.0.0",
     "jsdom": "^28.1.0",

@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
 const dotenv = require('dotenv');
 
@@ -76,6 +77,15 @@ module.exports = (env, argv) => {
         filename: 'index.html',
         favicon: './public/portfolio-icon.svg',
         inject: true,
+      }),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: 'public',
+            to: '.',
+            globOptions: { ignore: ['**/index.html'] },
+          },
+        ],
       }),
       new webpack.DefinePlugin(stringifiedEnv),
       // Suppress date-fns locale warning from react-datepicker (dynamic require for locales)
