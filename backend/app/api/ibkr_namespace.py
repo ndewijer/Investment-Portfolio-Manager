@@ -237,6 +237,14 @@ class IBKRConfig(Resource):
                 except (ValueError, TypeError):
                     return {"error": "Invalid token_expires_at format. Use ISO format."}, 400
 
+            # Convert defaultAllocations from camelCase to snake_case before saving
+            default_allocations_raw = data.get("defaultAllocations")
+            default_allocations = (
+                _convert_allocations_to_snake_case(default_allocations_raw)
+                if default_allocations_raw
+                else None
+            )
+
             # Save config using service
             config = IBKRConfigService.save_config(
                 flex_token=data["flexToken"],
@@ -245,7 +253,7 @@ class IBKRConfig(Resource):
                 auto_import_enabled=data.get("autoImportEnabled"),
                 enabled=data.get("enabled"),
                 default_allocation_enabled=data.get("defaultAllocationEnabled"),
-                default_allocations=data.get("defaultAllocations"),
+                default_allocations=default_allocations,
             )
 
             logger.log(
