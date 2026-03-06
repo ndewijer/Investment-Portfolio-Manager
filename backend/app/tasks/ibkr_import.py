@@ -94,8 +94,15 @@ def run_automated_ibkr_import():
             )
 
             try:
-                # Parse default allocations
-                allocations = json.loads(config.default_allocations)
+                # Parse default allocations and normalize keys to snake_case
+                # (legacy configs may have stored camelCase "portfolioId" instead of "portfolio_id")
+                allocations = [
+                    {
+                        "portfolio_id": a.get("portfolio_id") or a.get("portfolioId"),
+                        "percentage": a.get("percentage"),
+                    }
+                    for a in json.loads(config.default_allocations)
+                ]
 
                 # Get all pending transactions (includes newly imported ones)
                 pending_transactions = IBKRTransaction.query.filter_by(status="pending").all()
@@ -119,6 +126,23 @@ def run_automated_ibkr_import():
                                     "transaction_id": transaction.id,
                                     "symbol": transaction.symbol,
                                     "amount": transaction.total_amount,
+                                },
+                            )
+                        else:
+                            error_detail = result.get("error", "unknown error")
+                            error_msg = (
+                                f"Failed to auto-allocate transaction"
+                                f" {transaction.symbol}: {error_detail}"
+                            )
+                            auto_allocation_errors.append(error_msg)
+                            logger.log(
+                                level=LogLevel.WARNING,
+                                category=LogCategory.IBKR,
+                                message=error_msg,
+                                details={
+                                    "transaction_id": transaction.id,
+                                    "symbol": transaction.symbol,
+                                    "error": result.get("error"),
                                 },
                             )
                     except Exception as e:
