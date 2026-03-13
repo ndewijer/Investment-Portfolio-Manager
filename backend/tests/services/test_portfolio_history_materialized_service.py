@@ -107,6 +107,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -149,6 +151,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0 + i * 100,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -202,6 +206,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -249,6 +255,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -318,6 +326,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -417,6 +427,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -461,6 +473,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -537,6 +551,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -607,6 +623,8 @@ class TestPortfolioHistoryMaterializedService:
                 total_gain_loss=200.0,
                 dividends=0.0,
                 fees=0.0,
+                sale_proceeds=0.0,
+                original_cost=0.0,
             )
             db.session.add(record)
         db.session.commit()
@@ -676,9 +694,7 @@ class TestPortfolioHistoryMaterializedService:
     def test_get_materialized_history_with_realized_gains(
         self, app, db_session, sample_portfolio, cash_dividend_fund
     ):
-        """Test retrieving history with realized gains properly calculated."""
-        from app.models import RealizedGainLoss
-
+        """Test retrieving history with sale proceeds and original cost from materialized data."""
         start_date = date(2024, 1, 1)
 
         # Create portfolio fund
@@ -691,48 +707,59 @@ class TestPortfolioHistoryMaterializedService:
             db.session.add(pf)
             db.session.commit()
 
-        # Create a sell transaction (needed for RealizedGainLoss)
-        sell_transaction = Transaction(
+        # Create fund-level materialized records with cumulative sale_proceeds/original_cost
+        # Day 0: no sales yet
+        record0 = FundHistoryMaterialized(
             portfolio_fund_id=pf.id,
-            date=start_date + timedelta(days=1),
-            type="sell",
-            shares=5.0,
-            cost_per_share=110.0,
-        )
-        db.session.add(sell_transaction)
-        db.session.commit()
-
-        # Create fund-level materialized records
-        for i in range(3):
-            current_date = start_date + timedelta(days=i)
-            record = FundHistoryMaterialized(
-                portfolio_fund_id=pf.id,
-                fund_id=cash_dividend_fund.id,
-                date=current_date.isoformat(),
-                shares=10.0,
-                price=100.0 + i * 10,
-                value=1000.0 + i * 100,
-                cost=800.0,
-                realized_gain=50.0,
-                unrealized_gain=200.0 + i * 100,
-                total_gain_loss=250.0 + i * 100,
-                dividends=0.0,
-                fees=0.0,
-            )
-            db.session.add(record)
-
-        # Add a realized gain record on day 2
-        rg = RealizedGainLoss(
-            portfolio_id=sample_portfolio.id,
             fund_id=cash_dividend_fund.id,
-            transaction_id=sell_transaction.id,
-            transaction_date=start_date + timedelta(days=1),
-            shares_sold=5.0,
-            sale_proceeds=550.0,
-            cost_basis=500.0,
-            realized_gain_loss=50.0,
+            date=(start_date).isoformat(),
+            shares=10.0,
+            price=100.0,
+            value=1000.0,
+            cost=800.0,
+            realized_gain=0.0,
+            unrealized_gain=200.0,
+            total_gain_loss=200.0,
+            dividends=0.0,
+            fees=0.0,
+            sale_proceeds=0.0,
+            original_cost=0.0,
         )
-        db.session.add(rg)
+        # Day 1: sold 5 shares at 110 (proceeds=550, cost_basis=500)
+        record1 = FundHistoryMaterialized(
+            portfolio_fund_id=pf.id,
+            fund_id=cash_dividend_fund.id,
+            date=(start_date + timedelta(days=1)).isoformat(),
+            shares=5.0,
+            price=110.0,
+            value=550.0,
+            cost=400.0,
+            realized_gain=50.0,
+            unrealized_gain=150.0,
+            total_gain_loss=200.0,
+            dividends=0.0,
+            fees=0.0,
+            sale_proceeds=550.0,
+            original_cost=500.0,
+        )
+        # Day 2: same position, cumulative values carry forward
+        record2 = FundHistoryMaterialized(
+            portfolio_fund_id=pf.id,
+            fund_id=cash_dividend_fund.id,
+            date=(start_date + timedelta(days=2)).isoformat(),
+            shares=5.0,
+            price=120.0,
+            value=600.0,
+            cost=400.0,
+            realized_gain=50.0,
+            unrealized_gain=200.0,
+            total_gain_loss=250.0,
+            dividends=0.0,
+            fees=0.0,
+            sale_proceeds=550.0,
+            original_cost=500.0,
+        )
+        db.session.add_all([record0, record1, record2])
         db.session.commit()
 
         history = PortfolioHistoryMaterializedService.get_materialized_history(
@@ -740,9 +767,15 @@ class TestPortfolioHistoryMaterializedService:
         )
 
         assert len(history) == 3
-        # Check that sale proceeds and original cost are cumulative
+        # Day 0: no sales yet
+        assert history[0]["portfolios"][0]["totalSaleProceeds"] == 0.0
+        assert history[0]["portfolios"][0]["totalOriginalCost"] == 0.0
+        # Day 1: sale proceeds and original cost from materialized data
         assert history[1]["portfolios"][0]["totalSaleProceeds"] == 550.0
         assert history[1]["portfolios"][0]["totalOriginalCost"] == 500.0
+        # Day 2: cumulative values carry forward
+        assert history[2]["portfolios"][0]["totalSaleProceeds"] == 550.0
+        assert history[2]["portfolios"][0]["totalOriginalCost"] == 500.0
 
     def test_materialize_with_dividends_and_realized_gains(
         self, app, db_session, sample_portfolio, cash_dividend_fund

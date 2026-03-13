@@ -5,6 +5,39 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-03-13
+
+### Fixed
+- **Critical: Fully sold funds disappear from history** — When a fund was sold completely (shares=0), it vanished from portfolio and fund history, losing realized gains, sale proceeds, dividends, and original cost basis for that fund
+  - Root cause: `if shares > 0` guard in `get_portfolio_fund_history()` dropped all zero-share entries unconditionally
+  - Fixed with 6-field check: only skip when shares, realized gain, dividends, sale proceeds, and original cost are ALL zero
+  - Dates after a full sell now show the fund with `shares: 0` and correct cumulative financial data
+
+### Added
+- **`sale_proceeds` and `original_cost` columns in materialized view** — Cumulative sale proceeds and cost basis now stored directly in `fund_history_materialized`, eliminating expensive correlated subqueries against the `RealizedGainLoss` table on every read
+  - Database migration `1.7.0` adds the columns and truncates the table for fresh regeneration
+  - Write path stores values from the on-demand calculation
+  - Read path uses `SUM()` aggregation directly from materialized data
+- **Optimized portfolio summary query** — New `get_latest_materialized_summary()` reads only the latest date from the materialized view instead of scanning the full date range, used by `get_portfolio_summary()` when materialized data is available
+- **`saleProceeds` and `originalCost` in fund history API response** — `GET /api/fund/history/<portfolio_id>` now includes per-fund sale proceeds and original cost from the materialized table
+- **Feature flag `materialized_sale_proceeds`** (v1.7.0+) — Exposed via `/api/system/version` so the frontend knows when the new columns are available
+- **Defensive pre-migration handling** — `getattr` defaults and `try/except` fallbacks ensure the app works during the window between code update and migration run
+
+### Technical Details
+- **Migration**: `1.7.0_add_sale_proceeds_original_cost_to_materialized_view.py`
+  - Adds `sale_proceeds` and `original_cost` (Float, NOT NULL, server_default=0.0)
+  - Truncates materialized table — run `flask materialize-history --force` after upgrade
+  - Idempotent column checks before adding
+- **Tests**: 766 backend tests passing
+  - New `test_zero_shares_guard.py` (4 tests): sold fund visibility, inactive fund exclusion, dividends+sold, sale proceeds in output
+  - Updated `test_fund_history_auto_materialization.py`: sold-out fund auto-materialization test
+  - Updated `test_portfolio_history_materialized_service.py`: new column assertions
+  - Updated `test_system_service.py`: feature flag assertions
+- **Post-upgrade**: Run `flask db upgrade` then `flask materialize-history --force` to regenerate with new columns
+
+### Breaking Changes
+None — all API contracts are backward compatible. New fields (`saleProceeds`, `originalCost`) are additive.
+
 ## [1.6.3] - 2026-03-13
 
 ### Improved

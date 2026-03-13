@@ -142,6 +142,8 @@ class TestFundHistoryAutoMaterialization:
             total_gain_loss=100.0,
             dividends=0.0,
             fees=0.0,
+            sale_proceeds=0.0,
+            original_cost=0.0,
         )
         db_session.add(materialized_record)
         db_session.commit()
@@ -320,3 +322,101 @@ class TestFundHistoryAutoMaterialization:
         # All dates should be within the filter range
         for day in history:
             assert start_date <= day["date"] <= end_date
+
+    def test_auto_materialize_sold_out_fund(self, app_context, db_session):
+        """
+        Test that auto-materialization includes sold-out fund data.
+
+        WHY: Funds that have been fully sold (shares=0) should still have
+        their realized gains, sale proceeds, and original cost materialized
+        so they appear in the history.
+        """
+        from app.models import RealizedGainLoss
+
+        portfolio = Portfolio(id=make_id(), name="Sold Fund Portfolio")
+        fund = Fund(
+            id=make_id(),
+            name="Sold Fund",
+            isin=make_isin("US"),
+            currency="USD",
+            exchange="NYSE",
+        )
+        portfolio_fund = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add_all([portfolio, fund, portfolio_fund])
+        db_session.commit()
+
+        buy_date = date.today() - timedelta(days=5)
+        sell_date = date.today() - timedelta(days=2)
+
+        # Buy 10 shares
+        buy_txn = Transaction(
+            portfolio_fund_id=portfolio_fund.id,
+            date=buy_date,
+            type="buy",
+            shares=10.0,
+            cost_per_share=Decimal("100.00"),
+        )
+        # Sell all shares
+        sell_txn = Transaction(
+            portfolio_fund_id=portfolio_fund.id,
+            date=sell_date,
+            type="sell",
+            shares=10.0,
+            cost_per_share=Decimal("120.00"),
+        )
+        db_session.add_all([buy_txn, sell_txn])
+        db_session.commit()
+
+        # Record realized gain
+        rg = RealizedGainLoss(
+            portfolio_id=portfolio.id,
+            fund_id=fund.id,
+            transaction_id=sell_txn.id,
+            transaction_date=sell_date,
+            shares_sold=10.0,
+            sale_proceeds=1200.0,
+            cost_basis=1000.0,
+            realized_gain_loss=200.0,
+        )
+        db_session.add(rg)
+
+        # Add prices for entire date range
+        for i in range(6):
+            fp = FundPrice(
+                fund_id=fund.id,
+                date=buy_date + timedelta(days=i),
+                price=100.0 + i * 5,
+            )
+            db_session.add(fp)
+        db_session.commit()
+
+        # Verify materialized view is empty
+        count_before = FundHistoryMaterialized.query.filter_by(
+            portfolio_fund_id=portfolio_fund.id
+        ).count()
+        assert count_before == 0
+
+        # Call get_fund_history - should auto-materialize including sold-out dates
+        history = FundService.get_fund_history(portfolio.id)
+
+        # Verify data was returned
+        assert len(history) > 0
+
+        # Check that dates after sell still have fund entries with shares=0
+        dates_after_sell = [day for day in history if day["date"] >= sell_date.isoformat()]
+        assert len(dates_after_sell) > 0, "Should have dates after sell"
+
+        for day in dates_after_sell:
+            assert len(day["funds"]) > 0, f"Fund should appear on {day['date']} with shares=0"
+
+        # Verify materialized view was populated with sold-out fund data
+        materialized_records = (
+            FundHistoryMaterialized.query.filter_by(portfolio_fund_id=portfolio_fund.id)
+            .filter(FundHistoryMaterialized.date >= sell_date.isoformat())
+            .all()
+        )
+        assert len(materialized_records) > 0
+        for record in materialized_records:
+            assert record.sale_proceeds == 1200.0
+            assert record.original_cost == 1000.0
+            assert record.realized_gain == 200.0

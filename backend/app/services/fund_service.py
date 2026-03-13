@@ -599,6 +599,8 @@ class FundService:
                     "totalGainLoss": entry.total_gain_loss,
                     "dividends": entry.dividends,
                     "fees": entry.fees,
+                    "saleProceeds": getattr(entry, "sale_proceeds", 0.0),
+                    "originalCost": getattr(entry, "original_cost", 0.0),
                 }
             )
 

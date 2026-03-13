@@ -521,17 +521,35 @@ class PortfolioService:
         """
         Get summary of all non-archived and visible portfolios.
 
-        This is implemented as a wrapper around get_portfolio_history for a single day (today),
-        ensuring consistency between summary and history calculations.
+        Tries the optimized materialized summary (latest-date-only query) first.
+        Falls back to the full get_portfolio_history for a single day if unavailable.
 
         Returns:
             list: List of portfolio summary dictionaries
         """
         from datetime import datetime
 
+        from ..services.portfolio_history_materialized_service import (
+            PortfolioHistoryMaterializedService,
+        )
+
+        # Try optimized materialized summary first
+        portfolios = Portfolio.query.filter_by(is_archived=False, exclude_from_overview=False).all()
+        if portfolios:
+            portfolio_ids = [p.id for p in portfolios]
+            try:
+                result = PortfolioHistoryMaterializedService.get_latest_materialized_summary(
+                    portfolio_ids
+                )
+                if result is not None:
+                    return result
+            except Exception:
+                # Fall through if materialized view is unavailable (e.g. pre-migration)
+                pass
+
+        # Fallback to full history calculation for today
         today = datetime.now().date()
 
-        # Get history for today only
         history = PortfolioService.get_portfolio_history(
             start_date=today.isoformat(), end_date=today.isoformat()
         )
@@ -969,39 +987,61 @@ class PortfolioService:
                     transactions, current_date, dividend_shares
                 )
 
-                if shares > 0:
-                    # Get price for this date
-                    price = PortfolioService._get_price_for_date_from_lookup(
-                        pf.fund_id, current_date, lookups["prices_by_fund"]
-                    )
+                # Get price for this date
+                price = PortfolioService._get_price_for_date_from_lookup(
+                    pf.fund_id, current_date, lookups["prices_by_fund"]
+                )
 
-                    # Calculate value
-                    value = shares * price
+                # Calculate value
+                value = shares * price
 
-                    # Calculate realized gains for this fund up to this date
-                    fund_realized_gain = 0
-                    if (
-                        portfolio_id in lookups["realized_gains_by_portfolio"]
-                        and pf.fund_id in lookups["realized_gains_by_portfolio"][portfolio_id]
-                    ):
-                        gains = lookups["realized_gains_by_portfolio"][portfolio_id][pf.fund_id]
-                        for gain in gains:
-                            if gain.transaction_date <= current_date:
-                                fund_realized_gain += gain.realized_gain_loss
+                # Calculate realized gains, sale proceeds, and original cost
+                # for this fund up to this date
+                fund_realized_gain = 0
+                fund_sale_proceeds = 0
+                fund_original_cost = 0
+                if (
+                    portfolio_id in lookups["realized_gains_by_portfolio"]
+                    and pf.fund_id in lookups["realized_gains_by_portfolio"][portfolio_id]
+                ):
+                    gains = lookups["realized_gains_by_portfolio"][portfolio_id][pf.fund_id]
+                    for gain in gains:
+                        if gain.transaction_date <= current_date:
+                            fund_realized_gain += gain.realized_gain_loss
+                            fund_sale_proceeds += gain.sale_proceeds
+                            fund_original_cost += gain.cost_basis
 
-                    daily_values["funds"].append(
-                        {
-                            "portfolioFundId": pf.id,
-                            "fundId": pf.fund_id,
-                            "fundName": pf.fund.name,
-                            "value": value,
-                            "cost": cost,
-                            "shares": shares,
-                            "price": price,
-                            "realizedGain": fund_realized_gain,
-                            "unrealizedGain": value - cost,
-                        }
-                    )
+                # Calculate cumulative dividends for this fund
+                fund_dividends = PortfolioService._get_dividend_amount_from_lookup(
+                    pf.id, current_date, lookups["dividends_by_portfolio_fund"]
+                )
+
+                # Skip only when ALL financial fields are zero
+                if (
+                    shares == 0
+                    and fund_realized_gain == 0
+                    and fund_dividends == 0
+                    and fund_sale_proceeds == 0
+                    and fund_original_cost == 0
+                ):
+                    continue
+
+                daily_values["funds"].append(
+                    {
+                        "portfolioFundId": pf.id,
+                        "fundId": pf.fund_id,
+                        "fundName": pf.fund.name,
+                        "value": value,
+                        "cost": cost,
+                        "shares": shares,
+                        "price": price,
+                        "realizedGain": fund_realized_gain,
+                        "unrealizedGain": value - cost,
+                        "saleProceeds": fund_sale_proceeds,
+                        "originalCost": fund_original_cost,
+                        "dividends": fund_dividends,
+                    }
+                )
 
             if daily_values["funds"]:
                 history.append(daily_values)

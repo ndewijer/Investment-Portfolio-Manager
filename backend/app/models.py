@@ -557,6 +557,10 @@ class FundHistoryMaterialized(db.Model):
     dividends = db.Column(db.Float, nullable=False, default=0.0)
     fees = db.Column(db.Float, nullable=False, default=0.0)
 
+    # Sale/cost tracking (cumulative)
+    sale_proceeds = db.Column(db.Float, nullable=False, default=0.0)
+    original_cost = db.Column(db.Float, nullable=False, default=0.0)
+
     # Metadata
     calculated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), nullable=False)
 
