@@ -1,6 +1,6 @@
 import { faChartLine, faMoneyBill } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActionButton,
   ActionButtons,
@@ -195,7 +195,28 @@ const Funds = () => {
     setIsModalOpen(true);
   };
 
-  const handleSymbolChange = async (e) => {
+  const symbolLookupTimer = useRef(null);
+
+  const lookupSymbol = useCallback(async (symbol) => {
+    if (!symbol) {
+      setSymbolValidation({ isValid: false, info: null, useInfo: false });
+      return;
+    }
+    try {
+      const response = await api.get(`/fund/symbol/${symbol}`);
+      if (response.data) {
+        setSymbolInfo((prev) => ({ ...prev, [symbol]: response.data.name }));
+        setSymbolValidation({ isValid: true, info: response.data, useInfo: false });
+        setMessage('Symbol information retrieved successfully');
+      }
+    } catch (error) {
+      console.error('Error looking up symbol:', error);
+      setSymbolValidation({ isValid: false, info: null, useInfo: false });
+      setErrorMessage(error.response?.data?.message || 'Error looking up symbol');
+    }
+  }, []);
+
+  const handleSymbolChange = (e) => {
     const symbol = e.target.value;
     if (editingFund) {
       setEditingFund({ ...editingFund, symbol: symbol });
@@ -203,37 +224,8 @@ const Funds = () => {
       setNewFund({ ...newFund, symbol: symbol });
     }
 
-    if (symbol) {
-      try {
-        const response = await api.get(`/fund/symbol/${symbol}`);
-        if (response.data) {
-          setSymbolInfo((prev) => ({
-            ...prev,
-            [symbol]: response.data.name,
-          }));
-          setSymbolValidation({
-            isValid: true,
-            info: response.data,
-            useInfo: false,
-          });
-          setMessage('Symbol information retrieved successfully');
-        }
-      } catch (error) {
-        console.error('Error looking up symbol:', error);
-        setSymbolValidation({
-          isValid: false,
-          info: null,
-          useInfo: false,
-        });
-        setErrorMessage(error.response?.data?.message || 'Error looking up symbol');
-      }
-    } else {
-      setSymbolValidation({
-        isValid: false,
-        info: null,
-        useInfo: false,
-      });
-    }
+    clearTimeout(symbolLookupTimer.current);
+    symbolLookupTimer.current = setTimeout(() => lookupSymbol(symbol), 500);
   };
 
   const handleUseSymbolInfo = (e) => {
@@ -425,12 +417,15 @@ const Funds = () => {
 
         {/* Symbol field - ALWAYS OPTIONAL for both funds and stocks */}
         <div className="form-field">
-          <label className="field-label">Symbol (optional)</label>
+          <label className="field-label">
+            <abbr title="Optional — required for price updates">Yahoo Symbol</abbr>
+          </label>
           <div className="symbol-input-container">
             <input
               type="text"
               value={editingFund?.symbol || newFund.symbol}
               onChange={handleSymbolChange}
+              placeholder="e.g. AAPL, WEBN.DE, VWRL.AS"
             />
             {symbolValidation.isValid && (
               <div className="symbol-validation">
