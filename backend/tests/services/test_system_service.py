@@ -196,6 +196,7 @@ class TestSystemService:
             "ibkr_integration": False,
             "materialized_view_performance": False,
             "fund_level_materialized_view": False,
+            "materialized_sale_proceeds": False,
         }
         assert features == expected_features
 
@@ -209,6 +210,7 @@ class TestSystemService:
             "ibkr_integration": False,
             "materialized_view_performance": False,
             "fund_level_materialized_view": False,
+            "materialized_sale_proceeds": False,
         }
         assert features == expected_features
 
@@ -222,6 +224,7 @@ class TestSystemService:
             "ibkr_integration": False,
             "materialized_view_performance": False,
             "fund_level_materialized_view": False,
+            "materialized_sale_proceeds": False,
         }
         assert features == expected_features
 
@@ -235,6 +238,7 @@ class TestSystemService:
             "ibkr_integration": False,
             "materialized_view_performance": False,
             "fund_level_materialized_view": False,
+            "materialized_sale_proceeds": False,
         }
         assert features == expected_features
 
@@ -248,6 +252,7 @@ class TestSystemService:
             "ibkr_integration": True,
             "materialized_view_performance": False,
             "fund_level_materialized_view": False,
+            "materialized_sale_proceeds": False,
         }
         assert features == expected_features
 
@@ -261,6 +266,7 @@ class TestSystemService:
             "ibkr_integration": True,
             "materialized_view_performance": True,  # 1.4.0+
             "fund_level_materialized_view": True,  # 1.5.0+
+            "materialized_sale_proceeds": True,  # 1.7.0+
         }
         assert features == expected_features
 
@@ -274,6 +280,7 @@ class TestSystemService:
             "ibkr_integration": True,
             "materialized_view_performance": True,  # 1.4.0+
             "fund_level_materialized_view": True,  # 1.5.0+
+            "materialized_sale_proceeds": True,  # 1.7.0+
         }
         assert features == expected_features
 
@@ -288,6 +295,7 @@ class TestSystemService:
             "ibkr_integration": False,
             "materialized_view_performance": False,
             "fund_level_materialized_view": False,
+            "materialized_sale_proceeds": False,
         }
         assert features == expected_features
 
@@ -301,6 +309,7 @@ class TestSystemService:
             "ibkr_integration": True,
             "materialized_view_performance": True,
             "fund_level_materialized_view": True,
+            "materialized_sale_proceeds": True,
         }
         assert features == expected_features
 
@@ -343,6 +352,7 @@ class TestSystemService:
             "ibkr_integration": True,
             "materialized_view_performance": True,  # 1.4.0+
             "fund_level_materialized_view": True,  # 1.5.0+
+            "materialized_sale_proceeds": True,  # 1.7.0+
         }
         assert version_info["features"] == expected_features
 

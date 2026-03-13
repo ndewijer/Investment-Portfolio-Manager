@@ -266,8 +266,9 @@ class TestPhase2EagerLoadingPerformance:
         """
         Test that portfolio summary uses eager loading with minimal queries.
 
-        Target: <= 11 queries (was ~50+ with N+1 pattern)
+        Target: <= 13 queries (was ~50+ with N+1 pattern)
         Note: Includes queries for fund-level materialized view (v1.5.0+)
+        and optimized materialized summary attempt (v1.7.0+)
         """
         query_counter.reset()
 
@@ -279,7 +280,7 @@ class TestPhase2EagerLoadingPerformance:
 
         # Check query count
         print(f"\n✓ Portfolio summary query count: {query_counter.count}")
-        assert query_counter.count <= 11, f"Too many queries: {query_counter.count} (target: <= 11)"
+        assert query_counter.count <= 13, f"Too many queries: {query_counter.count} (target: <= 13)"
 
     def test_portfolio_summary_execution_time(self, app_context, timer):
         """

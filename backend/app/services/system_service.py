@@ -141,6 +141,7 @@ class SystemService:
             "ibkr_integration": False,
             "materialized_view_performance": False,
             "fund_level_materialized_view": False,
+            "materialized_sale_proceeds": False,
         }
 
         # Parse version and check feature availability
@@ -174,6 +175,10 @@ class SystemService:
                 # Version 1.5.0+: Fund-level materialized view
                 if major > 1 or (major == 1 and minor >= 5):
                     features["fund_level_materialized_view"] = True
+
+                # Version 1.7.0+: Sale proceeds/original cost in materialized view
+                if major > 1 or (major == 1 and minor >= 7):
+                    features["materialized_sale_proceeds"] = True
 
         except (ValueError, IndexError) as e:
             logger.log(

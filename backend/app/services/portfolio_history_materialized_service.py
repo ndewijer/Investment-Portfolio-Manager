@@ -150,6 +150,7 @@ class PortfolioHistoryMaterializedService:
             List of daily portfolio values in the same format as get_portfolio_history
         """
         # Aggregate fund-level data to portfolio level using SQL
+        # sale_proceeds and original_cost are now stored in the materialized table
         records = (
             db.session.query(
                 FundHistoryMaterialized.date,
@@ -161,6 +162,8 @@ class PortfolioHistoryMaterializedService:
                 func.sum(FundHistoryMaterialized.total_gain_loss).label("total_gain_loss"),
                 func.sum(FundHistoryMaterialized.dividends).label("total_dividends"),
                 func.sum(FundHistoryMaterialized.fees).label("total_fees"),
+                func.sum(FundHistoryMaterialized.sale_proceeds).label("total_sale_proceeds"),
+                func.sum(FundHistoryMaterialized.original_cost).label("total_original_cost"),
             )
             .join(PortfolioFund, FundHistoryMaterialized.portfolio_fund_id == PortfolioFund.id)
             .filter(
@@ -178,33 +181,6 @@ class PortfolioHistoryMaterializedService:
             p.id: p for p in Portfolio.query.filter(Portfolio.id.in_(portfolio_ids)).all()
         }
 
-        # Get realized gain details for sale proceeds and original cost
-        # (these are not stored in fund_history_materialized)
-        realized_gain_records = RealizedGainLoss.query.filter(
-            RealizedGainLoss.portfolio_id.in_(portfolio_ids),
-            RealizedGainLoss.transaction_date >= start_date,
-            RealizedGainLoss.transaction_date <= end_date,
-        ).all()
-
-        # Build lookup for realized gains by portfolio and date
-        realized_by_portfolio_date = {}
-        for rg in realized_gain_records:
-            key = (
-                rg.portfolio_id,
-                rg.transaction_date.isoformat()
-                if hasattr(rg.transaction_date, "isoformat")
-                else str(rg.transaction_date),
-            )
-            if key not in realized_by_portfolio_date:
-                realized_by_portfolio_date[key] = {"sale_proceeds": 0, "original_cost": 0}
-            realized_by_portfolio_date[key]["sale_proceeds"] += rg.sale_proceeds
-            realized_by_portfolio_date[key]["original_cost"] += rg.cost_basis
-
-        # Build cumulative totals for sale proceeds and original cost
-        cumulative_by_portfolio = {
-            pid: {"sale_proceeds": 0, "original_cost": 0} for pid in portfolio_ids
-        }
-
         # Group by date
         history_by_date = {}
         for record in records:
@@ -218,16 +194,6 @@ class PortfolioHistoryMaterializedService:
             if not portfolio:
                 continue
 
-            # Add any realized gains from this date to cumulative totals
-            key = (portfolio_id, date_str)
-            if key in realized_by_portfolio_date:
-                cumulative_by_portfolio[portfolio_id]["sale_proceeds"] += (
-                    realized_by_portfolio_date[key]["sale_proceeds"]
-                )
-                cumulative_by_portfolio[portfolio_id]["original_cost"] += (
-                    realized_by_portfolio_date[key]["original_cost"]
-                )
-
             history_by_date[date_str]["portfolios"].append(
                 {
                     "id": portfolio_id,
@@ -237,12 +203,8 @@ class PortfolioHistoryMaterializedService:
                     "totalRealizedGainLoss": round(record.total_realized_gain or 0, 6),
                     "totalUnrealizedGainLoss": round(record.total_unrealized_gain or 0, 6),
                     "totalDividends": round(record.total_dividends or 0, 6),
-                    "totalSaleProceeds": round(
-                        cumulative_by_portfolio[portfolio_id]["sale_proceeds"], 6
-                    ),
-                    "totalOriginalCost": round(
-                        cumulative_by_portfolio[portfolio_id]["original_cost"], 6
-                    ),
+                    "totalSaleProceeds": round(record.total_sale_proceeds or 0, 6),
+                    "totalOriginalCost": round(record.total_original_cost or 0, 6),
                     "totalGainLoss": round(record.total_gain_loss or 0, 6),
                     "isArchived": portfolio.is_archived,
                 }
@@ -250,6 +212,88 @@ class PortfolioHistoryMaterializedService:
 
         # Convert to list sorted by date
         return [history_by_date[d] for d in sorted(history_by_date.keys())]
+
+    @staticmethod
+    def get_latest_materialized_summary(portfolio_ids: list[str]) -> list[dict] | None:
+        """
+        Get portfolio summary using only the latest date in the materialized view.
+
+        This is an optimized query that only reads the most recent date's data,
+        avoiding a full date-range scan. Returns None if no data is available.
+
+        Args:
+            portfolio_ids: List of portfolio IDs
+
+        Returns:
+            List of portfolio summary dicts, or None if no materialized data exists
+        """
+        if not portfolio_ids:
+            return []
+
+        # Find the latest date across all requested portfolios
+        latest_date_result = (
+            db.session.query(func.max(FundHistoryMaterialized.date))
+            .join(PortfolioFund, FundHistoryMaterialized.portfolio_fund_id == PortfolioFund.id)
+            .filter(PortfolioFund.portfolio_id.in_(portfolio_ids))
+            .scalar()
+        )
+
+        if not latest_date_result:
+            return None
+
+        # Aggregate fund-level data for the latest date only
+        records = (
+            db.session.query(
+                PortfolioFund.portfolio_id,
+                func.sum(FundHistoryMaterialized.value).label("total_value"),
+                func.sum(FundHistoryMaterialized.cost).label("total_cost"),
+                func.sum(FundHistoryMaterialized.realized_gain).label("total_realized_gain"),
+                func.sum(FundHistoryMaterialized.unrealized_gain).label("total_unrealized_gain"),
+                func.sum(FundHistoryMaterialized.total_gain_loss).label("total_gain_loss"),
+                func.sum(FundHistoryMaterialized.dividends).label("total_dividends"),
+                func.sum(FundHistoryMaterialized.sale_proceeds).label("total_sale_proceeds"),
+                func.sum(FundHistoryMaterialized.original_cost).label("total_original_cost"),
+            )
+            .join(PortfolioFund, FundHistoryMaterialized.portfolio_fund_id == PortfolioFund.id)
+            .filter(
+                PortfolioFund.portfolio_id.in_(portfolio_ids),
+                FundHistoryMaterialized.date == latest_date_result,
+            )
+            .group_by(PortfolioFund.portfolio_id)
+            .all()
+        )
+
+        if not records:
+            return None
+
+        # Get portfolio metadata
+        portfolios = {
+            p.id: p for p in Portfolio.query.filter(Portfolio.id.in_(portfolio_ids)).all()
+        }
+
+        summary = []
+        for record in records:
+            portfolio = portfolios.get(record.portfolio_id)
+            if not portfolio:
+                continue
+
+            summary.append(
+                {
+                    "id": record.portfolio_id,
+                    "name": portfolio.name,
+                    "totalValue": round(record.total_value or 0, 6),
+                    "totalCost": round(record.total_cost or 0, 6),
+                    "totalRealizedGainLoss": round(record.total_realized_gain or 0, 6),
+                    "totalUnrealizedGainLoss": round(record.total_unrealized_gain or 0, 6),
+                    "totalDividends": round(record.total_dividends or 0, 6),
+                    "totalSaleProceeds": round(record.total_sale_proceeds or 0, 6),
+                    "totalOriginalCost": round(record.total_original_cost or 0, 6),
+                    "totalGainLoss": round(record.total_gain_loss or 0, 6),
+                    "isArchived": portfolio.is_archived,
+                }
+            )
+
+        return summary
 
     @staticmethod
     def materialize_portfolio_history(
@@ -386,6 +430,10 @@ class PortfolioHistoryMaterializedService:
                     # Calculate total gain/loss
                     total_gain_loss = realized_gain + unrealized_gain
 
+                    # Get sale proceeds and original cost from fund_data
+                    sale_proceeds = fund_data.get("saleProceeds", 0)
+                    original_cost = fund_data.get("originalCost", 0)
+
                     if existing:
                         # Update existing record
                         existing.fund_id = fund_id
@@ -398,6 +446,8 @@ class PortfolioHistoryMaterializedService:
                         existing.total_gain_loss = total_gain_loss
                         existing.dividends = total_dividends
                         existing.fees = 0  # Fees can be added later if needed
+                        existing.sale_proceeds = sale_proceeds
+                        existing.original_cost = original_cost
                         existing.calculated_at = datetime.now()
                     else:
                         # Create new record
@@ -414,6 +464,8 @@ class PortfolioHistoryMaterializedService:
                             total_gain_loss=total_gain_loss,
                             dividends=total_dividends,
                             fees=0,
+                            sale_proceeds=sale_proceeds,
+                            original_cost=original_cost,
                         )
                         db.session.add(record)
 
