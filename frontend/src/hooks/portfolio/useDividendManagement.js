@@ -92,7 +92,12 @@ export const useDividendManagement = (portfolioId, onDataChange) => {
   // Fetch dividends for portfolio
   const loadDividends = useCallback(async () => {
     if (!portfolioId) return;
-    await fetchDividends(() => api.get(`/dividend/portfolio/${portfolioId}`));
+    await fetchDividends(() =>
+      api.get(`/dividend/portfolio/${portfolioId}`).catch((err) => {
+        if (err.response?.status === 404) return { data: [] };
+        throw err;
+      }),
+    );
   }, [portfolioId, fetchDividends]);
 
   // Add dividend for a specific fund

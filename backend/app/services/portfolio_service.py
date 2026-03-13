@@ -11,12 +11,15 @@ from datetime import datetime, timedelta
 from ..models import (
     Dividend,
     FundPrice,
+    LogCategory,
+    LogLevel,
     Portfolio,
     PortfolioFund,
     RealizedGainLoss,
     Transaction,
     db,
 )
+from ..services.logging_service import logger
 
 
 class PortfolioService:
@@ -543,6 +546,27 @@ class PortfolioService:
                 )
                 if result is not None:
                     return result
+
+                # No materialized data — auto-materialize all portfolios
+                for pid in portfolio_ids:
+                    try:
+                        PortfolioHistoryMaterializedService.materialize_portfolio_history(
+                            pid, force_recalculate=True
+                        )
+                    except Exception as e:
+                        logger.log(
+                            level=LogLevel.WARNING,
+                            category=LogCategory.SYSTEM,
+                            message=f"Auto-materialize failed for portfolio {pid} in summary",
+                            details={"portfolio_id": pid, "error": str(e)},
+                        )
+
+                # Retry after materialization
+                result = PortfolioHistoryMaterializedService.get_latest_materialized_summary(
+                    portfolio_ids
+                )
+                if result is not None:
+                    return result
             except Exception:
                 # Fall through if materialized view is unavailable (e.g. pre-migration)
                 pass
@@ -697,6 +721,28 @@ class PortfolioService:
 
                 if coverage.is_complete:
                     # Use materialized view - FAST PATH (already returns camelCase)
+                    return PortfolioHistoryMaterializedService.get_materialized_history(
+                        portfolio_ids, start_date_parsed, end_date_parsed
+                    )
+
+                # Coverage incomplete — auto-materialize all portfolios and retry
+                for pid in portfolio_ids:
+                    try:
+                        PortfolioHistoryMaterializedService.materialize_portfolio_history(
+                            pid, force_recalculate=True
+                        )
+                    except Exception as e:
+                        logger.log(
+                            level=LogLevel.WARNING,
+                            category=LogCategory.SYSTEM,
+                            message=f"Auto-materialize failed for portfolio {pid} in history",
+                            details={"portfolio_id": pid, "error": str(e)},
+                        )
+
+                coverage = PortfolioHistoryMaterializedService.check_materialized_coverage(
+                    portfolio_ids, start_date_parsed, end_date_parsed
+                )
+                if coverage.is_complete:
                     return PortfolioHistoryMaterializedService.get_materialized_history(
                         portfolio_ids, start_date_parsed, end_date_parsed
                     )

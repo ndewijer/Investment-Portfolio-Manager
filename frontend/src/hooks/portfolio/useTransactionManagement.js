@@ -90,7 +90,12 @@ export const useTransactionManagement = (portfolioId, onDataChange) => {
   // Fetch transactions for portfolio using new REST endpoint
   const loadTransactions = useCallback(async () => {
     if (!portfolioId) return;
-    await fetchTransactions(() => api.get(`/transaction/portfolio/${portfolioId}`));
+    await fetchTransactions(() =>
+      api.get(`/transaction/portfolio/${portfolioId}`).catch((err) => {
+        if (err.response?.status === 404) return { data: [] };
+        throw err;
+      }),
+    );
   }, [portfolioId, fetchTransactions]);
 
   // Fetch fund price for a specific date
