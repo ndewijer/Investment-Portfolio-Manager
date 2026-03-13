@@ -5,6 +5,14 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-03-13
+
+### Improved
+- **Symbol field UX** — Clarified that the symbol field uses Yahoo Finance symbols
+  - Renamed label from "Symbol (optional)" to "Yahoo Symbol" with tooltip explaining it's optional but required for price updates
+  - Added placeholder examples (AAPL, WEBN.DE, VWRL.AS) to show the expected format
+  - Added 500ms debounce to symbol lookup to avoid unnecessary API calls on every keystroke
+
 ## [1.6.2] - 2026-03-06
 
 ### Fixed
