@@ -1255,6 +1255,253 @@ class TestPortfolioHistoricalMethods:
         assert portfolio_summary["totalCost"] > 0
 
 
+class TestAutoMaterialization:
+    """Tests for auto-materialization in summary and history endpoints."""
+
+    def test_summary_auto_materializes_when_no_data(self, app_context, db_session):
+        """Test that get_portfolio_summary auto-materializes when no materialized data exists."""
+        from app.models import FundHistoryMaterialized
+
+        # Clear any existing materialized data
+        FundHistoryMaterialized.query.delete()
+        db_session.commit()
+
+        # Create portfolio with transaction and price so materialization produces data
+        portfolio = Portfolio(
+            id=make_id(), name="Auto Mat Portfolio", is_archived=False, exclude_from_overview=False
+        )
+        fund = Fund(
+            id=make_id(), name="Test Fund", isin=make_isin("US"), currency="USD", exchange="NYSE"
+        )
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        txn = Transaction(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            date=date(2024, 6, 3),
+            type="buy",
+            shares=10,
+            cost_per_share=100.0,
+        )
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 6, 3), price=100.0)
+        db_session.add_all([txn, price])
+        db_session.commit()
+
+        # Verify no materialized data exists
+        assert FundHistoryMaterialized.query.count() == 0
+
+        # Call summary — should auto-materialize
+        result = PortfolioService.get_portfolio_summary()
+
+        # Should have materialized data now
+        assert FundHistoryMaterialized.query.count() > 0
+
+        # Should return summary
+        assert isinstance(result, list)
+        portfolio_ids = {p["id"] for p in result}
+        assert portfolio.id in portfolio_ids
+
+    def test_summary_auto_materialize_failure_falls_through(self, app_context, db_session, mocker):
+        """Test that summary falls through when auto-materialization fails."""
+        from app.models import FundHistoryMaterialized
+
+        FundHistoryMaterialized.query.delete()
+        db_session.commit()
+
+        portfolio = Portfolio(
+            id=make_id(), name="Fail Portfolio", is_archived=False, exclude_from_overview=False
+        )
+        fund = Fund(
+            id=make_id(), name="Test Fund", isin=make_isin("US"), currency="USD", exchange="NYSE"
+        )
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        txn = Transaction(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            date=date(2024, 6, 3),
+            type="buy",
+            shares=10,
+            cost_per_share=100.0,
+        )
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=date(2024, 6, 3), price=100.0)
+        db_session.add_all([txn, price])
+        db_session.commit()
+
+        # Mock materialization to fail
+        mocker.patch(
+            "app.services.portfolio_history_materialized_service"
+            ".PortfolioHistoryMaterializedService.materialize_portfolio_history",
+            side_effect=Exception("DB error"),
+        )
+
+        # Should still return data via fallback
+        result = PortfolioService.get_portfolio_summary()
+        assert isinstance(result, list)
+
+    def test_history_uses_partial_coverage(self, app_context, db_session):
+        """Test that get_portfolio_history uses materialized data for partial coverage."""
+        from datetime import timedelta
+
+        from app.models import FundHistoryMaterialized
+
+        portfolio = Portfolio(
+            id=make_id(), name="Partial Portfolio", is_archived=False, exclude_from_overview=False
+        )
+        fund = Fund(
+            id=make_id(), name="Test Fund", isin=make_isin("US"), currency="USD", exchange="NYSE"
+        )
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        # Create materialized data for only some days (simulating weekday-only data)
+        base_date = date.today() - timedelta(days=10)
+        for i in range(5):
+            d = base_date + timedelta(days=i * 2)  # every other day = gaps
+            record = FundHistoryMaterialized(
+                id=make_id(),
+                portfolio_fund_id=pf.id,
+                fund_id=fund.id,
+                date=d.isoformat(),
+                shares=10,
+                price=100.0,
+                value=1000.0,
+                cost=1000.0,
+                realized_gain=0,
+                unrealized_gain=0,
+                total_gain_loss=0,
+                dividends=0,
+                fees=0,
+                sale_proceeds=0,
+                original_cost=1000.0,
+            )
+            db_session.add(record)
+        db_session.commit()
+
+        # Query a range that includes gaps — should still use materialized path
+        start = (base_date - timedelta(days=1)).isoformat()
+        end = date.today().isoformat()
+        result = PortfolioService.get_portfolio_history(start_date=start, end_date=end)
+
+        assert isinstance(result, list)
+        # Should have returned data from the materialized view (partial coverage path)
+        assert len(result) > 0
+
+    def test_history_auto_materializes_when_no_data(self, app_context, db_session):
+        """Test that get_portfolio_history auto-materializes when zero coverage."""
+        from datetime import timedelta
+
+        from app.models import FundHistoryMaterialized
+
+        # Clear materialized data
+        FundHistoryMaterialized.query.delete()
+        db_session.commit()
+
+        portfolio = Portfolio(
+            id=make_id(),
+            name="History Auto Mat Portfolio",
+            is_archived=False,
+            exclude_from_overview=False,
+        )
+        fund = Fund(
+            id=make_id(), name="Test Fund", isin=make_isin("US"), currency="USD", exchange="NYSE"
+        )
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        base_date = date.today() - timedelta(days=5)
+        txn = Transaction(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            date=base_date,
+            type="buy",
+            shares=10,
+            cost_per_share=100.0,
+        )
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=base_date, price=100.0)
+        db_session.add_all([txn, price])
+        db_session.commit()
+
+        assert FundHistoryMaterialized.query.count() == 0
+
+        result = PortfolioService.get_portfolio_history(
+            start_date=base_date.isoformat(), end_date=date.today().isoformat()
+        )
+
+        # Should have auto-materialized
+        assert FundHistoryMaterialized.query.count() > 0
+        assert isinstance(result, list)
+
+    def test_history_auto_materialize_failure_falls_through(self, app_context, db_session, mocker):
+        """Test that history falls through when auto-materialization fails."""
+        from datetime import timedelta
+
+        from app.models import FundHistoryMaterialized
+
+        FundHistoryMaterialized.query.delete()
+        db_session.commit()
+
+        portfolio = Portfolio(
+            id=make_id(),
+            name="Fail History Portfolio",
+            is_archived=False,
+            exclude_from_overview=False,
+        )
+        fund = Fund(
+            id=make_id(), name="Test Fund", isin=make_isin("US"), currency="USD", exchange="NYSE"
+        )
+        db_session.add_all([portfolio, fund])
+        db_session.commit()
+
+        pf = PortfolioFund(id=make_id(), portfolio_id=portfolio.id, fund_id=fund.id)
+        db_session.add(pf)
+        db_session.commit()
+
+        base_date = date.today() - timedelta(days=5)
+        txn = Transaction(
+            id=make_id(),
+            portfolio_fund_id=pf.id,
+            date=base_date,
+            type="buy",
+            shares=10,
+            cost_per_share=100.0,
+        )
+        price = FundPrice(id=make_id(), fund_id=fund.id, date=base_date, price=100.0)
+        db_session.add_all([txn, price])
+        db_session.commit()
+
+        # Mock materialization to fail
+        mocker.patch(
+            "app.services.portfolio_history_materialized_service"
+            ".PortfolioHistoryMaterializedService.materialize_portfolio_history",
+            side_effect=Exception("DB error"),
+        )
+
+        # Should fall through to on-demand calculation
+        result = PortfolioService.get_portfolio_history(
+            start_date=base_date.isoformat(), end_date=date.today().isoformat()
+        )
+        assert isinstance(result, list)
+
+
 class TestPortfolioHelperMethods:
     """Tests for portfolio helper methods and edge cases."""
 

@@ -719,13 +719,14 @@ class PortfolioService:
                     portfolio_ids, start_date_parsed, end_date_parsed
                 )
 
-                if coverage.is_complete:
+                if coverage.is_complete or coverage.partial_coverage:
                     # Use materialized view - FAST PATH (already returns camelCase)
+                    # Partial coverage is normal (weekends/holidays have no data)
                     return PortfolioHistoryMaterializedService.get_materialized_history(
                         portfolio_ids, start_date_parsed, end_date_parsed
                     )
 
-                # Coverage incomplete — auto-materialize all portfolios and retry
+                # No data at all — auto-materialize all portfolios and retry
                 for pid in portfolio_ids:
                     try:
                         PortfolioHistoryMaterializedService.materialize_portfolio_history(
@@ -739,13 +740,10 @@ class PortfolioService:
                             details={"portfolio_id": pid, "error": str(e)},
                         )
 
-                coverage = PortfolioHistoryMaterializedService.check_materialized_coverage(
+                # After materialization, use whatever data we have
+                return PortfolioHistoryMaterializedService.get_materialized_history(
                     portfolio_ids, start_date_parsed, end_date_parsed
                 )
-                if coverage.is_complete:
-                    return PortfolioHistoryMaterializedService.get_materialized_history(
-                        portfolio_ids, start_date_parsed, end_date_parsed
-                    )
             except (ValueError, Exception):
                 # Fall through to on-demand calculation
                 pass
