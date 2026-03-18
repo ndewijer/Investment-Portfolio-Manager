@@ -13,7 +13,12 @@ import Overview from './pages/Overview';
 import PortfolioDetail from './pages/PortfolioDetail';
 import Portfolios from './pages/Portfolios';
 
-// Import global CSS first
+// Import design system first
+import './styles/modern-2026.css';
+import './styles/modern-cards.css';
+import './styles/modern-table.css';
+
+// Import global CSS
 import './App.css';
 import './styles/common.css';
 import './styles/mobile.css';

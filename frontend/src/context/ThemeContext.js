@@ -120,14 +120,16 @@ export const ThemeProvider = ({ children }) => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Apply theme to document
+  // Apply theme to document - uses data-theme attribute for 2026 design system
   useEffect(() => {
     const root = document.documentElement;
 
     if (darkModeEnabled && theme === 'dark') {
+      root.setAttribute('data-theme', 'dark');
       root.classList.add('dark-theme');
       root.classList.remove('light-theme');
     } else {
+      root.removeAttribute('data-theme');
       root.classList.add('light-theme');
       root.classList.remove('dark-theme');
     }

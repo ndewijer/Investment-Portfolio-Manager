@@ -1,84 +1,57 @@
-.data-table-wrapper {
-  width: 100%;
-}
-
-/* Desktop table styles */
-.table-container {
-  overflow-x: auto;
-  border-radius: 8px;
-  background-color: white;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.data-table th {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #dee2e6;
-  padding: 0.75rem;
-  text-align: left;
-  font-weight: 600;
-  color: #495057;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.data-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid #dee2e6;
-  vertical-align: middle;
-}
-
-.data-table tbody tr:hover {
-  background-color: #f8f9fa;
-}
-
-.data-table tbody tr:last-child td {
-  border-bottom: none;
-}
+/* DataTable component - works with modern-table.css design system */
 
 /* Header content with icons */
 .header-content {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   cursor: pointer;
   user-select: none;
 }
 
-.header-text {
+button.header-text {
   flex: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* FundsTable clickable fund name button */
+button.clickable-fund-name {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+button.clickable-fund-name:hover {
+  color: var(--color-primary);
 }
 
 .filter-icon,
 .sort-icon {
-  color: #6c757d;
+  color: var(--color-neutral-400);
   cursor: pointer;
-  transition: color 0.2s;
-  font-size: 0.8rem;
+  transition: color var(--transition-fast);
+  font-size: 11px;
 }
 
 .filter-icon:hover,
 .sort-icon:hover {
-  color: #007bff;
+  color: var(--color-primary);
 }
 
 .filter-icon.active {
-  color: #007bff;
-}
-
-/* Clickable rows */
-.clickable-row {
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.clickable-row:hover {
-  background-color: #e9ecef;
+  color: var(--color-primary);
 }
 
 /* Mobile cards - hidden on desktop */
@@ -86,14 +59,13 @@
   display: none;
 }
 
-/* Default card layout */
+/* Default card layout for mobile */
 .default-card {
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--surface-raised);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .default-card:last-child {
@@ -104,8 +76,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #f1f3f4;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-neutral-100);
 }
 
 .card-field:last-child {
@@ -114,80 +86,43 @@
 }
 
 .field-label {
-  font-weight: 500;
-  color: #6c757d;
-  font-size: 0.85rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-neutral-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   flex-shrink: 0;
 }
 
 .field-value {
   text-align: right;
-  color: #495057;
-  font-size: 0.9rem;
+  color: var(--color-neutral-900);
+  font-size: 14px;
 }
 
 .clickable-card {
   cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .clickable-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Empty state */
 .empty-state {
   text-align: center;
-  padding: 3rem 1rem;
-  color: #6c757d;
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
+  padding: var(--space-12) var(--space-4);
+  color: var(--color-neutral-500);
+  background: var(--surface-raised);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xl);
 }
 
 .empty-state p {
   margin: 0;
-  font-size: 1rem;
-}
-
-/* Pagination */
-.table-pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  padding: 1rem;
-  background: white;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-}
-
-.pagination-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.pagination-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.pagination-info {
-  color: #6c757d;
-  font-size: 0.9rem;
+  font-size: 16px;
 }
 
 /* Responsive design */
@@ -200,26 +135,13 @@
   /* Show mobile cards */
   .mobile-cards {
     display: block;
-  }
-
-  .table-pagination {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-
-  .pagination-info {
-    order: -1;
+    padding: var(--space-4);
   }
 
   .card-field {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.25rem;
-  }
-
-  .field-label {
-    margin-right: 0;
+    gap: var(--space-1);
   }
 
   .field-value {
@@ -228,142 +150,27 @@
   }
 }
 
-/* Tablet view adjustments */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .data-table {
-    font-size: 0.85rem;
-  }
-
-  .data-table th,
-  .data-table td {
-    padding: 0.5rem;
-  }
-
-  .header-content {
-    gap: 0.25rem;
-  }
-
-  .filter-icon,
-  .sort-icon {
-    font-size: 0.75rem;
-  }
+/* Dark mode */
+[data-theme="dark"] .default-card {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
 }
 
-/* Dark mode support - class-based with feature flag control */
-.dark-theme .table-container,
-.dark-theme .default-card,
-.dark-theme .empty-state,
-.dark-theme .table-pagination {
-  background-color: #343a40;
-  border-color: #495057;
+[data-theme="dark"] .empty-state {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
 }
 
-.dark-theme .data-table th {
-  background-color: #495057;
-  color: #f8f9fa;
-  border-bottom-color: #6c757d;
+[data-theme="dark"] .field-label {
+  color: var(--color-neutral-400);
 }
 
-.dark-theme .data-table td {
-  color: #f8f9fa;
-  border-bottom-color: #495057;
+[data-theme="dark"] .field-value {
+  color: var(--color-neutral-200);
 }
 
-.dark-theme .data-table tbody tr:hover {
-  background-color: #495057;
-}
-
-.dark-theme .clickable-row:hover {
-  background-color: #6c757d;
-}
-
-.dark-theme .field-label {
-  color: #adb5bd;
-}
-
-.dark-theme .field-value {
-  color: #f8f9fa;
-}
-
-.dark-theme .empty-state p {
-  color: #adb5bd;
-}
-
-.dark-theme .pagination-info {
-  color: #adb5bd;
-}
-
-.dark-theme .clickable-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* Light theme explicit styles */
-.light-theme .table-container,
-.light-theme .default-card,
-.light-theme .empty-state,
-.light-theme .table-pagination {
-  background-color: white;
-  border-color: #e9ecef;
-}
-
-.light-theme .data-table th {
-  background-color: #f8f9fa;
-  color: #495057;
-  border-bottom-color: #dee2e6;
-}
-
-.light-theme .data-table td {
-  color: #495057;
-  border-bottom-color: #dee2e6;
-}
-
-.light-theme .data-table tbody tr:hover {
-  background-color: #f8f9fa;
-}
-
-.light-theme .clickable-row:hover {
-  background-color: #e9ecef;
-}
-
-.light-theme .field-label {
-  color: #6c757d;
-}
-
-.light-theme .field-value {
-  color: #495057;
-}
-
-.light-theme .empty-state p {
-  color: #6c757d;
-}
-
-.light-theme .pagination-info {
-  color: #6c757d;
-}
-
-.light-theme .clickable-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .data-table th {
-    border-bottom-width: 3px;
-  }
-
-  .data-table td {
-    border-bottom-width: 2px;
-  }
-
-  .filter-icon,
-  .sort-icon {
-    font-weight: bold;
-  }
-
-  .clickable-row:hover,
-  .clickable-card:hover {
-    outline: 2px solid #007bff;
-  }
+[data-theme="dark"] .card-field {
+  border-bottom-color: var(--color-neutral-700);
 }
 
 /* Print styles */
@@ -379,17 +186,5 @@
   .filter-icon,
   .sort-icon {
     display: none;
-  }
-
-  .table-pagination {
-    display: none;
-  }
-
-  .data-table tbody tr:hover {
-    background-color: transparent;
-  }
-
-  .clickable-row {
-    cursor: default;
   }
 }

@@ -106,45 +106,61 @@ const Portfolios = () => {
     <div className="portfolios-page">
       <div className="page-header">
         <h1>Portfolios</h1>
-        <button onClick={() => setIsModalOpen(true)}>Add Portfolio</button>
+        <button className="modern-btn modern-btn-primary" onClick={() => setIsModalOpen(true)}>
+          Add Portfolio
+        </button>
       </div>
 
-      <div className="portfolios-grid">
+      <div className="modern-cards-grid">
         {portfolios.map((portfolio) => (
-          <div key={portfolio.id} className="portfolio-card">
-            <h2>{portfolio.name}</h2>
-            <p>{portfolio.description}</p>
-            <ActionButtons className="portfolio-actions">
-              <ActionButton variant="primary" onClick={() => handleViewPortfolio(portfolio.id)}>
-                View Details
-              </ActionButton>
-              <ActionButton
-                variant="secondary"
-                onClick={() => {
-                  setEditingPortfolio({
-                    id: portfolio.id,
-                    name: portfolio.name,
-                    description: portfolio.description,
-                    excludeFromOverview: portfolio.excludeFromOverview || false,
-                  });
-                  setIsModalOpen(true);
-                }}
-              >
-                Edit
-              </ActionButton>
-              <ActionButton variant="danger" onClick={() => handleDelete(portfolio.id)}>
-                Delete
-              </ActionButton>
-              {portfolio.isArchived ? (
-                <ActionButton variant="info" onClick={() => handleUnarchive(portfolio.id)}>
-                  Unarchive
-                </ActionButton>
-              ) : (
-                <ActionButton variant="warning" onClick={() => handleArchive(portfolio.id)}>
-                  Archive
-                </ActionButton>
+          <div
+            key={portfolio.id}
+            className={`modern-portfolio-card ${portfolio.isArchived ? 'archived' : ''}`}
+          >
+            <div className="modern-portfolio-card-header">
+              <h3 className="modern-portfolio-card-title">{portfolio.name}</h3>
+              {portfolio.isArchived && (
+                <span className="modern-portfolio-card-badge">Archived</span>
               )}
-            </ActionButtons>
+            </div>
+
+            <p className="modern-portfolio-card-description">
+              {portfolio.description || 'No description'}
+            </p>
+
+            <div className="modern-portfolio-card-actions">
+              <ActionButtons>
+                <ActionButton variant="primary" onClick={() => handleViewPortfolio(portfolio.id)}>
+                  View Details
+                </ActionButton>
+                <ActionButton
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingPortfolio({
+                      id: portfolio.id,
+                      name: portfolio.name,
+                      description: portfolio.description,
+                      excludeFromOverview: portfolio.excludeFromOverview || false,
+                    });
+                    setIsModalOpen(true);
+                  }}
+                >
+                  Edit
+                </ActionButton>
+                <ActionButton variant="danger" onClick={() => handleDelete(portfolio.id)}>
+                  Delete
+                </ActionButton>
+                {portfolio.isArchived ? (
+                  <ActionButton variant="info" onClick={() => handleUnarchive(portfolio.id)}>
+                    Unarchive
+                  </ActionButton>
+                ) : (
+                  <ActionButton variant="warning" onClick={() => handleArchive(portfolio.id)}>
+                    Archive
+                  </ActionButton>
+                )}
+              </ActionButtons>
+            </div>
           </div>
         ))}
       </div>

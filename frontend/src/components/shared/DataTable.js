@@ -172,12 +172,22 @@ const DataTable = ({
   };
 
   const renderDesktopTable = () => (
-    <div className="table-container">
-      <table className="data-table desktop-table">
+    <div className="modern-table-container">
+      <table className="modern-table desktop-table">
         <thead>
           <tr>
             {columns.map((column) => (
-              <th key={column.key} className={column.className || ''}>
+              <th
+                key={column.key}
+                className={[
+                  column.className,
+                  sortable && column.sortable !== false && 'sortable',
+                  sortConfig.key === column.key && 'sorted',
+                  sortConfig.key === column.key && sortConfig.direction === 'desc' && 'sorted-desc',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
                 <div className="header-content">
                   {filterable && column.filterable !== false && (
                     <FontAwesomeIcon
@@ -186,7 +196,13 @@ const DataTable = ({
                       onClick={(e) => handleFilterClick(e, column.key)}
                     />
                   )}
-                  <span className="header-text">{column.header}</span>
+                  <button
+                    type="button"
+                    className="header-text"
+                    onClick={() => sortable && column.sortable !== false && handleSort(column.key)}
+                  >
+                    {column.header}
+                  </button>
                   {sortable && column.sortable !== false && (
                     <FontAwesomeIcon
                       icon={getSortIcon(column.key)}
@@ -204,7 +220,7 @@ const DataTable = ({
             <tr
               key={item.id || index}
               onClick={onRowClick ? () => onRowClick(item) : undefined}
-              className={onRowClick ? 'clickable-row' : ''}
+              className={onRowClick ? 'clickable' : ''}
             >
               {columns.map((column) => (
                 <td key={column.key} className={column.cellClassName || ''}>
@@ -226,6 +242,18 @@ const DataTable = ({
             <div
               key={item.id || index}
               onClick={onRowClick ? () => onRowClick(item) : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onRowClick(item);
+                      }
+                    }
+                  : undefined
+              }
+              role={onRowClick ? 'button' : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
               className={onRowClick ? 'clickable-card' : ''}
             >
               {mobileCardRenderer(item)}
@@ -243,6 +271,18 @@ const DataTable = ({
             key={item.id || index}
             className={`default-card ${onRowClick ? 'clickable-card' : ''}`}
             onClick={onRowClick ? () => onRowClick(item) : undefined}
+            onKeyDown={
+              onRowClick
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onRowClick(item);
+                    }
+                  }
+                : undefined
+            }
+            role={onRowClick ? 'button' : undefined}
+            tabIndex={onRowClick ? 0 : undefined}
           >
             {columns.map((column) => (
               <div key={column.key} className="card-field">
@@ -297,30 +337,32 @@ const DataTable = ({
   }
 
   return (
-    <div className={`data-table-wrapper ${className}`} {...props}>
+    <div className={`modern-table-wrapper ${className}`} {...props}>
       {renderDesktopTable()}
       {renderMobileCards()}
       {renderFilterPopups()}
 
       {pagination && (
-        <div className="table-pagination">
-          <button
-            className="pagination-btn"
-            onClick={() => onPaginationChange?.(pagination.currentPage - 1)}
-            disabled={pagination.currentPage === 1}
-          >
-            Previous
-          </button>
-          <span className="pagination-info">
+        <div className="modern-table-pagination">
+          <span className="modern-table-pagination-info">
             Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalItems} items)
           </span>
-          <button
-            className="pagination-btn"
-            onClick={() => onPaginationChange?.(pagination.currentPage + 1)}
-            disabled={pagination.currentPage === pagination.totalPages}
-          >
-            Next
-          </button>
+          <div className="modern-table-pagination-controls">
+            <button
+              className="modern-table-pagination-btn"
+              onClick={() => onPaginationChange?.(pagination.currentPage - 1)}
+              disabled={pagination.currentPage === 1}
+            >
+              Previous
+            </button>
+            <button
+              className="modern-table-pagination-btn"
+              onClick={() => onPaginationChange?.(pagination.currentPage + 1)}
+              disabled={pagination.currentPage === pagination.totalPages}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -37,7 +37,7 @@ vi.mock('../../shared', () => ({
           </thead>
           <tbody>
             {data.map((row, idx) => (
-              <tr key={idx}>
+              <tr key={row.id || idx}>
                 {columns.map((col) => (
                   <td key={col.key}>{col.render ? col.render(row[col.key], row) : row[col.key]}</td>
                 ))}
@@ -49,7 +49,7 @@ vi.mock('../../shared', () => ({
     );
   },
   ActionButton: ({ children, onClick, variant }) => (
-    <button data-testid={`action-button-${variant}`} onClick={onClick}>
+    <button type="button" data-testid={`action-button-${variant}`} onClick={onClick}>
       {children}
     </button>
   ),
@@ -59,8 +59,12 @@ vi.mock('../../shared', () => ({
       <div data-testid="form-modal">
         <h2>{title}</h2>
         {children}
-        <button onClick={onSubmit}>Submit</button>
-        <button onClick={onClose}>Cancel</button>
+        <button type="button" onClick={onSubmit}>
+          Submit
+        </button>
+        <button type="button" onClick={onClose}>
+          Cancel
+        </button>
       </div>
     );
   },

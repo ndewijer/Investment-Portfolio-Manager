@@ -95,9 +95,13 @@ const FundsTable = ({
       header: 'Fund',
       sortable: true,
       render: (value, fund) => (
-        <span className="clickable-fund-name" onClick={() => handleFundClick(fund.fundId)}>
+        <button
+          type="button"
+          className="clickable-fund-name"
+          onClick={() => handleFundClick(fund.fundId)}
+        >
           {value}
-        </span>
+        </button>
       ),
     },
     {
@@ -161,8 +165,14 @@ const FundsTable = ({
   const renderFundMobileCard = (fund) => (
     <div className="fund-card">
       <div className="card-header">
-        <h3 className="fund-name clickable-fund-name" onClick={() => handleFundClick(fund.fundId)}>
-          {fund.fundName}
+        <h3 className="fund-name">
+          <button
+            type="button"
+            className="clickable-fund-name"
+            onClick={() => handleFundClick(fund.fundId)}
+          >
+            {fund.fundName}
+          </button>
         </h3>
         <div className="current-value">{formatCurrency(fund.currentValue)}</div>
       </div>

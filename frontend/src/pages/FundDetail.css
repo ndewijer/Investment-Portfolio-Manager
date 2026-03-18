@@ -1,61 +1,58 @@
-/* Remove duplicate button styles and import common styles */
-@import "../styles/common.css";
-
 /* Keep only page-specific styles */
 .fund-detail-container {
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .fund-detail-container .fund-header {
-  margin-bottom: 30px;
+  margin-bottom: var(--space-8);
 }
 
 .fund-detail-container .fund-header h1 {
-  margin: 0 0 20px 0;
-  color: #333;
+  margin: 0 0 var(--space-5) 0;
+  color: var(--color-neutral-900);
 }
 
 .fund-detail-container .fund-info {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: var(--space-5);
+  background-color: var(--surface-raised);
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .fund-detail-container .info-item {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--space-1);
 }
 
 .fund-detail-container .info-item label {
-  color: #666;
+  color: var(--color-neutral-500);
   font-size: 0.9em;
 }
 
 .fund-detail-container .info-item span {
   font-size: 1.1em;
-  color: #333;
+  color: var(--color-neutral-900);
   font-weight: 500;
 }
 
 .fund-detail-container .price-chart,
 .fund-detail-container .price-history {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: var(--surface-raised);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  margin-bottom: var(--space-8);
+  box-shadow: var(--shadow-sm);
 }
 
 .fund-detail-container .price-chart h2,
 .fund-detail-container .price-history h2 {
   margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
+  margin-bottom: var(--space-5);
+  color: var(--color-neutral-900);
 }
 
 .fund-detail-container .chart-container {
@@ -67,7 +64,7 @@
 .fund-detail-container .header-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   position: relative;
 }
 
@@ -75,23 +72,23 @@
 .fund-detail-container .header-content .sort-icon {
   cursor: pointer;
   opacity: 0.5;
-  transition: opacity 0.2s;
+  transition: opacity var(--transition-fast);
 }
 
 .fund-detail-container .header-content .filter-icon:hover,
 .fund-detail-container .header-content .filter-icon.active,
 .fund-detail-container .header-content .sort-icon:hover {
   opacity: 1;
-  color: #2196f3;
+  color: var(--color-primary);
 }
 
 .fund-detail-container .filter-popup {
   position: absolute;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--surface-raised);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-xs);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-md);
   z-index: 1000;
   min-width: 250px;
 }
@@ -99,12 +96,12 @@
 .fund-detail-container .date-picker-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .fund-detail-container .date-picker-container label {
   font-weight: 500;
-  color: #666;
+  color: var(--color-neutral-500);
 }
 
 .fund-detail-container .date-picker-container .react-datepicker-wrapper {
@@ -113,53 +110,53 @@
 
 .fund-detail-container .date-picker-container .react-datepicker__input-container input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-xs);
 }
 
 .fund-detail-container .info-item span svg {
-  margin-right: 5px;
+  margin-right: var(--space-1);
 }
 
 .fund-detail-container .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .fund-detail-container .button-group {
   display: flex;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .fund-detail-container .update-prices-button {
-  padding: 8px 16px;
-  background-color: #ff9800; /* Orange for historical update */
-  color: white;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-warning);
+  color: var(--surface-raised);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
 }
 
 .fund-detail-container .update-prices-button:hover {
-  background-color: #f57c00;
+  background-color: var(--color-warning-dark);
 }
 
 .fund-detail-container .update-prices-button:disabled {
-  background-color: #cccccc;
+  background-color: var(--color-neutral-300);
   cursor: not-allowed;
 }
 
 .fund-detail-container .update-prices-button:nth-of-type(2) {
-  background-color: #ff9800; /* Orange for historical update */
+  background-color: var(--color-warning);
 }
 
 .fund-detail-container .update-prices-button:nth-of-type(2):hover {
-  background-color: #f57c00;
+  background-color: var(--color-warning-dark);
 }
 
 /* Mobile-responsive table styles */
@@ -186,66 +183,66 @@
   }
 
   .fund-detail-container .mobile-controls {
-    margin-bottom: 16px;
-    padding: 12px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    background-color: var(--color-neutral-100);
+    border-radius: var(--radius-md);
   }
 
   .fund-detail-container .mobile-filter-controls {
     display: flex;
-    gap: 8px;
+    gap: var(--space-2);
     flex-wrap: wrap;
   }
 
   .fund-detail-container .mobile-filter-btn,
   .fund-detail-container .mobile-sort-btn {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background-color: white;
-    color: #333;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-xs);
+    background-color: var(--surface-raised);
+    color: var(--color-neutral-900);
     cursor: pointer;
     font-size: 0.9rem;
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
+    gap: var(--space-2);
+    transition: all var(--transition-fast);
   }
 
   .fund-detail-container .mobile-filter-btn:hover,
   .fund-detail-container .mobile-sort-btn:hover {
-    background-color: #f0f7ff;
-    border-color: #2196f3;
+    background-color: var(--color-primary-alpha);
+    border-color: var(--color-primary);
   }
 
   .fund-detail-container .mobile-filter-btn.active {
-    background-color: #2196f3;
-    color: white;
-    border-color: #2196f3;
+    background-color: var(--color-primary);
+    color: var(--surface-raised);
+    border-color: var(--color-primary);
   }
 
   .fund-detail-container .mobile-filter-popup {
-    margin-top: 12px;
-    padding: 12px;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    background-color: var(--surface-raised);
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--radius-xs);
+    box-shadow: var(--shadow-sm);
   }
 
   .fund-detail-container .price-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e0e0e0;
-    transition: box-shadow 0.2s;
+    background-color: var(--surface-raised);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-2);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-neutral-200);
+    transition: box-shadow var(--transition-fast);
   }
 
   .fund-detail-container .price-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
   }
 
   .fund-detail-container .price-card .card-header {
@@ -256,21 +253,21 @@
 
   .fund-detail-container .price-card .date {
     font-size: 1rem;
-    color: #666;
+    color: var(--color-neutral-500);
     font-weight: 500;
   }
 
   .fund-detail-container .price-card .price {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #333;
+    color: var(--color-neutral-900);
   }
 
   /* Adjust fund info grid for mobile */
   .fund-detail-container .fund-info {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    padding: 16px;
+    gap: var(--space-3);
+    padding: var(--space-4);
   }
 
   .fund-detail-container .info-item {
@@ -291,17 +288,17 @@
 /* Very small screens */
 @media (max-width: 480px) {
   .fund-detail-container {
-    padding: 12px;
+    padding: var(--space-3);
   }
 
   .fund-detail-container .fund-info {
     grid-template-columns: 1fr;
-    gap: 8px;
-    padding: 12px;
+    gap: var(--space-2);
+    padding: var(--space-3);
   }
 
   .fund-detail-container .mobile-controls {
-    padding: 8px;
+    padding: var(--space-2);
   }
 
   .fund-detail-container .mobile-filter-controls {
@@ -315,7 +312,59 @@
   }
 
   .fund-detail-container .price-card {
-    padding: 12px;
-    margin-bottom: 6px;
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
   }
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .fund-detail-container .fund-header h1,
+[data-theme="dark"] .fund-detail-container .price-chart h2,
+[data-theme="dark"] .fund-detail-container .price-history h2 {
+  color: var(--color-neutral-50);
+}
+
+[data-theme="dark"] .fund-detail-container .info-item span,
+[data-theme="dark"] .fund-detail-container .price-card .price {
+  color: var(--color-neutral-100);
+}
+
+[data-theme="dark"] .fund-detail-container .info-item label,
+[data-theme="dark"] .fund-detail-container .price-card .date,
+[data-theme="dark"] .fund-detail-container .date-picker-container label {
+  color: var(--color-neutral-400);
+}
+
+[data-theme="dark"] .fund-detail-container .filter-popup {
+  border-color: var(--color-neutral-600);
+}
+
+[data-theme="dark"]
+  .fund-detail-container
+  .date-picker-container
+  .react-datepicker__input-container
+  input {
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-100);
+}
+
+[data-theme="dark"] .fund-detail-container .update-prices-button:disabled {
+  background-color: var(--color-neutral-600);
+  color: var(--color-neutral-400);
+}
+
+[data-theme="dark"] .fund-detail-container .mobile-controls {
+  background-color: var(--color-neutral-800);
+}
+
+[data-theme="dark"] .fund-detail-container .mobile-filter-btn,
+[data-theme="dark"] .fund-detail-container .mobile-sort-btn {
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-100);
+}
+
+[data-theme="dark"] .fund-detail-container .mobile-filter-popup,
+[data-theme="dark"] .fund-detail-container .price-card {
+  border-color: var(--color-neutral-600);
 }

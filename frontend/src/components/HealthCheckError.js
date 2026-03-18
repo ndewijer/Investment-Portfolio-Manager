@@ -55,7 +55,7 @@ const HealthCheckError = ({ error, onRetry }) => {
           )}
         </div>
 
-        <button onClick={onRetry} className="retry-button">
+        <button type="button" onClick={onRetry} className="retry-button">
           Retry Connection
         </button>
       </div>
