@@ -40,7 +40,7 @@ describe('PortfolioSummary Component', () => {
       expect(screen.getByText('Total Dividends')).toBeInTheDocument();
       expect(screen.getByText('Unrealized Gain/Loss')).toBeInTheDocument();
       expect(screen.getByText('Realized Gain/Loss')).toBeInTheDocument();
-      expect(screen.getByText('Gain/Loss')).toBeInTheDocument();
+      expect(screen.getByText('Total Gain/Loss')).toBeInTheDocument();
     });
 
     test('renders correct values for all metrics', () => {
@@ -53,8 +53,12 @@ describe('PortfolioSummary Component', () => {
       expect(screen.getByText(/€\s*10\.000,00/)).toBeInTheDocument();
 
       // More specific match to avoid matching "11.500,00"
-      const realizedGainCard = screen.getByText('Realized Gain/Loss').closest('.summary-card');
-      expect(realizedGainCard.querySelector('.value')).toHaveTextContent(/€\s*1\.500,00/);
+      const realizedGainCard = screen
+        .getByText('Realized Gain/Loss')
+        .closest('.modern-summary-card');
+      expect(realizedGainCard.querySelector('.modern-summary-card-value')).toHaveTextContent(
+        /€\s*1\.500,00/,
+      );
 
       expect(screen.getByText(/€\s*11\.500,00/)).toBeInTheDocument();
     });
@@ -74,8 +78,10 @@ describe('PortfolioSummary Component', () => {
     test('applies positive class to unrealized gain when value is positive', () => {
       renderWithContext({ portfolio: mockPortfolio });
 
-      const unrealizedCard = screen.getByText('Unrealized Gain/Loss').closest('.summary-card');
-      const valueElement = unrealizedCard.querySelector('.value');
+      const unrealizedCard = screen
+        .getByText('Unrealized Gain/Loss')
+        .closest('.modern-summary-card');
+      const valueElement = unrealizedCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('positive');
       expect(valueElement).not.toHaveClass('negative');
@@ -88,8 +94,10 @@ describe('PortfolioSummary Component', () => {
       };
       renderWithContext({ portfolio: portfolioWithLoss });
 
-      const unrealizedCard = screen.getByText('Unrealized Gain/Loss').closest('.summary-card');
-      const valueElement = unrealizedCard.querySelector('.value');
+      const unrealizedCard = screen
+        .getByText('Unrealized Gain/Loss')
+        .closest('.modern-summary-card');
+      const valueElement = unrealizedCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('negative');
       expect(valueElement).not.toHaveClass('positive');
@@ -98,8 +106,8 @@ describe('PortfolioSummary Component', () => {
     test('applies positive class to realized gain when value is positive', () => {
       renderWithContext({ portfolio: mockPortfolio });
 
-      const realizedCard = screen.getByText('Realized Gain/Loss').closest('.summary-card');
-      const valueElement = realizedCard.querySelector('.value');
+      const realizedCard = screen.getByText('Realized Gain/Loss').closest('.modern-summary-card');
+      const valueElement = realizedCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('positive');
       expect(valueElement).not.toHaveClass('negative');
@@ -112,8 +120,8 @@ describe('PortfolioSummary Component', () => {
       };
       renderWithContext({ portfolio: portfolioWithLoss });
 
-      const realizedCard = screen.getByText('Realized Gain/Loss').closest('.summary-card');
-      const valueElement = realizedCard.querySelector('.value');
+      const realizedCard = screen.getByText('Realized Gain/Loss').closest('.modern-summary-card');
+      const valueElement = realizedCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('negative');
       expect(valueElement).not.toHaveClass('positive');
@@ -122,8 +130,8 @@ describe('PortfolioSummary Component', () => {
     test('applies positive class to total gain when value is positive', () => {
       renderWithContext({ portfolio: mockPortfolio });
 
-      const totalGainCard = screen.getByText('Gain/Loss').closest('.summary-card');
-      const valueElement = totalGainCard.querySelector('.value');
+      const totalGainCard = screen.getByText('Total Gain/Loss').closest('.modern-summary-card');
+      const valueElement = totalGainCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('positive');
       expect(valueElement).not.toHaveClass('negative');
@@ -136,8 +144,8 @@ describe('PortfolioSummary Component', () => {
       };
       renderWithContext({ portfolio: portfolioWithLoss });
 
-      const totalGainCard = screen.getByText('Gain/Loss').closest('.summary-card');
-      const valueElement = totalGainCard.querySelector('.value');
+      const totalGainCard = screen.getByText('Total Gain/Loss').closest('.modern-summary-card');
+      const valueElement = totalGainCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('negative');
       expect(valueElement).not.toHaveClass('positive');
@@ -152,8 +160,10 @@ describe('PortfolioSummary Component', () => {
       };
       renderWithContext({ portfolio: portfolioWithZeroGain });
 
-      const unrealizedCard = screen.getByText('Unrealized Gain/Loss').closest('.summary-card');
-      const unrealizedValue = unrealizedCard.querySelector('.value');
+      const unrealizedCard = screen
+        .getByText('Unrealized Gain/Loss')
+        .closest('.modern-summary-card');
+      const unrealizedValue = unrealizedCard.querySelector('.modern-summary-card-value');
 
       expect(unrealizedValue).toHaveClass('positive');
       expect(unrealizedValue).not.toHaveClass('negative');

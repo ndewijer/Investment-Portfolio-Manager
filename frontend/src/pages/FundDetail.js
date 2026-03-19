@@ -207,27 +207,27 @@ const FundDetail = () => {
       <div className="fund-header">
         <h1>{fund?.name || 'Fund Details'}</h1>
         {fund && (
-          <div className="fund-info">
-            <div className="info-item">
-              <label>ISIN:</label>
-              <span>{fund.isin}</span>
+          <div className="modern-summary-cards-grid fund-info-grid">
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">ISIN</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.isin}</div>
             </div>
-            <div className="info-item">
-              <label>Symbol:</label>
-              <span>{fund.symbol}</span>
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">Symbol</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.symbol || '—'}</div>
             </div>
-            <div className="info-item">
-              <label>Currency:</label>
-              <span>{fund.currency}</span>
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">Currency</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.currency}</div>
             </div>
-            <div className="info-item">
-              <label>Exchange:</label>
-              <span>{fund.exchange}</span>
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">Exchange</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.exchange}</div>
             </div>
             {fund.dividendType !== 'none' && (
-              <div className="info-item">
-                <label>Dividend Type:</label>
-                <span>
+              <div className="modern-summary-card">
+                <div className="modern-summary-card-label">Dividend Type</div>
+                <div className="modern-summary-card-value fund-info-value">
                   {fund.dividendType === 'CASH' ? (
                     <>
                       <FontAwesomeIcon icon={faMoneyBill} /> Cash
@@ -237,7 +237,7 @@ const FundDetail = () => {
                       <FontAwesomeIcon icon={faChartLine} /> Stock
                     </>
                   )}
-                </span>
+                </div>
               </div>
             )}
           </div>

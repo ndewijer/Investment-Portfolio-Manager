@@ -145,7 +145,7 @@ const PortfolioDetail = () => {
     <div className="portfolio-detail-container">
       <div className="portfolio-header">
         <h1>{portfolio.name}</h1>
-        <p>{portfolio.description}</p>
+        {portfolio.description && <p className="portfolio-description">{portfolio.description}</p>}
       </div>
 
       <PortfolioSummary portfolio={portfolio} />

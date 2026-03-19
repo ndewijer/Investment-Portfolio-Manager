@@ -3,6 +3,15 @@
   padding: var(--space-5);
 }
 
+.fund-info-grid {
+  margin-bottom: var(--space-8);
+}
+
+.fund-info-value {
+  font-size: clamp(16px, 2vw, 20px);
+  letter-spacing: 0;
+}
+
 .fund-detail-container .fund-header {
   margin-bottom: var(--space-8);
 }

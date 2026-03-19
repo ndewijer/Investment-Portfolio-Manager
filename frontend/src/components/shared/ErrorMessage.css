@@ -4,7 +4,7 @@
   justify-content: space-between;
   padding: 1rem;
   margin: 1rem 0;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   border: 1px solid;
   font-size: 0.9rem;
 }
@@ -55,14 +55,14 @@
 }
 
 .error-retry-btn {
-  background-color: #c53030;
-  color: white;
+  background-color: var(--color-error, #c53030);
+  color: var(--surface-raised);
   border: none;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   font-size: 0.85rem;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
 }
 
 .error-retry-btn:hover {
@@ -70,20 +70,20 @@
 }
 
 .error-retry-btn:focus {
-  outline: 2px solid #c53030;
+  outline: 2px solid var(--color-error, #c53030);
   outline-offset: 2px;
 }
 
 .error-dismiss-btn {
   background: none;
   border: none;
-  color: #c53030;
+  color: var(--color-error, #c53030);
   cursor: pointer;
   font-size: 1.5rem;
   line-height: 1;
   padding: 0.25rem;
   border-radius: 2px;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-fast);
 }
 
 .error-dismiss-btn:hover {
@@ -91,80 +91,44 @@
 }
 
 .error-dismiss-btn:focus {
-  outline: 2px solid #c53030;
+  outline: 2px solid var(--color-error, #c53030);
   outline-offset: 2px;
 }
 
 /* Mobile styles moved to mobile.css */
 
-/* Dark mode support - class-based with feature flag control */
-.dark-theme .error-default {
+/* Dark mode support */
+[data-theme="dark"] .error-default {
   background-color: #2d1b1b;
   border-color: #4a2c2c;
   color: #f56565;
 }
 
-.dark-theme .error-inline {
+[data-theme="dark"] .error-inline {
   background-color: #2d1b1b;
   border-color: #4a2c2c;
   color: #fc8181;
 }
 
-.dark-theme .error-banner {
+[data-theme="dark"] .error-banner {
   background-color: #4a2c2c;
   border-color: #f56565;
   color: #fed7d7;
 }
 
-.dark-theme .error-retry-btn {
+[data-theme="dark"] .error-retry-btn {
   background-color: #f56565;
-  color: #1a202c;
+  color: var(--color-neutral-900);
 }
 
-.dark-theme .error-retry-btn:hover {
+[data-theme="dark"] .error-retry-btn:hover {
   background-color: #fc8181;
 }
 
-.dark-theme .error-dismiss-btn {
+[data-theme="dark"] .error-dismiss-btn {
   color: #f56565;
 }
 
-.dark-theme .error-dismiss-btn:hover {
+[data-theme="dark"] .error-dismiss-btn:hover {
   background-color: rgba(245, 101, 101, 0.1);
-}
-
-/* Light theme explicit styles */
-.light-theme .error-default {
-  background-color: #fee;
-  border-color: #fcc;
-  color: #c33;
-}
-
-.light-theme .error-inline {
-  background-color: #fff5f5;
-  border-color: #fed7d7;
-  color: #c53030;
-}
-
-.light-theme .error-banner {
-  background-color: #fed7d7;
-  border-color: #fc8181;
-  color: #742a2a;
-}
-
-.light-theme .error-retry-btn {
-  background-color: #c53030;
-  color: white;
-}
-
-.light-theme .error-retry-btn:hover {
-  background-color: #9c2626;
-}
-
-.light-theme .error-dismiss-btn {
-  color: #c53030;
-}
-
-.light-theme .error-dismiss-btn:hover {
-  background-color: rgba(197, 48, 48, 0.1);
 }

@@ -17,7 +17,7 @@
 .form-modal-actions {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--color-neutral-200);
 }
 
 /* Form field styles - matching original common.css styling */
@@ -33,12 +33,12 @@
   display: block;
   margin-bottom: 5px;
   font-weight: normal;
-  color: #333;
+  color: var(--color-neutral-900);
   font-size: 1rem;
 }
 
 .required-indicator {
-  color: #dc3545;
+  color: var(--color-error, #dc3545);
   margin-left: 0.25rem;
 }
 
@@ -46,42 +46,42 @@
 .form-field select,
 .form-field textarea {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-xs);
   font-size: 1rem;
   font-family: inherit;
   box-sizing: border-box;
   transition:
-    border-color 0.15s ease-in-out,
-    box-shadow 0.15s ease-in-out;
+    border-color var(--transition-fast) ease-in-out,
+    box-shadow var(--transition-fast) ease-in-out;
 }
 
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(0, 102, 255, 0.25);
 }
 
 .form-field input.error,
 .form-field select.error,
 .form-field textarea.error {
-  border-color: #dc3545;
+  border-color: var(--color-error, #dc3545);
 }
 
 .form-field input.error:focus,
 .form-field select.error:focus,
 .form-field textarea.error:focus {
-  border-color: #dc3545;
+  border-color: var(--color-error, #dc3545);
   box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
 .form-field input:disabled,
 .form-field select:disabled,
 .form-field textarea:disabled {
-  background-color: #e9ecef;
+  background-color: var(--color-neutral-200);
   opacity: 1;
   cursor: not-allowed;
 }
@@ -115,7 +115,7 @@
 
 /* Field error styles */
 .field-error {
-  color: #dc3545;
+  color: var(--color-error, #dc3545);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
@@ -141,10 +141,10 @@
 /* Static field display */
 .static-field {
   padding: 0.5rem 0.75rem;
-  background-color: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 4px;
-  color: #495057;
+  background-color: var(--color-neutral-100);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xs);
+  color: var(--color-neutral-600);
   font-size: 0.9rem;
 }
 
@@ -160,23 +160,23 @@
 
 .input-group .input-addon {
   padding: 0.5rem 0.75rem;
-  background-color: #e9ecef;
-  border: 1px solid #ced4da;
+  background-color: var(--color-neutral-200);
+  border: 1px solid var(--color-neutral-300);
   border-left: none;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
   font-size: 0.9rem;
-  color: #495057;
+  color: var(--color-neutral-600);
 }
 
 .input-group input {
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
 }
 
 /* Form sections */
 .form-section {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .form-section:last-child {
@@ -188,7 +188,7 @@
 .form-section-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #495057;
+  color: var(--color-neutral-600);
   margin-bottom: 1rem;
 }
 
@@ -201,104 +201,53 @@
   }
 }
 
-/* Dark mode support - class-based with feature flag control */
-.dark-theme .field-label {
-  color: #f8f9fa;
+/* Dark mode support */
+[data-theme="dark"] .field-label {
+  color: var(--color-neutral-100);
 }
 
-.dark-theme .form-field input,
-.dark-theme .form-field select,
-.dark-theme .form-field textarea {
-  background-color: #343a40;
-  border-color: #495057;
-  color: #f8f9fa;
+[data-theme="dark"] .form-field input,
+[data-theme="dark"] .form-field select,
+[data-theme="dark"] .form-field textarea {
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-100);
 }
 
-.dark-theme .form-field input:focus,
-.dark-theme .form-field select:focus,
-.dark-theme .form-field textarea:focus {
-  border-color: #007bff;
-  background-color: #343a40;
+[data-theme="dark"] .form-field input:focus,
+[data-theme="dark"] .form-field select:focus,
+[data-theme="dark"] .form-field textarea:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-neutral-700);
 }
 
-.dark-theme .form-field input:disabled,
-.dark-theme .form-field select:disabled,
-.dark-theme .form-field textarea:disabled {
-  background-color: #495057;
-  color: #adb5bd;
+[data-theme="dark"] .form-field input:disabled,
+[data-theme="dark"] .form-field select:disabled,
+[data-theme="dark"] .form-field textarea:disabled {
+  background-color: var(--color-neutral-600);
+  color: var(--color-neutral-400);
 }
 
-.dark-theme .static-field {
-  background-color: #343a40;
-  border-color: #495057;
-  color: #f8f9fa;
+[data-theme="dark"] .static-field {
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-100);
 }
 
-.dark-theme .input-group .input-addon {
-  background-color: #495057;
-  border-color: #6c757d;
-  color: #f8f9fa;
+[data-theme="dark"] .input-group .input-addon {
+  background-color: var(--color-neutral-600);
+  border-color: var(--color-neutral-500);
+  color: var(--color-neutral-100);
 }
 
-.dark-theme .form-modal-actions {
-  border-top-color: #495057;
+[data-theme="dark"] .form-modal-actions {
+  border-top-color: var(--color-neutral-600);
 }
 
-.dark-theme .form-section {
-  border-bottom-color: #495057;
+[data-theme="dark"] .form-section {
+  border-bottom-color: var(--color-neutral-600);
 }
 
-.dark-theme .form-section-title {
-  color: #f8f9fa;
-}
-
-/* Light theme explicit styles */
-.light-theme .field-label {
-  color: #333;
-}
-
-.light-theme .form-field input,
-.light-theme .form-field select,
-.light-theme .form-field textarea {
-  background-color: white;
-  border-color: #ddd;
-  color: #333;
-}
-
-.light-theme .form-field input:focus,
-.light-theme .form-field select:focus,
-.light-theme .form-field textarea:focus {
-  border-color: #007bff;
-  background-color: white;
-}
-
-.light-theme .form-field input:disabled,
-.light-theme .form-field select:disabled,
-.light-theme .form-field textarea:disabled {
-  background-color: #e9ecef;
-  color: #6c757d;
-}
-
-.light-theme .static-field {
-  background-color: #f8f9fa;
-  border-color: #e9ecef;
-  color: #495057;
-}
-
-.light-theme .input-group .input-addon {
-  background-color: #e9ecef;
-  border-color: #ced4da;
-  color: #495057;
-}
-
-.light-theme .form-modal-actions {
-  border-top-color: #e9ecef;
-}
-
-.light-theme .form-section {
-  border-bottom-color: #e9ecef;
-}
-
-.light-theme .form-section-title {
-  color: #495057;
+[data-theme="dark"] .form-section-title {
+  color: var(--color-neutral-100);
 }
