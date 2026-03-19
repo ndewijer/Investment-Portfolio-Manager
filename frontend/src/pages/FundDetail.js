@@ -1,11 +1,10 @@
 import { faChartLine, faMoneyBill } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useState } from 'react';
-import DatePicker from 'react-datepicker';
 import { useParams } from 'react-router-dom';
-import { useFormat } from '../context/FormatContext';
-import 'react-datepicker/dist/react-datepicker.css';
+import FilterPopup from '../components/FilterPopup';
 import DataTable from '../components/shared/DataTable';
+import { useFormat } from '../context/FormatContext';
 import api from '../utils/api';
 import './FundDetail.css';
 import { subMonths } from 'date-fns';
@@ -110,7 +109,7 @@ const FundDetail = () => {
     }
 
     setFilterPosition({
-      top: rect.bottom + 5,
+      top: rect.bottom,
       left: rect.left,
     });
 
@@ -207,27 +206,27 @@ const FundDetail = () => {
       <div className="fund-header">
         <h1>{fund?.name || 'Fund Details'}</h1>
         {fund && (
-          <div className="fund-info">
-            <div className="info-item">
-              <label>ISIN:</label>
-              <span>{fund.isin}</span>
+          <div className="modern-summary-cards-grid fund-info-grid">
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">ISIN</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.isin}</div>
             </div>
-            <div className="info-item">
-              <label>Symbol:</label>
-              <span>{fund.symbol}</span>
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">Symbol</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.symbol || '—'}</div>
             </div>
-            <div className="info-item">
-              <label>Currency:</label>
-              <span>{fund.currency}</span>
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">Currency</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.currency}</div>
             </div>
-            <div className="info-item">
-              <label>Exchange:</label>
-              <span>{fund.exchange}</span>
+            <div className="modern-summary-card">
+              <div className="modern-summary-card-label">Exchange</div>
+              <div className="modern-summary-card-value fund-info-value">{fund.exchange}</div>
             </div>
             {fund.dividendType !== 'none' && (
-              <div className="info-item">
-                <label>Dividend Type:</label>
-                <span>
+              <div className="modern-summary-card">
+                <div className="modern-summary-card-label">Dividend Type</div>
+                <div className="modern-summary-card-value fund-info-value">
                   {fund.dividendType === 'CASH' ? (
                     <>
                       <FontAwesomeIcon icon={faMoneyBill} /> Cash
@@ -237,7 +236,7 @@ const FundDetail = () => {
                       <FontAwesomeIcon icon={faChartLine} /> Stock
                     </>
                   )}
-                </span>
+                </div>
               </div>
             )}
           </div>
@@ -287,7 +286,9 @@ const FundDetail = () => {
               key: 'price',
               header: 'Price',
               render: (value) => formatCurrency(value),
+              cellClassName: 'financial-cell',
               sortable: true,
+              filterable: false,
             },
           ]}
           loading={loadingPrices}
@@ -296,36 +297,16 @@ const FundDetail = () => {
           filterable={true}
           defaultSort={{ key: 'date', direction: 'desc' }}
         />
-        {activeFilter === 'date' && (
-          <div
-            className="filter-popup"
-            style={{
-              top: filterPosition.top,
-              left: filterPosition.left,
-              position: 'fixed',
-            }}
-          >
-            <div className="date-picker-container">
-              <label>From:</label>
-              <DatePicker
-                selected={filters.dateFrom}
-                onChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
-                dateFormat="yyyy-MM-dd"
-                isClearable
-                placeholderText="Start Date"
-              />
-              <label>To:</label>
-              <DatePicker
-                selected={filters.dateTo}
-                onChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
-                dateFormat="yyyy-MM-dd"
-                isClearable
-                placeholderText="End Date"
-                minDate={filters.dateFrom}
-              />
-            </div>
-          </div>
-        )}
+        <FilterPopup
+          type="date"
+          isOpen={activeFilter === 'date'}
+          onClose={() => setActiveFilter(null)}
+          position={filterPosition}
+          fromDate={filters.dateFrom}
+          toDate={filters.dateTo}
+          onFromDateChange={(date) => setFilters((prev) => ({ ...prev, dateFrom: date }))}
+          onToDateChange={(date) => setFilters((prev) => ({ ...prev, dateTo: date }))}
+        />
       </section>
     </div>
   );

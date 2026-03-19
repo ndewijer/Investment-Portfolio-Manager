@@ -20,12 +20,33 @@
  * - Mobile card rendering
  * - Custom mobile card renderer
  * - CSS className application
+ * - Filter popup opening/closing/rendering
+ * - Custom onFilterClick handlers
+ * - Custom filter function application
+ * - Header text click sorting
+ * - Keyboard accessibility (Enter/Space on headers and cards)
  *
- * Total: 40 tests
+ * Total: 55 tests
  */
 
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import DataTable from '../DataTable';
+
+// Mock FilterPopup so we can verify it renders with correct props
+vi.mock('../../FilterPopup', () => ({
+  default: ({ type, isOpen, onClose, value, onChange, options }) => (
+    <div data-testid="filter-popup" data-type={type} data-is-open={isOpen}>
+      <input
+        data-testid="filter-input"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <button data-testid="filter-close" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  ),
+}));
 
 // Mock FontAwesome icons
 vi.mock('@fortawesome/react-fontawesome', () => ({
@@ -71,7 +92,7 @@ describe('DataTable Component', () => {
         <DataTable data={sampleData} columns={sampleColumns} loading={true} />,
       );
 
-      expect(container.querySelector('.data-table')).not.toBeInTheDocument();
+      expect(container.querySelector('.modern-table')).not.toBeInTheDocument();
     });
   });
 
@@ -119,7 +140,7 @@ describe('DataTable Component', () => {
         <DataTable data={sampleData} columns={sampleColumns} error="Error" />,
       );
 
-      expect(container.querySelector('.data-table')).not.toBeInTheDocument();
+      expect(container.querySelector('.modern-table')).not.toBeInTheDocument();
     });
   });
 
@@ -361,26 +382,26 @@ describe('DataTable Component', () => {
     });
 
     /**
-     * Test clickable-row class added when onRowClick provided
+     * Test clickable class added when onRowClick provided
      */
-    test('adds clickable-row class when onRowClick provided', () => {
+    test('adds clickable class when onRowClick provided', () => {
       const onRowClick = jest.fn();
       const { container } = render(
         <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />,
       );
 
       const rows = container.querySelectorAll('tbody tr');
-      expect(rows[0]).toHaveClass('clickable-row');
+      expect(rows[0]).toHaveClass('clickable');
     });
 
     /**
-     * Test no clickable-row class when onRowClick not provided
+     * Test no clickable class when onRowClick not provided
      */
-    test('does not add clickable-row class when onRowClick not provided', () => {
+    test('does not add clickable class when onRowClick not provided', () => {
       const { container } = render(<DataTable data={sampleData} columns={sampleColumns} />);
 
       const rows = container.querySelectorAll('tbody tr');
-      expect(rows[0]).not.toHaveClass('clickable-row');
+      expect(rows[0]).not.toHaveClass('clickable');
     });
   });
 
@@ -568,7 +589,7 @@ describe('DataTable Component', () => {
         <DataTable data={sampleData} columns={sampleColumns} className="custom-table" />,
       );
 
-      const wrapper = container.querySelector('.data-table-wrapper');
+      const wrapper = container.querySelector('.modern-table-wrapper');
       expect(wrapper).toHaveClass('custom-table');
     });
 
@@ -592,6 +613,320 @@ describe('DataTable Component', () => {
 
       const cells = container.querySelectorAll('td.cell-custom');
       expect(cells).toHaveLength(3); // One for each data row
+    });
+  });
+
+  describe('Filter Click and Popup Rendering', () => {
+    /**
+     * Test clicking filter icon opens filter popup (default handling path)
+     */
+    test('opens FilterPopup when filter icon is clicked', () => {
+      const columns = [{ key: 'name', header: 'Name', filterType: 'text' }];
+
+      const { container } = render(<DataTable data={sampleData} columns={columns} />);
+
+      const filterIcon = container.querySelector('.filter-icon');
+      fireEvent.click(filterIcon);
+
+      const popup = screen.getByTestId('filter-popup');
+      expect(popup).toBeInTheDocument();
+      expect(popup).toHaveAttribute('data-type', 'text');
+      expect(popup).toHaveAttribute('data-is-open', 'true');
+    });
+
+    /**
+     * Test clicking filter icon again closes the popup (toggle behavior)
+     */
+    test('toggles FilterPopup closed when filter icon clicked again', () => {
+      const columns = [{ key: 'name', header: 'Name', filterType: 'text' }];
+
+      const { container } = render(<DataTable data={sampleData} columns={columns} />);
+
+      const filterIcon = container.querySelector('.filter-icon');
+      fireEvent.click(filterIcon); // open
+      fireEvent.click(filterIcon); // close
+
+      expect(screen.queryByTestId('filter-popup')).not.toBeInTheDocument();
+    });
+
+    /**
+     * Test custom onFilterClick handler is called instead of default behavior
+     */
+    test('calls custom onFilterClick handler when provided', () => {
+      const customFilterClick = jest.fn();
+      const columns = [{ key: 'name', header: 'Name', onFilterClick: customFilterClick }];
+
+      const { container } = render(<DataTable data={sampleData} columns={columns} />);
+
+      const filterIcon = container.querySelector('.filter-icon');
+      fireEvent.click(filterIcon);
+
+      expect(customFilterClick).toHaveBeenCalledTimes(1);
+      // Should NOT open the default FilterPopup
+      expect(screen.queryByTestId('filter-popup')).not.toBeInTheDocument();
+    });
+
+    /**
+     * Test closing a FilterPopup via the onClose callback
+     */
+    test('closes FilterPopup when onClose is triggered', () => {
+      const columns = [{ key: 'name', header: 'Name', filterType: 'text' }];
+
+      render(<DataTable data={sampleData} columns={columns} />);
+
+      const { container } = render(<DataTable data={sampleData} columns={columns} />);
+
+      const filterIcon = container.querySelector('.filter-icon');
+      fireEvent.click(filterIcon);
+
+      const closeBtn = screen.getAllByTestId('filter-close')[0];
+      fireEvent.click(closeBtn);
+
+      // After closing, popup should be gone
+      expect(container.querySelector('[data-testid="filter-popup"]')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Custom Filter Function', () => {
+    /**
+     * Test that a custom column filter function is applied to data
+     */
+    test('filters data using custom column filter function', () => {
+      const columns = [
+        {
+          key: 'status',
+          header: 'Status',
+          filterType: 'text',
+          filter: (item, filterValue) =>
+            item.status.toLowerCase().includes(filterValue.toLowerCase()),
+        },
+        { key: 'name', header: 'Name' },
+      ];
+
+      const { container } = render(<DataTable data={sampleData} columns={columns} />);
+
+      // Open the filter popup
+      const filterIcon = container.querySelector('.filter-icon');
+      fireEvent.click(filterIcon);
+
+      // Type a filter value
+      const filterInput = screen.getByTestId('filter-input');
+      fireEvent.change(filterInput, { target: { value: 'Inactive' } });
+
+      // Only Google (Inactive) should remain
+      const rows = container.querySelectorAll('tbody tr');
+      expect(rows).toHaveLength(1);
+      expect(rows[0].textContent).toContain('Google');
+    });
+  });
+
+  describe('Header Text Sort', () => {
+    /**
+     * Test clicking the header text span triggers sorting
+     */
+    test('sorts data when header text is clicked', () => {
+      const { container } = render(<DataTable data={sampleData} columns={sampleColumns} />);
+
+      // Click on the header text span (not the sort icon)
+      const headerTexts = container.querySelectorAll('.header-text');
+      fireEvent.click(headerTexts[0]); // Click 'Name' header text
+
+      const rows = container.querySelectorAll('tbody tr');
+      const firstRowCells = rows[0].querySelectorAll('td');
+      expect(firstRowCells[0].textContent).toBe('Apple Inc.');
+
+      // Click again for descending
+      fireEvent.click(headerTexts[0]);
+      const rowsDesc = container.querySelectorAll('tbody tr');
+      const firstRowCellsDesc = rowsDesc[0].querySelectorAll('td');
+      expect(firstRowCellsDesc[0].textContent).toBe('Microsoft');
+    });
+  });
+
+  describe('Mobile Card Renderer with onRowClick', () => {
+    /**
+     * Test custom mobileCardRenderer with onRowClick for clickable cards
+     */
+    test('renders custom mobile cards with clickable behavior', () => {
+      const onRowClick = jest.fn();
+      const mobileCardRenderer = (item) => (
+        <div className="custom-card">
+          <h3>{item.name}</h3>
+        </div>
+      );
+
+      const { container } = render(
+        <DataTable
+          data={sampleData}
+          columns={sampleColumns}
+          mobileCardRenderer={mobileCardRenderer}
+          onRowClick={onRowClick}
+        />,
+      );
+
+      const mobileCards = container.querySelector('.mobile-cards');
+      const cards = mobileCards.querySelectorAll('.clickable-card');
+      expect(cards).toHaveLength(3);
+
+      fireEvent.click(cards[1]);
+      expect(onRowClick).toHaveBeenCalledWith(sampleData[1]);
+    });
+
+    /**
+     * Test custom mobileCardRenderer without onRowClick (no clickable class)
+     */
+    test('renders custom mobile cards without clickable class when no onRowClick', () => {
+      const mobileCardRenderer = (item) => (
+        <div className="custom-card">
+          <h3>{item.name}</h3>
+        </div>
+      );
+
+      const { container } = render(
+        <DataTable
+          data={sampleData}
+          columns={sampleColumns}
+          mobileCardRenderer={mobileCardRenderer}
+        />,
+      );
+
+      const mobileCards = container.querySelector('.mobile-cards');
+      const clickableCards = mobileCards.querySelectorAll('.clickable-card');
+      expect(clickableCards).toHaveLength(0);
+      // Custom cards should still render
+      const customCards = mobileCards.querySelectorAll('.custom-card');
+      expect(customCards).toHaveLength(3);
+    });
+  });
+
+  describe('Sort Edge Cases', () => {
+    /**
+     * Test header text click does not sort when column.sortable is false
+     */
+    test('does not sort when header text clicked on non-sortable column', () => {
+      const columns = [
+        { key: 'name', header: 'Name', sortable: false },
+        { key: 'amount', header: 'Amount' },
+      ];
+
+      const { container } = render(<DataTable data={sampleData} columns={columns} />);
+
+      const headerTexts = container.querySelectorAll('.header-text');
+      // The Name column header text should not trigger sort
+      fireEvent.click(headerTexts[0]);
+
+      // Data should remain in original order (unsorted)
+      const rows = container.querySelectorAll('tbody tr');
+      const firstRowCells = rows[0].querySelectorAll('td');
+      expect(firstRowCells[0].textContent).toBe('Apple Inc.');
+    });
+
+    /**
+     * Test sorting with numeric values (non-string comparison branch)
+     */
+    test('sorts numeric values correctly', () => {
+      const columns = [{ key: 'amount', header: 'Amount' }];
+
+      const { container } = render(<DataTable data={sampleData} columns={columns} />);
+
+      const sortIcons = container.querySelectorAll('.sort-icon');
+      fireEvent.click(sortIcons[0]); // Sort amount ascending
+
+      const rows = container.querySelectorAll('tbody tr');
+      expect(rows[0].textContent).toBe('1500.5');
+      expect(rows[1].textContent).toBe('1800');
+      expect(rows[2].textContent).toBe('2300.75');
+    });
+
+    /**
+     * Test sorting with equal values (return 0 branch)
+     */
+    test('handles equal values in sort correctly', () => {
+      const dataWithDuplicates = [
+        { id: 1, name: 'Alpha', status: 'Active' },
+        { id: 2, name: 'Beta', status: 'Active' },
+        { id: 3, name: 'Gamma', status: 'Inactive' },
+      ];
+      const columns = [{ key: 'status', header: 'Status' }];
+
+      const { container } = render(<DataTable data={dataWithDuplicates} columns={columns} />);
+
+      const sortIcons = container.querySelectorAll('.sort-icon');
+      fireEvent.click(sortIcons[0]); // Sort ascending
+
+      const rows = container.querySelectorAll('tbody tr');
+      // Both "Active" items should come before "Inactive"
+      expect(rows[0].textContent).toBe('Active');
+      expect(rows[1].textContent).toBe('Active');
+      expect(rows[2].textContent).toBe('Inactive');
+    });
+  });
+
+  describe('Keyboard Accessibility', () => {
+    /**
+     * Test Enter key on header text triggers sort
+     */
+    test('sorts data when Enter key pressed on header text', () => {
+      const { container } = render(<DataTable data={sampleData} columns={sampleColumns} />);
+
+      const headerText = container.querySelector('.header-text');
+      fireEvent.keyDown(headerText, { key: 'Enter' });
+
+      const rows = container.querySelectorAll('tbody tr');
+      const firstRowCells = rows[0].querySelectorAll('td');
+      expect(firstRowCells[0].textContent).toBe('Apple Inc.');
+    });
+
+    /**
+     * Test Space key on header text triggers sort
+     */
+    test('sorts data when Space key pressed on header text', () => {
+      const { container } = render(<DataTable data={sampleData} columns={sampleColumns} />);
+
+      const headerText = container.querySelector('.header-text');
+      fireEvent.keyDown(headerText, { key: ' ' });
+
+      const rows = container.querySelectorAll('tbody tr');
+      const firstRowCells = rows[0].querySelectorAll('td');
+      expect(firstRowCells[0].textContent).toBe('Apple Inc.');
+    });
+
+    /**
+     * Test Enter key on custom mobile card triggers onRowClick
+     */
+    test('triggers onRowClick when Enter pressed on custom mobile card', () => {
+      const onRowClick = jest.fn();
+      const mobileCardRenderer = (item) => <div className="custom-card">{item.name}</div>;
+
+      const { container } = render(
+        <DataTable
+          data={sampleData}
+          columns={sampleColumns}
+          mobileCardRenderer={mobileCardRenderer}
+          onRowClick={onRowClick}
+        />,
+      );
+
+      const cards = container.querySelectorAll('.mobile-cards .clickable-card');
+      fireEvent.keyDown(cards[0], { key: 'Enter' });
+
+      expect(onRowClick).toHaveBeenCalledWith(sampleData[0]);
+    });
+
+    /**
+     * Test Enter key on default mobile card triggers onRowClick
+     */
+    test('triggers onRowClick when Enter pressed on default mobile card', () => {
+      const onRowClick = jest.fn();
+
+      const { container } = render(
+        <DataTable data={sampleData} columns={sampleColumns} onRowClick={onRowClick} />,
+      );
+
+      const cards = container.querySelectorAll('.mobile-cards .default-card');
+      fireEvent.keyDown(cards[0], { key: 'Enter' });
+
+      expect(onRowClick).toHaveBeenCalledWith(sampleData[0]);
     });
   });
 
@@ -644,9 +979,9 @@ describe('DataTable Component', () => {
       );
 
       // Verify key elements are present
-      expect(container.querySelector('.data-table')).toBeInTheDocument();
+      expect(container.querySelector('.modern-table')).toBeInTheDocument();
       expect(container.querySelector('.mobile-cards')).toBeInTheDocument();
-      expect(container.querySelector('.table-pagination')).toBeInTheDocument();
+      expect(container.querySelector('.modern-table-pagination')).toBeInTheDocument();
       expect(container.querySelector('.full-featured-table')).toBeInTheDocument();
     });
   });

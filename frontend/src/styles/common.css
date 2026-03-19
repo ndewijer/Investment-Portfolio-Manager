@@ -1,100 +1,19 @@
-/* Color variables */
-:root {
-  --primary-color: #1976d2;
-  --add-color: #4caf50;
-  --edit-color: #ffc107;
-  --delete-color: #f44336;
-  --archive-color: #9e9e9e;
-  --positive-color: #4caf50;
-  --negative-color: #f44336;
-}
-
-/* Summary Cards Styles */
-.summary-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.summary-card {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.summary-card h3 {
-  margin: 0;
-  color: #666;
-  font-size: 0.9em;
-  font-weight: normal;
-}
-
-.summary-card .value {
-  margin: 10px 0 0;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #333;
-}
-
-.summary-card .change {
-  font-size: 0.9em;
-  margin-top: 5px;
-}
-
-.summary-card .change.positive {
-  color: var(--positive-color);
-}
-
-.summary-card .change.negative {
-  color: var(--negative-color);
-}
-
-/* Transaction Button Styles */
-.transaction-button,
-.time-range-button {
-  padding: 8px 16px;
-  background-color: white;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.transaction-button.active,
-.time-range-button.active {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-}
-
-.transaction-button:hover,
-.time-range-button:hover {
-  opacity: 0.9;
-}
-
-.transaction-button.active:hover,
-.time-range-button.active:hover {
-  opacity: 0.9;
-}
+/* Common styles - bridging legacy and modern design system */
 
 /* Chart Section Styles */
 .chart-section {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--surface-raised);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-bottom: var(--space-8);
+  box-shadow: var(--shadow-sm);
 }
 
 .chart-section h2 {
   margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
+  margin-bottom: var(--space-5);
+  color: var(--color-neutral-900);
 }
 
 .chart-container {
@@ -104,215 +23,328 @@
 }
 
 .chart-controls {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   display: flex;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .time-range-buttons,
 .metric-toggles {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
+/* Button Styles */
+.transaction-button,
+.time-range-button {
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-raised);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  transition: all var(--transition-fast);
+}
+
+.transaction-button.active,
+.time-range-button.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.transaction-button:hover,
+.time-range-button:hover {
+  background: var(--color-primary-alpha);
+}
+
+.transaction-button.active:hover,
+.time-range-button.active:hover {
+  background: var(--color-primary-dark);
+}
+
+/* Action Button Colors */
 .action-buttons button {
-  margin: 4px;
-  padding: 8px 12px;
-  border-radius: 3px;
+  margin: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
 }
 
 .action-buttons button:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .default-button {
-  background-color: var(--primary-color);
+  background: var(--color-primary);
+  color: white;
 }
 
 .add-button {
-  background-color: var(--add-color);
+  background: var(--color-success);
+  color: white;
 }
 
 .dividend-button {
-  background-color: var(--add-color);
+  background: var(--color-success);
+  color: white;
 }
 
 .edit-button {
-  background-color: var(--edit-color);
-  color: black;
+  background: var(--color-warning);
+  color: var(--color-neutral-900);
 }
 
 .delete-button {
-  background-color: var(--delete-color);
+  background: var(--color-error);
+  color: white;
 }
 
 .cancel-button {
-  background-color: var(--archive-color);
+  background: var(--color-neutral-400);
+  color: white;
 }
 
+/* Pagination */
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 20px;
-  margin-top: 20px;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
 }
 
-/* Pagination Button Styles */
 .pagination button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  background-color: var(--primary-color);
-  color: white;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--color-neutral-700);
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-alpha);
 }
 
 .pagination button:disabled {
-  background-color: var(--archive-color);
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .pagination span {
-  color: #666;
+  color: var(--color-neutral-600);
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
+/* Form Styles */
 .static-field {
-  padding: 8px;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  color: #666;
+  padding: var(--space-2);
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-sm);
+  color: var(--color-neutral-600);
   font-weight: 500;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: var(--space-4);
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: var(--space-1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-neutral-700);
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-sm);
   box-sizing: border-box;
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color var(--transition-fast);
 }
 
-/* Add these new styles */
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
+}
+
+/* Section Header */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .section-header button {
-  padding: 8px 16px;
-  background-color: #4caf50;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-success);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all var(--transition-fast);
 }
 
 .section-header button:hover {
-  opacity: 0.9;
+  background: var(--color-success-dark);
+  transform: translateY(-1px);
 }
 
+/* Messages */
 .error-message {
-  color: #d32f2f;
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #ffebee;
-  border-radius: 4px;
+  color: var(--color-error-dark);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--color-error-alpha);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-error);
 }
 
 .success-message {
-  color: #388e3c;
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #e8f5e9;
-  border-radius: 4px;
+  color: var(--color-success-dark);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--color-success-alpha);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-success);
 }
 
+/* Base table reset - remove legacy global table styles */
 table {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  width: 100%;
+  box-shadow: none;
   border-collapse: collapse;
-  margin: 20px 0;
+  width: 100%;
 }
 
 th,
 td {
-  border: 1px solid #ddd;
-  height: 35px;
-  padding: 4px;
+  border: none;
+  padding: var(--space-3);
   text-align: left;
-  border-bottom: 1px solid #eee;
 }
 
 th {
-  background-color: #f4f4f4;
+  background: transparent;
 }
 
 tr:nth-child(even) {
-  background-color: #f9f9f9;
+  background: transparent;
 }
 
 tr:hover {
-  background-color: #f5f5f5;
+  background: transparent;
 }
 
 td select {
-  margin-right: 8px;
-  padding: 4px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
+  margin-right: var(--space-2);
+  padding: var(--space-1);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-xs);
 }
 
+/* Base button reset */
 button {
-  margin: 0 5px;
-  color: white;
-  padding: 5px 10px;
+  margin: 0;
+  color: inherit;
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
 }
 
 /* IBKR and Manual Badge Styles */
 .ibkr-badge,
 .manual-badge {
   display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 3px;
-  font-size: 0.75rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
 .ibkr-badge {
-  background-color: #0288d1;
-  color: white;
+  background: var(--color-primary-alpha);
+  color: var(--color-primary);
 }
 
 .manual-badge {
-  background-color: #757575;
-  color: white;
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-600);
 }
 
 /* For mobile transaction cards */
 .transaction-card .transaction-main {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-wrap: wrap;
+}
+
+/* Dark mode for common elements */
+[data-theme="dark"] .chart-section {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
+}
+
+[data-theme="dark"] .chart-section h2 {
+  color: var(--color-neutral-50);
+}
+
+[data-theme="dark"] .form-group label {
+  color: var(--color-neutral-300);
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select {
+  background: var(--color-neutral-800);
+  border-color: var(--color-neutral-700);
+  color: var(--color-neutral-100);
+}
+
+[data-theme="dark"] .static-field {
+  background: var(--color-neutral-800);
+  border-color: var(--color-neutral-700);
+  color: var(--color-neutral-300);
+}
+
+[data-theme="dark"] .default-button,
+[data-theme="dark"] .secondary-button,
+[data-theme="dark"] .danger-button,
+[data-theme="dark"] .add-button,
+[data-theme="dark"] .edit-button,
+[data-theme="dark"] .delete-button,
+[data-theme="dark"] .cancel-button {
+  opacity: 0.85;
+  box-shadow: none;
 }

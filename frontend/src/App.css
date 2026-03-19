@@ -1,11 +1,22 @@
 .App {
-  text-align: center;
-  padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-neutral-50) 0%, var(--color-neutral-100) 100%);
+  transition: background var(--transition-slow);
 }
 
-.App-header {
-  background-color: #282c34;
-  padding: 20px;
-  color: white;
-  margin-bottom: 20px;
+[data-theme="dark"] .App {
+  background: linear-gradient(135deg, var(--color-neutral-900) 0%, var(--color-neutral-800) 100%);
+  color: var(--color-neutral-100);
+}
+
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: var(--space-4) var(--space-3);
+  }
 }

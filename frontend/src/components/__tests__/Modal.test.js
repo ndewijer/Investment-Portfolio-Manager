@@ -82,7 +82,7 @@ describe('Modal Component', () => {
       render(
         <Modal isOpen={true} onClose={() => {}} title="Test">
           <p>First paragraph</p>
-          <button>Action Button</button>
+          <button type="button">Action Button</button>
         </Modal>,
       );
 

@@ -94,8 +94,8 @@ const TransactionsTable = ({
   const handleFilterClick = (e, field) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setFilterPosition({
-      top: rect.bottom + window.scrollY,
-      left: rect.left + window.scrollX,
+      top: rect.bottom,
+      left: rect.left,
     });
     setFilterPopups((prev) => ({
       ...prev,
@@ -139,7 +139,14 @@ const TransactionsTable = ({
     {
       key: 'ibkrLinked',
       header: 'Source',
-      sortable: false,
+      sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'IBKR', value: 'true' },
+        { label: 'Manual', value: 'false' },
+      ],
+      filter: (item, filterValue) => String(item.ibkrLinked) === filterValue,
       render: (_value, transaction) =>
         transaction.ibkrLinked ? (
           <span className="ibkr-badge" title="Imported from IBKR">
@@ -155,17 +162,24 @@ const TransactionsTable = ({
       key: 'shares',
       header: 'Shares',
       sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (value) => formatNumber(value, 6),
     },
     {
       key: 'costPerShare',
       header: 'Cost per Share',
       sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'total',
       header: 'Total',
+      sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (_value, transaction) => {
         // For fee transactions, total is just the costPerShare value (not shares * costPerShare)
         if (transaction.type === 'fee') {
@@ -179,6 +193,8 @@ const TransactionsTable = ({
     {
       key: 'actions',
       header: 'Actions',
+      sortable: false,
+      filterable: false,
       render: (_value, transaction) =>
         transaction.type !== 'dividend' && (
           <div className="action-buttons">

@@ -282,81 +282,78 @@ const Funds = () => {
       ) : error ? (
         <ErrorMessage error={error} onRetry={() => fetchFunds(() => api.get('/fund'))} />
       ) : (
-        <div className="funds-grid">
+        <div className="modern-cards-grid">
           {funds.map((fund) => (
             <div
               key={fund.id}
-              className={`fund-card ${(fund.investmentType || 'FUND').toLowerCase()}`}
+              className={`modern-fund-card ${(fund.investmentType || 'FUND').toLowerCase() === 'stock' ? 'stock-type' : 'fund-type'}`}
             >
-              <h3>{fund.name}</h3>
+              <div className="modern-portfolio-card-header">
+                <h3 className="modern-portfolio-card-title">{fund.name}</h3>
+                <span
+                  className={`modern-portfolio-card-badge ${(fund.investmentType || 'FUND') === 'STOCK' ? '' : ''}`}
+                >
+                  {(fund.investmentType || 'FUND') === 'STOCK' ? 'Stock' : 'Fund'}
+                </span>
+              </div>
+
               <div className="fund-details">
-                {fund.investmentType === 'FUND' ? (
-                  <>
-                    <p>
-                      <strong>ISIN:</strong> {fund.isin}
-                    </p>
-                    {fund.symbol && (
-                      <p>
-                        <strong>Symbol:</strong>
-                        <span
-                          className="symbol-info"
-                          title={symbolInfo[fund.symbol] || 'Loading symbol information...'}
-                        >
-                          {fund.symbol}
-                        </span>
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {fund.isin && (
-                      <p>
-                        <strong>ISIN:</strong> {fund.isin}
-                      </p>
-                    )}
-                    <p>
-                      <strong>Symbol:</strong>
-                      <span
-                        className="symbol-info"
-                        title={symbolInfo[fund.symbol] || 'Loading symbol information...'}
-                      >
-                        {fund.symbol}
-                      </span>
-                    </p>
-                  </>
+                {fund.isin && (
+                  <div className="fund-detail-row">
+                    <span className="fund-detail-label">ISIN</span>
+                    <span className="fund-detail-value">{fund.isin}</span>
+                  </div>
                 )}
-                <p>
-                  <strong>Currency:</strong> {fund.currency}
-                </p>
-                <p>
-                  <strong>Exchange:</strong> {fund.exchange}
-                </p>
+                {fund.symbol && (
+                  <div className="fund-detail-row">
+                    <span className="fund-detail-label">Symbol</span>
+                    <span
+                      className="fund-detail-value symbol-info"
+                      title={symbolInfo[fund.symbol] || 'Loading symbol information...'}
+                    >
+                      {fund.symbol}
+                    </span>
+                  </div>
+                )}
+                <div className="fund-detail-row">
+                  <span className="fund-detail-label">Currency</span>
+                  <span className="fund-detail-value">{fund.currency}</span>
+                </div>
+                <div className="fund-detail-row">
+                  <span className="fund-detail-label">Exchange</span>
+                  <span className="fund-detail-value">{fund.exchange}</span>
+                </div>
                 {fund.dividendType && fund.dividendType !== 'NONE' && (
-                  <p>
-                    <strong>Dividend Type:</strong>{' '}
-                    {fund.dividendType === 'CASH' ? (
-                      <>
-                        <FontAwesomeIcon icon={faMoneyBill} /> Cash
-                      </>
-                    ) : fund.dividendType === 'STOCK' ? (
-                      <>
-                        <FontAwesomeIcon icon={faChartLine} /> Stock
-                      </>
-                    ) : null}
-                  </p>
+                  <div className="fund-detail-row">
+                    <span className="fund-detail-label">Dividend</span>
+                    <span className="fund-detail-value">
+                      {fund.dividendType === 'CASH' ? (
+                        <>
+                          <FontAwesomeIcon icon={faMoneyBill} /> Cash
+                        </>
+                      ) : fund.dividendType === 'STOCK' ? (
+                        <>
+                          <FontAwesomeIcon icon={faChartLine} /> Stock
+                        </>
+                      ) : null}
+                    </span>
+                  </div>
                 )}
               </div>
-              <ActionButtons className="fund-actions">
-                <ActionButton variant="primary" onClick={() => handleViewFund(fund.id)}>
-                  View Details
-                </ActionButton>
-                <ActionButton variant="secondary" onClick={() => handleEditFund(fund)}>
-                  Edit
-                </ActionButton>
-                <ActionButton variant="danger" onClick={() => handleDeleteFund(fund.id)}>
-                  Delete
-                </ActionButton>
-              </ActionButtons>
+
+              <div className="modern-portfolio-card-actions">
+                <ActionButtons>
+                  <ActionButton variant="primary" onClick={() => handleViewFund(fund.id)}>
+                    View Details
+                  </ActionButton>
+                  <ActionButton variant="secondary" onClick={() => handleEditFund(fund)}>
+                    Edit
+                  </ActionButton>
+                  <ActionButton variant="danger" onClick={() => handleDeleteFund(fund.id)}>
+                    Delete
+                  </ActionButton>
+                </ActionButtons>
+              </div>
             </div>
           ))}
         </div>

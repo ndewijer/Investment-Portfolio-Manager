@@ -1,215 +1,227 @@
-@import "../styles/common.css";
-
-/* Keep only page-specific styles */
 .overview-container {
-  padding: 20px;
+  animation: slideUpFade var(--transition-base) ease-out backwards;
 }
 
 .overview-container h1 {
-  margin-bottom: 30px;
-  color: #333;
+  margin-bottom: var(--space-8);
+  color: var(--color-neutral-900);
 }
 
-.overview-container .portfolios-table {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+[data-theme="dark"] .overview-container h1 {
+  color: var(--color-neutral-50);
 }
 
-.overview-container .portfolios-table h2 {
+/* Chart Section */
+.chart-section {
+  background: var(--surface-raised);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-bottom: var(--space-8);
+  box-shadow: var(--shadow-sm);
+}
+
+.chart-section h2 {
   margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
+  margin-bottom: var(--space-5);
+  color: var(--color-neutral-900);
 }
 
-.overview-container .portfolios-table table {
+[data-theme="dark"] .chart-section {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
+}
+
+[data-theme="dark"] .chart-section h2 {
+  color: var(--color-neutral-50);
+}
+
+.chart-container {
   width: 100%;
-  border-collapse: collapse;
+  margin: 0 auto;
+  padding: 0;
 }
 
-.overview-container .portfolios-table th,
-.overview-container .portfolios-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
+/* Portfolio Table Section */
+.portfolios-table-section {
+  animation: scaleIn var(--transition-base) ease-out backwards;
+  animation-delay: 150ms;
 }
 
-.overview-container .portfolios-table th {
-  background-color: #f5f5f5;
-  font-weight: 600;
+.portfolios-table-section h2 {
+  margin-top: 0;
+  margin-bottom: var(--space-5);
+  color: var(--color-neutral-900);
 }
 
-.overview-container .portfolios-table tbody tr {
-  cursor: pointer;
-  transition: background-color 0.2s;
+[data-theme="dark"] .portfolios-table-section h2 {
+  color: var(--color-neutral-50);
 }
 
-.overview-container .portfolios-table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-
-.overview-container .positive {
-  color: var(--positive-color);
-}
-
-.overview-container .negative {
-  color: var(--negative-color);
-}
-
+/* Loading / Error / Empty states */
 .overview-container .loading {
   text-align: center;
-  padding: 40px;
-  font-size: 1.2rem;
-  color: #666;
+  padding: var(--space-12);
+  font-size: 1.1rem;
+  color: var(--color-neutral-500);
 }
 
 .overview-container .error {
   text-align: center;
-  padding: 40px;
-  color: #f44336;
-  background-color: #ffebee;
-  border-radius: 8px;
-  margin: 20px;
+  padding: var(--space-10);
+  color: var(--color-error);
+  background: var(--color-error-alpha);
+  border-radius: var(--radius-xl);
+  margin: var(--space-5);
 }
 
 .overview-container .no-portfolios-message {
   text-align: center;
-  padding: 2rem;
-  background: #f5f5f5;
-  border-radius: 8px;
-  margin: 2rem auto;
+  padding: var(--space-10);
+  background: var(--surface-raised);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xl);
+  margin: var(--space-8) auto;
   max-width: 600px;
 }
 
 .overview-container .no-portfolios-message p {
-  margin: 0.5rem 0;
-  color: #666;
+  margin: var(--space-2) 0;
+  color: var(--color-neutral-600);
 }
 
 .overview-container .no-portfolios-message button {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background-color: #2196f3;
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all var(--transition-fast);
 }
 
 .overview-container .no-portfolios-message button:hover {
-  background-color: #1976d2;
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-/* Mobile-responsive table styles */
-.overview-container .table-container {
-  position: relative;
+/* Dark mode overrides for portfolio cards (all screen sizes) */
+[data-theme="dark"] .overview-container .portfolio-name {
+  color: var(--color-neutral-50);
 }
 
-.overview-container .mobile-cards {
-  display: none;
+[data-theme="dark"] .overview-container .value-item .value {
+  color: var(--color-neutral-100);
 }
 
-.overview-container .desktop-table {
-  display: table;
+[data-theme="dark"] .overview-container .portfolio-card {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
 }
 
-/* Mobile card styles */
+[data-theme="dark"] .overview-container .card-header {
+  border-bottom-color: var(--color-neutral-700);
+}
+
+[data-theme="dark"] .overview-container .card-details {
+  border-top-color: var(--color-neutral-700);
+}
+
+/* Mobile card styles for Overview portfolio cards */
 @media (max-width: 768px) {
-  .overview-container .desktop-table {
-    display: none;
-  }
-
-  .overview-container .mobile-cards {
-    display: block;
-  }
-
   .overview-container .portfolio-card {
-    background-color: white;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--surface-raised);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
     cursor: pointer;
-    transition:
-      box-shadow 0.2s,
-      transform 0.1s;
-    border: 1px solid #e0e0e0;
-  }
-
-  .overview-container .portfolio-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
+    transition: all var(--transition-fast);
   }
 
   .overview-container .portfolio-card:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: scale(0.98);
+    box-shadow: var(--shadow-sm);
   }
 
   .overview-container .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-neutral-200);
   }
 
   .overview-container .portfolio-name {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 600;
-    color: #333;
+    color: var(--color-neutral-900);
     flex: 1;
   }
 
   .overview-container .performance {
-    font-size: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
     font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background-color: #f5f5f5;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+  }
+
+  .overview-container .performance.positive {
+    background: var(--color-success-alpha);
+  }
+
+  .overview-container .performance.negative {
+    background: var(--color-error-alpha);
   }
 
   .overview-container .card-main {
-    margin-bottom: 12px;
+    margin-bottom: var(--space-3);
   }
 
   .overview-container .main-values {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .overview-container .value-item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-1);
   }
 
   .overview-container .value-item .label {
-    font-size: 0.85rem;
-    color: #666;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-neutral-500);
   }
 
   .overview-container .value-item .value {
+    font-family: var(--font-mono);
     font-size: 1rem;
     font-weight: 600;
-    color: #333;
+    color: var(--color-neutral-900);
   }
 
   .overview-container .card-details {
-    border-top: 1px solid #f0f0f0;
-    padding-top: 12px;
+    border-top: 1px solid var(--color-neutral-200);
+    padding-top: var(--space-3);
   }
 
   .overview-container .detail-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: var(--space-2);
   }
 
   .overview-container .detail-row:last-child {
@@ -217,33 +229,21 @@
   }
 
   .overview-container .detail-row .label {
-    font-size: 0.9rem;
-    color: #666;
+    font-size: 12px;
+    color: var(--color-neutral-500);
     font-weight: 500;
   }
 
   .overview-container .detail-row .value {
+    font-family: var(--font-mono);
     font-size: 0.9rem;
     font-weight: 600;
   }
 }
 
-/* Common mobile patterns moved to mobile.css */
-
-/* Very small screens */
 @media (max-width: 480px) {
-  .overview-container {
-    padding: 12px;
-  }
-
-  /* Page-specific mobile styles */
-  .overview-container .portfolio-card {
-    padding: 12px;
-    margin-bottom: 8px;
-  }
-
   .overview-container .main-values {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: var(--space-2);
   }
 }

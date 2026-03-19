@@ -1,173 +1,106 @@
 .funds-page {
-  padding: 20px;
+  animation: slideUpFade var(--transition-base) ease-out backwards;
+}
+
+.funds-page h1 {
+  margin-bottom: var(--space-2);
+  color: var(--color-neutral-900);
+}
+
+[data-theme="dark"] .funds-page h1 {
+  color: var(--color-neutral-50);
 }
 
 .funds-page .funds-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: var(--space-8);
 }
 
 .funds-page .add-buttons {
   display: flex;
-  gap: 10px;
-  margin-left: auto;
+  gap: var(--space-3);
 }
 
 .funds-page .add-fund-button {
-  background-color: #ff9800;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
+  background: var(--color-warning);
+  color: var(--color-neutral-900);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all var(--transition-fast);
 }
 
 .funds-page .add-stock-button {
-  background-color: #2196f3;
+  background: var(--color-primary);
   color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all var(--transition-fast);
 }
 
-.funds-page .fund-actions button:hover,
-.funds-page .add-buttons button:hover {
-  opacity: 0.9;
+.funds-page .add-fund-button:hover,
+.funds-page .add-stock-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.funds-page .funds-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.funds-page .fund-card {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  border: 2px solid transparent;
-  transition: border-color 0.2s ease;
+/* Fund detail rows within cards */
+.fund-details {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 200px;
+  gap: var(--space-2);
 }
 
-/* Orange border for funds */
-.funds-page .fund-card.fund {
-  border-color: #ff9800;
-}
-
-/* Blue border for stocks */
-.funds-page .fund-card.stock {
-  border-color: #2196f3;
-}
-
-.funds-page .fund-card h2 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-.funds-page .fund-details {
-  flex-grow: 1;
-}
-
-.funds-page .fund-details p {
-  margin: 8px 0;
-  color: #666;
-}
-
-.funds-page .fund-details strong {
-  color: #333;
-  margin-right: 8px;
-}
-
-.funds-page .fund-actions {
+.fund-detail-row {
   display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  margin-top: auto;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-1) 0;
 }
 
-.funds-page .fund-actions button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-  min-width: 100px;
+.fund-detail-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-neutral-500);
 }
 
-.funds-page .fund-actions button:nth-child(1) {
-  background-color: #2196f3; /* Blue for View Details */
-  color: white;
+.fund-detail-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-neutral-900);
+  font-family: var(--font-mono);
 }
 
-.funds-page .fund-actions button:nth-child(2) {
-  background-color: #ffc107; /* Yellow for Edit */
-  color: black;
-}
-
-.funds-page .fund-actions button:nth-child(3) {
-  background-color: #f44336; /* Red for Delete */
-  color: white;
-}
-
-.funds-page .fund-actions button:hover {
-  opacity: 0.9;
+[data-theme="dark"] .fund-detail-value {
+  color: var(--color-neutral-200);
 }
 
 .funds-page .symbol-info {
-  position: relative;
   cursor: help;
-  border-bottom: 1px dotted #666;
-  margin-left: 5px;
+  border-bottom: 1px dotted var(--color-neutral-400);
+  position: relative;
 }
 
-.funds-page .symbol-info:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 5px 10px;
-  background-color: #333;
-  color: white;
-  border-radius: 4px;
-  font-size: 0.9em;
-  white-space: nowrap;
-  z-index: 1000;
-}
-
-.funds-page .lookup-error {
-  color: #f44336;
-  font-size: 0.8em;
-  margin-top: 4px;
-}
-
-.funds-page .symbol-group {
-  margin-bottom: 20px;
-}
-
+/* Symbol input in modal */
 .funds-page .symbol-input-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .funds-page .symbol-validation {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 
 .funds-page .symbol-validation input[type="checkbox"] {
@@ -176,62 +109,36 @@
 }
 
 .funds-page .symbol-validation label {
-  font-size: 0.9em;
-  color: #666;
+  font-size: 13px;
+  color: var(--color-neutral-600);
   cursor: pointer;
 }
 
-.funds-page .lookup-error {
-  color: #f44336;
-  font-size: 0.8em;
-  margin-top: 4px;
+/* Action buttons within fund cards */
+.modern-fund-card .modern-portfolio-card-actions {
+  flex-wrap: wrap;
 }
 
-.funds-page .error-message {
-  background-color: #ffebee;
-  color: #c62828;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-size: 0.9em;
+.modern-fund-card .modern-portfolio-card-actions button {
+  font-size: 13px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
 }
 
-.funds-page .success-message {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-size: 0.9em;
+.modern-fund-card .modern-portfolio-card-actions button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
-.funds-page .toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 15px 20px;
-  border-radius: 4px;
-  z-index: 1000;
-  animation: slideIn 0.3s ease-out;
-}
-
-.funds-page .toast.success {
-  background-color: #4caf50;
-  color: white;
-}
-
-.funds-page .toast.error {
-  background-color: #f44336;
-  color: white;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
+@media (max-width: 768px) {
+  .modern-fund-card .modern-portfolio-card-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
-  to {
-    transform: translateX(0);
-    opacity: 1;
+
+  .modern-fund-card .modern-portfolio-card-actions button {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 }

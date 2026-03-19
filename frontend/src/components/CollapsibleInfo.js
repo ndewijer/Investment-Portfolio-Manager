@@ -28,6 +28,7 @@ const CollapsibleInfo = ({ title, children }) => {
   return (
     <div className="collapsible-info">
       <button
+        type="button"
         className={`collapsible-header ${isExpanded ? 'expanded' : ''}`}
         onClick={() => setIsExpanded(!isExpanded)}
       >

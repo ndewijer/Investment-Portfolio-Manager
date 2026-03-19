@@ -253,18 +253,21 @@ const Overview = () => {
       key: 'totalValue',
       header: 'Current Value',
       sortable: true,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'totalCost',
       header: 'Current Cost Basis',
       sortable: true,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'totalUnrealizedGainLoss',
       header: 'Unrealized Gain/Loss',
       sortable: true,
+      cellClassName: 'financial-cell',
       render: (value) => (
         <span className={value >= 0 ? 'positive' : 'negative'}>{formatCurrency(value)}</span>
       ),
@@ -273,6 +276,7 @@ const Overview = () => {
       key: 'totalRealizedGainLoss',
       header: 'Realized Gain/Loss',
       sortable: true,
+      cellClassName: 'financial-cell',
       render: (value) => (
         <span className={value >= 0 ? 'positive' : 'negative'}>{formatCurrency(value)}</span>
       ),
@@ -281,6 +285,7 @@ const Overview = () => {
       key: 'performance',
       header: 'Performance',
       sortable: true,
+      cellClassName: 'financial-cell',
       render: (_value, portfolio) => {
         const performance = calculatePortfolioPerformance(portfolio);
         return (
@@ -367,26 +372,44 @@ const Overview = () => {
     <div className="overview-container">
       <h1>Investment Portfolio Overview</h1>
 
-      <div className="summary-cards">
-        <div className="summary-card">
-          <h3>Total Portfolio Value</h3>
-          <p className="value">{formatCurrency(totals.totalValue)}</p>
+      <div className="modern-summary-cards-grid">
+        <div className="modern-summary-card">
+          <div className="modern-summary-card-label">Total Portfolio Value</div>
+          <div className="modern-summary-card-value">{formatCurrency(totals.totalValue)}</div>
         </div>
-        <div className="summary-card">
-          <h3>Total Cost Basis</h3>
-          <p className="value">{formatCurrency(totals.totalCost)}</p>
+        <div className="modern-summary-card">
+          <div className="modern-summary-card-label">Total Cost Basis</div>
+          <div className="modern-summary-card-value">{formatCurrency(totals.totalCost)}</div>
         </div>
-        <div className="summary-card">
-          <h3>Total Gain/Loss</h3>
-          <p className={`value ${totals.gain >= 0 ? 'positive' : 'negative'}`}>
+        <div className="modern-summary-card">
+          <div className="modern-summary-card-label">Total Gain/Loss</div>
+          <div
+            className={`modern-summary-card-value ${totals.gain >= 0 ? 'positive' : 'negative'}`}
+          >
             {formatCurrency(totals.gain)}
-          </p>
-        </div>
-        <div className="summary-card">
-          <h3>Total Performance</h3>
-          <p className={`value ${totals.performance >= 0 ? 'positive' : 'negative'}`}>
+          </div>
+          <div
+            className={`modern-summary-card-change ${totals.gain >= 0 ? 'positive' : 'negative'}`}
+          >
             {formatPercentage(totals.performance)}
-          </p>
+          </div>
+        </div>
+        <div className="modern-summary-card">
+          <div className="modern-summary-card-label">Realized Gain/Loss</div>
+          <div
+            className={`modern-summary-card-value ${totals.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
+          >
+            {formatCurrency(totals.totalRealizedGainLoss)}
+          </div>
+          <div
+            className={`modern-summary-card-change ${totals.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
+          >
+            {formatPercentage(
+              totals.totalCost > 0
+                ? ((totals.totalRealizedGainLoss / totals.totalCost) * 100).toFixed(2)
+                : 0,
+            )}
+          </div>
         </div>
       </div>
 
@@ -407,7 +430,7 @@ const Overview = () => {
         </div>
       </div>
 
-      <div className="portfolios-table">
+      <div className="portfolios-table-section">
         <h2>Portfolio Details</h2>
         <DataTable
           data={portfolioSummary}

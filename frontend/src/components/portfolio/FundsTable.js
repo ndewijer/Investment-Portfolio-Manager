@@ -88,57 +88,82 @@ const FundsTable = ({
     }
   };
 
+  // Fund name options for filter picklist
+  const fundNameOptions = (portfolioFunds || []).map((pf) => pf.fundName).filter(Boolean);
+
   // Define columns for the funds table
   const fundsColumns = [
     {
       key: 'fundName',
       header: 'Fund',
       sortable: true,
+      filterable: true,
+      filterType: 'select',
+      filterOptions: fundNameOptions.map((name) => ({ label: name, value: name })),
+      filter: (item, filterValue) => item.fundName === filterValue,
       render: (value, fund) => (
-        <span className="clickable-fund-name" onClick={() => handleFundClick(fund.fundId)}>
+        <button
+          type="button"
+          className="clickable-fund-name"
+          onClick={() => handleFundClick(fund.fundId)}
+        >
           {value}
-        </span>
+        </button>
       ),
     },
     {
       key: 'latestPrice',
       header: 'Latest Share Price',
       sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'totalShares',
       header: 'Total Shares',
       sortable: true,
-      render: (value) => formatNumber(value, 6),
+      filterable: false,
+      cellClassName: 'financial-cell',
+      render: (value) => <span title={formatNumber(value, 6)}>{formatNumber(value, 2)}</span>,
     },
     {
       key: 'averageCost',
       header: 'Average Cost / Share',
       sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'totalCost',
       header: 'Total Cost',
       sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'currentValue',
       header: 'Current Value',
       sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'totalDividends',
       header: 'Total Dividends',
       sortable: true,
+      filterable: false,
+      cellClassName: 'financial-cell',
       render: (value) => formatCurrency(value),
     },
     {
       key: 'actions',
       header: 'Actions',
+      sortable: false,
+      filterable: false,
       render: (_value, fund) => (
         <div className="action-buttons">
           <ActionButton variant="primary" size="small" onClick={() => onAddTransaction(fund.id)}>
@@ -161,8 +186,14 @@ const FundsTable = ({
   const renderFundMobileCard = (fund) => (
     <div className="fund-card">
       <div className="card-header">
-        <h3 className="fund-name clickable-fund-name" onClick={() => handleFundClick(fund.fundId)}>
-          {fund.fundName}
+        <h3 className="fund-name">
+          <button
+            type="button"
+            className="clickable-fund-name"
+            onClick={() => handleFundClick(fund.fundId)}
+          >
+            {fund.fundName}
+          </button>
         </h3>
         <div className="current-value">{formatCurrency(fund.currentValue)}</div>
       </div>

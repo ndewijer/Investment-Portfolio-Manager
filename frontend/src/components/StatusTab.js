@@ -91,7 +91,12 @@ const StatusTab = ({ setError }) => {
     <div className="status-tab">
       <div className="status-header">
         <h2>System Status</h2>
-        <button onClick={fetchHealthData} disabled={loading} className="refresh-button">
+        <button
+          type="button"
+          onClick={fetchHealthData}
+          disabled={loading}
+          className="refresh-button"
+        >
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>

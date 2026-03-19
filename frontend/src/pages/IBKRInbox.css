@@ -1,21 +1,19 @@
-@import "../styles/common.css";
-
 .ibkr-inbox {
-  padding: 2rem;
+  padding: var(--space-8);
 }
 
 .ibkr-inbox h1 {
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-8);
 }
 
 /* Allocation modal match info */
 .match-info {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  border-radius: 4px;
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-  color: #155724;
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  border-radius: var(--radius-xs);
+  background-color: var(--color-success-alpha);
+  border: 1px solid var(--color-success);
+  color: var(--color-success-dark);
   font-size: 0.95rem;
 }
 
@@ -24,133 +22,109 @@
 }
 
 .allocation-warning {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  border-radius: 4px;
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
-  color: #856404;
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  border-radius: var(--radius-xs);
+  background-color: var(--color-warning-alpha);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning-dark);
   font-size: 0.95rem;
 }
 
 .allocation-error {
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border-radius: 4px;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
-  color: #721c24;
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-xs);
+  background-color: var(--color-error-alpha);
+  border: 1px solid var(--color-error-light);
+  color: var(--color-error-dark);
   font-size: 0.9rem;
   text-align: center;
 }
 
 .feature-unavailable {
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 4px;
-  padding: 1.5rem;
+  background-color: var(--color-warning-alpha);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-xs);
+  padding: var(--space-6);
   text-align: center;
 }
 
 .feature-unavailable p {
-  margin: 0.5rem 0;
-  color: #856404;
+  margin: var(--space-2) 0;
+  color: var(--color-warning-dark);
 }
 
 .inbox-actions {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
 }
 
 /* Status Tabs */
 .inbox-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #dee2e6;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+  border-bottom: 2px solid var(--color-neutral-200);
 }
 
 .inbox-tab {
-  padding: 0.75rem 1.5rem;
+  padding: var(--space-3) var(--space-6);
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
-  color: #6c757d;
-  transition: all 0.2s;
+  color: var(--color-neutral-500);
+  transition: all var(--transition-fast);
   margin-bottom: -2px;
 }
 
 .inbox-tab:hover {
-  color: #007bff;
-  background-color: #f8f9fa;
+  color: var(--color-primary);
+  background-color: var(--color-neutral-50);
 }
 
 .inbox-tab.active {
-  color: #007bff;
-  border-bottom-color: #007bff;
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
 }
 
 .empty-state {
   text-align: center;
-  padding: 3rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  margin-top: 2rem;
+  padding: var(--space-12);
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xs);
+  margin-top: var(--space-8);
 }
 
 .empty-state p {
-  margin: 0.5rem 0;
-  color: #6c757d;
+  margin: var(--space-2) 0;
+  color: var(--color-neutral-500);
   text-align: center;
 }
 
 .empty-state-hint {
   font-size: 0.9rem;
-  margin: 1rem auto 0;
+  margin: var(--space-4) auto 0;
   text-align: center;
 }
 
-.transactions-table {
+/* IBKR-specific transactions table overrides */
+.ibkr-inbox .transactions-table {
   overflow-x: auto;
-  margin-top: 1.5rem;
+  margin-top: var(--space-6);
 }
 
-.transactions-table table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  margin: 20px 0;
-}
-
-.transactions-table th,
-.transactions-table td {
-  padding: 12px;
-  text-align: left;
-  border: 1px solid #ddd;
-  border-bottom: 1px solid #eee;
-}
-
-.transactions-table th {
-  background-color: #f5f5f5;
-  font-weight: 600;
-}
-
-.transactions-table tbody tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.transactions-table tbody tr:hover {
-  background-color: #f5f5f5;
+.nowrap-cell {
+  white-space: nowrap;
 }
 
 .description-cell {
-  max-width: 200px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -159,6 +133,7 @@
 .number-cell {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .cost-total {
@@ -167,31 +142,31 @@
 
 .transaction-type {
   display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 3px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-xs);
   font-size: 0.875rem;
   font-weight: 500;
   text-transform: uppercase;
 }
 
 .transaction-type.buy {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: var(--color-success-alpha);
+  color: var(--color-success-dark);
 }
 
 .transaction-type.sell {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: var(--color-error-alpha);
+  color: var(--color-error-dark);
 }
 
 .transaction-type.dividend {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background-color: var(--color-primary-alpha);
+  color: var(--color-primary-dark);
 }
 
 .transaction-type.fee {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: var(--color-warning-alpha);
+  color: var(--color-warning-dark);
 }
 
 .actions-cell {
@@ -199,62 +174,71 @@
 }
 
 .actions-cell button {
-  margin-right: 0.5rem;
+  margin-right: var(--space-2);
 }
 
 .small-button {
-  padding: 0.25rem 0.75rem;
+  padding: var(--space-1) var(--space-3);
   font-size: 0.875rem;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
+}
+
+.ibkr-inbox .small-button {
+  margin-right: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+.ibkr-inbox .small-button:last-child {
+  margin-right: 0;
 }
 
 .small-button.primary {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--surface-raised);
 }
 
 .small-button.primary:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-dark);
 }
 
 .small-button.secondary {
-  background-color: #6c757d;
-  color: white;
+  background-color: var(--color-neutral-500);
+  color: var(--surface-raised);
 }
 
 .small-button.secondary:hover {
-  background-color: #545b62;
+  background-color: var(--color-neutral-600);
 }
 
 .small-button.danger {
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--color-error);
+  color: var(--surface-raised);
 }
 
 .small-button.danger:hover {
-  background-color: #c82333;
+  background-color: var(--color-error-dark);
 }
 
 .default-button,
 .secondary-button {
-  padding: 0.5rem 1.5rem;
+  padding: var(--space-2) var(--space-6);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .default-button {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--surface-raised);
 }
 
 .default-button:hover:not(:disabled) {
-  background-color: #0056b3;
+  background-color: var(--color-primary-dark);
 }
 
 .default-button:disabled {
@@ -263,12 +247,12 @@
 }
 
 .secondary-button {
-  background-color: #6c757d;
-  color: white;
+  background-color: var(--color-neutral-500);
+  color: var(--surface-raised);
 }
 
 .secondary-button:hover:not(:disabled) {
-  background-color: #545b62;
+  background-color: var(--color-neutral-600);
 }
 
 .secondary-button:disabled {
@@ -278,141 +262,141 @@
 
 /* Allocation Modal */
 .allocation-modal {
-  padding: 1rem;
+  padding: var(--space-4);
 }
 
 .allocation-modal .modal-description {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   line-height: 1.5;
-  color: #495057;
+  color: var(--color-neutral-600);
 }
 
 .allocation-modal .modal-note {
-  background-color: #e7f3ff;
-  border-left: 3px solid #007bff;
-  border-radius: 4px;
-  padding: 0.75rem;
-  margin-bottom: 1.5rem;
+  background-color: var(--color-primary-alpha);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-xs);
+  padding: var(--space-3);
+  margin-bottom: var(--space-6);
   font-size: 0.9rem;
   line-height: 1.5;
-  color: #495057;
+  color: var(--color-neutral-600);
 }
 
 .allocation-modal .modal-note strong {
-  color: #333;
+  color: var(--color-neutral-900);
 }
 
 .transaction-summary {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xs);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .transaction-summary h3 {
   margin-top: 0;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .transaction-summary p {
-  margin: 0.5rem 0;
+  margin: var(--space-2) 0;
 }
 
 .allocations-section h3 {
   margin-top: 0;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 /* Allocation Details View (View Mode) */
 .allocation-details {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-6);
 }
 
 .allocation-details h3 {
   margin-top: 0;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
   font-size: 1.1rem;
-  color: #333;
+  color: var(--color-neutral-900);
 }
 
 .allocation-detail-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xs);
 }
 
 .allocation-detail-item {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 
 .allocation-detail-item .label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #6c757d;
+  color: var(--color-neutral-500);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .allocation-detail-item .value {
   font-size: 1rem;
-  color: #212529;
+  color: var(--color-neutral-900);
   font-weight: 500;
 }
 
 .allocation-row {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   align-items: center;
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-1);
 }
 
 .allocation-row select {
   flex: 2;
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-xs);
 }
 
 .allocation-row input[type="number"] {
   flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-xs);
   text-align: right;
 }
 
 .percentage-label {
   font-weight: 600;
-  color: #6c757d;
+  color: var(--color-neutral-500);
 }
 
 .allocation-total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-  margin-top: 1rem;
+  padding: var(--space-4);
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xs);
+  margin-bottom: var(--space-4);
+  margin-top: var(--space-4);
 }
 
 .allocation-total span.valid {
-  color: #28a745;
+  color: var(--color-success);
   font-weight: 600;
 }
 
 .allocation-total span.invalid {
-  color: #dc3545;
+  color: var(--color-error);
   font-weight: 600;
 }
 
@@ -421,18 +405,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xs);
 }
 
 .bulk-actions .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   font-weight: 500;
   margin: 0;
 }
@@ -446,7 +430,7 @@
 
 .bulk-action-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
@@ -466,7 +450,7 @@
   .bulk-actions {
     flex-direction: column;
     align-items: stretch;
-    gap: 1rem;
+    gap: var(--space-4);
   }
 
   .bulk-actions .checkbox-label {
@@ -517,18 +501,18 @@
 }
 
 .danger-button {
-  padding: 0.5rem 1.5rem;
+  padding: var(--space-2) var(--space-6);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
-  background-color: #dc3545;
-  color: white;
+  transition: all var(--transition-fast);
+  background-color: var(--color-error);
+  color: var(--surface-raised);
 }
 
 .danger-button:hover:not(:disabled) {
-  background-color: #c82333;
+  background-color: var(--color-error-dark);
 }
 
 .danger-button:disabled {
@@ -539,33 +523,33 @@
 /* Allocation Presets */
 .allocation-presets {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: #e7f3ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 4px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background-color: var(--color-primary-alpha);
+  border: 1px solid var(--color-primary-light);
+  border-radius: var(--radius-xs);
 }
 
 .preset-button {
-  padding: 0.5rem 1rem;
-  background-color: #007bff;
-  color: white;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-primary);
+  color: var(--surface-raised);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .preset-button:hover {
-  background-color: #0056b3;
+  background-color: var(--color-primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 .preset-button:active {
@@ -574,27 +558,27 @@
 
 .bulk-info {
   font-size: 0.9rem;
-  color: #0c5460;
-  background-color: #d1ecf1;
-  padding: 0.75rem;
-  border-radius: 4px;
-  border: 1px solid #bee5eb;
-  margin-top: 0.5rem;
+  color: var(--color-primary-dark);
+  background-color: var(--color-primary-alpha);
+  padding: var(--space-3);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-primary-light);
+  margin-top: var(--space-2);
 }
 
 /* Bulk Eligibility Info */
 .bulk-eligibility-info {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  border-radius: 4px;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--radius-xs);
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
 }
 
 .eligibility-line {
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  border-radius: 3px;
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-xs);
   font-size: 0.95rem;
 }
 
@@ -603,148 +587,192 @@
 }
 
 .eligibility-line.success {
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-  color: #155724;
+  background-color: var(--color-success-alpha);
+  border: 1px solid var(--color-success);
+  color: var(--color-success-dark);
 }
 
 .eligibility-line.warning {
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
-  color: #856404;
+  background-color: var(--color-warning-alpha);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning-dark);
 }
 
 /* Allocation Amount Display */
 .allocation-item {
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .allocation-amount-preview {
-  margin-top: 0.25rem;
-  margin-left: calc(55% + 0.5rem); /* Align under the input field (select is 2/3, input is 1/3) */
-  padding-left: 0.5rem;
+  margin-top: var(--space-1);
+  margin-left: calc(55% + var(--space-2));
+  padding-left: var(--space-2);
   font-size: 0.85rem;
-  color: #6c757d;
+  color: var(--color-neutral-500);
 }
 
 .allocation-amount-preview.with-remove-button {
-  margin-left: calc(28% + 0.5rem); /* Adjust when remove button is shown */
+  margin-left: calc(28% + var(--space-2));
 }
 
 /* Transaction Summary - Compact Style */
 .transaction-summary.compact {
-  padding: 0.75rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
+  padding: var(--space-3);
+  background-color: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-xs);
   font-size: 0.9rem;
   line-height: 1.4;
-  color: #495057;
+  color: var(--color-neutral-600);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #dee2e6;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-neutral-200);
 }
 
 /* Dark mode support */
 [data-theme="dark"] .ibkr-inbox {
-  color: #e0e0e0;
+  color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .feature-unavailable {
-  background-color: #664d03;
-  border-color: #856404;
+  background-color: rgba(255, 176, 32, 0.15);
+  border-color: var(--color-warning-dark);
 }
 
 [data-theme="dark"] .feature-unavailable p {
-  color: #ffe69c;
+  color: var(--color-warning-light);
 }
 
 [data-theme="dark"] .empty-state {
-  background-color: #2d2d2d;
-  border-color: #444;
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
 }
 
 [data-theme="dark"] .empty-state p {
-  color: #aaa;
-}
-
-[data-theme="dark"] .transactions-table table {
-  background-color: #1a1a1a;
-}
-
-[data-theme="dark"] .transactions-table th {
-  background-color: #2d2d2d;
-  color: #e0e0e0;
-  border-color: #444;
-}
-
-[data-theme="dark"] .transactions-table td {
-  border-color: #444;
-  color: #e0e0e0;
-}
-
-[data-theme="dark"] .transactions-table tbody tr:nth-child(even) {
-  background-color: #252525;
-}
-
-[data-theme="dark"] .transactions-table tbody tr:hover {
-  background-color: #2d2d2d;
+  color: var(--color-neutral-400);
 }
 
 [data-theme="dark"] .transaction-summary {
-  background-color: #2d2d2d;
-  border-color: #444;
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
 }
 
 [data-theme="dark"] .allocation-row select,
 [data-theme="dark"] .allocation-row input {
-  background-color: #1a1a1a;
-  border-color: #444;
-  color: #e0e0e0;
+  background-color: var(--color-neutral-900);
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-total {
-  background-color: #2d2d2d;
-  border-color: #444;
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
 }
 
 [data-theme="dark"] .modal-actions {
-  border-top-color: #444;
+  border-top-color: var(--color-neutral-600);
 }
 
 [data-theme="dark"] .allocation-details h3 {
-  color: #e0e0e0;
+  color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-detail-row {
-  background-color: #2d2d2d;
-  border-color: #444;
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
 }
 
 [data-theme="dark"] .allocation-detail-item .label {
-  color: #aaa;
+  color: var(--color-neutral-400);
 }
 
 [data-theme="dark"] .allocation-detail-item .value {
-  color: #e0e0e0;
+  color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-modal .modal-description {
-  color: #aaa;
+  color: var(--color-neutral-400);
 }
 
 [data-theme="dark"] .allocation-modal .modal-note {
-  background-color: #1a3a52;
-  border-left-color: #5fa3ff;
-  color: #e0e0e0;
+  background-color: rgba(0, 102, 255, 0.15);
+  border-left-color: var(--color-primary);
+  color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-modal .modal-note strong {
-  color: #fff;
+  color: var(--color-neutral-50);
+}
+
+[data-theme="dark"] .inbox-tabs {
+  border-bottom-color: var(--color-neutral-600);
+}
+
+[data-theme="dark"] .inbox-tab {
+  color: var(--color-neutral-400);
+}
+
+[data-theme="dark"] .inbox-tab:hover {
+  color: var(--color-primary);
+  background-color: var(--color-neutral-700);
+}
+
+[data-theme="dark"] .inbox-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+[data-theme="dark"] .bulk-actions {
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
+}
+
+[data-theme="dark"] .bulk-eligibility-info {
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
+}
+
+[data-theme="dark"] .allocation-presets {
+  background-color: rgba(0, 102, 255, 0.15);
+  border-color: var(--color-primary-dark);
+}
+
+[data-theme="dark"] .bulk-info {
+  background-color: rgba(0, 102, 255, 0.15);
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-light);
+}
+
+[data-theme="dark"] .match-info {
+  background-color: rgba(0, 200, 150, 0.15);
+  border-color: var(--color-success-dark);
+  color: var(--color-success-light);
+}
+
+[data-theme="dark"] .allocation-warning {
+  background-color: rgba(255, 176, 32, 0.15);
+  border-color: var(--color-warning-dark);
+  color: var(--color-warning-light);
+}
+
+[data-theme="dark"] .allocation-error {
+  background-color: rgba(255, 59, 87, 0.15);
+  border-color: var(--color-error-dark);
+  color: var(--color-error-light);
+}
+
+[data-theme="dark"] .transaction-summary.compact {
+  background-color: var(--color-neutral-700);
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-300);
+}
+
+[data-theme="dark"] .allocation-amount-preview {
+  color: var(--color-neutral-400);
 }

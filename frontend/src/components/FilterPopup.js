@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
+import { createPortal } from 'react-dom';
+import 'react-datepicker/dist/react-datepicker.css';
 import './FilterPopup.css';
 
 /**
@@ -104,6 +106,7 @@ const FilterPopup = ({
                 onChange={onFromDateChange}
                 dateFormat="yyyy-MM-dd"
                 isClearable
+                popperPlacement="bottom-start"
               />
             </div>
             <div className="date-input">
@@ -114,6 +117,7 @@ const FilterPopup = ({
                 dateFormat="yyyy-MM-dd"
                 minDate={fromDate}
                 isClearable
+                popperPlacement="bottom-start"
               />
             </div>
           </div>
@@ -172,6 +176,18 @@ const FilterPopup = ({
           </select>
         );
 
+      case 'select':
+        return (
+          <select value={value || ''} onChange={(e) => onChange(e.target.value)}>
+            <option value="">All</option>
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+
       case 'text':
         return (
           <input
@@ -194,9 +210,8 @@ const FilterPopup = ({
                 timeFormat="HH:mm"
                 timeIntervals={15}
                 dateFormat="yyyy-MM-dd HH:mm"
-                //timeCaption="Time (UTC)"
                 isClearable
-                //utcOffset={0}
+                popperPlacement="bottom-start"
               />
             </div>
             <div className="date-input">
@@ -208,10 +223,9 @@ const FilterPopup = ({
                 timeFormat="HH:mm"
                 timeIntervals={15}
                 dateFormat="yyyy-MM-dd HH:mm"
-                //timeCaption="Time (UTC)"
                 minDate={fromDate}
                 isClearable
-                //utcOffset={0}
+                popperPlacement="bottom-start"
               />
             </div>
           </div>
@@ -222,7 +236,7 @@ const FilterPopup = ({
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="filter-popup"
       ref={popupRef}
@@ -232,7 +246,8 @@ const FilterPopup = ({
       }}
     >
       {renderContent()}
-    </div>
+    </div>,
+    document.body,
   );
 };
 

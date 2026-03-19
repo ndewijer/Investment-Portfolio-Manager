@@ -1,115 +1,112 @@
-@import "../styles/common.css";
-
 .portfolios-page {
-  padding: 20px;
+  animation: slideUpFade var(--transition-base) ease-out backwards;
 }
 
 .portfolios-page .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: var(--space-8);
 }
 
-.portfolios-page .page-header button {
-  padding: 10px 20px;
-  background-color: #4caf50;
-  color: white;
+.portfolios-page .page-header h1 {
+  margin: 0;
+  color: var(--color-neutral-900);
+}
+
+[data-theme="dark"] .portfolios-page .page-header h1 {
+  color: var(--color-neutral-50);
+}
+
+/* Modern Button */
+.modern-btn {
+  padding: var(--space-3) var(--space-5);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.portfolios-page .page-header button:hover {
-  background-color: #45a049;
+.modern-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.portfolios-page .portfolios-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+.modern-btn:active {
+  transform: translateY(0);
 }
 
-.portfolios-page .portfolio-card {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  min-height: 200px;
-  position: relative;
+.modern-btn-primary {
+  background: var(--color-primary);
+  color: white;
 }
 
-.portfolios-page .portfolio-card h2 {
-  margin-top: 0;
-  color: #333;
+.modern-btn-primary:hover {
+  background: var(--color-primary-dark);
 }
 
-.portfolios-page .portfolio-card p {
-  color: #666;
-  flex-grow: 1;
-  margin: 10px 0;
+.modern-btn-success {
+  background: var(--color-success);
+  color: white;
 }
 
-.portfolios-page .portfolio-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-  margin-top: auto;
+.modern-btn-success:hover {
+  background: var(--color-success-dark);
+}
+
+/* Portfolio card action buttons within the card */
+.modern-portfolio-card-actions {
   flex-wrap: wrap;
 }
 
-.portfolios-page .portfolio-actions button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-  min-width: 100px;
-  white-space: nowrap;
+.modern-portfolio-card-actions button {
+  font-size: 13px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
 }
 
-.portfolios-page .portfolio-actions button:nth-child(1) {
-  background-color: #2196f3;
-  color: white;
-}
-
-.portfolios-page .portfolio-actions button:nth-child(2) {
-  background-color: #ffc107;
-  color: black;
-}
-
-.portfolios-page .portfolio-actions button:nth-child(3) {
-  background-color: #f44336;
-  color: white;
-}
-
-.portfolios-page .portfolio-actions button:nth-child(4) {
-  background-color: lightgrey;
-  color: black;
-}
-
-.portfolios-page .portfolio-actions button:hover {
+.modern-portfolio-card-actions button:hover {
   opacity: 0.9;
+  transform: translateY(-1px);
 }
 
-.portfolios-page .portfolio-card.archived {
-  color: black;
+/* Better button layout in portfolio cards */
+.modern-portfolio-card-actions .action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-start;
+}
+
+.modern-portfolio-card-actions button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 768px) {
+  .modern-portfolio-card-actions .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .modern-portfolio-card-actions button {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Archived card styling */
+.modern-portfolio-card.archived {
   opacity: 0.7;
-  background-color: #f5f5f5;
 }
 
-.portfolios-page .portfolio-card.archived::before {
-  content: "Archived";
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background-color: #666;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.8em;
+[data-theme="dark"] .modern-portfolio-card.archived {
+  opacity: 0.6;
 }

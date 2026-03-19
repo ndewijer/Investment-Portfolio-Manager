@@ -27,7 +27,11 @@ cleanup() {
 # Set trap to cleanup on exit
 trap cleanup EXIT
 
-echo -e "${BLUE}🐳 Running Docker integration tests...${NC}"
+# Use non-standard port to avoid conflicts with other local containers
+export FRONTEND_PORT="${FRONTEND_PORT:-8088}"
+TEST_URL="http://localhost:${FRONTEND_PORT}"
+
+echo -e "${BLUE}🐳 Running Docker integration tests (frontend on port ${FRONTEND_PORT})...${NC}"
 
 # Clear any stale buildx cache that might cause "parent snapshot does not exist" errors
 echo -e "${BLUE}🧹 Clearing stale build cache...${NC}"
@@ -87,7 +91,7 @@ echo -e "${GREEN}✅ Backend health verified${NC}"
 
 # Test 3: Frontend serves static content
 echo -e "${BLUE}🌐 Testing frontend static content...${NC}"
-if ! curl -f -s http://localhost/ > /dev/null; then
+if ! curl -f -s ${TEST_URL}/ > /dev/null; then
     echo -e "${RED}❌ Frontend not serving content${NC}"
     docker compose logs frontend
     exit 1
@@ -96,7 +100,7 @@ echo -e "${GREEN}✅ Frontend serving content${NC}"
 
 # Test 4: Frontend proxy to backend
 echo -e "${BLUE}🔗 Testing frontend-backend proxy integration...${NC}"
-PROXY_RESPONSE=$(curl -s http://localhost/api/system/health)
+PROXY_RESPONSE=$(curl -s ${TEST_URL}/api/system/health)
 echo "Proxy response: $PROXY_RESPONSE"
 
 if ! echo "$PROXY_RESPONSE" | grep -q '"status"[[:space:]]*:[[:space:]]*"healthy"'; then
@@ -108,7 +112,7 @@ echo -e "${GREEN}✅ Frontend proxy working${NC}"
 
 # Test 5: Verify database was seeded with funds
 echo -e "${BLUE}📊 Verifying database seeding...${NC}"
-FUNDS_RESPONSE=$(curl -s http://localhost/api/fund)
+FUNDS_RESPONSE=$(curl -s ${TEST_URL}/api/fund)
 echo "Funds response: $FUNDS_RESPONSE"
 
 if ! echo "$FUNDS_RESPONSE" | grep -q "Vanguard Total Stock Market ETF"; then
@@ -129,7 +133,7 @@ echo -e "${GREEN}✅ Database seeded correctly with expected funds${NC}"
 
 # Test 6: Verify portfolios were seeded
 echo -e "${BLUE}💼 Verifying portfolios were seeded...${NC}"
-PORTFOLIOS_RESPONSE=$(curl -s http://localhost/api/portfolio)
+PORTFOLIOS_RESPONSE=$(curl -s ${TEST_URL}/api/portfolio)
 PORTFOLIO_COUNT=$(echo "$PORTFOLIOS_RESPONSE" | grep -o '"id"[[:space:]]*:' | wc -l | tr -d '[:space:]')
 
 if [ "$PORTFOLIO_COUNT" -lt 1 ]; then
@@ -150,8 +154,8 @@ if [ "${RUN_E2E_TESTS}" = "true" ]; then
         echo -e "${BLUE}📦 Ensuring Playwright browsers are installed...${NC}"
         cd frontend && npx playwright install chromium --with-deps > /dev/null 2>&1
 
-        # Run E2E tests against Docker stack (port 80, not 3000)
-        if PLAYWRIGHT_BASE_URL=http://localhost npm run test:e2e; then
+        # Run E2E tests against Docker stack
+        if PLAYWRIGHT_BASE_URL="${TEST_URL}" npm run test:e2e; then
             echo -e "${GREEN}✅ E2E tests passed${NC}"
         else
             echo -e "${RED}❌ E2E tests failed${NC}"

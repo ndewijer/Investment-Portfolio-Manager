@@ -17,12 +17,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-dropdown);
 }
 
 .spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #007bff;
+  border: 3px solid var(--color-neutral-200);
+  border-top: 3px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -47,7 +47,7 @@
 
 .loading-message {
   margin-top: 1rem;
-  color: #666;
+  color: var(--color-neutral-500);
   font-size: 0.9rem;
   text-align: center;
 }
@@ -61,30 +61,16 @@
   }
 }
 
-/* Dark mode support - class-based with feature flag control */
-.dark-theme .loading-overlay {
+/* Dark mode support */
+[data-theme="dark"] .loading-overlay {
   background-color: rgba(0, 0, 0, 0.8);
 }
 
-.dark-theme .loading-message {
-  color: #ccc;
+[data-theme="dark"] .loading-message {
+  color: var(--color-neutral-300);
 }
 
-.dark-theme .spinner {
-  border-color: #444;
-  border-top-color: #007bff;
-}
-
-/* Light theme explicit styles */
-.light-theme .loading-overlay {
-  background-color: rgba(255, 255, 255, 0.8);
-}
-
-.light-theme .loading-message {
-  color: #666;
-}
-
-.light-theme .spinner {
-  border-color: #f3f3f3;
-  border-top-color: #007bff;
+[data-theme="dark"] .spinner {
+  border-color: var(--color-neutral-700);
+  border-top-color: var(--color-primary);
 }

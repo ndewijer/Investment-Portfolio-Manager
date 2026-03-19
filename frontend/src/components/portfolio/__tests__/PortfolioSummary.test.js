@@ -32,15 +32,13 @@ describe('PortfolioSummary Component', () => {
   };
 
   describe('Rendering', () => {
-    test('renders all summary cards', () => {
+    test('renders all 4 summary cards', () => {
       renderWithContext({ portfolio: mockPortfolio });
 
       expect(screen.getByText('Total Value')).toBeInTheDocument();
       expect(screen.getByText('Total Cost')).toBeInTheDocument();
       expect(screen.getByText('Total Dividends')).toBeInTheDocument();
-      expect(screen.getByText('Unrealized Gain/Loss')).toBeInTheDocument();
-      expect(screen.getByText('Realized Gain/Loss')).toBeInTheDocument();
-      expect(screen.getByText('Gain/Loss')).toBeInTheDocument();
+      expect(screen.getByText('Total Gain/Loss')).toBeInTheDocument();
     });
 
     test('renders correct values for all metrics', () => {
@@ -50,13 +48,15 @@ describe('PortfolioSummary Component', () => {
       expect(screen.getByText(/€\s*100\.000,00/)).toBeInTheDocument();
       expect(screen.getByText(/€\s*90\.000,00/)).toBeInTheDocument();
       expect(screen.getByText(/€\s*2\.500,00/)).toBeInTheDocument();
-      expect(screen.getByText(/€\s*10\.000,00/)).toBeInTheDocument();
-
-      // More specific match to avoid matching "11.500,00"
-      const realizedGainCard = screen.getByText('Realized Gain/Loss').closest('.summary-card');
-      expect(realizedGainCard.querySelector('.value')).toHaveTextContent(/€\s*1\.500,00/);
-
       expect(screen.getByText(/€\s*11\.500,00/)).toBeInTheDocument();
+    });
+
+    test('shows realized gain/loss as subtext in total gain/loss card', () => {
+      renderWithContext({ portfolio: mockPortfolio });
+
+      // The realized value appears as subtext
+      expect(screen.getByText(/Realized:/)).toBeInTheDocument();
+      expect(screen.getByText(/€\s*1\.500,00/)).toBeInTheDocument();
     });
 
     test('renders null when portfolio is not provided', () => {
@@ -71,59 +71,11 @@ describe('PortfolioSummary Component', () => {
   });
 
   describe('CSS Classes for Gain/Loss', () => {
-    test('applies positive class to unrealized gain when value is positive', () => {
-      renderWithContext({ portfolio: mockPortfolio });
-
-      const unrealizedCard = screen.getByText('Unrealized Gain/Loss').closest('.summary-card');
-      const valueElement = unrealizedCard.querySelector('.value');
-
-      expect(valueElement).toHaveClass('positive');
-      expect(valueElement).not.toHaveClass('negative');
-    });
-
-    test('applies negative class to unrealized gain when value is negative', () => {
-      const portfolioWithLoss = {
-        ...mockPortfolio,
-        totalUnrealizedGainLoss: -5000,
-      };
-      renderWithContext({ portfolio: portfolioWithLoss });
-
-      const unrealizedCard = screen.getByText('Unrealized Gain/Loss').closest('.summary-card');
-      const valueElement = unrealizedCard.querySelector('.value');
-
-      expect(valueElement).toHaveClass('negative');
-      expect(valueElement).not.toHaveClass('positive');
-    });
-
-    test('applies positive class to realized gain when value is positive', () => {
-      renderWithContext({ portfolio: mockPortfolio });
-
-      const realizedCard = screen.getByText('Realized Gain/Loss').closest('.summary-card');
-      const valueElement = realizedCard.querySelector('.value');
-
-      expect(valueElement).toHaveClass('positive');
-      expect(valueElement).not.toHaveClass('negative');
-    });
-
-    test('applies negative class to realized gain when value is negative', () => {
-      const portfolioWithLoss = {
-        ...mockPortfolio,
-        totalRealizedGainLoss: -1500,
-      };
-      renderWithContext({ portfolio: portfolioWithLoss });
-
-      const realizedCard = screen.getByText('Realized Gain/Loss').closest('.summary-card');
-      const valueElement = realizedCard.querySelector('.value');
-
-      expect(valueElement).toHaveClass('negative');
-      expect(valueElement).not.toHaveClass('positive');
-    });
-
     test('applies positive class to total gain when value is positive', () => {
       renderWithContext({ portfolio: mockPortfolio });
 
-      const totalGainCard = screen.getByText('Gain/Loss').closest('.summary-card');
-      const valueElement = totalGainCard.querySelector('.value');
+      const totalGainCard = screen.getByText('Total Gain/Loss').closest('.modern-summary-card');
+      const valueElement = totalGainCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('positive');
       expect(valueElement).not.toHaveClass('negative');
@@ -136,8 +88,8 @@ describe('PortfolioSummary Component', () => {
       };
       renderWithContext({ portfolio: portfolioWithLoss });
 
-      const totalGainCard = screen.getByText('Gain/Loss').closest('.summary-card');
-      const valueElement = totalGainCard.querySelector('.value');
+      const totalGainCard = screen.getByText('Total Gain/Loss').closest('.modern-summary-card');
+      const valueElement = totalGainCard.querySelector('.modern-summary-card-value');
 
       expect(valueElement).toHaveClass('negative');
       expect(valueElement).not.toHaveClass('positive');
@@ -146,17 +98,15 @@ describe('PortfolioSummary Component', () => {
     test('applies positive class when gain/loss is exactly zero', () => {
       const portfolioWithZeroGain = {
         ...mockPortfolio,
-        totalUnrealizedGainLoss: 0,
-        totalRealizedGainLoss: 0,
         totalGainLoss: 0,
       };
       renderWithContext({ portfolio: portfolioWithZeroGain });
 
-      const unrealizedCard = screen.getByText('Unrealized Gain/Loss').closest('.summary-card');
-      const unrealizedValue = unrealizedCard.querySelector('.value');
+      const totalGainCard = screen.getByText('Total Gain/Loss').closest('.modern-summary-card');
+      const valueElement = totalGainCard.querySelector('.modern-summary-card-value');
 
-      expect(unrealizedValue).toHaveClass('positive');
-      expect(unrealizedValue).not.toHaveClass('negative');
+      expect(valueElement).toHaveClass('positive');
+      expect(valueElement).not.toHaveClass('negative');
     });
   });
 
@@ -172,16 +122,15 @@ describe('PortfolioSummary Component', () => {
       };
       renderWithContext({ portfolio: portfolioWithZeros });
 
-      // European format: € 0,00
+      // 4 cards: value, cost, dividends, gain/loss + 1 realized subtext = 5 zero values
       const zeroValues = screen.getAllByText(/€\s*0,00/);
-      expect(zeroValues.length).toBe(6);
+      expect(zeroValues.length).toBe(5);
     });
 
     test('handles undefined values by displaying zero', () => {
       const portfolioWithUndefined = {};
       renderWithContext({ portfolio: portfolioWithUndefined });
 
-      // Only non-gain/loss cards default to 0
       const zeroValues = screen.getAllByText(/€\s*0,00/);
       expect(zeroValues.length).toBeGreaterThanOrEqual(3);
     });
