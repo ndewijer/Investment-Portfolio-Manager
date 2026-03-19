@@ -874,6 +874,7 @@ const IBKRInbox = () => {
           {
             key: 'symbol',
             header: 'Symbol',
+            cellClassName: 'nowrap-cell',
             sortable: true,
           },
           {

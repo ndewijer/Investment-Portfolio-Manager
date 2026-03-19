@@ -77,6 +77,31 @@
   transform: translateY(-1px);
 }
 
+/* Better button layout in portfolio cards */
+.modern-portfolio-card-actions .action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-start;
+}
+
+.modern-portfolio-card-actions button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 768px) {
+  .modern-portfolio-card-actions .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  .modern-portfolio-card-actions button {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 /* Archived card styling */
 .modern-portfolio-card.archived {
   opacity: 0.7;

@@ -253,3 +253,12 @@
   background-color: var(--color-neutral-600);
   border-color: var(--color-neutral-500);
 }
+
+[data-theme="dark"] .action-btn {
+  opacity: 0.85;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .action-btn:hover {
+  opacity: 1;
+}

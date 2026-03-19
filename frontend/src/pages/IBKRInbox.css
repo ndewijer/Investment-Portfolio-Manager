@@ -113,42 +113,18 @@
   text-align: center;
 }
 
-.transactions-table {
+/* IBKR-specific transactions table overrides */
+.ibkr-inbox .transactions-table {
   overflow-x: auto;
   margin-top: var(--space-6);
 }
 
-.transactions-table table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: var(--surface-raised);
-  box-shadow: var(--shadow-sm);
-  margin: var(--space-5) 0;
-}
-
-.transactions-table th,
-.transactions-table td {
-  padding: var(--space-3);
-  text-align: left;
-  border: 1px solid var(--color-neutral-200);
-  border-bottom: 1px solid var(--color-neutral-100);
-}
-
-.transactions-table th {
-  background-color: var(--color-neutral-50);
-  font-weight: 600;
-}
-
-.transactions-table tbody tr:nth-child(even) {
-  background-color: var(--color-neutral-50);
-}
-
-.transactions-table tbody tr:hover {
-  background-color: var(--color-neutral-100);
+.nowrap-cell {
+  white-space: nowrap;
 }
 
 .description-cell {
-  max-width: 200px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -157,6 +133,7 @@
 .number-cell {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .cost-total {
@@ -207,6 +184,15 @@
   border-radius: var(--radius-xs);
   cursor: pointer;
   transition: all var(--transition-fast);
+}
+
+.ibkr-inbox .small-button {
+  margin-right: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+.ibkr-inbox .small-button:last-child {
+  margin-right: 0;
 }
 
 .small-button.primary {
@@ -670,29 +656,6 @@
 
 [data-theme="dark"] .empty-state p {
   color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .transactions-table table {
-  background-color: var(--color-neutral-900);
-}
-
-[data-theme="dark"] .transactions-table th {
-  background-color: var(--color-neutral-700);
-  color: var(--color-neutral-200);
-  border-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .transactions-table td {
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .transactions-table tbody tr:nth-child(even) {
-  background-color: var(--color-neutral-800);
-}
-
-[data-theme="dark"] .transactions-table tbody tr:hover {
-  background-color: var(--color-neutral-700);
 }
 
 [data-theme="dark"] .transaction-summary {

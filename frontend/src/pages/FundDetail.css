@@ -4,12 +4,14 @@
 }
 
 .fund-info-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin-bottom: var(--space-8);
 }
 
 .fund-info-value {
-  font-size: clamp(16px, 2vw, 20px);
+  font-size: clamp(14px, 1.8vw, 18px);
   letter-spacing: 0;
+  word-break: break-all;
 }
 
 .fund-detail-container .fund-header {
@@ -50,11 +52,12 @@
 
 .fund-detail-container .price-chart,
 .fund-detail-container .price-history {
-  background-color: var(--surface-raised);
-  border-radius: var(--radius-md);
-  padding: var(--space-5);
+  background: transparent;
+  border: none;
+  padding: 0;
   margin-bottom: var(--space-8);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .fund-detail-container .price-chart h2,
@@ -327,6 +330,11 @@
 }
 
 /* Dark mode overrides */
+.fund-detail-container .toggle-history-button,
+.fund-detail-container .update-prices-button {
+  color: var(--color-neutral-900);
+}
+
 [data-theme="dark"] .fund-detail-container .fund-header h1,
 [data-theme="dark"] .fund-detail-container .price-chart h2,
 [data-theme="dark"] .fund-detail-container .price-history h2 {

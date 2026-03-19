@@ -5,16 +5,21 @@ import { useFormat } from '../../context/FormatContext';
  *
  * Displays key portfolio metrics in a grid of modern summary cards:
  * - Total Value, Total Cost, Total Dividends
- * - Unrealized/Realized/Total Gain/Loss (color-coded)
+ * - Total Gain/Loss (with realized gain/loss as subtext)
  *
  * @param {Object} props - Component props object
  * @param {Object} props.portfolio - Portfolio data object with metric properties
  * @returns {JSX.Element} Grid of summary cards displaying portfolio metrics
  */
-const PortfolioSummary = ({ portfolio }) => {
-  const { formatCurrency } = useFormat();
+const PortfolioSummary = ({ portfolio, portfolioFunds }) => {
+  const { formatCurrency, formatNumber } = useFormat();
 
   if (!portfolio) return null;
+
+  const totalShares = (portfolioFunds || []).reduce(
+    (sum, fund) => sum + (fund.totalShares || 0),
+    0,
+  );
 
   return (
     <div className="modern-summary-cards-grid">
@@ -25,6 +30,9 @@ const PortfolioSummary = ({ portfolio }) => {
       <div className="modern-summary-card">
         <div className="modern-summary-card-label">Total Cost</div>
         <div className="modern-summary-card-value">{formatCurrency(portfolio.totalCost || 0)}</div>
+        {totalShares > 0 && (
+          <div className="modern-summary-card-subtext">{formatNumber(totalShares, 6)} shares</div>
+        )}
       </div>
       <div className="modern-summary-card">
         <div className="modern-summary-card-label">Total Dividends</div>
@@ -33,27 +41,14 @@ const PortfolioSummary = ({ portfolio }) => {
         </div>
       </div>
       <div className="modern-summary-card">
-        <div className="modern-summary-card-label">Unrealized Gain/Loss</div>
-        <div
-          className={`modern-summary-card-value ${portfolio.totalUnrealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
-        >
-          {formatCurrency(portfolio.totalUnrealizedGainLoss)}
-        </div>
-      </div>
-      <div className="modern-summary-card">
-        <div className="modern-summary-card-label">Realized Gain/Loss</div>
-        <div
-          className={`modern-summary-card-value ${portfolio.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
-        >
-          {formatCurrency(portfolio.totalRealizedGainLoss)}
-        </div>
-      </div>
-      <div className="modern-summary-card">
         <div className="modern-summary-card-label">Total Gain/Loss</div>
         <div
           className={`modern-summary-card-value ${portfolio.totalGainLoss >= 0 ? 'positive' : 'negative'}`}
         >
           {formatCurrency(portfolio.totalGainLoss)}
+        </div>
+        <div className="modern-summary-card-subtext">
+          Realized: {formatCurrency(portfolio.totalRealizedGainLoss)}
         </div>
       </div>
     </div>

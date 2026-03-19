@@ -6,6 +6,7 @@
 
 [data-theme="dark"] .App {
   background: linear-gradient(135deg, var(--color-neutral-900) 0%, var(--color-neutral-800) 100%);
+  color: var(--color-neutral-100);
 }
 
 .main-content {

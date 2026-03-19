@@ -45,25 +45,24 @@
 }
 
 .modern-table th {
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-2) var(--space-2);
   text-align: left;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--color-neutral-600);
-  white-space: nowrap;
   user-select: none;
   position: relative;
 }
 
 .modern-table th:first-child {
-  padding-left: var(--space-6);
+  padding-left: var(--space-3);
 }
 
 .modern-table th:last-child {
-  padding-right: var(--space-6);
+  padding-right: var(--space-3);
 }
 
 /* Sortable Headers */
@@ -125,19 +124,24 @@
 }
 
 .modern-table td {
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-2) var(--space-2);
   color: var(--color-neutral-900);
   vertical-align: middle;
   position: relative;
+  min-width: 0;
 }
 
 .modern-table td:first-child {
-  padding-left: var(--space-6);
+  padding-left: var(--space-3);
   font-weight: 500;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .modern-table td:last-child {
-  padding-right: var(--space-6);
+  padding-right: var(--space-3);
+  white-space: nowrap;
+  width: 1%;
 }
 
 /* Financial Columns */
@@ -146,12 +150,15 @@
 .modern-table td[class*="amount"],
 .modern-table td[class*="value"] {
   font-family: var(--font-mono);
+  font-size: 13px;
   font-feature-settings:
     "tnum" on,
     "lnum" on;
   font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  width: 1%;
 }
 
 /* Positive/Negative Values */
@@ -221,6 +228,19 @@
 }
 
 /* Action Buttons in Table */
+.modern-table .action-buttons {
+  display: flex;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.modern-table .action-buttons button,
+.modern-table .action-btn {
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+  min-width: 0;
+}
+
 .modern-table .table-actions {
   display: flex;
   gap: var(--space-2);

@@ -214,8 +214,8 @@ const LogViewer = () => {
   const handleFilterClick = (e, field) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setFilterPosition({
-      top: rect.bottom + window.scrollY,
-      left: rect.left + window.scrollX,
+      top: rect.bottom,
+      left: rect.left,
     });
     setFilterPopups((prev) => ({
       ...prev,

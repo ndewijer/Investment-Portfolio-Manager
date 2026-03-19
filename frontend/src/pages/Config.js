@@ -856,13 +856,13 @@ const SystemSettingsTab = ({ setMessage, setError }) => {
  *
  * Manages user-specific settings stored in browser localStorage:
  * - Number format: European (1.234,56) vs US (1,234.56)
- * - Dark mode: Feature flag toggle and theme selection (light/dark)
+ * - Theme: Light or Dark mode selection
  *
  * Changes persist across sessions via context providers (FormatContext, ThemeContext).
  */
 const UserPreferencesTab = () => {
   const { isEuropeanFormat, setIsEuropeanFormat } = useFormat();
-  const { darkModeEnabled, enableDarkModeFeature, theme, setThemePreference } = useTheme();
+  const { theme, setThemePreference } = useTheme();
 
   return (
     <div className="tab-content">
@@ -884,45 +884,18 @@ const UserPreferencesTab = () => {
       </section>
 
       <section className="config-section">
-        <h2>Dark Mode</h2>
+        <h2>Theme</h2>
         <div className="form-group">
-          <label>Dark Mode Feature:</label>
-          <select
-            value={darkModeEnabled ? 'enabled' : 'disabled'}
-            onChange={(e) => enableDarkModeFeature(e.target.value === 'enabled')}
-          >
-            <option value="disabled">Disabled (Feature Flag OFF)</option>
-            <option value="enabled">Enabled (Feature Flag ON)</option>
+          <label>Theme:</label>
+          <select value={theme} onChange={(e) => setThemePreference(e.target.value)}>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
           </select>
         </div>
-        {darkModeEnabled && (
-          <div className="form-group">
-            <label>Theme Preference:</label>
-            <select value={theme} onChange={(e) => setThemePreference(e.target.value)}>
-              <option value="light">Light Theme</option>
-              <option value="dark">Dark Theme</option>
-            </select>
-          </div>
-        )}
         <div className="dark-mode-info">
-          <p>Current dark mode configuration:</p>
-          <ul>
-            <li>
-              Feature Status: <strong>{darkModeEnabled ? 'Enabled' : 'Disabled'}</strong>
-            </li>
-            <li>
-              Current Theme: <strong>{theme === 'light' ? 'Light' : 'Dark'}</strong>
-            </li>
-            <li>
-              Active: <strong>{darkModeEnabled && theme === 'dark' ? 'Yes' : 'No'}</strong>
-            </li>
-          </ul>
-          {!darkModeEnabled && (
-            <p className="warning-text">
-              ⚠️ Dark mode is currently disabled via feature flag. Enable it above to access theme
-              controls.
-            </p>
-          )}
+          <p>
+            Current theme: <strong>{theme === 'light' ? 'Light' : 'Dark'}</strong>
+          </p>
         </div>
       </section>
     </div>

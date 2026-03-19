@@ -395,11 +395,20 @@ const Overview = () => {
           </div>
         </div>
         <div className="modern-summary-card">
-          <div className="modern-summary-card-label">Total Performance</div>
+          <div className="modern-summary-card-label">Realized Gain/Loss</div>
           <div
-            className={`modern-summary-card-value ${totals.performance >= 0 ? 'positive' : 'negative'}`}
+            className={`modern-summary-card-value ${totals.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
           >
-            {formatPercentage(totals.performance)}
+            {formatCurrency(totals.totalRealizedGainLoss)}
+          </div>
+          <div
+            className={`modern-summary-card-change ${totals.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
+          >
+            {formatPercentage(
+              totals.totalCost > 0
+                ? ((totals.totalRealizedGainLoss / totals.totalCost) * 100).toFixed(2)
+                : 0,
+            )}
           </div>
         </div>
       </div>

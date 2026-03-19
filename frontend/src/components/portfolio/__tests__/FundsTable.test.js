@@ -163,9 +163,11 @@ describe('FundsTable Component', () => {
     test('renders formatted share numbers', () => {
       renderWithProviders(defaultProps);
 
-      // European format uses commas for decimals in numbers
-      expect(screen.getByText(/100,000000/)).toBeInTheDocument(); // totalShares with 6 decimals
-      expect(screen.getByText(/50,000000/)).toBeInTheDocument();
+      // Shares displayed with 2 decimals, full precision in title attribute
+      const shareElements = screen.getAllByTitle(/,000000/);
+      expect(shareElements.length).toBe(2);
+      expect(shareElements[0]).toHaveTextContent('100,00');
+      expect(shareElements[1]).toHaveTextContent('50,00');
     });
 
     test('renders Add Fund/Stock button in header', () => {
@@ -345,8 +347,9 @@ describe('FundsTable Component', () => {
       // European format: € 0,00 - check for at least one occurrence
       const zeroValueElements = screen.getAllByText(/€\s*0,00/);
       expect(zeroValueElements.length).toBeGreaterThan(0);
-      // Check for zero shares with 6 decimals
-      expect(screen.getByText(/0,000000/)).toBeInTheDocument();
+      // Check for zero shares (displayed with 2 decimals, full precision in title)
+      const zeroShareElement = screen.getByTitle(/0,000000/);
+      expect(zeroShareElement).toHaveTextContent('0,00');
     });
   });
 });

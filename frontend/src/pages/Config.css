@@ -665,12 +665,12 @@
 
 .status-green {
   color: var(--color-success);
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .status-red {
   color: var(--color-error);
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .status-gray {
@@ -726,6 +726,39 @@
 .feature-name {
   font-size: 14px;
   color: var(--color-neutral-900);
+}
+
+[data-theme="dark"] .status-section {
+  background: var(--surface-raised);
+  border-color: var(--color-neutral-700);
+}
+
+[data-theme="dark"] .status-item {
+  background: var(--color-neutral-800);
+}
+
+[data-theme="dark"] .status-item .status-label {
+  color: var(--color-neutral-300);
+}
+
+[data-theme="dark"] .status-item .status-value {
+  color: var(--color-neutral-100);
+}
+
+[data-theme="dark"] .status-item .status-value.status-green {
+  color: var(--color-success);
+}
+
+[data-theme="dark"] .status-item .status-value.status-red {
+  color: var(--color-error);
+}
+
+[data-theme="dark"] .feature-item {
+  background: var(--color-neutral-800);
+}
+
+[data-theme="dark"] .feature-name {
+  color: var(--color-neutral-100);
 }
 
 /* Config-specific mobile styles (common patterns moved to mobile.css) */

@@ -172,6 +172,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+[data-theme="dark"] body {
+  color: var(--color-neutral-100);
+}
+
 /* Headings with Editorial Hierarchy */
 h1,
 h2,
@@ -198,6 +202,15 @@ h2 {
 h3 {
   font-size: clamp(18px, 2.5vw, 24px);
   font-weight: 700;
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--color-neutral-50);
 }
 
 /* Financial Numbers - Always Monospace */

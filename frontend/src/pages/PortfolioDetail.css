@@ -39,39 +39,9 @@
   font-weight: 500;
 }
 
-.portfolio-detail-container .transactions-section {
-  background-color: var(--surface-raised);
-  border-radius: var(--radius-md);
-  padding: var(--space-5);
+/* Transactions section - let DataTable's modern-table-wrapper handle styling */
+.portfolio-detail-container .portfolio-transactions {
   margin-bottom: var(--space-8);
-  box-shadow: var(--shadow-sm);
-}
-
-.portfolio-detail-container .transactions-section h2 {
-  margin-top: 0;
-  margin-bottom: var(--space-5);
-  color: var(--color-neutral-900);
-}
-
-.portfolio-detail-container .transactions-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.portfolio-detail-container .transactions-table th,
-.portfolio-detail-container .transactions-table td {
-  padding: var(--space-3);
-  text-align: left;
-  border-bottom: 1px solid var(--color-neutral-200);
-}
-
-.portfolio-detail-container .transactions-table th {
-  background-color: var(--color-neutral-50);
-  font-weight: 600;
-}
-
-.portfolio-detail-container .transactions-table tbody tr:hover {
-  background-color: var(--color-neutral-50);
 }
 
 .portfolio-detail-container .section-header {
@@ -673,8 +643,7 @@
 }
 
 /* Dark mode overrides */
-[data-theme="dark"] .portfolio-detail-container .portfolio-header h1,
-[data-theme="dark"] .portfolio-detail-container .transactions-section h2 {
+[data-theme="dark"] .portfolio-detail-container .portfolio-header h1 {
   color: var(--color-neutral-50);
 }
 
@@ -702,19 +671,6 @@
   color: var(--color-neutral-400);
 }
 
-[data-theme="dark"] .portfolio-detail-container .transactions-table th {
-  background-color: var(--color-neutral-700);
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .portfolio-detail-container .transactions-table td {
-  border-bottom-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .portfolio-detail-container .transactions-table tbody tr:hover {
-  background-color: var(--color-neutral-700);
-}
-
 [data-theme="dark"] .portfolio-detail-container .filter-popup {
   border-color: var(--color-neutral-600);
 }
@@ -739,6 +695,11 @@
   background-color: var(--color-neutral-800);
 }
 
+[data-theme="dark"] .portfolio-detail-container .fund-card .current-value {
+  background-color: var(--color-neutral-700);
+  color: var(--color-neutral-100);
+}
+
 [data-theme="dark"] .portfolio-detail-container .fund-card .card-header,
 [data-theme="dark"] .portfolio-detail-container .fund-card .card-footer,
 [data-theme="dark"] .portfolio-detail-container .transaction-card .card-header,
@@ -753,4 +714,8 @@
 [data-theme="dark"] .portfolio-detail-container .dividend-card,
 [data-theme="dark"] .portfolio-detail-container .mobile-filter-popup {
   border-color: var(--color-neutral-600);
+}
+
+[data-theme="dark"] .portfolio-detail-container .portfolio-description {
+  color: var(--color-neutral-300);
 }

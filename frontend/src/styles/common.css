@@ -337,3 +337,14 @@ button {
   border-color: var(--color-neutral-700);
   color: var(--color-neutral-300);
 }
+
+[data-theme="dark"] .default-button,
+[data-theme="dark"] .secondary-button,
+[data-theme="dark"] .danger-button,
+[data-theme="dark"] .add-button,
+[data-theme="dark"] .edit-button,
+[data-theme="dark"] .delete-button,
+[data-theme="dark"] .cancel-button {
+  opacity: 0.85;
+  box-shadow: none;
+}

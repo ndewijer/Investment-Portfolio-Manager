@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 /**
  * Theme context that provides dark mode support and theme management.
- * Controls both the feature flag for dark mode and the current theme preference.
+ * Manages the current theme preference (light or dark).
  *
  * @context ThemeContext
  * @see ThemeProvider
@@ -16,25 +16,16 @@ const ThemeContext = createContext();
  *
  * @returns {Object} The theme context value
  * @returns {string} returns.theme - Current theme setting ('light' or 'dark')
- * @returns {boolean} returns.darkModeEnabled - Whether dark mode feature is enabled
  * @returns {string} returns.systemPreference - System color scheme preference ('light' or 'dark')
  * @returns {boolean} returns.isDark - Whether dark mode is currently active
  * @returns {boolean} returns.isLight - Whether light mode is currently active
  * @returns {Function} returns.toggleDarkMode - Function to toggle between light and dark themes
- * @returns {Function} returns.enableDarkModeFeature - Function to enable/disable dark mode feature
  * @returns {Function} returns.setThemePreference - Function to set a specific theme preference
  *
  * @throws {Error} If used outside of ThemeProvider
  *
  * @example
  * const { theme, isDark, toggleDarkMode } = useTheme();
- *
- * @example
- * // Toggle dark mode
- * const { toggleDarkMode, darkModeEnabled } = useTheme();
- * if (darkModeEnabled) {
- *   toggleDarkMode();
- * }
  */
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -45,26 +36,19 @@ export const useTheme = () => {
 };
 
 /**
- * Retrieves the initial dark mode enabled state from localStorage.
- * Defaults to false if no saved preference exists.
- *
- * @function getInitialDarkModeEnabled
- * @returns {boolean} The saved dark mode enabled state or false
- */
-const getInitialDarkModeEnabled = () => {
-  const savedDarkModeEnabled = localStorage.getItem('darkModeEnabled');
-  return savedDarkModeEnabled !== null ? JSON.parse(savedDarkModeEnabled) : false;
-};
-
-/**
  * Retrieves the initial theme preference from localStorage.
- * Defaults to 'light' if no saved preference exists.
+ * Falls back to system preference if no saved preference exists.
  *
  * @function getInitialTheme
- * @returns {string} The saved theme preference ('light' or 'dark') or 'light'
+ * @returns {string} The saved theme preference ('light' or 'dark'), or system preference
  */
 const getInitialTheme = () => {
-  return localStorage.getItem('theme') || 'light';
+  const saved = localStorage.getItem('theme');
+  if (saved) return saved;
+
+  // Fall back to system preference on first load
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  return mediaQuery.matches ? 'dark' : 'light';
 };
 
 /**
@@ -81,10 +65,10 @@ const getInitialSystemPreference = () => {
 
 /**
  * Provider component for theme context.
- * Manages theme state, dark mode feature flag, and system preference detection.
+ * Manages theme state and system preference detection.
  *
  * This provider:
- * - Initializes theme state from localStorage
+ * - Initializes theme state from localStorage (falls back to system preference)
  * - Monitors system color scheme preference changes
  * - Applies theme classes to the document root
  * - Provides methods to toggle and manage theme preferences
@@ -99,10 +83,7 @@ const getInitialSystemPreference = () => {
  * </ThemeProvider>
  */
 export const ThemeProvider = ({ children }) => {
-  // Feature flag to control dark mode availability - load from localStorage
-  const [darkModeEnabled, setDarkModeEnabled] = useState(getInitialDarkModeEnabled);
-
-  // Current theme state (light/dark) - load from localStorage
+  // Current theme state (light/dark) - load from localStorage or system preference
   const [theme, setTheme] = useState(getInitialTheme);
 
   // Auto-detect system preference - initialize with current media query state
@@ -124,7 +105,7 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const root = document.documentElement;
 
-    if (darkModeEnabled && theme === 'dark') {
+    if (theme === 'dark') {
       root.setAttribute('data-theme', 'dark');
       root.classList.add('dark-theme');
       root.classList.remove('light-theme');
@@ -133,45 +114,23 @@ export const ThemeProvider = ({ children }) => {
       root.classList.add('light-theme');
       root.classList.remove('dark-theme');
     }
-  }, [darkModeEnabled, theme]);
+  }, [theme]);
 
   /**
    * Toggles between light and dark themes.
-   * Only works if dark mode feature is enabled. Updates both state and localStorage.
+   * Updates both state and localStorage.
    *
    * @function toggleDarkMode
    * @returns {void}
    */
   const toggleDarkMode = () => {
-    if (!darkModeEnabled) return; // Feature flag check
-
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
   };
 
   /**
-   * Enables or disables the dark mode feature.
-   * When disabled, forces the theme to light mode. Updates both state and localStorage.
-   *
-   * @function enableDarkModeFeature
-   * @param {boolean} enabled - Whether to enable dark mode feature
-   * @returns {void}
-   */
-  const enableDarkModeFeature = (enabled) => {
-    setDarkModeEnabled(enabled);
-    localStorage.setItem('darkModeEnabled', JSON.stringify(enabled));
-
-    // If disabling dark mode, force light theme
-    if (!enabled) {
-      setTheme('light');
-      localStorage.setItem('theme', 'light');
-    }
-  };
-
-  /**
    * Sets a specific theme preference.
-   * Respects dark mode feature flag - prevents setting dark theme if feature is disabled.
    * Updates both state and localStorage.
    *
    * @function setThemePreference
@@ -179,8 +138,6 @@ export const ThemeProvider = ({ children }) => {
    * @returns {void}
    */
   const setThemePreference = (newTheme) => {
-    if (!darkModeEnabled && newTheme === 'dark') return; // Feature flag check
-
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
   };
@@ -188,16 +145,14 @@ export const ThemeProvider = ({ children }) => {
   const value = {
     // Current state
     theme,
-    darkModeEnabled,
     systemPreference,
 
     // Computed values
-    isDark: darkModeEnabled && theme === 'dark',
-    isLight: !darkModeEnabled || theme === 'light',
+    isDark: theme === 'dark',
+    isLight: theme === 'light',
 
     // Actions
     toggleDarkMode,
-    enableDarkModeFeature,
     setThemePreference,
   };
 

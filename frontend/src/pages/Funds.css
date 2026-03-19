@@ -130,3 +130,15 @@
   opacity: 0.9;
   transform: translateY(-1px);
 }
+
+@media (max-width: 768px) {
+  .modern-fund-card .modern-portfolio-card-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .modern-fund-card .modern-portfolio-card-actions button {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}

@@ -148,7 +148,7 @@ const PortfolioDetail = () => {
         {portfolio.description && <p className="portfolio-description">{portfolio.description}</p>}
       </div>
 
-      <PortfolioSummary portfolio={portfolio} />
+      <PortfolioSummary portfolio={portfolio} portfolioFunds={portfolioFunds} />
 
       <PortfolioChart
         fundHistory={fundHistory}
