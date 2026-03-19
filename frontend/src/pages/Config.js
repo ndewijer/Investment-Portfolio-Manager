@@ -47,6 +47,7 @@ const Config = () => {
 
       <div className="config-tabs">
         <button
+          type="button"
           className={`tab-button ${activeTab === 'status' ? 'active' : ''}`}
           onClick={() => setActiveTab('status')}
         >
@@ -54,6 +55,7 @@ const Config = () => {
         </button>
         {features.ibkr_integration && (
           <button
+            type="button"
             className={`tab-button ${activeTab === 'ibkr' ? 'active' : ''}`}
             onClick={() => setActiveTab('ibkr')}
           >
@@ -61,18 +63,21 @@ const Config = () => {
           </button>
         )}
         <button
+          type="button"
           className={`tab-button ${activeTab === 'system' ? 'active' : ''}`}
           onClick={() => setActiveTab('system')}
         >
           System Settings
         </button>
         <button
+          type="button"
           className={`tab-button ${activeTab === 'user' ? 'active' : ''}`}
           onClick={() => setActiveTab('user')}
         >
           User Preferences
         </button>
         <button
+          type="button"
           className={`tab-button ${activeTab === 'poweruser' ? 'active' : ''}`}
           onClick={() => setActiveTab('poweruser')}
         >

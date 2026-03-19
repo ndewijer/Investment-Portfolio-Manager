@@ -382,7 +382,7 @@ const LogViewer = () => {
               {filters.source && (
                 <span className="filter-chip">Source: &quot;{filters.source}&quot;</span>
               )}
-              <button className="clear-filters-btn" onClick={clearAllFilters}>
+              <button type="button" className="clear-filters-btn" onClick={clearAllFilters}>
                 Clear All Filters
               </button>
             </>
@@ -411,6 +411,7 @@ const LogViewer = () => {
         <div className="table-pagination">
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
+              type="button"
               className="pagination-btn"
               onClick={() => {
                 // Reset to first page
@@ -424,6 +425,7 @@ const LogViewer = () => {
               First
             </button>
             <button
+              type="button"
               className="pagination-btn"
               onClick={() => {
                 const prevCursor = cursorHistory[cursorHistory.length - 2];
@@ -436,6 +438,7 @@ const LogViewer = () => {
           </div>
           <span className="pagination-info">Page {pagination.currentPageNum}</span>
           <button
+            type="button"
             className="pagination-btn"
             onClick={() => {
               fetchLogs(() => loadLogs(pagination.nextCursor, 'next'));

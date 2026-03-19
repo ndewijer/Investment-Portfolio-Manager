@@ -15,7 +15,7 @@
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: var(--space-3);
   }
 
   .button-group button,
@@ -24,7 +24,7 @@
   .button-group .danger-button {
     width: 100%;
     justify-content: center;
-    padding: 0.75rem 1.5rem;
+    padding: var(--space-3) var(--space-6);
   }
 }
 
@@ -46,7 +46,7 @@
   .section-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .section-header h2 {
@@ -56,7 +56,7 @@
   .section-header button,
   .section-header .add-button {
     width: 100%;
-    padding: 12px;
+    padding: var(--space-3);
     font-size: 0.9rem;
   }
 }
@@ -65,12 +65,12 @@
 @media (max-width: 768px) {
   .summary-cards {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
   }
 
   .summary-card {
-    padding: 16px;
+    padding: var(--space-4);
   }
 
   .summary-card h3 {
@@ -85,7 +85,7 @@
 @media (max-width: 480px) {
   .summary-cards {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: var(--space-2);
   }
 }
 
@@ -96,13 +96,13 @@
 /* Modal Responsive */
 @media (max-width: 768px) {
   .modal-overlay {
-    padding: 10px;
+    padding: var(--space-3);
   }
 
   .modal-content {
     min-width: unset;
-    max-height: calc(100vh - 20px);
-    padding: 15px;
+    max-height: calc(100vh - var(--space-5));
+    padding: var(--space-4);
   }
 
   .modal-content.modal-small,
@@ -125,12 +125,12 @@
 /* Form Modal Responsive */
 @media (max-width: 768px) {
   .form-modal-actions {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
   }
 
   .form-field {
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--space-3);
   }
 
   .field-label {
@@ -143,14 +143,14 @@
   .config-tabs,
   .inbox-tabs {
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: var(--space-1);
   }
 
   .tab-button,
   .inbox-tab {
     flex: 1 1 auto;
     min-width: 120px;
-    padding: 0.625rem 1rem;
+    padding: var(--space-2) var(--space-4);
     font-size: 0.9rem;
   }
 }
@@ -167,19 +167,19 @@
   }
 
   .action-btn-small {
-    padding: 0.5rem 1rem;
+    padding: var(--space-2) var(--space-4);
     font-size: 0.85rem;
     min-height: 36px;
   }
 
   .action-btn-medium {
-    padding: 0.625rem 1.25rem;
+    padding: var(--space-2) var(--space-5);
     font-size: 0.95rem;
     min-height: 42px;
   }
 
   .action-btn-large {
-    padding: 0.875rem 1.75rem;
+    padding: var(--space-3) var(--space-7);
     font-size: 1.05rem;
     min-height: 48px;
   }
@@ -194,12 +194,12 @@
 
   .error-actions {
     margin-left: 0;
-    margin-top: 0.75rem;
+    margin-top: var(--space-3);
     justify-content: flex-end;
   }
 
   .error-content {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-2);
   }
 }
 
@@ -210,17 +210,17 @@
 @media (max-width: 768px) {
   .config-page,
   .ibkr-inbox {
-    padding: 1rem;
+    padding: var(--space-4);
   }
 
   .config-section,
   .config-form {
-    padding: 1.25rem;
+    padding: var(--space-5);
   }
 
   .config-section h2 {
     font-size: 1.25rem;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-4);
   }
 }
 
@@ -231,7 +231,7 @@
   }
 
   .version-card {
-    padding: 1.25rem;
+    padding: var(--space-5);
   }
 
   .version-card h5 {

@@ -681,16 +681,25 @@ const IBKRInbox = () => {
     if (item.status === 'pending') {
       return (
         <>
-          <button className="small-button primary" onClick={() => handleAllocateTransaction(item)}>
+          <button
+            type="button"
+            className="small-button primary"
+            onClick={() => handleAllocateTransaction(item)}
+          >
             Allocate
           </button>
           <button
+            type="button"
             className="small-button secondary"
             onClick={() => handleIgnoreTransaction(item.id)}
           >
             Ignore
           </button>
-          <button className="small-button danger" onClick={() => handleDeleteTransaction(item.id)}>
+          <button
+            type="button"
+            className="small-button danger"
+            onClick={() => handleDeleteTransaction(item.id)}
+          >
             Delete
           </button>
         </>
@@ -698,13 +707,25 @@ const IBKRInbox = () => {
     } else if (item.status === 'processed') {
       return (
         <>
-          <button className="small-button primary" onClick={() => handleViewDetails(item)}>
+          <button
+            type="button"
+            className="small-button primary"
+            onClick={() => handleViewDetails(item)}
+          >
             View Details
           </button>
-          <button className="small-button primary" onClick={() => handleModifyAllocation(item)}>
+          <button
+            type="button"
+            className="small-button primary"
+            onClick={() => handleModifyAllocation(item)}
+          >
             Modify
           </button>
-          <button className="small-button secondary" onClick={() => handleUnallocate(item.id)}>
+          <button
+            type="button"
+            className="small-button secondary"
+            onClick={() => handleUnallocate(item.id)}
+          >
             Unallocate
           </button>
         </>
@@ -757,6 +778,7 @@ const IBKRInbox = () => {
 
       <div className="inbox-actions">
         <button
+          type="button"
           className="default-button"
           onClick={handleImportNow}
           disabled={isImporting || isLoading}
@@ -764,6 +786,7 @@ const IBKRInbox = () => {
           {isImporting ? 'Importing...' : 'Import Now'}
         </button>
         <button
+          type="button"
           className="secondary-button"
           onClick={() => fetchTransactions()}
           disabled={isLoading}
@@ -775,12 +798,14 @@ const IBKRInbox = () => {
       {/* Status Tabs */}
       <div className="inbox-tabs">
         <button
+          type="button"
           className={`inbox-tab ${selectedStatus === 'pending' ? 'active' : ''}`}
           onClick={() => setSelectedStatus('pending')}
         >
           Pending
         </button>
         <button
+          type="button"
           className={`inbox-tab ${selectedStatus === 'processed' ? 'active' : ''}`}
           onClick={() => setSelectedStatus('processed')}
         >
@@ -803,13 +828,13 @@ const IBKRInbox = () => {
           </label>
           {selectedTransactions.length > 0 && (
             <div className="bulk-action-buttons">
-              <button className="default-button" onClick={handleBulkAllocate}>
+              <button type="button" className="default-button" onClick={handleBulkAllocate}>
                 Bulk Allocate
               </button>
-              <button className="secondary-button" onClick={handleBulkIgnore}>
+              <button type="button" className="secondary-button" onClick={handleBulkIgnore}>
                 Bulk Ignore
               </button>
-              <button className="danger-button" onClick={handleBulkDelete}>
+              <button type="button" className="danger-button" onClick={handleBulkDelete}>
                 Bulk Delete
               </button>
             </div>
@@ -1162,7 +1187,11 @@ const IBKRInbox = () => {
                     {Math.abs(getTotalPercentage() - 100) > 0.01 && (
                       <div className="allocation-error">Allocations must sum to exactly 100%</div>
                     )}
-                    <button className="default-button" onClick={handleSubmitAllocation}>
+                    <button
+                      type="button"
+                      className="default-button"
+                      onClick={handleSubmitAllocation}
+                    >
                       {modalMode === 'edit'
                         ? 'Update Allocations'
                         : modalMode === 'bulk'
@@ -1172,6 +1201,7 @@ const IBKRInbox = () => {
                   </>
                 )}
               <button
+                type="button"
                 className="secondary-button"
                 onClick={() => {
                   setSelectedTransaction(null);

@@ -295,6 +295,16 @@
   background-color: var(--color-neutral-600);
 }
 
+[data-theme="dark"] .log-viewer .filter-bar {
+  background-color: var(--surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .log-viewer .filter-chip {
+  background-color: rgba(51, 133, 255, 0.15);
+  color: var(--color-primary-light);
+}
+
 [data-theme="dark"] .log-viewer .clear-filters-btn {
   background-color: var(--color-neutral-700);
   color: var(--color-neutral-300);
