@@ -19,6 +19,7 @@ htmlcov/
 .pytest_cache/
 coverage.xml
 *.cover
+results.json
 
 # Ruff
 .ruff_cache
