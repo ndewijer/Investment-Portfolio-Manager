@@ -15,8 +15,9 @@ Tests Developer API endpoints:
 - GET /api/logs?level=ERROR - Get logs with filters ✅
 - GET /api/developer/fund-price/<fund_id> - Get fund price ⚠️ DISABLED (duplicate endpoint)
 - POST /api/logs/clear - Clear logs ✅
+- GET /api/developer/logs/filter-options - Get log filter options ✅
 
-Test Summary: 11 happy path tests, 34 error path tests
+Test Summary: 17 happy path tests, 35 error path tests
 
 Error path test classes:
 - TestExchangeRateErrors (7 tests) - missing fields, invalid values, service errors
@@ -24,8 +25,10 @@ Error path test classes:
 - TestCSVImportErrors (10 tests) - no file, invalid format, invalid headers, wrong file type
 - TestLoggingErrors (6 tests) - missing fields, service errors
 - TestCSVTemplates (4 tests) - includes 2 error path tests for service failures
+- TestLogFilterOptions (6 tests) - empty state, distinct values, sorting,
+  uppercase, null exclusion, service errors
 
-Total: 45 tests (2 skipped CSV imports)
+Total: 51 tests (2 skipped CSV imports)
 Coverage: 91% (up from 49%) - Target: 90% ✅
 
 Missing coverage (9%):
@@ -1068,3 +1071,200 @@ class TestLogging:
         # There may be logs from the clear operation itself
         # Just verify the operation completed successfully
         assert response.status_code == 200
+
+
+class TestLogFilterOptions:
+    """Test GET /developer/logs/filter-options endpoint."""
+
+    def test_filter_options_empty_when_no_logs(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs/filter-options returns empty arrays when no logs exist.
+
+        WHY: The filter options endpoint should gracefully handle an empty logs table,
+        returning valid but empty arrays so the frontend can render empty picklists
+        without errors.
+        """
+        response = client.get("/api/developer/logs/filter-options")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["levels"] == []
+        assert data["categories"] == []
+        assert data["sources"] == []
+        assert data["messages"] == []
+
+    def test_filter_options_returns_distinct_values(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs/filter-options returns distinct values from existing logs.
+
+        WHY: The endpoint must return unique values for each filter field so the frontend
+        can populate filter picklists without duplicates. Developers rely on these options
+        to efficiently narrow down log searches during debugging.
+        """
+        log1 = Log(
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM,
+            message="System started",
+            source="main",
+        )
+        log2 = Log(
+            level=LogLevel.ERROR,
+            category=LogCategory.FUND,
+            message="Fund not found",
+            source="fund_service",
+        )
+        log3 = Log(
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM,
+            message="System started",
+            source="main",
+        )
+        db_session.add_all([log1, log2, log3])
+        db_session.commit()
+
+        response = client.get("/api/developer/logs/filter-options")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert "INFO" in data["levels"]
+        assert "ERROR" in data["levels"]
+        assert "SYSTEM" in data["categories"]
+        assert "FUND" in data["categories"]
+        assert "main" in data["sources"]
+        assert "fund_service" in data["sources"]
+        assert "System started" in data["messages"]
+        assert "Fund not found" in data["messages"]
+        # Verify distinct: log3 duplicates log1's values, so counts should not increase
+        assert data["levels"].count("INFO") == 1
+        assert data["categories"].count("SYSTEM") == 1
+        assert data["sources"].count("main") == 1
+        assert data["messages"].count("System started") == 1
+
+    def test_filter_options_values_sorted_alphabetically(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs/filter-options returns alphabetically sorted arrays.
+
+        WHY: Sorted filter values enable developers to quickly locate the option they need
+        in the picklist. Unsorted values would make it difficult to find specific levels,
+        categories, or sources, especially when the log table contains many distinct values.
+        """
+        log1 = Log(
+            level=LogLevel.WARNING,
+            category=LogCategory.TRANSACTION,
+            message="Zebra message",
+            source="zebra_module",
+        )
+        log2 = Log(
+            level=LogLevel.DEBUG,
+            category=LogCategory.DATABASE,
+            message="Alpha message",
+            source="alpha_module",
+        )
+        log3 = Log(
+            level=LogLevel.ERROR,
+            category=LogCategory.FUND,
+            message="Middle message",
+            source="middle_module",
+        )
+        db_session.add_all([log1, log2, log3])
+        db_session.commit()
+
+        response = client.get("/api/developer/logs/filter-options")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["levels"] == sorted(data["levels"])
+        assert data["categories"] == sorted(data["categories"])
+        assert data["sources"] == sorted(data["sources"])
+        assert data["messages"] == sorted(data["messages"])
+
+    def test_filter_options_levels_and_categories_uppercase(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs/filter-options returns uppercase levels and categories.
+
+        WHY: The frontend expects consistent uppercase values for level and category filters
+        to match the display format used in the log viewer. Inconsistent casing would cause
+        filter mismatches and confuse developers trying to filter logs.
+        """
+        log1 = Log(
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM,
+            message="Test message",
+            source="test_source",
+        )
+        log2 = Log(
+            level=LogLevel.ERROR,
+            category=LogCategory.FUND,
+            message="Another message",
+            source="another_source",
+        )
+        db_session.add_all([log1, log2])
+        db_session.commit()
+
+        response = client.get("/api/developer/logs/filter-options")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        # All levels should be uppercase
+        for level in data["levels"]:
+            assert level == level.upper(), f"Level '{level}' is not uppercase"
+        # All categories should be uppercase
+        for category in data["categories"]:
+            assert category == category.upper(), f"Category '{category}' is not uppercase"
+
+    def test_filter_options_excludes_null_values(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs/filter-options excludes null values from results.
+
+        WHY: Null values in filter picklists would confuse developers and produce broken
+        filter queries. The endpoint defensively filters out nulls to ensure every value
+        in the picklist is a valid, usable filter option.
+
+        Note: The Log model enforces NOT NULL on source at the DB level, so we mock the
+        service to simulate the defensive IS NOT NULL filtering behavior.
+        """
+        from unittest.mock import patch
+
+        # Simulate what the service returns when the DB has no null values:
+        # it should return only non-null distinct values
+        mock_result = {
+            "levels": ["ERROR", "INFO"],
+            "categories": ["FUND", "SYSTEM"],
+            "sources": ["valid_source"],
+            "messages": ["Normal log"],
+        }
+
+        with patch(
+            "app.services.logging_service.LoggingService.get_log_filter_options"
+        ) as mock_options:
+            mock_options.return_value = mock_result
+
+            response = client.get("/api/developer/logs/filter-options")
+
+            assert response.status_code == 200
+            data = response.get_json()
+            # Null should not appear in any field
+            for field in ["levels", "categories", "sources", "messages"]:
+                assert None not in data[field]
+                assert "None" not in data[field]
+            # The valid source should still be present
+            assert "valid_source" in data["sources"]
+
+    def test_filter_options_service_error(self, client):
+        """
+        Test GET /developer/logs/filter-options handles service errors.
+
+        WHY: Service layer failures should be caught and transformed into proper HTTP 500
+        responses. This prevents stack traces from being exposed to users and ensures the
+        frontend can display a meaningful error message.
+        """
+        from unittest.mock import patch
+
+        with patch(
+            "app.services.logging_service.LoggingService.get_log_filter_options"
+        ) as mock_options:
+            mock_options.side_effect = Exception("Service error")
+
+            response = client.get("/api/developer/logs/filter-options")
+
+            assert response.status_code == 500

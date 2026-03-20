@@ -64,6 +64,35 @@ error_model = ns.model(
 )
 
 
+@ns.route("/logs/filter-options")
+class DeveloperLogFilterOptions(Resource):
+    """Developer log filter options endpoint."""
+
+    @ns.doc("get_log_filter_options")
+    @ns.response(200, "Success")
+    @ns.response(500, "Server error", error_model)
+    def get(self):
+        """
+        Get distinct values for log filter columns.
+
+        Returns distinct non-null values for levels, categories, sources, and messages
+        so the frontend can populate filter picklists.
+        """
+        from ..services.logging_service import LoggingService
+
+        try:
+            options = LoggingService.get_log_filter_options()
+            return options, 200
+        except Exception as e:
+            logger.log(
+                level=LogLevel.ERROR,
+                category=LogCategory.DEVELOPER,
+                message="Error retrieving log filter options",
+                details={"error": str(e)},
+            )
+            return {"error": "Error retrieving log filter options", "details": str(e)}, 500
+
+
 @ns.route("/logs")
 class DeveloperLogs(Resource):
     """Developer logs endpoint."""

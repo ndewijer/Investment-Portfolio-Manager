@@ -383,6 +383,47 @@ class LoggingService:
         }
 
     @staticmethod
+    def get_log_filter_options() -> dict:
+        """
+        Get distinct values for log filter columns.
+
+        Returns:
+            dict: Dictionary with 'levels', 'categories', 'sources', and 'messages' lists
+
+        Raises:
+            Exception: If unable to retrieve filter options
+        """
+        from sqlalchemy import distinct, select
+
+        levels = (
+            db.session.execute(select(distinct(Log.level)).where(Log.level.isnot(None)))
+            .scalars()
+            .all()
+        )
+        categories = (
+            db.session.execute(select(distinct(Log.category)).where(Log.category.isnot(None)))
+            .scalars()
+            .all()
+        )
+        sources = (
+            db.session.execute(select(distinct(Log.source)).where(Log.source.isnot(None)))
+            .scalars()
+            .all()
+        )
+        messages = (
+            db.session.execute(select(distinct(Log.message)).where(Log.message.isnot(None)))
+            .scalars()
+            .all()
+        )
+
+        return {
+            "levels": sorted([lvl.value.upper() for lvl in levels]),
+            "categories": sorted([c.value.upper() for c in categories]),
+            "sources": sorted([str(s) for s in sources]),
+            "messages": sorted([str(m) for m in messages]),
+        }
+
+    @staticmethod
     def clear_logs() -> None:
         """
         Clear all system logs from the database.
