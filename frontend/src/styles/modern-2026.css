@@ -149,17 +149,19 @@
   --color-warning-light: #ffd97d;
   --color-warning-dark: #ffb020;
 
-  /* Neutral Scale - Inverted for dark mode */
-  --color-neutral-50: #f9fafb;
-  --color-neutral-100: #f3f4f6;
-  --color-neutral-200: #e5e7eb;
-  --color-neutral-300: #d1d5db;
-  --color-neutral-400: #9ca3af;
-  --color-neutral-500: #6b7280;
-  --color-neutral-600: #4b5563;
-  --color-neutral-700: #374151;
-  --color-neutral-800: #1f2937;
-  --color-neutral-900: #111827;
+  /* Neutral Scale - Inverted for dark mode
+     Light: 50=#f9fafb ... 900=#111827
+     Dark:  50=#111827 ... 900=#f9fafb */
+  --color-neutral-50: #111827;
+  --color-neutral-100: #1f2937;
+  --color-neutral-200: #374151;
+  --color-neutral-300: #4b5563;
+  --color-neutral-400: #6b7280;
+  --color-neutral-500: #9ca3af;
+  --color-neutral-600: #d1d5db;
+  --color-neutral-700: #e5e7eb;
+  --color-neutral-800: #f3f4f6;
+  --color-neutral-900: #f9fafb;
 }
 
 /* Typography Base */
@@ -173,7 +175,7 @@ body {
 }
 
 [data-theme="dark"] body {
-  color: var(--color-neutral-100);
+  color: var(--color-neutral-900);
 }
 
 /* Headings with Editorial Hierarchy */
@@ -204,14 +206,7 @@ h3 {
   font-weight: 700;
 }
 
-[data-theme="dark"] h1,
-[data-theme="dark"] h2,
-[data-theme="dark"] h3,
-[data-theme="dark"] h4,
-[data-theme="dark"] h5,
-[data-theme="dark"] h6 {
-  color: var(--color-neutral-50);
-}
+/* Headings use --color-neutral-900 which auto-inverts in dark mode */
 
 /* Financial Numbers - Always Monospace */
 .financial-number,

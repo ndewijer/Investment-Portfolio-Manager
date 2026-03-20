@@ -254,10 +254,15 @@ const FundDetail = () => {
         <div className="section-header">
           <h2>Price History</h2>
           <div className="button-group">
-            <button className="toggle-history-button" onClick={handleToggleTableHistory}>
+            <button
+              type="button"
+              className="toggle-history-button"
+              onClick={handleToggleTableHistory}
+            >
               {showAllTableHistory ? 'Show Last Month' : 'Show All History'}
             </button>
             <button
+              type="button"
               className="update-prices-button"
               onClick={handleUpdateHistoricalPrices}
               disabled={updating}
@@ -296,6 +301,7 @@ const FundDetail = () => {
           sortable={true}
           filterable={true}
           defaultSort={{ key: 'date', direction: 'desc' }}
+          className="prices-table"
         />
         <FilterPopup
           type="date"

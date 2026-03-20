@@ -100,28 +100,13 @@
   transform: translateY(1px);
 }
 
-/* Dark mode support */
+/* Dark mode support - only overrides not handled by inverted neutral scale */
 [data-theme="dark"] .health-check-error-content {
-  background: var(--color-neutral-800);
+  background: var(--surface-raised);
 }
 
-[data-theme="dark"] .health-check-error h1 {
-  color: var(--color-neutral-50);
-}
-
-[data-theme="dark"] .health-check-error .error-message {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .error-details h3 {
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .error-details ul {
-  color: var(--color-neutral-400);
-}
+/* h1 uses neutral-900, error-message uses neutral-500, h3 uses neutral-900, ul uses neutral-500 - all auto-invert */
 
 [data-theme="dark"] .technical-details pre {
-  background: var(--color-neutral-900);
   color: #f56565;
 }

@@ -7,9 +7,7 @@
   color: var(--color-neutral-900);
 }
 
-[data-theme="dark"] .overview-container h1 {
-  color: var(--color-neutral-50);
-}
+/* h1 uses --color-neutral-900 which auto-inverts in dark mode */
 
 /* Chart Section */
 .chart-section {
@@ -29,12 +27,9 @@
 
 [data-theme="dark"] .chart-section {
   background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
 }
 
-[data-theme="dark"] .chart-section h2 {
-  color: var(--color-neutral-50);
-}
+/* h2 uses --color-neutral-900 which auto-inverts in dark mode */
 
 .chart-container {
   width: 100%;
@@ -54,9 +49,7 @@
   color: var(--color-neutral-900);
 }
 
-[data-theme="dark"] .portfolios-table-section h2 {
-  color: var(--color-neutral-50);
-}
+/* h2 uses --color-neutral-900 which auto-inverts in dark mode */
 
 /* Loading / Error / Empty states */
 .overview-container .loading {
@@ -110,25 +103,11 @@
 }
 
 /* Dark mode overrides for portfolio cards (all screen sizes) */
-[data-theme="dark"] .overview-container .portfolio-name {
-  color: var(--color-neutral-50);
-}
-
-[data-theme="dark"] .overview-container .value-item .value {
-  color: var(--color-neutral-100);
-}
+/* portfolio-name uses --color-neutral-900 which auto-inverts */
+/* value uses --color-neutral-900 which auto-inverts */
 
 [data-theme="dark"] .overview-container .portfolio-card {
   background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
-}
-
-[data-theme="dark"] .overview-container .card-header {
-  border-bottom-color: var(--color-neutral-700);
-}
-
-[data-theme="dark"] .overview-container .card-details {
-  border-top-color: var(--color-neutral-700);
 }
 
 /* Mobile card styles for Overview portfolio cards */

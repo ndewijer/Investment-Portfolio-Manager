@@ -635,11 +635,9 @@
   border-top: 1px solid var(--color-neutral-200);
 }
 
-/* Dark mode support */
-[data-theme="dark"] .ibkr-inbox {
-  color: var(--color-neutral-200);
-}
+/* Dark mode support - only overrides not handled by inverted neutral scale */
 
+/* Semantic color overrides using rgba for dark mode */
 [data-theme="dark"] .feature-unavailable {
   background-color: rgba(255, 176, 32, 0.15);
   border-color: var(--color-warning-dark);
@@ -649,78 +647,35 @@
   color: var(--color-warning-light);
 }
 
-[data-theme="dark"] .empty-state {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .empty-state p {
-  color: var(--color-neutral-400);
-}
+/* empty-state uses neutral-50/neutral-200 which auto-invert correctly */
 
 [data-theme="dark"] .transaction-summary {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-row select,
 [data-theme="dark"] .allocation-row input {
-  background-color: var(--color-neutral-900);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-200);
+  background-color: var(--color-neutral-50);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-900);
 }
 
 [data-theme="dark"] .allocation-total {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
-[data-theme="dark"] .modal-actions {
-  border-top-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .allocation-details h3 {
-  color: var(--color-neutral-200);
-}
+/* allocation-details h3 uses neutral-900, labels use neutral-500, values use neutral-900 - all auto-invert */
 
 [data-theme="dark"] .allocation-detail-row {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .allocation-detail-item .label {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .allocation-detail-item .value {
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .allocation-modal .modal-description {
-  color: var(--color-neutral-400);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-modal .modal-note {
   background-color: rgba(0, 102, 255, 0.15);
   border-left-color: var(--color-primary);
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .allocation-modal .modal-note strong {
-  color: var(--color-neutral-50);
-}
-
-[data-theme="dark"] .inbox-tabs {
-  border-bottom-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .inbox-tab {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .inbox-tab:hover {
-  color: var(--color-primary);
-  background-color: var(--color-neutral-700);
 }
 
 [data-theme="dark"] .inbox-tab.active {
@@ -728,14 +683,18 @@
   border-bottom-color: var(--color-primary);
 }
 
+[data-theme="dark"] .inbox-tab:hover {
+  color: var(--color-primary);
+}
+
 [data-theme="dark"] .bulk-actions {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .bulk-eligibility-info {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-presets {
@@ -768,11 +727,6 @@
 }
 
 [data-theme="dark"] .transaction-summary.compact {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-300);
-}
-
-[data-theme="dark"] .allocation-amount-preview {
-  color: var(--color-neutral-400);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }

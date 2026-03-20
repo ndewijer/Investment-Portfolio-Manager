@@ -14,9 +14,7 @@
   color: var(--color-neutral-900);
 }
 
-[data-theme="dark"] .portfolios-page .page-header h1 {
-  color: var(--color-neutral-50);
-}
+/* h1 uses --color-neutral-900 which auto-inverts in dark mode */
 
 /* Modern Button */
 .modern-btn {

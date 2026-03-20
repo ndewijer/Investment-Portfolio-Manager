@@ -642,37 +642,11 @@
   }
 }
 
-/* Dark mode overrides */
-[data-theme="dark"] .portfolio-detail-container .portfolio-header h1 {
-  color: var(--color-neutral-50);
-}
-
-[data-theme="dark"] .portfolio-detail-container .info-item span,
-[data-theme="dark"] .portfolio-detail-container .fund-card .fund-name,
-[data-theme="dark"] .portfolio-detail-container .fund-card .current-value,
-[data-theme="dark"] .portfolio-detail-container .fund-card .stat-item .value,
-[data-theme="dark"] .portfolio-detail-container .fund-card .dividends-info .value,
-[data-theme="dark"] .portfolio-detail-container .transaction-card .total-amount,
-[data-theme="dark"] .portfolio-detail-container .transaction-card .fund-name,
-[data-theme="dark"] .portfolio-detail-container .transaction-card .detail-item .value,
-[data-theme="dark"] .portfolio-detail-container .dividend-card .total-amount,
-[data-theme="dark"] .portfolio-detail-container .dividend-card .fund-name,
-[data-theme="dark"] .portfolio-detail-container .dividend-card .detail-row .value {
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .portfolio-detail-container .info-item label,
-[data-theme="dark"] .portfolio-detail-container .fund-card .stat-item .label,
-[data-theme="dark"] .portfolio-detail-container .fund-card .dividends-info .label,
-[data-theme="dark"] .portfolio-detail-container .transaction-card .date,
-[data-theme="dark"] .portfolio-detail-container .transaction-card .detail-item .label,
-[data-theme="dark"] .portfolio-detail-container .dividend-card .record-date,
-[data-theme="dark"] .portfolio-detail-container .dividend-card .detail-row .label {
-  color: var(--color-neutral-400);
-}
+/* Dark mode overrides - only what can't be handled by inverted neutral scale */
+/* h1, text values, labels all use tokens that auto-invert correctly */
 
 [data-theme="dark"] .portfolio-detail-container .filter-popup {
-  border-color: var(--color-neutral-600);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"]
@@ -680,42 +654,15 @@
   .date-picker-container
   .react-datepicker__input-container
   input {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .portfolio-detail-container .mobile-filter-btn,
-[data-theme="dark"] .portfolio-detail-container .mobile-sort-btn {
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-100);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-900);
 }
 
 [data-theme="dark"] .portfolio-detail-container .mobile-controls {
-  background-color: var(--color-neutral-800);
+  background-color: var(--color-neutral-100);
 }
 
 [data-theme="dark"] .portfolio-detail-container .fund-card .current-value {
-  background-color: var(--color-neutral-700);
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .portfolio-detail-container .fund-card .card-header,
-[data-theme="dark"] .portfolio-detail-container .fund-card .card-footer,
-[data-theme="dark"] .portfolio-detail-container .transaction-card .card-header,
-[data-theme="dark"] .portfolio-detail-container .transaction-card .card-actions,
-[data-theme="dark"] .portfolio-detail-container .dividend-card .card-header,
-[data-theme="dark"] .portfolio-detail-container .dividend-card .card-actions {
-  border-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .portfolio-detail-container .fund-card,
-[data-theme="dark"] .portfolio-detail-container .transaction-card,
-[data-theme="dark"] .portfolio-detail-container .dividend-card,
-[data-theme="dark"] .portfolio-detail-container .mobile-filter-popup {
-  border-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .portfolio-detail-container .portfolio-description {
-  color: var(--color-neutral-300);
+  background-color: var(--color-neutral-100);
 }

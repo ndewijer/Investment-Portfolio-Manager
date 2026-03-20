@@ -94,6 +94,9 @@ const FilterPopup = ({
 
   if (!isOpen) return null;
 
+  // Disable flip so calendar always opens below the input
+  const datePickerPopperModifiers = [{ name: 'flip', enabled: false }];
+
   const renderContent = () => {
     switch (type) {
       case 'date':
@@ -107,6 +110,7 @@ const FilterPopup = ({
                 dateFormat="yyyy-MM-dd"
                 isClearable
                 popperPlacement="bottom-start"
+                popperModifiers={datePickerPopperModifiers}
               />
             </div>
             <div className="date-input">
@@ -118,6 +122,7 @@ const FilterPopup = ({
                 minDate={fromDate}
                 isClearable
                 popperPlacement="bottom-start"
+                popperModifiers={datePickerPopperModifiers}
               />
             </div>
           </div>
@@ -212,6 +217,7 @@ const FilterPopup = ({
                 dateFormat="yyyy-MM-dd HH:mm"
                 isClearable
                 popperPlacement="bottom-start"
+                popperModifiers={datePickerPopperModifiers}
               />
             </div>
             <div className="date-input">
@@ -226,6 +232,7 @@ const FilterPopup = ({
                 minDate={fromDate}
                 isClearable
                 popperPlacement="bottom-start"
+                popperModifiers={datePickerPopperModifiers}
               />
             </div>
           </div>

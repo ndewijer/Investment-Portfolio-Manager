@@ -4,10 +4,8 @@
   transition: background var(--transition-slow);
 }
 
-[data-theme="dark"] .App {
-  background: linear-gradient(135deg, var(--color-neutral-900) 0%, var(--color-neutral-800) 100%);
-  color: var(--color-neutral-100);
-}
+/* Dark mode: base rule uses neutral-50 and neutral-100 which auto-invert.
+   Color handled by body rule in modern-2026.css. */
 
 .main-content {
   max-width: 1400px;

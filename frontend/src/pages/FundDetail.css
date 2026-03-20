@@ -329,31 +329,18 @@
   }
 }
 
-/* Dark mode overrides */
+/* Dark mode overrides - only what can't be handled by inverted neutral scale */
+
+/* Buttons with warning background need dark text in both modes */
 .fund-detail-container .toggle-history-button,
 .fund-detail-container .update-prices-button {
-  color: var(--color-neutral-900);
+  color: #111827;
 }
 
-[data-theme="dark"] .fund-detail-container .fund-header h1,
-[data-theme="dark"] .fund-detail-container .price-chart h2,
-[data-theme="dark"] .fund-detail-container .price-history h2 {
-  color: var(--color-neutral-50);
-}
-
-[data-theme="dark"] .fund-detail-container .info-item span,
-[data-theme="dark"] .fund-detail-container .price-card .price {
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .fund-detail-container .info-item label,
-[data-theme="dark"] .fund-detail-container .price-card .date,
-[data-theme="dark"] .fund-detail-container .date-picker-container label {
-  color: var(--color-neutral-400);
-}
+/* h1, h2, info-item span/label, price-card date/price all use tokens that auto-invert */
 
 [data-theme="dark"] .fund-detail-container .filter-popup {
-  border-color: var(--color-neutral-600);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"]
@@ -361,27 +348,15 @@
   .date-picker-container
   .react-datepicker__input-container
   input {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-100);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-900);
 }
 
 [data-theme="dark"] .fund-detail-container .update-prices-button:disabled {
-  background-color: var(--color-neutral-600);
-  color: var(--color-neutral-400);
+  background-color: var(--color-neutral-300);
 }
 
 [data-theme="dark"] .fund-detail-container .mobile-controls {
-  background-color: var(--color-neutral-800);
-}
-
-[data-theme="dark"] .fund-detail-container .mobile-filter-btn,
-[data-theme="dark"] .fund-detail-container .mobile-sort-btn {
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .fund-detail-container .mobile-filter-popup,
-[data-theme="dark"] .fund-detail-container .price-card {
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-100);
 }

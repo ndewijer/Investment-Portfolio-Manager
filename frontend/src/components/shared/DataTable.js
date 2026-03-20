@@ -349,6 +349,7 @@ const DataTable = ({
           </span>
           <div className="modern-table-pagination-controls">
             <button
+              type="button"
               className="modern-table-pagination-btn"
               onClick={() => onPaginationChange?.(pagination.currentPage - 1)}
               disabled={pagination.currentPage === 1}
@@ -356,6 +357,7 @@ const DataTable = ({
               Previous
             </button>
             <button
+              type="button"
               className="modern-table-pagination-btn"
               onClick={() => onPaginationChange?.(pagination.currentPage + 1)}
               disabled={pagination.currentPage === pagination.totalPages}

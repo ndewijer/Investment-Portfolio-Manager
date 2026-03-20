@@ -302,7 +302,19 @@ const Overview = () => {
     const performance = calculatePortfolioPerformance(portfolio);
 
     return (
-      <div className="portfolio-card" onClick={() => handlePortfolioClick(portfolio)}>
+      // biome-ignore lint/a11y/useSemanticElements: card contains complex nested content, not suitable for button element
+      <div
+        className="portfolio-card"
+        role="button"
+        tabIndex={0}
+        onClick={() => handlePortfolioClick(portfolio)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handlePortfolioClick(portfolio);
+          }
+        }}
+      >
         <div className="card-header">
           <h3 className="portfolio-name">{portfolio.name}</h3>
           <div className={`performance ${performance >= 0 ? 'positive' : 'negative'}`}>
@@ -360,7 +372,9 @@ const Overview = () => {
         <div className="no-portfolios-message">
           <p>No visible portfolios to display.</p>
           <p>Portfolios might be hidden from the overview or archived.</p>
-          <button onClick={() => navigate('/portfolios')}>Manage Portfolios</button>
+          <button type="button" onClick={() => navigate('/portfolios')}>
+            Manage Portfolios
+          </button>
         </div>
       </div>
     );
@@ -441,6 +455,7 @@ const Overview = () => {
           onRowClick={handlePortfolioClick}
           mobileCardRenderer={renderMobileCard}
           emptyMessage="No portfolios found"
+          className="portfolios-table"
         />
       </div>
     </div>

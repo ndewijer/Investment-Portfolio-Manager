@@ -7,9 +7,7 @@
   color: var(--color-neutral-900);
 }
 
-[data-theme="dark"] .funds-page h1 {
-  color: var(--color-neutral-50);
-}
+/* h1 uses --color-neutral-900 which auto-inverts in dark mode */
 
 .funds-page .funds-header {
   display: flex;
@@ -25,7 +23,7 @@
 
 .funds-page .add-fund-button {
   background: var(--color-warning);
-  color: var(--color-neutral-900);
+  color: #111827;
   padding: var(--space-3) var(--space-5);
   border-radius: var(--radius-md);
   font-weight: 600;
@@ -79,9 +77,7 @@
   font-family: var(--font-mono);
 }
 
-[data-theme="dark"] .fund-detail-value {
-  color: var(--color-neutral-200);
-}
+/* fund-detail-value uses --color-neutral-900 which auto-inverts in dark mode */
 
 .funds-page .symbol-info {
   cursor: help;
