@@ -201,53 +201,34 @@
   }
 }
 
-/* Dark mode support */
-[data-theme="dark"] .field-label {
-  color: var(--color-neutral-100);
-}
-
+/* Dark mode support - form inputs need explicit background overrides */
 [data-theme="dark"] .form-field input,
 [data-theme="dark"] .form-field select,
 [data-theme="dark"] .form-field textarea {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-100);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-900);
 }
 
 [data-theme="dark"] .form-field input:focus,
 [data-theme="dark"] .form-field select:focus,
 [data-theme="dark"] .form-field textarea:focus {
   border-color: var(--color-primary);
-  background-color: var(--color-neutral-700);
+  background-color: var(--color-neutral-100);
 }
 
 [data-theme="dark"] .form-field input:disabled,
 [data-theme="dark"] .form-field select:disabled,
 [data-theme="dark"] .form-field textarea:disabled {
-  background-color: var(--color-neutral-600);
-  color: var(--color-neutral-400);
+  background-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .static-field {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-100);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .input-group .input-addon {
-  background-color: var(--color-neutral-600);
-  border-color: var(--color-neutral-500);
-  color: var(--color-neutral-100);
-}
-
-[data-theme="dark"] .form-modal-actions {
-  border-top-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .form-section {
-  border-bottom-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .form-section-title {
-  color: var(--color-neutral-100);
+  background-color: var(--color-neutral-200);
+  border-color: var(--color-neutral-300);
 }

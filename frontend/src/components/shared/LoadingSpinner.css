@@ -61,16 +61,9 @@
   }
 }
 
-/* Dark mode support */
+/* Dark mode support - rgba and semantic colors */
 [data-theme="dark"] .loading-overlay {
   background-color: rgba(0, 0, 0, 0.8);
 }
 
-[data-theme="dark"] .loading-message {
-  color: var(--color-neutral-300);
-}
-
-[data-theme="dark"] .spinner {
-  border-color: var(--color-neutral-700);
-  border-top-color: var(--color-primary);
-}
+/* spinner uses neutral-200 (auto-inverts to dark gray) and primary (separately defined) - works correctly */

@@ -23,16 +23,9 @@
   padding: var(--space-1) var(--space-2);
 }
 
-/* Force datepicker calendar to always open below the input */
+/* Ensure datepicker popper renders correctly inside fixed-position popup */
 .filter-popup .react-datepicker-popper {
-  inset: unset !important;
-  position: relative !important;
-  transform: none !important;
-}
-
-.filter-popup .react-datepicker-popper[data-placement^="top"] {
-  inset: unset !important;
-  transform: none !important;
+  z-index: 2;
 }
 
 .filter-popup select {
@@ -119,66 +112,44 @@
   width: 16px;
 }
 
-/* Dark mode support */
+/* Dark mode support - form elements need explicit background overrides */
 [data-theme="dark"] .filter-popup {
   background-color: var(--surface-raised);
-  border-color: var(--color-neutral-600);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .filter-popup select {
-  background-color: var(--color-neutral-800);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-200);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-900);
 }
 
-[data-theme="dark"] .date-input label {
-  color: var(--color-neutral-400);
-}
+/* date-input label uses neutral-500 which auto-inverts */
 
 [data-theme="dark"] .date-input input {
-  background-color: var(--color-neutral-800);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-200);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-900);
 }
 
 [data-theme="dark"] .react-select__control {
-  background-color: var(--color-neutral-800);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .react-select__control:hover {
-  border-color: var(--color-neutral-500);
+  border-color: var(--color-neutral-300);
 }
 
 [data-theme="dark"] .react-select__menu {
-  background-color: var(--color-neutral-800);
-  border-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .react-select__option {
-  color: var(--color-neutral-200);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .react-select__option--is-focused {
-  background-color: var(--color-neutral-700);
+  background-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .react-select__option--is-selected {
   background-color: var(--color-primary);
-}
-
-[data-theme="dark"] .react-select__single-value {
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .react-select__input-container {
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .react-select__clear-indicator {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .react-select__clear-indicator:hover {
-  color: var(--color-neutral-200);
 }

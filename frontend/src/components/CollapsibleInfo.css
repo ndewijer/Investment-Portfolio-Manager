@@ -40,17 +40,7 @@
   background-color: var(--surface-raised);
 }
 
-/* Dark mode support */
-[data-theme="dark"] .collapsible-header {
-  background-color: var(--color-neutral-800);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .collapsible-header:hover {
-  background-color: var(--color-neutral-700);
-}
-
+/* Dark mode support - neutral tokens auto-invert */
 [data-theme="dark"] .collapsible-content {
-  border-color: var(--color-neutral-600);
+  border-color: var(--color-neutral-200);
 }

@@ -38,8 +38,8 @@ const LogViewer = () => {
     category: [],
     startDate: null,
     endDate: null,
-    message: '',
-    source: '',
+    message: [],
+    source: [],
     sortDir: 'desc', // Always sort by timestamp, but allow direction change
   });
 
@@ -67,26 +67,38 @@ const LogViewer = () => {
   const [tempFilters, setTempFilters] = useState({
     level: [],
     category: [],
+    message: [],
+    source: [],
   });
 
-  // Filter options (matching original order)
-  const levelOptions = [
-    { label: 'Debug', value: 'DEBUG' },
-    { label: 'Info', value: 'INFO' },
-    { label: 'Warning', value: 'WARNING' },
-    { label: 'Error', value: 'ERROR' },
-    { label: 'Critical', value: 'CRITICAL' },
-  ];
+  // Filter options from API
+  const [filterOptions, setFilterOptions] = useState({
+    levels: [],
+    categories: [],
+    sources: [],
+    messages: [],
+  });
 
-  const categoryOptions = [
-    { label: 'Portfolio', value: 'PORTFOLIO' },
-    { label: 'Fund', value: 'FUND' },
-    { label: 'Transaction', value: 'TRANSACTION' },
-    { label: 'Dividend', value: 'DIVIDEND' },
-    { label: 'System', value: 'SYSTEM' },
-    { label: 'Database', value: 'DATABASE' },
-    { label: 'Security', value: 'SECURITY' },
-  ];
+  // Fetch filter options from API on mount
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const response = await api.get('/developer/logs/filter-options');
+        setFilterOptions(response.data);
+      } catch (err) {
+        console.error('Failed to fetch log filter options:', err);
+      }
+    };
+    fetchFilterOptions();
+  }, []);
+
+  const levelOptions = filterOptions.levels.map((v) => ({ label: v, value: v }));
+  const categoryOptions = filterOptions.categories.map((v) => ({ label: v, value: v }));
+  const messageOptions = filterOptions.messages.map((m) => ({
+    label: m.length > 60 ? `${m.substring(0, 60)}...` : m,
+    value: m,
+  }));
+  const sourceOptions = filterOptions.sources.map((v) => ({ label: v, value: v }));
 
   // Load logs function with cursor-based pagination
   const loadLogs = useCallback(
@@ -108,11 +120,11 @@ const LogViewer = () => {
         const utcEnd = `${new Date(filters.endDate).toISOString().split('.')[0]}Z`;
         params.append('endDate', utcEnd);
       }
-      if (filters.message) {
-        params.append('message', filters.message);
+      if (filters.message.length > 0) {
+        params.append('message', filters.message.map((m) => m.value).join(','));
       }
-      if (filters.source) {
-        params.append('source', filters.source);
+      if (filters.source.length > 0) {
+        params.append('source', filters.source.map((s) => s.value).join(','));
       }
 
       // Add cursor if provided
@@ -125,21 +137,20 @@ const LogViewer = () => {
 
       const response = await api.get(`/developer/logs?${params.toString()}`);
 
-      // Update pagination state based on response
-      setPagination({
+      // Update pagination state based on response (functional update to avoid dependency on currentPageNum)
+      setPagination((prev) => ({
         nextCursor: response.data.nextCursor,
         hasMore: response.data.hasMore,
         currentPageNum:
           cursor === null
-            ? 1 // Initial load or reset - stay at page 1
+            ? 1
             : direction === 'next'
-              ? pagination.currentPageNum + 1
-              : Math.max(1, pagination.currentPageNum - 1),
-      });
+              ? prev.currentPageNum + 1
+              : Math.max(1, prev.currentPageNum - 1),
+      }));
 
       // Update cursor history for backward navigation
       if (direction === 'next' && cursor !== null) {
-        // Only add to history if we actually used a cursor
         setCursorHistory((prev) => [...prev, cursor]);
       } else if (direction === 'prev') {
         setCursorHistory((prev) => prev.slice(0, -1));
@@ -147,7 +158,7 @@ const LogViewer = () => {
 
       return response;
     },
-    [filters, pagination.currentPageNum],
+    [filters],
   );
 
   // Load logs when filters change (reset to page 1)
@@ -314,14 +325,14 @@ const LogViewer = () => {
       render: (value, log) => value || log?.source || 'Unknown',
     },
     {
-      key: 'request_id',
+      key: 'requestId',
       header: 'Request ID',
-      render: (value, log) => value || log?.request_id || '-',
+      render: (value, log) => value || log?.requestId || '-',
     },
     {
-      key: 'http_status',
+      key: 'httpStatus',
       header: 'HTTP Status',
-      render: (value, log) => value || log?.http_status || '-',
+      render: (value, log) => value || log?.httpStatus || '-',
     },
   ];
 
@@ -331,8 +342,8 @@ const LogViewer = () => {
       category: [],
       startDate: null,
       endDate: null,
-      message: '',
-      source: '',
+      message: [],
+      source: [],
       sortDir: 'desc',
     });
   };
@@ -342,8 +353,8 @@ const LogViewer = () => {
     filters.category.length > 0 ||
     filters.startDate ||
     filters.endDate ||
-    filters.message ||
-    filters.source;
+    filters.message.length > 0 ||
+    filters.source.length > 0;
 
   return (
     <div className="log-viewer">
@@ -376,11 +387,15 @@ const LogViewer = () => {
               )}
               {filters.startDate && <span className="filter-chip">From: {filters.startDate}</span>}
               {filters.endDate && <span className="filter-chip">To: {filters.endDate}</span>}
-              {filters.message && (
-                <span className="filter-chip">Message: &quot;{filters.message}&quot;</span>
+              {filters.message.length > 0 && (
+                <span className="filter-chip">
+                  Message: {filters.message.map((m) => m.label).join(', ')}
+                </span>
               )}
-              {filters.source && (
-                <span className="filter-chip">Source: &quot;{filters.source}&quot;</span>
+              {filters.source.length > 0 && (
+                <span className="filter-chip">
+                  Source: {filters.source.map((s) => s.label).join(', ')}
+                </span>
               )}
               <button type="button" className="clear-filters-btn" onClick={clearAllFilters}>
                 Clear All Filters
@@ -501,21 +516,37 @@ const LogViewer = () => {
       />
 
       <FilterPopup
-        type="text"
+        type="multiselect"
         isOpen={filterPopups.message}
-        onClose={() => setFilterPopups((prev) => ({ ...prev, message: false }))}
+        onClose={() => {
+          setFilterPopups((prev) => ({ ...prev, message: false }));
+          setFilters((prev) => ({ ...prev, message: tempFilters.message }));
+        }}
         position={filterPosition}
-        value={filters.message}
-        onChange={(value) => setFilters((prev) => ({ ...prev, message: value }))}
+        value={tempFilters.message}
+        onChange={(selected) => {
+          setTempFilters((prev) => ({ ...prev, message: selected || [] }));
+        }}
+        options={messageOptions}
+        Component={Select}
+        isMulti={true}
       />
 
       <FilterPopup
-        type="text"
+        type="multiselect"
         isOpen={filterPopups.source}
-        onClose={() => setFilterPopups((prev) => ({ ...prev, source: false }))}
+        onClose={() => {
+          setFilterPopups((prev) => ({ ...prev, source: false }));
+          setFilters((prev) => ({ ...prev, source: tempFilters.source }));
+        }}
         position={filterPosition}
-        value={filters.source}
-        onChange={(value) => setFilters((prev) => ({ ...prev, source: value }))}
+        value={tempFilters.source}
+        onChange={(selected) => {
+          setTempFilters((prev) => ({ ...prev, source: selected || [] }));
+        }}
+        options={sourceOptions}
+        Component={Select}
+        isMulti={true}
       />
     </div>
   );

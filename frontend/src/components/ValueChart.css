@@ -671,22 +671,20 @@
   }
 }
 
-/* Dark mode support */
+/* Dark mode support - only overrides not handled by inverted neutral scale */
 [data-theme="dark"] .custom-tooltip {
   background-color: rgba(30, 30, 30, 0.95);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .tooltip-label {
-  color: var(--color-neutral-100);
-  border-bottom-color: var(--color-neutral-600);
+  border-bottom-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .chart-button,
 [data-theme="dark"] .transaction-button,
 [data-theme="dark"] .zoom-button {
-  background-color: var(--color-neutral-800);
+  background-color: var(--color-neutral-100);
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
@@ -700,44 +698,39 @@
 [data-theme="dark"] .chart-button.active,
 [data-theme="dark"] .transaction-button.active {
   background-color: var(--color-primary);
-  color: var(--color-neutral-50);
+  color: white;
 }
 
 [data-theme="dark"] .zoom-button:disabled {
-  background-color: var(--color-neutral-800);
-  color: var(--color-neutral-600);
-  border-color: var(--color-neutral-700);
+  background-color: var(--color-neutral-100);
+  color: var(--color-neutral-400);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .zoom-level {
-  color: var(--color-neutral-300);
-  background-color: var(--color-neutral-800);
-  border-color: var(--color-neutral-700);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .zoom-instructions {
-  background-color: var(--color-neutral-800);
-}
-
-[data-theme="dark"] .zoom-instructions p {
-  color: var(--color-neutral-400);
+  background-color: var(--color-neutral-100);
 }
 
 [data-theme="dark"] .chart-fullscreen-overlay {
-  background-color: var(--color-neutral-900);
+  background-color: var(--color-neutral-50);
 }
 
 [data-theme="dark"] .chart-fullscreen-container .chart-container {
-  background-color: var(--color-neutral-900);
+  background-color: var(--color-neutral-50);
 }
 
 [data-theme="dark"] .chart-fullscreen-container .chart-controls {
   background-color: rgba(30, 30, 30, 0.95);
-  scrollbar-color: var(--color-primary) var(--color-neutral-800);
+  scrollbar-color: var(--color-primary) var(--color-neutral-100);
 }
 
 [data-theme="dark"] .chart-fullscreen-container .chart-controls::-webkit-scrollbar-track {
-  background: var(--color-neutral-800);
+  background: var(--color-neutral-100);
 }
 
 [data-theme="dark"] .control-toggle-button {
@@ -750,7 +743,7 @@
 }
 
 [data-theme="dark"] .mobile-chart-cta {
-  background: linear-gradient(135deg, var(--color-neutral-800) 0%, var(--color-neutral-700) 100%);
+  background: linear-gradient(135deg, var(--color-neutral-100) 0%, var(--color-neutral-200) 100%);
   border-color: var(--color-primary);
 }
 

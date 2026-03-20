@@ -429,38 +429,19 @@
   }
 }
 
-/* Dark Mode Adjustments */
+/* Dark Mode Adjustments - Only overrides not handled by inverted neutral scale */
 [data-theme="dark"] .modern-card,
 [data-theme="dark"] .modern-portfolio-card,
 [data-theme="dark"] .modern-fund-card,
 [data-theme="dark"] .modern-summary-card {
   background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
 }
 
 [data-theme="dark"] .modern-summary-card {
-  background: linear-gradient(135deg, var(--surface-raised) 0%, var(--color-neutral-800) 100%);
+  background: linear-gradient(135deg, var(--surface-raised) 0%, var(--color-neutral-100) 100%);
 }
 
-[data-theme="dark"] .modern-portfolio-card-title,
-[data-theme="dark"] .modern-summary-card-value {
-  color: var(--color-neutral-50);
-}
-
-[data-theme="dark"] .modern-portfolio-card-description,
-[data-theme="dark"] .modern-summary-card-label {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .modern-summary-card-subtext {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .modern-portfolio-card-metrics,
-[data-theme="dark"] .modern-portfolio-card-actions {
-  border-top-color: var(--color-neutral-700);
-}
-
+/* Badge color adjustments for dark mode - use brighter semantic colors */
 [data-theme="dark"] .modern-portfolio-card-badge {
   background: var(--color-primary-alpha);
   color: var(--color-primary);
@@ -474,8 +455,4 @@
 [data-theme="dark"] .modern-portfolio-card-badge.negative {
   background: var(--color-error-alpha);
   color: var(--color-error);
-}
-
-[data-theme="dark"] .modern-portfolio-card-metric-value {
-  color: var(--color-neutral-100);
 }

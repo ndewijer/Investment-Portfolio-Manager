@@ -22,8 +22,8 @@ const TYPE_OPTIONS = [
  *
  * Displays portfolio transactions with comprehensive filtering and sorting:
  * - Columns: Date, Fund, Type, Source (IBKR/Manual), Shares, Cost per Share, Total
- * - Filters: Date range, fund names (multi-select), transaction type
- * - Sort: All columns except Source
+ * - Filters: Date range, fund names (multi-select), transaction type, source (IBKR/Manual)
+ * - Sort: All columns including Source
  * - Mobile: Custom card layout with responsive design
  * - Actions: Edit/Delete (disabled for dividend transactions)
  *

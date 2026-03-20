@@ -150,28 +150,16 @@ button.clickable-fund-name:hover {
   }
 }
 
-/* Dark mode */
+/* Dark mode - only surface-raised overrides needed */
 [data-theme="dark"] .default-card {
   background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
 }
 
 [data-theme="dark"] .empty-state {
   background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
 }
 
-[data-theme="dark"] .field-label {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .field-value {
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .card-field {
-  border-bottom-color: var(--color-neutral-700);
-}
+/* field-label uses neutral-500, field-value uses neutral-900, card-field borders use neutral-100 - all auto-invert */
 
 /* Print styles */
 @media print {

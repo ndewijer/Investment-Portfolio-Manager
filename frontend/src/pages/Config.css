@@ -443,23 +443,7 @@
   line-height: 1.5;
 }
 
-/* Dark mode support */
-[data-theme="dark"] .config-page {
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .config-tabs {
-  border-bottom-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .tab-button {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .tab-button:hover {
-  color: var(--color-neutral-200);
-  background-color: var(--color-neutral-700);
-}
+/* Dark mode support - only overrides not handled by inverted neutral scale */
 
 [data-theme="dark"] .tab-button.active {
   color: var(--color-primary);
@@ -468,38 +452,27 @@
 
 [data-theme="dark"] .config-section,
 [data-theme="dark"] .config-form {
-  background-color: var(--color-neutral-700);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .form-group input,
 [data-theme="dark"] .form-group select {
-  background-color: var(--color-neutral-900);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .form-help {
-  color: var(--color-neutral-400);
+  background-color: var(--color-neutral-50);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-900);
 }
 
 [data-theme="dark"] .version-card {
-  background-color: var(--color-neutral-900);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-50);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .version-card:hover {
   border-color: var(--color-primary);
 }
 
-[data-theme="dark"] .version-card h5 {
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .version-card p {
-  color: var(--color-neutral-400);
-}
-
+/* Semantic color overrides using rgba for dark mode */
 [data-theme="dark"] .token-warning {
   background-color: rgba(255, 176, 32, 0.15);
   border-color: var(--color-warning-dark);
@@ -521,8 +494,7 @@
 [data-theme="dark"] .settings-info,
 [data-theme="dark"] .dark-mode-info,
 [data-theme="dark"] .format-example {
-  background-color: var(--color-neutral-900);
-  color: var(--color-neutral-200);
+  background-color: var(--color-neutral-100);
 }
 
 [data-theme="dark"] .warning-text {
@@ -531,38 +503,30 @@
 }
 
 [data-theme="dark"] .csv-example {
-  background-color: var(--color-neutral-900);
+  background-color: var(--color-neutral-50);
 }
 
 [data-theme="dark"] .csv-example code {
-  background-color: var(--color-neutral-800);
-  color: var(--color-neutral-200);
+  background-color: var(--color-neutral-100);
 }
 
 [data-theme="dark"] .config-form .config-section {
-  background-color: var(--color-neutral-900);
-  border-color: var(--color-neutral-600);
+  background-color: var(--color-neutral-50);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .config-form .section-title {
-  color: var(--color-neutral-200);
-  border-bottom-color: var(--color-neutral-600);
-}
-
-[data-theme="dark"] .config-form .section-description {
-  color: var(--color-neutral-400);
+  border-bottom-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .config-form .form-help-note {
   background-color: rgba(0, 102, 255, 0.15);
   border-left-color: var(--color-primary);
-  color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-summary {
-  background-color: var(--color-neutral-900);
-  border-color: var(--color-neutral-600);
-  color: var(--color-neutral-200);
+  background-color: var(--color-neutral-50);
+  border-color: var(--color-neutral-200);
 }
 
 [data-theme="dark"] .allocation-pending {
@@ -730,20 +694,10 @@
 
 [data-theme="dark"] .status-section {
   background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
 }
 
-[data-theme="dark"] .status-item {
-  background: var(--color-neutral-800);
-}
-
-[data-theme="dark"] .status-item .status-label {
-  color: var(--color-neutral-300);
-}
-
-[data-theme="dark"] .status-item .status-value {
-  color: var(--color-neutral-100);
-}
+/* status-item, feature-item use neutral-50 which auto-inverts correctly */
+/* status-label uses neutral-600, status-value uses neutral-900 - all auto-invert */
 
 [data-theme="dark"] .status-item .status-value.status-green {
   color: var(--color-success);
@@ -751,14 +705,6 @@
 
 [data-theme="dark"] .status-item .status-value.status-red {
   color: var(--color-error);
-}
-
-[data-theme="dark"] .feature-item {
-  background: var(--color-neutral-800);
-}
-
-[data-theme="dark"] .feature-name {
-  color: var(--color-neutral-100);
 }
 
 /* Config-specific mobile styles (common patterns moved to mobile.css) */

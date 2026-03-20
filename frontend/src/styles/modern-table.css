@@ -435,58 +435,17 @@
   }
 }
 
-/* Dark Mode */
+/* Dark Mode - Only overrides that can't be handled by the inverted neutral scale */
 [data-theme="dark"] .modern-table-wrapper {
   background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
 }
 
 [data-theme="dark"] .modern-table {
   background: var(--surface-raised);
 }
 
-[data-theme="dark"] .modern-table thead {
-  background: linear-gradient(180deg, var(--color-neutral-800) 0%, var(--color-neutral-900) 100%);
-}
-
-[data-theme="dark"] .modern-table thead::after {
-  background: var(--color-neutral-700);
-}
-
-[data-theme="dark"] .modern-table th {
-  color: var(--color-neutral-300);
-}
-
 [data-theme="dark"] .modern-table tbody tr {
-  border-bottom-color: var(--color-neutral-700);
   background: var(--surface-raised);
-}
-
-[data-theme="dark"] .modern-table tbody tr:hover {
-  background-color: var(--color-neutral-800);
-}
-
-[data-theme="dark"] .modern-table td {
-  color: var(--color-neutral-200);
-}
-
-[data-theme="dark"] .modern-table td:first-child {
-  color: var(--color-neutral-50);
-}
-
-[data-theme="dark"] .modern-table-pagination {
-  background: var(--color-neutral-800);
-  border-top-color: var(--color-neutral-700);
-}
-
-[data-theme="dark"] .modern-table-pagination-info {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .modern-table-pagination-btn {
-  background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
-  color: var(--color-neutral-300);
 }
 
 [data-theme="dark"] .modern-table-pagination-btn:hover:not(:disabled) {
@@ -494,23 +453,7 @@
   color: var(--color-primary);
 }
 
-[data-theme="dark"] .modern-table-mobile-card {
-  background: var(--surface-raised);
-  border-color: var(--color-neutral-700);
-}
-
-[data-theme="dark"] .modern-table-mobile-card-row {
-  border-bottom-color: var(--color-neutral-700);
-}
-
-[data-theme="dark"] .modern-table-mobile-card-label {
-  color: var(--color-neutral-400);
-}
-
-[data-theme="dark"] .modern-table-mobile-card-value {
-  color: var(--color-neutral-200);
-}
-
+/* Badge color adjustments for dark mode - use brighter semantic colors */
 [data-theme="dark"] .modern-table .table-badge.primary {
   background: var(--color-primary-alpha);
   color: var(--color-primary);

@@ -19,7 +19,9 @@ vi.mock('../../components/HealthCheckError', () => {
       return (
         <div data-testid="health-check-error">
           {error}
-          <button onClick={onRetry}>Retry</button>
+          <button type="button" onClick={onRetry}>
+            Retry
+          </button>
         </div>
       );
     },

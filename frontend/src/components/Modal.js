@@ -82,15 +82,19 @@ const Modal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" role="presentation" onClick={handleOverlayClick}>
+    // biome-ignore lint/a11y/noStaticElementInteractions: overlay click-to-close is standard modal UX
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard close handled by Escape key listener */}
       <div
         className={`modal-content modal-${size} ${className}`}
         role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
         ref={modalContentRef}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h2>{title}</h2>
+          <h2 id="modal-title">{title}</h2>
           <button type="button" onClick={onClose} className="modal-close" aria-label="Close modal">
             &times;
           </button>

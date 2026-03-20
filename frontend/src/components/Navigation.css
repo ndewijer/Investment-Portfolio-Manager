@@ -1,5 +1,5 @@
 .navigation {
-  background: var(--color-neutral-900);
+  background: #111827;
   padding: 0 var(--space-6);
   display: flex;
   justify-content: space-between;
@@ -11,8 +11,8 @@
 }
 
 [data-theme="dark"] .navigation {
-  background: var(--color-neutral-800);
-  border-bottom: 1px solid var(--color-neutral-700);
+  background: #1f2937;
+  border-bottom: 1px solid var(--color-neutral-200);
 }
 
 .navigation ul {
@@ -32,7 +32,7 @@
 }
 
 .navigation a {
-  color: var(--color-neutral-300);
+  color: #d1d5db;
   text-decoration: none;
   font-family: var(--font-body);
   font-weight: 500;
@@ -58,7 +58,7 @@
 }
 
 .navigation a:hover {
-  color: var(--color-neutral-50);
+  color: #f9fafb;
   background: rgba(255, 255, 255, 0.05);
 }
 

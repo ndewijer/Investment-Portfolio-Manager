@@ -118,7 +118,7 @@
 
 [data-theme="dark"] .error-retry-btn {
   background-color: #f56565;
-  color: var(--color-neutral-900);
+  color: #111827;
 }
 
 [data-theme="dark"] .error-retry-btn:hover {
