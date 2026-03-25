@@ -36,9 +36,11 @@ const LogViewer = () => {
   const [filters, setFilters] = useState({
     level: [],
     category: [],
+    categoryExclude: false,
     startDate: null,
     endDate: null,
     message: [],
+    messageExclude: false,
     source: [],
     sortDir: 'desc', // Always sort by timestamp, but allow direction change
   });
@@ -52,6 +54,9 @@ const LogViewer = () => {
 
   // Cursor history for backward navigation
   const [cursorHistory, setCursorHistory] = useState([null]); // Stack of cursors
+
+  // Mobile filter panel visibility
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // State for FilterPopup components
   const [filterPopups, setFilterPopups] = useState({
@@ -102,7 +107,7 @@ const LogViewer = () => {
 
   // Load logs function with cursor-based pagination
   const loadLogs = useCallback(
-    async (cursor = null, direction = 'next') => {
+    async (cursor = null, direction = 'next', skipPages = 0) => {
       const params = new URLSearchParams();
 
       // Apply filters (camelCase for API)
@@ -110,7 +115,18 @@ const LogViewer = () => {
         params.append('level', filters.level.map((l) => l.value).join(','));
       }
       if (filters.category.length > 0) {
-        params.append('category', filters.category.map((c) => c.value).join(','));
+        if (filters.categoryExclude) {
+          // Exclude mode: send all categories EXCEPT selected ones
+          const excluded = new Set(filters.category.map((c) => c.value));
+          const included = categoryOptions
+            .filter((c) => !excluded.has(c.value))
+            .map((c) => c.value);
+          if (included.length > 0) {
+            params.append('category', included.join(','));
+          }
+        } else {
+          params.append('category', filters.category.map((c) => c.value).join(','));
+        }
       }
       if (filters.startDate) {
         const utcStart = `${new Date(filters.startDate).toISOString().split('.')[0]}Z`;
@@ -121,7 +137,15 @@ const LogViewer = () => {
         params.append('endDate', utcEnd);
       }
       if (filters.message.length > 0) {
-        params.append('message', filters.message.map((m) => m.value).join(','));
+        if (filters.messageExclude) {
+          const excluded = new Set(filters.message.map((m) => m.value));
+          const included = messageOptions.filter((m) => !excluded.has(m.value)).map((m) => m.value);
+          if (included.length > 0) {
+            params.append('message', included.join(','));
+          }
+        } else {
+          params.append('message', filters.message.map((m) => m.value).join(','));
+        }
       }
       if (filters.source.length > 0) {
         params.append('source', filters.source.map((s) => s.value).join(','));
@@ -134,6 +158,9 @@ const LogViewer = () => {
 
       params.append('sortDir', filters.sortDir);
       params.append('perPage', 50);
+      if (skipPages > 0) {
+        params.append('skip', 50 * skipPages);
+      }
 
       const response = await api.get(`/developer/logs?${params.toString()}`);
 
@@ -145,7 +172,7 @@ const LogViewer = () => {
           cursor === null
             ? 1
             : direction === 'next'
-              ? prev.currentPageNum + 1
+              ? prev.currentPageNum + 1 + skipPages
               : Math.max(1, prev.currentPageNum - 1),
       }));
 
@@ -340,9 +367,11 @@ const LogViewer = () => {
     setFilters({
       level: [],
       category: [],
+      categoryExclude: false,
       startDate: null,
       endDate: null,
       message: [],
+      messageExclude: false,
       source: [],
       sortDir: 'desc',
     });
@@ -370,9 +399,9 @@ const LogViewer = () => {
         </ActionButton>
       </div>
 
-      {/* Always-visible filter bar */}
+      {/* Filter bar - desktop shows chips, mobile shows toggle button */}
       <div className="filter-bar">
-        <div className="filter-summary">
+        <div className="filter-summary desktop-only">
           {hasActiveFilters ? (
             <>
               {filters.level.length > 0 && (
@@ -381,15 +410,17 @@ const LogViewer = () => {
                 </span>
               )}
               {filters.category.length > 0 && (
-                <span className="filter-chip">
-                  Category: {filters.category.map((c) => c.label).join(', ')}
+                <span className={`filter-chip ${filters.categoryExclude ? 'exclude' : ''}`}>
+                  Category {filters.categoryExclude ? 'excl.' : ''}:{' '}
+                  {filters.category.map((c) => c.label).join(', ')}
                 </span>
               )}
               {filters.startDate && <span className="filter-chip">From: {filters.startDate}</span>}
               {filters.endDate && <span className="filter-chip">To: {filters.endDate}</span>}
               {filters.message.length > 0 && (
-                <span className="filter-chip">
-                  Message: {filters.message.map((m) => m.label).join(', ')}
+                <span className={`filter-chip ${filters.messageExclude ? 'exclude' : ''}`}>
+                  Message {filters.messageExclude ? 'excl.' : ''}:{' '}
+                  {filters.message.map((m) => m.label).join(', ')}
                 </span>
               )}
               {filters.source.length > 0 && (
@@ -405,7 +436,122 @@ const LogViewer = () => {
             <span className="no-filters">No filters applied. Click column headers to filter.</span>
           )}
         </div>
+
+        {/* Mobile filter toggle + active filter count */}
+        <div className="mobile-filter-toggle mobile-only">
+          <button
+            type="button"
+            className={`mobile-filter-btn ${hasActiveFilters ? 'has-filters' : ''}`}
+            onClick={() => setShowMobileFilters(!showMobileFilters)}
+          >
+            Filters{' '}
+            {hasActiveFilters
+              ? `(${
+                  (filters.level.length > 0 ? 1 : 0) +
+                  (filters.category.length > 0 ? 1 : 0) +
+                  (filters.startDate ? 1 : 0) +
+                  (filters.endDate ? 1 : 0) +
+                  (filters.message.length > 0 ? 1 : 0) +
+                  (filters.source.length > 0 ? 1 : 0)
+                } active)`
+              : ''}
+          </button>
+          {hasActiveFilters && (
+            <button type="button" className="clear-filters-btn" onClick={clearAllFilters}>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Mobile filter panel */}
+      {showMobileFilters && (
+        <div className="mobile-filter-panel">
+          <div className="mobile-filter-group">
+            <label>Level</label>
+            <Select
+              options={levelOptions}
+              value={filters.level}
+              onChange={(selected) => setFilters((prev) => ({ ...prev, level: selected || [] }))}
+              isMulti
+              isClearable
+              placeholder="All levels..."
+              classNamePrefix="react-select"
+            />
+          </div>
+          <div className="mobile-filter-group">
+            <div className="filter-label-row">
+              <label>Category</label>
+              <label className="exclude-toggle">
+                <input
+                  type="checkbox"
+                  checked={filters.categoryExclude}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, categoryExclude: e.target.checked }))
+                  }
+                />
+                Exclude selected
+              </label>
+            </div>
+            <Select
+              options={categoryOptions}
+              value={filters.category}
+              onChange={(selected) => setFilters((prev) => ({ ...prev, category: selected || [] }))}
+              isMulti
+              isClearable
+              placeholder={
+                filters.categoryExclude ? 'Select categories to exclude...' : 'All categories...'
+              }
+              classNamePrefix="react-select"
+            />
+          </div>
+          <div className="mobile-filter-group">
+            <label>Source</label>
+            <Select
+              options={sourceOptions}
+              value={filters.source}
+              onChange={(selected) => setFilters((prev) => ({ ...prev, source: selected || [] }))}
+              isMulti
+              isClearable
+              placeholder="All sources..."
+              classNamePrefix="react-select"
+            />
+          </div>
+          <div className="mobile-filter-group">
+            <div className="filter-label-row">
+              <label>Message</label>
+              <label className="exclude-toggle">
+                <input
+                  type="checkbox"
+                  checked={filters.messageExclude}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, messageExclude: e.target.checked }))
+                  }
+                />
+                Exclude selected
+              </label>
+            </div>
+            <Select
+              options={messageOptions}
+              value={filters.message}
+              onChange={(selected) => setFilters((prev) => ({ ...prev, message: selected || [] }))}
+              isMulti
+              isClearable
+              placeholder={
+                filters.messageExclude ? 'Select messages to exclude...' : 'All messages...'
+              }
+              classNamePrefix="react-select"
+            />
+          </div>
+          <button
+            type="button"
+            className="mobile-filter-close"
+            onClick={() => setShowMobileFilters(false)}
+          >
+            Apply Filters
+          </button>
+        </div>
+      )}
 
       <DataTable
         data={logsData.logs || []}
@@ -421,46 +567,59 @@ const LogViewer = () => {
         className="logs-table"
       />
 
-      {/* Custom cursor-based pagination controls */}
+      {/* Pagination controls - sticky on mobile */}
       {logsData.logs && logsData.logs.length > 0 && (
-        <div className="table-pagination">
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              type="button"
-              className="pagination-btn"
-              onClick={() => {
-                // Reset to first page
-                setPagination({ nextCursor: null, hasMore: false, currentPageNum: 1 });
-                setCursorHistory([null]);
-                fetchLogs(() => loadLogs(null, 'next'));
-              }}
-              disabled={pagination.currentPageNum === 1}
-              title="Go to first page (newest logs)"
-            >
-              First
-            </button>
-            <button
-              type="button"
-              className="pagination-btn"
-              onClick={() => {
-                const prevCursor = cursorHistory[cursorHistory.length - 2];
-                fetchLogs(() => loadLogs(prevCursor, 'prev'));
-              }}
-              disabled={pagination.currentPageNum === 1}
-            >
-              Previous
-            </button>
-          </div>
-          <span className="pagination-info">Page {pagination.currentPageNum}</span>
+        <div className="log-pagination">
           <button
             type="button"
-            className="pagination-btn"
+            className="log-pagination-btn"
+            onClick={() => {
+              setPagination({ nextCursor: null, hasMore: false, currentPageNum: 1 });
+              setCursorHistory([null]);
+              fetchLogs(() => loadLogs(null, 'next'));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={pagination.currentPageNum === 1}
+            title="Go to first page"
+          >
+            First
+          </button>
+          <button
+            type="button"
+            className="log-pagination-btn"
+            onClick={() => {
+              const prevCursor = cursorHistory[cursorHistory.length - 2];
+              fetchLogs(() => loadLogs(prevCursor, 'prev'));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={pagination.currentPageNum === 1}
+          >
+            Prev
+          </button>
+          <span className="log-pagination-info">Page {pagination.currentPageNum}</span>
+          <button
+            type="button"
+            className="log-pagination-btn"
             onClick={() => {
               fetchLogs(() => loadLogs(pagination.nextCursor, 'next'));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             disabled={!pagination.hasMore}
           >
             Next
+          </button>
+          <button
+            type="button"
+            className="log-pagination-btn"
+            onClick={() => {
+              // Skip 4 pages (200 entries), then show page 5
+              fetchLogs(() => loadLogs(pagination.nextCursor, 'next', 4));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={!pagination.hasMore}
+            title="Skip ahead 5 pages"
+          >
+            +5
           </button>
         </div>
       )}

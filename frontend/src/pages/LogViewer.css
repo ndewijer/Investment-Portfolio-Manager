@@ -298,3 +298,181 @@
   --rmsc-hover: var(--color-neutral-100);
   --rmsc-border: var(--color-neutral-200);
 }
+
+/* Exclude filter chip */
+.log-viewer .filter-chip.exclude {
+  background-color: var(--color-error-alpha);
+  color: var(--color-error);
+}
+
+/* Filter label row with exclude toggle */
+.filter-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.exclude-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-neutral-500);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.exclude-toggle input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* --- Pagination --- */
+.log-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-4);
+}
+
+.log-pagination-btn {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.log-pagination-btn:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.log-pagination-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--color-neutral-300);
+  color: var(--color-neutral-400);
+}
+
+.log-pagination-info {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+
+/* --- Mobile filter panel --- */
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: flex;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: flex;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  /* Mobile filter toggle bar */
+  .mobile-filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .mobile-filter-btn {
+    flex: 1;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-neutral-300);
+    background: transparent;
+    color: var(--color-neutral-900);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .mobile-filter-btn.has-filters {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: var(--color-primary-alpha);
+  }
+
+  /* Mobile filter panel */
+  .mobile-filter-panel {
+    background: var(--surface-raised);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .mobile-filter-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-neutral-500);
+    margin-bottom: var(--space-1);
+  }
+
+  .mobile-filter-close {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--color-primary);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: var(--space-2);
+  }
+
+  /* Sticky pagination on mobile */
+  .log-pagination {
+    position: sticky;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .log-pagination-btn {
+    padding: var(--space-2);
+    font-size: 12px;
+    min-width: 44px;
+    min-height: 36px;
+  }
+}
