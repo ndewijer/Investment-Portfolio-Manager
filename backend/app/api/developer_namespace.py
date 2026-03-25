@@ -107,6 +107,9 @@ class DeveloperLogs(Resource):
     @ns.param("sortDir", "Sort direction: 'asc' or 'desc' (default: desc)", _in="query")
     @ns.param("cursor", "Cursor for pagination (timestamp_id format)", _in="query")
     @ns.param("perPage", "Items per page (default: 50)", _in="query", type="integer")
+    @ns.param(
+        "skip", "Number of entries to skip before returning results", _in="query", type="integer"
+    )
     @ns.response(200, "Success", [log_entry_model])
     def get(self):
         """
@@ -149,6 +152,7 @@ class DeveloperLogs(Resource):
                 sort_dir=request.args.get("sortDir", "desc"),
                 cursor=request.args.get("cursor"),
                 per_page=int(request.args.get("perPage", 50)),
+                skip=int(request.args.get("skip", 0)),
             )
 
             # Convert response to camelCase for frontend

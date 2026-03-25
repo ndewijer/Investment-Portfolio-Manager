@@ -251,6 +251,7 @@ class LoggingService:
         sort_dir: str = "desc",
         cursor: str | None = None,
         per_page: int = 50,
+        skip: int = 0,
     ) -> dict:
         """
         Retrieve filtered, sorted, and cursor-paginated system logs.
@@ -267,6 +268,7 @@ class LoggingService:
             sort_dir: Sort direction ('asc' or 'desc', default: desc)
             cursor: Cursor for pagination (format: timestamp_id)
             per_page: Items per page (default: 50)
+            skip: Number of entries to skip before returning results (default: 0)
 
         Returns:
             dict: Dictionary with 'logs' list, 'next_cursor', 'prev_cursor',
@@ -342,6 +344,10 @@ class LoggingService:
             stmt = stmt.order_by(Log.timestamp.desc(), Log.id.desc())
         else:
             stmt = stmt.order_by(Log.timestamp.asc(), Log.id.asc())
+
+        # Skip entries if requested (for page jumping)
+        if skip > 0:
+            stmt = stmt.offset(skip)
 
         # Fetch per_page + 1 to determine if there are more results
         stmt = stmt.limit(per_page + 1)
