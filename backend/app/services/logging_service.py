@@ -268,6 +268,7 @@ class LoggingService:
             sort_dir: Sort direction ('asc' or 'desc', default: desc)
             cursor: Cursor for pagination (format: timestamp_id)
             per_page: Items per page (default: 50)
+            skip: Number of entries to skip before returning results (default: 0)
 
         Returns:
             dict: Dictionary with 'logs' list, 'next_cursor', 'prev_cursor',
