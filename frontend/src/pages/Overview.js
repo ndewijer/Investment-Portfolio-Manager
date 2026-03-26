@@ -419,8 +419,8 @@ const Overview = () => {
             className={`modern-summary-card-change ${totals.totalRealizedGainLoss >= 0 ? 'positive' : 'negative'}`}
           >
             {formatPercentage(
-              totals.totalCost > 0
-                ? ((totals.totalRealizedGainLoss / totals.totalCost) * 100).toFixed(2)
+              totals.totalOriginalCost > 0
+                ? ((totals.totalRealizedGainLoss / totals.totalOriginalCost) * 100).toFixed(2)
                 : 0,
             )}
           </div>
