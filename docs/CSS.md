@@ -46,9 +46,11 @@ The application implements a centralized CSS architecture focusing on maintainab
    ```
 
 3. **Chart Sections**
-   - Unified container styling
-   - Consistent spacing
-   - Standard control layouts
+   - Unified container styling (`chart-wrapper`, `chart-container`)
+   - Metric toggle buttons and period shortcut buttons (All / 1Y / 3M / 1M)
+   - ApexCharts override classes (`.apexcharts-canvas`, `.apexcharts-legend-text`, `.apexcharts-tooltip`)
+   - CSS-based fullscreen: `.chart-wrapper.chart-fullscreen-active` uses `position: fixed` at `z-index: 10000` — chart DOM never moves, so ApexCharts zoom state is preserved
+   - Dark mode overrides handled automatically by passing `theme.mode` to ApexCharts; CSS overrides are not required for chart internals
 
 4. **Modals**
    - Two reusable modal components: `Modal` (base) and `FormModal` (form-specific)

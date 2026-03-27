@@ -423,6 +423,7 @@ Use this checklist when adding a new feature with schema changes to ensure nothi
 | 1.3.0 | 2024-11 | IBKR Flex integration |
 | 1.3.1 | 2024-11-07 | IBKR enable/disable toggle, bulk transaction processing, allocation presets, mobile UI fixes, chart improvements |
 | 1.4.0 | 2026-01-11 | Portfolio history materialized view for 160x performance improvement, CLI management tools |
+| 2.0.0 | 2026-03-27 | Migrated charting from Recharts to ApexCharts: native zoom/pan/pinch, dark mode support, React 19 Strict Mode compatibility, ValueChart reduced from ~1,455 to ~320 lines |
 
 ## Best Practices
 
