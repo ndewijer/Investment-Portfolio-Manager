@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chart Library Alternatives — Investment Portfolio Manager</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f9fb;
+    --surface: #ffffff;
+    --surface2: #f1f3f7;
+    --border: #e2e6ed;
+    --text: #1a202c;
+    --text2: #4a5568;
+    --text3: #718096;
+    --accent: #4f6ef7;
+    --accent-light: #eef0fe;
+    --green: #38a169;
+    --green-light: #f0fff4;
+    --red: #e53e3e;
+    --red-light: #fff5f5;
+    --yellow: #d69e2e;
+    --yellow-light: #fffff0;
+    --purple: #805ad5;
+    --purple-light: #faf5ff;
+    --orange: #dd6b20;
+    --orange-light: #fffaf0;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --radius: 12px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+
+  /* Sticky banner */
+  .sticky-banner {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #2d3748;
+    color: #fff;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  }
+  .sticky-banner .badge-current {
+    background: #4f6ef7;
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .sticky-banner span { color: #cbd5e0; }
+
+  /* Layout */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #4f6ef7 0%, #7c3aed 100%);
+    color: #fff;
+    padding: 48px 20px 40px;
+    text-align: center;
+  }
+  .hero h1 { font-size: clamp(22px, 5vw, 36px); font-weight: 700; margin-bottom: 10px; }
+  .hero p { font-size: clamp(14px, 3vw, 17px); opacity: .85; max-width: 600px; margin: 0 auto; }
+
+  main { padding: 32px 0 64px; }
+
+  /* Comparison table */
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 20px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .table-wrapper {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+    margin-bottom: 40px;
+    border: 1px solid var(--border);
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 620px; }
+  th {
+    background: var(--surface2);
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text2);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  td.lib-name { font-weight: 600; color: var(--text); }
+  td.lib-name small { display: block; font-weight: 400; color: var(--text3); font-size: 11px; margin-top: 2px; }
+
+  .check { color: var(--green); font-weight: 700; }
+  .cross { color: var(--red); font-weight: 700; }
+  .partial { color: var(--yellow); font-weight: 700; }
+
+  /* Chart cards */
+  .chart-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 36px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .card-header-info { flex: 1; min-width: 200px; }
+  .lib-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .badge-version { background: var(--accent-light); color: var(--accent); }
+  .badge-size-small { background: var(--green-light); color: var(--green); }
+  .badge-size-medium { background: var(--yellow-light); color: var(--yellow); }
+  .badge-size-large { background: var(--red-light); color: var(--red); }
+  .badge-size-xlarge { background: #fff0f0; color: #c53030; }
+
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  @media (max-width: 540px) { .pros-cons { grid-template-columns: 1fr; } }
+
+  .pros, .cons {
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+  }
+  .pros { background: var(--green-light); border: 1px solid #c6f6d5; }
+  .cons { background: var(--red-light); border: 1px solid #fed7d7; }
+  .pros h4 { color: var(--green); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .cons h4 { color: var(--red); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .pros ul, .cons ul { padding-left: 16px; }
+  .pros li, .cons li { font-size: 13px; color: var(--text2); margin-bottom: 3px; }
+
+  .mobile-note {
+    padding: 10px 24px;
+    background: #fef3c7;
+    border-bottom: 1px solid #fde68a;
+    font-size: 13px;
+    color: #92400e;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .mobile-note .icon { flex-shrink: 0; font-size: 15px; }
+
+  .chart-area {
+    padding: 20px 24px 24px;
+    background: var(--surface);
+  }
+  .chart-area canvas, .chart-area > div { display: block !important; }
+
+  /* Chart containers */
+  .chart-container {
+    width: 100%;
+    height: 320px;
+    position: relative;
+  }
+  @media (min-width: 768px) { .chart-container { height: 400px; } }
+
+  /* Legend */
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Recommendation */
+  .recommendation-card {
+    background: linear-gradient(135deg, #4f6ef7 0%, #7c3aed 100%);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 32px 28px;
+    color: #fff;
+    margin-bottom: 36px;
+  }
+  .recommendation-card h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .rec-options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .rec-options { grid-template-columns: 1fr; } }
+
+  .rec-option {
+    background: rgba(255,255,255,.15);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,.2);
+  }
+  .rec-option h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .rec-option p { font-size: 13px; opacity: .9; line-height: 1.5; }
+  .rec-reason {
+    margin-top: 20px;
+    background: rgba(255,255,255,.1);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+    font-size: 13px;
+    line-height: 1.6;
+    opacity: .95;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+  }
+
+  /* Loading placeholder */
+  .chart-loading {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    font-size: 13px;
+    background: var(--surface2);
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="sticky-banner">
+  <span class="badge-current">Current: Recharts v3.7.0</span>
+  <span>Evaluating chart library alternatives for mobile portfolio performance charts</span>
+</div>
+
+<div class="hero">
+  <div class="container">
+    <h1>Chart Library Alternatives</h1>
+    <p>Comparing 5 chart libraries for mobile-first portfolio performance line charts — same dataset, same use case.</p>
+  </div>
+</div>
+
+<main>
+<div class="container">
+
+  <!-- Comparison Table -->
+  <h2 class="section-title">Feature Comparison</h2>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Library</th>
+          <th>Bundle Size</th>
+          <th>Touch / Pinch</th>
+          <th>Built-in Zoom</th>
+          <th>Financial Charts</th>
+          <th>React Support</th>
+          <th>License</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="lib-name">Recharts <small>Current</small></td>
+          <td>~450 KB</td>
+          <td class="partial">~ Partial</td>
+          <td class="cross">✗ None</td>
+          <td class="cross">✗ No</td>
+          <td class="check">✓ Native</td>
+          <td>MIT</td>
+        </tr>
+        <tr>
+          <td class="lib-name">Chart.js</td>
+          <td>~200 KB</td>
+          <td class="partial">~ Plugin</td>
+          <td class="partial">~ Plugin (zoom)</td>
+          <td class="cross">✗ No</td>
+          <td class="partial">~ Wrapper</td>
+          <td>MIT</td>
+        </tr>
+        <tr>
+          <td class="lib-name">ApexCharts</td>
+          <td>~400 KB</td>
+          <td class="check">✓ Built-in</td>
+          <td class="check">✓ Built-in</td>
+          <td class="check">✓ Candlestick</td>
+          <td class="check">✓ Good</td>
+          <td>MIT</td>
+        </tr>
+        <tr>
+          <td class="lib-name">Apache ECharts</td>
+          <td>~800 KB (full) / treeshakable</td>
+          <td class="check">✓ Built-in</td>
+          <td class="check">✓ dataZoom</td>
+          <td class="partial">~ Candlestick</td>
+          <td class="partial">~ Wrapper</td>
+          <td>Apache 2.0</td>
+        </tr>
+        <tr>
+          <td class="lib-name">Lightweight Charts</td>
+          <td>~45 KB</td>
+          <td class="check">✓ Excellent</td>
+          <td class="check">✓ Built-in</td>
+          <td class="check">✓ Financial</td>
+          <td class="cross">✗ Vanilla only</td>
+          <td>Apache 2.0</td>
+        </tr>
+        <tr>
+          <td class="lib-name">Plotly.js</td>
+          <td>~3 MB</td>
+          <td class="check">✓ Built-in</td>
+          <td class="check">✓ Built-in</td>
+          <td class="partial">~ Finance traces</td>
+          <td class="partial">~ Wrapper</td>
+          <td>MIT</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================
+       1. Chart.js
+  ============================= -->
+  <div class="chart-card" id="card-chartjs">
+    <div class="card-header">
+      <div class="card-header-info">
+        <div class="lib-title">
+          Chart.js
+          <span class="badge badge-version">v4.4.x</span>
+          <span class="badge badge-size-small">~200 KB</span>
+        </div>
+        <div style="font-size:13px;color:var(--text3);">Canvas-based, highly flexible, massive community</div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Pros</h4>
+        <ul>
+          <li>Smallest full-featured bundle (~200 KB)</li>
+          <li>Excellent documentation & community</li>
+          <li>Canvas = fast rendering</li>
+          <li>Highly customizable</li>
+          <li>Zoom plugin available</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Cons</h4>
+        <ul>
+          <li>Zoom requires separate plugin (chartjs-plugin-zoom + hammer.js)</li>
+          <li>Not React-native — needs react-chartjs-2 wrapper</li>
+          <li>No built-in brush/range selector</li>
+          <li>Financial chart type not included</li>
+          <li>Pinch zoom can conflict with page scroll on mobile</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mobile-note">
+      <span class="icon">📱</span>
+      <span><strong>Mobile note:</strong> Touch pan/zoom needs hammer.js + chartjs-plugin-zoom. Can feel laggy on low-end devices with 700+ data points. No built-in range selector — users cannot easily navigate to a sub-range.</span>
+    </div>
+    <div class="chart-area">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#4f6ef7"></span>Total Value</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#718096"></span>Total Cost</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#38a169"></span>Fund A</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#dd6b20"></span>Fund B</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chartjs-canvas"></canvas>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px;">
+        Scroll/pinch to zoom (requires zoom plugin) — drag to pan
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================
+       2. ApexCharts
+  ============================= -->
+  <div class="chart-card" id="card-apex">
+    <div class="card-header">
+      <div class="card-header-info">
+        <div class="lib-title">
+          ApexCharts
+          <span class="badge badge-version">v3.x</span>
+          <span class="badge badge-size-medium">~400 KB</span>
+        </div>
+        <div style="font-size:13px;color:var(--text3);">Feature-rich, built-in brush/zoom, great defaults</div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Pros</h4>
+        <ul>
+          <li>Built-in zoom, pan, and brush with no extra plugins</li>
+          <li>Native datetime x-axis with smart tick formatting</li>
+          <li>Excellent touch &amp; pinch-zoom support out of the box</li>
+          <li>Good React wrapper (react-apexcharts)</li>
+          <li>Candlestick / financial chart type included</li>
+          <li>Beautiful default tooltips</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Cons</h4>
+        <ul>
+          <li>Heavier than Chart.js (~400 KB)</li>
+          <li>Some customizations require deep config knowledge</li>
+          <li>SVG-based (slightly slower than canvas at 700+ series)</li>
+          <li>Brush chart requires second chart instance (extra height)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mobile-note">
+      <span class="icon">📱</span>
+      <span><strong>Mobile note:</strong> Pinch-to-zoom and pan work natively. Brush/selection chart lets users pick a sub-range — ideal for "last 3 months" navigation. Tooltip follows touch position well. Recommended for this use case.</span>
+    </div>
+    <div class="chart-area">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#4f6ef7"></span>Total Value</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#718096"></span>Total Cost</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#38a169"></span>Fund A</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#dd6b20"></span>Fund B</span>
+      </div>
+      <div id="apex-chart" style="width:100%;"></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px;">
+        Drag to zoom — click legend to toggle series — brush chart below for range selection
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================
+       3. ECharts
+  ============================= -->
+  <div class="chart-card" id="card-echarts">
+    <div class="card-header">
+      <div class="card-header-info">
+        <div class="lib-title">
+          Apache ECharts
+          <span class="badge badge-version">v5.x</span>
+          <span class="badge badge-size-large">~800 KB full / treeshakable</span>
+        </div>
+        <div style="font-size:13px;color:var(--text3);">Handles massive datasets, powerful dataZoom, toolbox</div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Pros</h4>
+        <ul>
+          <li>dataZoom: slider + inside scroll, both built-in</li>
+          <li>Handles very large datasets efficiently (canvas)</li>
+          <li>Toolbox: save image, zoom reset, data view</li>
+          <li>Excellent mobile touch support</li>
+          <li>Treeshakable — only include what you use</li>
+          <li>Very active maintenance (Apache project)</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Cons</h4>
+        <ul>
+          <li>Full bundle is large (~800 KB)</li>
+          <li>Configuration is verbose / JSON-heavy</li>
+          <li>React wrapper (echarts-for-react) is a thin layer, not idiomatic</li>
+          <li>Learning curve steeper than Chart.js</li>
+          <li>Tooltips less polished by default</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mobile-note">
+      <span class="icon">📱</span>
+      <span><strong>Mobile note:</strong> dataZoom slider appears at bottom — users drag to select range. "inside" dataZoom adds scroll/pinch on the chart itself. Both work simultaneously. Very performant on mobile with canvas renderer.</span>
+    </div>
+    <div class="chart-area">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#4f6ef7"></span>Total Value</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#718096"></span>Total Cost</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#38a169"></span>Fund A</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#dd6b20"></span>Fund B</span>
+      </div>
+      <div id="echarts-container" class="chart-container"></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px;">
+        Use slider at bottom to select range — scroll/pinch inside chart to zoom
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================
+       4. Lightweight Charts (TradingView)
+  ============================= -->
+  <div class="chart-card" id="card-lwc">
+    <div class="card-header">
+      <div class="card-header-info">
+        <div class="lib-title">
+          Lightweight Charts
+          <span class="badge badge-version">v4.x (TradingView)</span>
+          <span class="badge badge-size-small">~45 KB</span>
+        </div>
+        <div style="font-size:13px;color:var(--text3);">Purpose-built financial time series, tiny &amp; blazing fast</div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Pros</h4>
+        <ul>
+          <li>Smallest bundle of all options (~45 KB!)</li>
+          <li>Purpose-built for financial time series</li>
+          <li>Excellent touch &amp; pinch-zoom on mobile</li>
+          <li>Very fast — handles thousands of points smoothly</li>
+          <li>Built-in crosshair &amp; price tracking</li>
+          <li>Area series ideal for portfolio value visualization</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Cons</h4>
+        <ul>
+          <li>No official React wrapper — must use vanilla JS in div</li>
+          <li>Limited chart types (financial focus only)</li>
+          <li>Less flexible for non-financial visualizations</li>
+          <li>Smaller community vs Chart.js / ECharts</li>
+          <li>Multi-series line charts less visually customizable</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mobile-note">
+      <span class="icon">📱</span>
+      <span><strong>Mobile note:</strong> Best-in-class mobile experience of all options — pinch to zoom, swipe to pan, tap for crosshair. Designed for TradingView which is a mobile-first financial app. Extremely responsive.</span>
+    </div>
+    <div class="chart-area">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#4f6ef7"></span>Total Value</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#718096"></span>Total Cost</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#38a169"></span>Fund A</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#dd6b20"></span>Fund B</span>
+      </div>
+      <div id="lwc-container" class="chart-container"></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px;">
+        Pinch to zoom — drag to pan — tap/hover for crosshair values
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================
+       5. Plotly.js
+  ============================= -->
+  <div class="chart-card" id="card-plotly">
+    <div class="card-header">
+      <div class="card-header-info">
+        <div class="lib-title">
+          Plotly.js
+          <span class="badge badge-version">v2.35.2</span>
+          <span class="badge badge-size-xlarge">~3 MB</span>
+        </div>
+        <div style="font-size:13px;color:var(--text3);">Most features, range slider, scientific-grade, but very heavy</div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <h4>Pros</h4>
+        <ul>
+          <li>Most feature-complete of all options</li>
+          <li>Excellent built-in range slider</li>
+          <li>Range selector buttons (1M, 3M, 6M, 1Y, All)</li>
+          <li>Zoom, pan, lasso, select modes built-in</li>
+          <li>React wrapper available (react-plotly.js)</li>
+          <li>Good tooltip customization</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Cons</h4>
+        <ul>
+          <li>Massive bundle size (~3 MB) — significant mobile penalty</li>
+          <li>Slower rendering on mobile for large datasets</li>
+          <li>Overkill for portfolio line charts</li>
+          <li>Default styling feels scientific/academic</li>
+          <li>Longer initial load time impacts perceived performance</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mobile-note">
+      <span class="icon">📱</span>
+      <span><strong>Mobile note:</strong> 3 MB bundle means ~600ms+ extra load on slow connections. Rendering can be slow on mid-range phones. Range slider works on touch but is small. Not recommended for mobile-first portfolio apps.</span>
+    </div>
+    <div class="chart-area">
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#4f6ef7"></span>Total Value</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#718096"></span>Total Cost</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#38a169"></span>Fund A</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#dd6b20"></span>Fund B</span>
+      </div>
+      <div id="plotly-container" class="chart-container"></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px;">
+        Use range slider below — buttons for quick range selection — drag chart to zoom
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================
+       Recommendation
+  ============================= -->
+  <h2 class="section-title">Recommendation</h2>
+  <div class="recommendation-card">
+    <h2>Best Fit for Mobile Portfolio Charts</h2>
+    <div class="rec-options">
+      <div class="rec-option">
+        <h3>Option A: ApexCharts</h3>
+        <p>Best balance of features, mobile support, and React integration. Built-in zoom/pan/brush, good touch UX, financial chart types, and react-apexcharts is well-maintained. Closest drop-in replacement for Recharts with major UX improvements.</p>
+      </div>
+      <div class="rec-option">
+        <h3>Option B: Lightweight Charts</h3>
+        <p>Best mobile performance and smallest bundle. Purpose-built for financial data. Trade-off: no React wrapper (use useRef + useEffect). Ideal if performance and bundle size are top priorities and team is comfortable with vanilla JS integration.</p>
+      </div>
+    </div>
+    <div class="rec-reason">
+      <strong>Reasoning:</strong> This project renders multi-line portfolio performance data over 2 years (~730 points) and needs to work well on mobile. Recharts currently lacks zoom/pan and mobile navigation features. ApexCharts solves this with minimal migration friction (similar declarative React API). Lightweight Charts solves it even better from a performance standpoint but requires more integration work. ECharts is powerful but over-engineered for this use case. Chart.js is fine but zoom is a plugin afterthought. Plotly is eliminated by bundle size alone for a mobile-first app.
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer>
+  <div class="container">
+    Chart data is synthetic for demonstration purposes. All libraries loaded via CDN.
+    Investment Portfolio Manager — Chart Alternatives Demo
+  </div>
+</footer>
+
+<!-- ============================================================
+     DATA GENERATION
+============================================================ -->
+<script>
+// Generate ~730 days of realistic portfolio data
+(function() {
+  'use strict';
+
+  const START = new Date('2024-01-01');
+  const END = new Date('2025-12-31');
+  const days = [];
+  let cur = new Date(START);
+  while (cur <= END) {
+    days.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  // Seeded pseudo-random for reproducibility
+  let seed = 42;
+  function rand() {
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    return (seed >>> 0) / 0xffffffff;
+  }
+  function randn() {
+    // Box-Muller
+    const u = rand(), v = rand();
+    return Math.sqrt(-2 * Math.log(u + 1e-10)) * Math.cos(2 * Math.PI * v);
+  }
+
+  // Simulate Total Value: starts ~10000, drifts up with volatility
+  const totalValue = [];
+  let tv = 10000;
+  for (let i = 0; i < days.length; i++) {
+    const dailyReturn = 0.00035 + randn() * 0.011; // ~9% annual drift, ~17% vol
+    // Add a mild crash in mid-2024 and recovery
+    let shock = 0;
+    if (i >= 120 && i <= 145) shock = -0.008; // correction
+    if (i >= 330 && i <= 360) shock = -0.006; // another dip
+    tv = tv * (1 + dailyReturn + shock);
+    // Floor at 8500
+    tv = Math.max(tv, 8500);
+    totalValue.push(Math.round(tv * 100) / 100);
+  }
+
+  // Total Cost: starts 9500, grows steadily (monthly investments of ~200)
+  const totalCost = [];
+  let tc = 9500;
+  for (let i = 0; i < days.length; i++) {
+    // Invest ~200 on the 1st of each month
+    if (days[i].getDate() === 1) tc += 200 + (rand() * 100 - 50);
+    totalCost.push(Math.round(tc * 100) / 100);
+  }
+
+  // Fund A: ~60% of total value
+  const fundA = totalValue.map((v, i) => Math.round(v * (0.58 + randn() * 0.015) * 100) / 100);
+  // Fund B: remainder
+  const fundB = totalValue.map((v, i) => Math.round((v - fundA[i]) * 100) / 100);
+
+  // Format dates as strings
+  const labels = days.map(d => d.toISOString().slice(0, 10));
+
+  // Expose globally
+  window.PORTFOLIO_DATA = {
+    labels,
+    days,
+    totalValue,
+    totalCost,
+    fundA,
+    fundB
+  };
+})();
+</script>
+
+<!-- ============================================================
+     CHART.JS
+============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script>
+(function() {
+  const d = window.PORTFOLIO_DATA;
+  // Downsample for Chart.js performance: every 2nd point
+  const step = 2;
+  const labels = d.labels.filter((_, i) => i % step === 0);
+  const tv = d.totalValue.filter((_, i) => i % step === 0);
+  const tc = d.totalCost.filter((_, i) => i % step === 0);
+  const fa = d.fundA.filter((_, i) => i % step === 0);
+  const fb = d.fundB.filter((_, i) => i % step === 0);
+
+  const canvas = document.getElementById('chartjs-canvas');
+  // Set canvas height via parent
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Total Value',
+          data: tv,
+          borderColor: '#4f6ef7',
+          backgroundColor: 'rgba(79,110,247,.08)',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: true,
+          tension: 0.2
+        },
+        {
+          label: 'Total Cost',
+          data: tc,
+          borderColor: '#718096',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 3],
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+          tension: 0.1
+        },
+        {
+          label: 'Fund A',
+          data: fa,
+          borderColor: '#38a169',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+          tension: 0.2
+        },
+        {
+          label: 'Fund B',
+          data: fb,
+          borderColor: '#dd6b20',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          fill: false,
+          tension: 0.2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+          }
+        },
+        zoom: {
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x'
+          },
+          pan: {
+            enabled: true,
+            mode: 'x'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            maxTicksLimit: 8,
+            color: '#718096',
+            font: { size: 11 },
+            maxRotation: 0
+          },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        y: {
+          ticks: {
+            color: '#718096',
+            font: { size: 11 },
+            callback: v => '$' + v.toLocaleString()
+          },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        }
+      }
+    }
+  });
+})();
+</script>
+
+<!-- ============================================================
+     APEXCHARTS
+============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.0/dist/apexcharts.min.js"></script>
+<script>
+(function() {
+  const d = window.PORTFOLIO_DATA;
+  // ApexCharts datetime series: array of [timestamp, value]
+  const toSeries = arr => d.days.map((day, i) => [day.getTime(), arr[i]]);
+
+  const mainOptions = {
+    chart: {
+      id: 'apex-main',
+      type: 'line',
+      height: window.innerWidth < 768 ? 260 : 320,
+      toolbar: { show: true, tools: { download: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
+      zoom: { enabled: true, type: 'x' },
+      animations: { enabled: false },
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+    },
+    series: [
+      { name: 'Total Value', data: toSeries(d.totalValue) },
+      { name: 'Total Cost', data: toSeries(d.totalCost) },
+      { name: 'Fund A', data: toSeries(d.fundA) },
+      { name: 'Fund B', data: toSeries(d.fundB) }
+    ],
+    colors: ['#4f6ef7', '#718096', '#38a169', '#dd6b20'],
+    stroke: {
+      curve: 'smooth',
+      width: [2.5, 2, 1.5, 1.5],
+      dashArray: [0, 5, 0, 0]
+    },
+    fill: {
+      type: ['gradient', 'solid', 'solid', 'solid'],
+      gradient: { shadeIntensity: 1, opacityFrom: 0.15, opacityTo: 0.02, stops: [0, 100] }
+    },
+    dataLabels: { enabled: false },
+    markers: { size: 0 },
+    xaxis: {
+      type: 'datetime',
+      labels: {
+        style: { colors: '#718096', fontSize: '11px' },
+        datetimeUTC: false
+      },
+      axisBorder: { show: false }
+    },
+    yaxis: {
+      labels: {
+        style: { colors: '#718096', fontSize: '11px' },
+        formatter: v => '$' + Math.round(v).toLocaleString()
+      }
+    },
+    tooltip: {
+      x: { format: 'dd MMM yyyy' },
+      y: { formatter: v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+      shared: true,
+      intersect: false
+    },
+    legend: { show: false },
+    grid: { borderColor: 'rgba(0,0,0,.06)', strokeDashArray: 3 },
+    theme: { mode: 'light' }
+  };
+
+  const brushOptions = {
+    chart: {
+      id: 'apex-brush',
+      height: 80,
+      type: 'area',
+      brush: { target: 'apex-main', enabled: true },
+      selection: {
+        enabled: true,
+        xaxis: {
+          min: new Date('2024-01-01').getTime(),
+          max: new Date('2024-12-31').getTime()
+        }
+      },
+      animations: { enabled: false },
+      toolbar: { show: false }
+    },
+    series: [{ name: 'Total Value', data: toSeries(d.totalValue) }],
+    colors: ['#4f6ef7'],
+    fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.1 } },
+    stroke: { width: 1 },
+    dataLabels: { enabled: false },
+    markers: { size: 0 },
+    xaxis: {
+      type: 'datetime',
+      tooltip: { enabled: false },
+      labels: { style: { fontSize: '10px', colors: '#a0aec0' }, datetimeUTC: false }
+    },
+    yaxis: { tickAmount: 2, labels: { show: false } },
+    legend: { show: false },
+    grid: { borderColor: 'rgba(0,0,0,.05)' }
+  };
+
+  const container = document.getElementById('apex-chart');
+  const mainChart = new ApexCharts(container, mainOptions);
+  mainChart.render();
+
+  // Add brush chart below
+  const brushWrapper = document.createElement('div');
+  brushWrapper.id = 'apex-brush';
+  brushWrapper.style.marginTop = '8px';
+  container.parentNode.insertBefore(brushWrapper, container.nextSibling.nextSibling);
+  const brushChart = new ApexCharts(brushWrapper, brushOptions);
+  brushChart.render();
+})();
+</script>
+
+<!-- ============================================================
+     ECHARTS
+============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<script>
+(function() {
+  const d = window.PORTFOLIO_DATA;
+  const container = document.getElementById('echarts-container');
+  const chart = echarts.init(container, null, { renderer: 'canvas' });
+
+  const option = {
+    animation: false,
+    backgroundColor: 'transparent',
+    grid: { left: 60, right: 20, top: 20, bottom: 80 },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross', animation: false },
+      formatter: function(params) {
+        let html = `<div style="font-size:12px;font-weight:600;margin-bottom:6px;">${params[0].axisValueLabel}</div>`;
+        params.forEach(p => {
+          html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color}"></span>
+            <span style="font-size:12px;">${p.seriesName}: <strong>$${p.value[1].toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></span>
+          </div>`;
+        });
+        return html;
+      }
+    },
+    toolbox: {
+      right: 20,
+      top: 0,
+      feature: {
+        dataZoom: { yAxisIndex: 'none', title: { zoom: 'Zoom', back: 'Reset' } },
+        restore: { title: 'Reset' },
+        saveAsImage: { title: 'Save' }
+      }
+    },
+    xAxis: {
+      type: 'time',
+      axisLabel: {
+        color: '#718096',
+        fontSize: 11,
+        formatter: value => {
+          const d = new Date(value);
+          return `${d.toLocaleString('en-US',{month:'short'})} '${String(d.getFullYear()).slice(2)}`;
+        }
+      },
+      splitLine: { lineStyle: { color: 'rgba(0,0,0,.05)' } },
+      axisLine: { lineStyle: { color: '#e2e6ed' } }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        color: '#718096',
+        fontSize: 11,
+        formatter: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
+      },
+      splitLine: { lineStyle: { color: 'rgba(0,0,0,.05)', type: 'dashed' } }
+    },
+    dataZoom: [
+      {
+        type: 'inside',
+        start: 0,
+        end: 100,
+        zoomOnMouseWheel: true,
+        moveOnMouseMove: true,
+        moveOnTouch: true
+      },
+      {
+        type: 'slider',
+        start: 0,
+        end: 100,
+        height: 24,
+        bottom: 10,
+        fillerColor: 'rgba(79,110,247,.15)',
+        borderColor: '#e2e6ed',
+        handleStyle: { color: '#4f6ef7' },
+        textStyle: { color: '#718096', fontSize: 10 }
+      }
+    ],
+    series: [
+      {
+        name: 'Total Value',
+        type: 'line',
+        data: d.days.map((day, i) => [day.getTime(), d.totalValue[i]]),
+        lineStyle: { color: '#4f6ef7', width: 2.5 },
+        itemStyle: { color: '#4f6ef7' },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1, [{offset:0, color:'rgba(79,110,247,.18)'},{offset:1,color:'rgba(79,110,247,.01)'}]) },
+        symbol: 'none',
+        smooth: 0.2
+      },
+      {
+        name: 'Total Cost',
+        type: 'line',
+        data: d.days.map((day, i) => [day.getTime(), d.totalCost[i]]),
+        lineStyle: { color: '#718096', width: 2, type: 'dashed' },
+        itemStyle: { color: '#718096' },
+        symbol: 'none',
+        smooth: 0.1
+      },
+      {
+        name: 'Fund A',
+        type: 'line',
+        data: d.days.map((day, i) => [day.getTime(), d.fundA[i]]),
+        lineStyle: { color: '#38a169', width: 1.5 },
+        itemStyle: { color: '#38a169' },
+        symbol: 'none',
+        smooth: 0.2
+      },
+      {
+        name: 'Fund B',
+        type: 'line',
+        data: d.days.map((day, i) => [day.getTime(), d.fundB[i]]),
+        lineStyle: { color: '#dd6b20', width: 1.5 },
+        itemStyle: { color: '#dd6b20' },
+        symbol: 'none',
+        smooth: 0.2
+      }
+    ]
+  };
+
+  chart.setOption(option);
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<!-- ============================================================
+     LIGHTWEIGHT CHARTS (TradingView)
+============================================================ -->
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+(function() {
+  const d = window.PORTFOLIO_DATA;
+  const container = document.getElementById('lwc-container');
+  const isMobile = window.innerWidth < 768;
+
+  const chart = LightweightCharts.createChart(container, {
+    width: container.clientWidth,
+    height: isMobile ? 300 : 380,
+    layout: {
+      background: { color: '#ffffff' },
+      textColor: '#718096',
+      fontSize: 11,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+    },
+    grid: {
+      vertLines: { color: 'rgba(0,0,0,.05)' },
+      horzLines: { color: 'rgba(0,0,0,.05)' }
+    },
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(0,0,0,.1)',
+      scaleMargins: { top: 0.08, bottom: 0.08 }
+    },
+    timeScale: {
+      borderColor: 'rgba(0,0,0,.1)',
+      timeVisible: true,
+      secondsVisible: false,
+      fixLeftEdge: true,
+      fixRightEdge: true
+    },
+    handleScroll: { mouseWheel: true, pressedMouseMove: true, touchMove: true },
+    handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: true }
+  });
+
+  // Format data for LWC (requires { time: 'YYYY-MM-DD', value: number })
+  const toSeries = arr => d.labels.map((label, i) => ({ time: label, value: arr[i] }));
+
+  // Add area for Total Value
+  const tvSeries = chart.addAreaSeries({
+    lineColor: '#4f6ef7',
+    topColor: 'rgba(79,110,247,.25)',
+    bottomColor: 'rgba(79,110,247,.02)',
+    lineWidth: 2,
+    title: 'Total Value'
+  });
+  tvSeries.setData(toSeries(d.totalValue));
+
+  // Total Cost as line
+  const tcSeries = chart.addLineSeries({
+    color: '#718096',
+    lineWidth: 2,
+    lineStyle: LightweightCharts.LineStyle.Dashed,
+    title: 'Total Cost'
+  });
+  tcSeries.setData(toSeries(d.totalCost));
+
+  // Fund A
+  const faSeries = chart.addLineSeries({
+    color: '#38a169',
+    lineWidth: 1.5,
+    title: 'Fund A'
+  });
+  faSeries.setData(toSeries(d.fundA));
+
+  // Fund B
+  const fbSeries = chart.addLineSeries({
+    color: '#dd6b20',
+    lineWidth: 1.5,
+    title: 'Fund B'
+  });
+  fbSeries.setData(toSeries(d.fundB));
+
+  chart.timeScale().fitContent();
+
+  // Resize on window resize
+  const resizeObserver = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      chart.applyOptions({ width: entry.contentRect.width });
+    }
+  });
+  resizeObserver.observe(container);
+})();
+</script>
+
+<!-- ============================================================
+     PLOTLY.JS
+============================================================ -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script>
+(function() {
+  const d = window.PORTFOLIO_DATA;
+  const isMobile = window.innerWidth < 768;
+
+  const trace = (name, arr, color, dash, fill) => ({
+    x: d.labels,
+    y: arr,
+    name,
+    type: 'scatter',
+    mode: 'lines',
+    line: {
+      color,
+      width: name === 'Total Value' ? 2.5 : (name === 'Total Cost' ? 2 : 1.5),
+      dash: dash || 'solid'
+    },
+    fill: fill || 'none',
+    fillcolor: fill ? 'rgba(79,110,247,.08)' : undefined,
+    hovertemplate: `<b>${name}</b><br>%{x}<br>$%{y:,.2f}<extra></extra>`
+  });
+
+  const data = [
+    trace('Total Value', d.totalValue, '#4f6ef7', 'solid', 'tozeroy'),
+    trace('Total Cost', d.totalCost, '#718096', 'dash'),
+    trace('Fund A', d.fundA, '#38a169'),
+    trace('Fund B', d.fundB, '#dd6b20')
+  ];
+
+  const layout = {
+    height: isMobile ? 380 : 460,
+    margin: { l: 55, r: 20, t: 20, b: 20 },
+    paper_bgcolor: '#ffffff',
+    plot_bgcolor: '#ffffff',
+    font: { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', size: 11, color: '#718096' },
+    showlegend: false,
+    xaxis: {
+      type: 'date',
+      rangeslider: { visible: true, thickness: 0.08, bgcolor: '#f1f3f7', bordercolor: '#e2e6ed' },
+      rangeselector: {
+        buttons: [
+          { count: 3, label: '3M', step: 'month', stepmode: 'backward' },
+          { count: 6, label: '6M', step: 'month', stepmode: 'backward' },
+          { count: 1, label: '1Y', step: 'year', stepmode: 'backward' },
+          { step: 'all', label: 'All' }
+        ],
+        bgcolor: '#f1f3f7',
+        bordercolor: '#e2e6ed',
+        activecolor: '#4f6ef7',
+        font: { size: 11, color: '#4a5568' },
+        x: 0,
+        y: 1.02
+      },
+      showgrid: true,
+      gridcolor: 'rgba(0,0,0,.05)',
+      linecolor: 'rgba(0,0,0,.1)',
+      tickfont: { size: 11, color: '#718096' }
+    },
+    yaxis: {
+      showgrid: true,
+      gridcolor: 'rgba(0,0,0,.05)',
+      linecolor: 'rgba(0,0,0,.1)',
+      tickprefix: '$',
+      tickformat: ',.0f',
+      tickfont: { size: 11, color: '#718096' }
+    },
+    hovermode: 'x unified',
+    hoverlabel: {
+      bgcolor: '#1a202c',
+      bordercolor: '#1a202c',
+      font: { color: '#fff', size: 12 }
+    }
+  };
+
+  const config = {
+    responsive: true,
+    displayModeBar: true,
+    modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian'],
+    displaylogo: false
+  };
+
+  Plotly.newPlot('plotly-container', data, layout, config);
+})();
+</script>
+
+</body>
+</html>
