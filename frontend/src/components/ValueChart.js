@@ -221,6 +221,7 @@ const ValueChart = ({
           return parseInt(l.strokeDasharray.split(' ')[0], 10) || 0;
         }),
       },
+      spanNulls: true,
       xaxis: {
         type: 'datetime',
         labels: {
@@ -300,7 +301,7 @@ const ValueChart = ({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [options, series]); // Intentionally empty: chart is mounted once; series/options use update effects below
+  }, []); // Intentionally empty: chart is mounted once; series/options are updated via the effects below
 
   // Update series when data or lines change (after initial mount)
   const isFirstSeriesUpdate = useRef(true);

@@ -672,13 +672,13 @@
     padding: 6px;
   }
 
-  .fullscreen-zoom-controls .zoom-button {
+  .fullscreen-zoom-panel .zoom-button {
     min-width: 40px;
     padding: 5px 8px;
     font-size: 12px;
   }
 
-  .fullscreen-metric-toggles .transaction-button {
+  .fullscreen-metric-panel .transaction-button {
     min-width: 90px;
     font-size: 13px;
     padding: 6px 10px;
