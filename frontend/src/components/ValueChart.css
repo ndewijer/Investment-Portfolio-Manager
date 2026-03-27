@@ -81,8 +81,8 @@
   box-shadow: var(--shadow-sm);
 }
 
-.chart-container .recharts-responsive-container {
-  margin: var(--space-5) 0;
+.chart-container .apexcharts-canvas {
+  margin: 0 auto;
 }
 
 /* Zoom Controls */
@@ -280,6 +280,32 @@
   .chart-container:active {
     background-color: var(--color-primary-alpha);
   }
+}
+
+/* CSS-based fullscreen: expands chart-wrapper to fill screen without moving DOM */
+.chart-wrapper.chart-fullscreen-active {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  background-color: var(--surface-raised);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.chart-container-fullscreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 8px 8px 8px 8px;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 /* Mobile Full-Screen Chart Feature */
@@ -523,27 +549,19 @@
   box-sizing: border-box; /* Include padding in width/height calculation */
 }
 
-.chart-fullscreen-container .recharts-responsive-container {
+.chart-fullscreen-container .apexcharts-canvas {
   width: 100%;
   height: 100%;
   margin: 0;
 }
 
 /* Smaller legend text in fullscreen */
-.chart-fullscreen-container .recharts-legend-wrapper {
-  font-size: 10px;
-}
-
-.chart-fullscreen-container .recharts-legend-item-text {
+.chart-fullscreen-container .apexcharts-legend-text {
   font-size: 10px;
 }
 
 /* Ensure tooltip appears above toggle buttons in fullscreen */
-.chart-fullscreen-container .recharts-tooltip-wrapper {
-  z-index: 10004;
-}
-
-.chart-fullscreen-container .recharts-default-tooltip {
+.chart-fullscreen-container .apexcharts-tooltip {
   z-index: 10004;
 }
 
@@ -586,11 +604,7 @@
   }
 
   /* Reduce legend font size in normal mobile view */
-  .mobile-chart-wrapper .recharts-legend-wrapper {
-    font-size: 10px;
-  }
-
-  .mobile-chart-wrapper .recharts-legend-item-text {
+  .mobile-chart-wrapper .apexcharts-legend-text {
     font-size: 10px;
   }
 
@@ -658,13 +672,13 @@
     padding: 6px;
   }
 
-  .fullscreen-zoom-controls .zoom-button {
+  .fullscreen-zoom-panel .zoom-button {
     min-width: 40px;
     padding: 5px 8px;
     font-size: 12px;
   }
 
-  .fullscreen-metric-toggles .transaction-button {
+  .fullscreen-metric-panel .transaction-button {
     min-width: 90px;
     font-size: 13px;
     padding: 6px 10px;

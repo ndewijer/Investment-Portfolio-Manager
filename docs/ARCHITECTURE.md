@@ -1,10 +1,11 @@
 # Architecture Overview
 
 ## Frontend
-- React 18 with Nginx in production
+- React 19 with Nginx in production
 - Webpack dev server for development
 - Context-based state management
-- Responsive design with CSS modules
+- Responsive design with CSS variables and component-scoped CSS
+- ApexCharts (vanilla) for interactive time-series charts
 
 ## Backend
 - Flask/Gunicorn WSGI server
@@ -84,6 +85,32 @@ Investment-Portfolio-Manager/
 - IBKR Flex Integration (v1.3.0+)
 - Version Check & Feature Flags (v1.3.0+)
 - Portfolio History Materialized View (v1.4.0+)
+- Interactive Charts with ApexCharts (v2.0.0+)
+
+## Charting (v2.0.0+)
+
+### Overview
+Portfolio performance is visualised using **ApexCharts v5** (vanilla JS, not the React wrapper) via the `ValueChart` component. Using the vanilla library directly avoids lifecycle conflicts with React 19 Strict Mode's double-effect invocation.
+
+### ValueChart Component
+- **File**: `frontend/src/components/ValueChart.js`
+- Renders a multi-line time-series chart for portfolio metrics (value, cost, realized/unrealized gains)
+- Built with vanilla `ApexCharts` managed via `useEffect` with a single stable DOM container
+- Dark/light theme automatically passed from `ThemeContext` via `theme.mode`
+- Mobile fullscreen: CSS-based (`position: fixed`) expansion that keeps the chart instance alive
+
+### Chart Data Flow
+```
+API (portfolio/history)
+  ↓ useChartData hook (progressive loading)
+  ↓ formatChartData() → [{date, totalValue, totalCost, ...}]
+  ↓ getChartLines()   → [{dataKey, name, color, strokeWidth, ...}]
+  ↓ ValueChart        → series [{name, data: [[timestamp, value], ...]}]
+  ↓ ApexCharts instance (vanilla)
+```
+
+### Zoom & Progressive Loading
+`ValueChart` receives an `onZoomChange` callback from `useChartData`. When the user zooms, ApexCharts fires a `zoomed` event with timestamp bounds; the component converts these to array indices and calls `onZoomChange({ isZoomed, xDomain })`. `useChartData` then fetches additional historical data if the view approaches the edges of the loaded range.
 
 ## Transaction and Gain/Loss Tracking
 
@@ -442,5 +469,5 @@ if (!versionInfo.features.ibkr_integration) {
 
 ---
 
-**Last Updated**: 2026-01-13 (Version 1.4.1)
+**Last Updated**: 2026-03-27 (Version 2.0.0)
 **Maintained By**: @ndewijer
