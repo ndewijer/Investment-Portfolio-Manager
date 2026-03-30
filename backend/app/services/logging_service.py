@@ -279,7 +279,7 @@ class LoggingService:
         """
         from datetime import datetime
 
-        from sqlalchemy import and_, or_, select
+        from sqlalchemy import and_, func, or_, select
 
         # Build base query
         stmt = select(Log)
@@ -347,6 +347,12 @@ class LoggingService:
 
         # Skip entries if requested (for page jumping)
         if skip > 0:
+            # Count total matching rows to avoid skipping past the end
+            count_stmt = select(func.count()).select_from(stmt.subquery())
+            total = db.session.execute(count_stmt).scalar()
+            if skip >= total:
+                # Skip would overshoot - return the last page instead
+                skip = max(0, total - per_page)
             stmt = stmt.offset(skip)
 
         # Fetch per_page + 1 to determine if there are more results

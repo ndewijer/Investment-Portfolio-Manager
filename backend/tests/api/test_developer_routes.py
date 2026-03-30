@@ -1039,6 +1039,140 @@ class TestLogging:
         # All our logs should be ERROR level
         assert all(log.get("level") == "ERROR" for log in our_logs)
 
+    def test_skip_returns_correct_results(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs with skip parameter returns correct page of results.
+
+        WHY: Pagination with skip allows the frontend to request specific pages of log data.
+        Verifying that skip=3&perPage=3 returns exactly 3 results from a 10-entry dataset
+        confirms the backend correctly offsets into the result set for page navigation.
+        """
+        import uuid
+
+        unique_source = f"test_skip_{uuid.uuid4().hex[:8]}"
+        logs = [
+            Log(
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Skip test log {i}",
+                source=unique_source,
+            )
+            for i in range(10)
+        ]
+        db_session.add_all(logs)
+        db_session.commit()
+
+        response = client.get(
+            f"/api/developer/logs?skip=3&perPage=3&sortDir=asc&source={unique_source}"
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, dict)
+        assert "logs" in data
+        assert len(data["logs"]) == 3
+
+    def test_skip_overshoot_returns_last_page(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs with skip exceeding total count returns last page instead of empty.
+
+        WHY: When skip exceeds the total number of logs, the backend should apply overshoot
+        protection and return the last available page of results rather than an empty list.
+        This prevents the frontend from showing a confusing blank state when navigating
+        beyond the end of log data.
+        """
+        import uuid
+
+        unique_source = f"test_overshoot_{uuid.uuid4().hex[:8]}"
+        logs = [
+            Log(
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Overshoot test log {i}",
+                source=unique_source,
+            )
+            for i in range(5)
+        ]
+        db_session.add_all(logs)
+        db_session.commit()
+
+        response = client.get(f"/api/developer/logs?skip=100&perPage=3&source={unique_source}")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, dict)
+        assert "logs" in data
+        assert len(data["logs"]) > 0
+        assert data["hasMore"] is False
+
+    def test_skip_overshoot_with_fewer_than_perpage(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs overshoot protection when total results are fewer than perPage.
+
+        WHY: When only 2 logs exist and skip overshoots, overshoot protection should return
+        all 2 logs (the full last page) with hasMore=False. This edge case ensures the
+        protection works correctly when total data fits within a single page.
+        """
+        import uuid
+
+        unique_source = f"test_overshoot_small_{uuid.uuid4().hex[:8]}"
+        logs = [
+            Log(
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Small overshoot test log {i}",
+                source=unique_source,
+            )
+            for i in range(2)
+        ]
+        db_session.add_all(logs)
+        db_session.commit()
+
+        response = client.get(f"/api/developer/logs?skip=100&perPage=50&source={unique_source}")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, dict)
+        assert "logs" in data
+        assert len(data["logs"]) == 2
+        assert data["hasMore"] is False
+
+    def test_skip_zero_behaves_normally(self, app_context, client, db_session):
+        """
+        Test GET /developer/logs with skip=0 returns same results as omitting skip.
+
+        WHY: skip=0 is the default behavior and should be equivalent to not providing the
+        skip parameter at all. This ensures the frontend's initial page load (skip=0) and
+        a request without skip produce identical results, preventing inconsistencies in
+        the first page of log data.
+        """
+        import uuid
+
+        unique_source = f"test_skip_zero_{uuid.uuid4().hex[:8]}"
+        logs = [
+            Log(
+                level=LogLevel.INFO,
+                category=LogCategory.SYSTEM,
+                message=f"Skip zero test log {i}",
+                source=unique_source,
+            )
+            for i in range(3)
+        ]
+        db_session.add_all(logs)
+        db_session.commit()
+
+        response_with_skip = client.get(f"/api/developer/logs?skip=0&source={unique_source}")
+        response_without_skip = client.get(f"/api/developer/logs?source={unique_source}")
+
+        assert response_with_skip.status_code == 200
+        assert response_without_skip.status_code == 200
+
+        data_with_skip = response_with_skip.get_json()
+        data_without_skip = response_without_skip.get_json()
+
+        assert len(data_with_skip["logs"]) == len(data_without_skip["logs"])
+        assert data_with_skip["hasMore"] == data_without_skip["hasMore"]
+
     def test_clear_logs(self, app_context, client, db_session):
         """
         Test POST /developer/logs/clear clears logs.
