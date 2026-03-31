@@ -11,6 +11,7 @@ import logging
 import os
 import traceback
 import uuid
+from datetime import UTC, datetime
 from functools import wraps
 
 from flask import g, request
@@ -120,9 +121,10 @@ class LoggingService:
             status = http_status or (500 if level in error_levels else 200)
             return response, status
 
-        # Create log entry
+        # Create log entry with explicit microsecond-precision timestamp
         log_entry = Log(
             id=str(uuid.uuid4()),
+            timestamp=datetime.now(UTC),
             level=level,
             category=category,
             message=message,
@@ -277,8 +279,6 @@ class LoggingService:
         Raises:
             Exception: If unable to retrieve logs
         """
-        from datetime import datetime
-
         from sqlalchemy import and_, func, or_, select
 
         # Build base query
