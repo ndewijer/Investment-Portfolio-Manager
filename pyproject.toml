@@ -17,7 +17,7 @@ dependencies = [
     "SQLAlchemy==2.0.44",
     "Werkzeug==3.1.6",
     "yfinance==0.2.66",
-    "cryptography==46.0.5",
+    "cryptography==46.0.6",
     "requests==2.33.0",
     "urllib3==2.6.3",
     "protobuf==6.33.5",
