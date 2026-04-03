@@ -1,24 +1,28 @@
 import { defineConfig } from 'vitest/config';
+import { transformWithOxc } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
+// Vite 8 uses Rolldown/Oxc which doesn't parse JSX in .js files by default.
+// This plugin transforms .js files containing JSX using Oxc.
+const transformJsxInJs = () => ({
+  name: 'transform-jsx-in-js',
+  enforce: 'pre',
+  async transform(code, id) {
+    if (!id.match(/.*\.js$/)) {
+      return null;
+    }
+    return await transformWithOxc(code, id, {
+      lang: 'jsx',
+    });
+  },
+});
+
 export default defineConfig({
-  plugins: [react()],
-  esbuild: {
-    loader: 'jsx',
-    include: /src\/.*\.[jt]sx?$/,
-    exclude: [],
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      loader: {
-        '.js': 'jsx',
-      },
-    },
-  },
+  plugins: [react(), transformJsxInJs()],
   test: {
     environment: 'jsdom',
     globals: true,
