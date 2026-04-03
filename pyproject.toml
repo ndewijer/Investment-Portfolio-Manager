@@ -39,6 +39,11 @@ dev = [
     "ruff>=0.8.0,<1.0.0",
 ]
 
+[tool.uv]
+# Only install package versions published at least 7 days ago.
+# Mitigates supply-chain attacks where compromised versions are pushed to existing packages.
+exclude-newer = "7 days"
+
 [tool.ruff]
 
 # Same as Black
