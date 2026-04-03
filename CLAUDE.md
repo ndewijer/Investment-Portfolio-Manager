@@ -2,7 +2,7 @@
 
 ## Development Tools
 
-**This project uses UV for Python package management and task running.**
+**This project uses UV for Python package management and pnpm for Node.js package management.**
 
 ### Running Python Commands
 - Use `uv run python` instead of `python` or `python3`
@@ -12,6 +12,17 @@
   uv run python script.py
   uv run pytest tests/
   uv run flask materialize-history
+  ```
+
+### Frontend Development
+- Use `pnpm` instead of `npm` for all frontend commands
+- Examples:
+  ```bash
+  cd frontend
+  pnpm install
+  pnpm run build
+  pnpm run test:ci
+  pnpm run start
   ```
 
 ### Backend Development

@@ -1,21 +1,24 @@
 # Build stage
 FROM node:24-alpine AS build
 
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files and lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the application
 COPY . .
 
 # Build the application
 # No build args needed - API URL is determined at runtime via nginx proxy
-RUN npm run build
+RUN pnpm run build
 
 # Production stage
 FROM nginx:alpine

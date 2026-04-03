@@ -147,15 +147,15 @@ if [ "${RUN_E2E_TESTS}" = "true" ]; then
     echo -e "${BLUE}🎭 Running Playwright E2E tests against Docker stack...${NC}"
 
     # Check if Playwright is available
-    if ! command -v npx &> /dev/null; then
-        echo -e "${YELLOW}⚠️  npm/npx not available - skipping E2E tests${NC}"
+    if ! command -v pnpm &> /dev/null; then
+        echo -e "${YELLOW}⚠️  pnpm not available - skipping E2E tests${NC}"
     else
         # Install Playwright browsers if needed (will skip if already installed)
         echo -e "${BLUE}📦 Ensuring Playwright browsers are installed...${NC}"
-        cd frontend && npx playwright install chromium --with-deps > /dev/null 2>&1
+        cd frontend && pnpm exec playwright install chromium --with-deps > /dev/null 2>&1
 
         # Run E2E tests against Docker stack
-        if PLAYWRIGHT_BASE_URL="${TEST_URL}" npm run test:e2e; then
+        if PLAYWRIGHT_BASE_URL="${TEST_URL}" pnpm run test:e2e; then
             echo -e "${GREEN}✅ E2E tests passed${NC}"
         else
             echo -e "${RED}❌ E2E tests failed${NC}"
