@@ -35,8 +35,8 @@ flask run
 ### Frontend Setup
 ```bash
 cd frontend
-npm install
-npm start
+pnpm install
+pnpm start
 ```
 
 ### Playwright E2E Tests
@@ -63,14 +63,14 @@ uv run python run.py
 
 # Terminal 2: Start frontend
 cd frontend
-npm start
+pnpm start
 
 # Terminal 3: Install Playwright browsers (first time only)
 cd frontend
 npx playwright install chromium
 
 # Terminal 3: Run E2E tests
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 **Note**: E2E tests are **NOT** run in pre-commit hooks by default (too slow). They run in CI automatically.

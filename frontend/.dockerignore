@@ -5,7 +5,8 @@
 !src/
 !public/
 !package.json
-!package-lock.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
 !nginx.conf
 !webpack.config.js
 !.babelrc

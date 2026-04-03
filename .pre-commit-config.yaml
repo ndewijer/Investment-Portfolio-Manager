@@ -64,7 +64,7 @@ repos:
     hooks:
       - id: vitest-frontend
         name: vitest-frontend
-        entry: bash -c 'cd frontend && npm run test:ci'
+        entry: bash -c 'cd frontend && pnpm run test:ci'
         language: system
         types: [javascript]
         files: ^frontend/src/.*\.(js|jsx)$

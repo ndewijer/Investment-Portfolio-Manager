@@ -33,7 +33,7 @@ pre-commit install
 uv sync --frozen
 
 # Frontend
-cd frontend && npm install
+cd frontend && pnpm install
 ```
 
 ## Code Style
@@ -47,7 +47,7 @@ cd frontend && npm install
 uv run pytest backend/tests/ --cov=backend/app
 
 # Frontend
-cd frontend && npm test
+cd frontend && pnpm test
 ```
 
 ## Pull Request Process
@@ -63,8 +63,8 @@ cd frontend && npm test
 
    # Frontend
    cd frontend
-   npm run check
-   npm test
+   pnpm run check
+   pnpm test
    ```
 5. Commit your changes (pre-commit hooks will run automatically)
 6. Push to your fork

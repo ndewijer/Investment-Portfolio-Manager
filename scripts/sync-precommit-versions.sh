@@ -11,7 +11,7 @@ echo "Checking frontend package versions..."
 
 # Extract Biome version from package.json
 cd "$FRONTEND_DIR"
-BIOME_VERSION=$(npm list @biomejs/biome --depth=0 2>/dev/null | grep @biomejs/biome@ | sed 's/.*@biomejs\/biome@//' | sed 's/ .*//' || echo "")
+BIOME_VERSION=$(pnpm list @biomejs/biome --depth=0 2>/dev/null | grep @biomejs/biome@ | sed 's/.*@biomejs\/biome@//' | sed 's/ .*//' || echo "")
 cd ..
 
 echo ""

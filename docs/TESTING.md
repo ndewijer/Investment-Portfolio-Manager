@@ -676,19 +676,19 @@ These thresholds are enforced in pre-commit hooks and CI/CD pipelines.
 cd frontend
 
 # Run all unit tests with coverage
-npm test
+pnpm test
 
 # Run tests in watch mode (interactive)
-npm run test:watch
+pnpm run test:watch
 
 # Run with coverage report
-npm run test:coverage
+pnpm run test:coverage
 
 # Run tests in CI mode (non-interactive)
-npm run test:ci
+pnpm run test:ci
 
 # View HTML coverage report
-npm run test:coverage && open coverage/index.html
+pnpm run test:coverage && open coverage/index.html
 ```
 
 **E2E Tests (Playwright):**
@@ -696,16 +696,16 @@ npm run test:coverage && open coverage/index.html
 cd frontend
 
 # Run all E2E tests (headless)
-npm run test:e2e
+pnpm run test:e2e
 
 # Run with interactive UI
-npm run test:e2e:ui
+pnpm run test:e2e:ui
 
 # Run in headed mode (see browser)
-npm run test:e2e:headed
+pnpm run test:e2e:headed
 
 # Debug mode (step through tests)
-npm run test:e2e:debug
+pnpm run test:e2e:debug
 ```
 
 ### Test Structure
@@ -1009,13 +1009,13 @@ Frontend tests run automatically in GitHub Actions (`.github/workflows/frontend-
 
 ```yaml
 - name: Install dependencies
-  run: npm ci
+  run: pnpm install --frozen-lockfile
 
 - name: Run tests with coverage
-  run: npm run test:ci
+  run: pnpm run test:ci
 
 - name: Run linting and formatting
-  run: npm run check
+  run: pnpm run check
 ```
 
 **CI Requirements for PR Merge:**
