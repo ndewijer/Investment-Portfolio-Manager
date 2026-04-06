@@ -298,7 +298,7 @@
 
 .chart-container-fullscreen {
   position: absolute;
-  top: 0;
+  top: 60px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -441,9 +441,9 @@
 
 /* Toggle buttons for showing/hiding controls */
 .fullscreen-toggle-buttons {
-  position: absolute;
+  position: fixed;
   top: 8px;
-  left: 64px;
+  left: 8px;
   z-index: 10003;
   display: flex;
   gap: var(--space-2);
@@ -478,6 +478,28 @@
 
 .control-toggle-button:active {
   transform: scale(0.95);
+}
+
+/* Fullscreen control panels - positioned below the toggle buttons */
+.fullscreen-metric-panel,
+.fullscreen-zoom-panel {
+  position: fixed;
+  top: 60px;
+  left: 8px;
+  right: 8px;
+  z-index: 10002;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Control panels - horizontal scrollable single row */
@@ -739,6 +761,12 @@
 }
 
 [data-theme="dark"] .chart-fullscreen-container .chart-controls {
+  background-color: rgba(30, 30, 30, 0.95);
+  scrollbar-color: var(--color-primary) var(--color-neutral-100);
+}
+
+[data-theme="dark"] .fullscreen-metric-panel,
+[data-theme="dark"] .fullscreen-zoom-panel {
   background-color: rgba(30, 30, 30, 0.95);
   scrollbar-color: var(--color-primary) var(--color-neutral-100);
 }
