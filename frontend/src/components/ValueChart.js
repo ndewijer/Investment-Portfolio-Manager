@@ -348,7 +348,7 @@ const ValueChart = ({
   useEffect(() => {
     const instance = chartInstanceRef.current;
     if (!instance) return;
-    const chartHeight = isFullScreen ? window.innerHeight - 100 : height;
+    const chartHeight = isFullScreen ? window.innerHeight - 160 : height;
     instance.updateOptions({ chart: { height: chartHeight } }, false, false);
   }, [isFullScreen, height]);
 
