@@ -7,25 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-04-13
 
-### Changed
-- **Complete backend rewrite from Python/Flask to Go** — The backend has been rewritten from the ground up in Go, replacing the Python/Flask/SQLAlchemy/Gunicorn stack with Go/Chi/pure-Go-SQLite. All 70+ API endpoints are maintained with the same contracts.
-- **Database migrations** — Switched from Alembic (Python) to Goose (Go). Migrations run automatically on startup.
-- **Scheduled tasks** — Replaced APScheduler with robfig/cron. Same schedules: daily fund price updates (weekdays 00:55 UTC), IBKR imports (Tue-Sat 05:30-07:30 UTC).
-- **Testing** — Replaced pytest with Go's testing package. Real SQLite databases per test (no mocks). 80% coverage threshold enforced in CI.
-- **Code quality** — Replaced Ruff with golangci-lint. Added govulncheck security scanning.
-- **CI/CD** — Backend CI now runs Go test/lint/coverage/security-scan/build. Added binary artifact upload.
-- **Docker** — Backend image reduced from Python 3.13-slim (~150MB) to Alpine + Go binary (~30MB).
-- **No seed data** — Fresh installations start with an empty database. The `flask seed-db` command has been removed.
+### Frontend: "Financial Precision" Design System ([#175](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/175), [#177](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/177))
+- **Complete frontend redesign** — New "Financial Precision" design system with Archivo/Inter/JetBrains Mono typography, refined color palette via CSS custom properties, glass-morphism effects
+- **Dark mode** — Always available (feature flag removed), auto-detects system preference, inverted neutral color scale so CSS tokens auto-adapt (removed ~440 lines of redundant dark overrides)
+- **All pages modernized** — Overview, Portfolios, Portfolio Detail, Funds, Fund Detail, Config, IBKR Inbox, Log Viewer
+- **Accessibility** — `aria-modal`/`aria-labelledby` on modals, `type="button"` on all buttons, keyboard handlers on interactive elements
+- **Tables** — Compact financial columns (shrink-to-fit), proper column spacing, consistent header styling
+- **Mobile** — Permanent card accent borders, responsive button grids, proper dark mode text contrast
 
-### Added
-- **Security scanning** — govulncheck runs in CI to detect known vulnerabilities in Go dependencies.
-- **Golden schema validation** — CI and pre-commit check that migration changes are accompanied by golden schema updates.
-- **Configuration documentation** — New `docs/CONFIGURATION.md` with all environment variables and their resolution order.
+### Frontend: ApexCharts Migration ([#183](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/183))
+- **Replaced Recharts v3.7.0 with ApexCharts v5** — Built-in zoom/pan/pinch, no custom touch code needed
+- **ValueChart.js reduced from 1,455 to ~320 lines** by removing all manual zoom/pan/touch/drag logic
+- **React 19 Strict Mode fix** — Uses vanilla ApexCharts with manual lifecycle instead of `react-apexcharts`
+- **Dark mode** — Reads `useTheme()` and passes `theme.mode` to ApexCharts for readable axis labels, legend, and tooltip
+- **Mobile fullscreen** — CSS-based expansion preserving zoom state when entering/exiting fullscreen
+
+### Frontend: LogViewer Improvements ([#176](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/176), [#180](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/180))
+- **Log filter options API** — `GET /api/developer/logs/filter-options` returns distinct values for filter picklists
+- **Mobile filter panel** — Toggleable panel with Level, Category, Source, Message multiselect dropdowns
+- **Exclude filters** — Category and Message support "Exclude selected" mode
+- **Server-side page skip** — `skip` parameter (SQL OFFSET) for jumping ahead in logs
+- **Sticky pagination** — Bar sticks to bottom of screen on mobile
+
+### Backend: Complete Rewrite to Go ([#201](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/201))
+- **Python/Flask replaced with Go** — Go/Chi router, pure Go SQLite (modernc.org/sqlite), Goose migrations. All 70+ API endpoints maintained with the same contracts.
+- **Database migrations** — Switched from Alembic to Goose. Migrations run automatically on startup.
+- **Scheduled tasks** — Replaced APScheduler with robfig/cron. Same schedules: daily fund price updates (weekdays 00:55 UTC), IBKR imports (Tue-Sat 05:30-07:30 UTC).
+- **Testing** — Real SQLite databases per test (no mocks). 80% coverage threshold. Race detector enabled.
+- **Code quality** — golangci-lint replaces Ruff. govulncheck security scanning in CI.
+- **Docker** — Backend image reduced from Python 3.13-slim (~150MB) to Alpine + Go binary (~30MB).
+- **CI/CD** — Go test/lint/coverage/security-scan/build pipeline with binary artifact upload.
+
+### Backend: Go-specific Features
+- **Auto-allocate IBKR imports** ([Go #80](https://github.com/ndewijer/Investment-Portfolio-Manager-Backend/pull/80)) — IBKR transactions with default allocation configs are automatically allocated on import
+- **Write-behind logging queue** ([Go #72](https://github.com/ndewijer/Investment-Portfolio-Manager-Backend/pull/72)) — Async log writes to reduce request latency
+- **Yahoo retry logic** ([Go #73](https://github.com/ndewijer/Investment-Portfolio-Manager-Backend/pull/73)) — Retry with backoff for Yahoo Finance API calls
+- **DSN with PRAGMA parameters** ([Go #76](https://github.com/ndewijer/Investment-Portfolio-Manager-Backend/pull/76)) — SQLite connection string includes all PRAGMA settings
+- **Golden schema validation** — CI and pre-commit check that migration changes are accompanied by golden schema updates
+
+### Fixed
+- **Mobile fullscreen chart overlap and button interaction** ([#198](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/198))
+- **Realized gain/loss percentage** — Use `totalOriginalCost` for correct percentage calculation ([#182](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/182))
+- **Microsecond-precision timestamps** for log entries ([#185](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/185))
+- **Log pagination skip overshoot** ([#184](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/184))
+- **Duplicate fund price records** from Yahoo Finance duplicate dates ([Go #65](https://github.com/ndewijer/Investment-Portfolio-Manager-Backend/pull/65))
+- **7 dependabot security vulnerabilities** resolved ([#199](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/199))
+
+### Changed
+- **Frontend package manager** — Migrated from npm to pnpm ([#197](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/197), [#200](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/200))
+- **Fresh installations start with an empty database** — The `flask seed-db` command has been removed
+- **Configuration documentation** — New `docs/CONFIGURATION.md` with all environment variables and their resolution order
+
+### Dependency Updates
+- lodash 4.17.23 → 4.18.1, webpack-cli 6.0.1 → 7.0.2, jsdom 28.1.0 → 29.0.1
+- @vitejs/plugin-react 5.1.4 → 6.0.1, docker/setup-buildx-action 3 → 4
+- Various npm and Go module security patches
 
 ### Removed
 - Python backend (`backend/app/`, `backend/tests/`, `backend/migrations/`)
 - Python tooling (`pyproject.toml`, `uv.lock`, Ruff, pytest)
-- `flask seed-db` sample data seeding command
+- Recharts charting library (replaced by ApexCharts)
 - `docs/DISABLED_ENDPOINTS.md` (Python-specific)
 
 ### Migration
