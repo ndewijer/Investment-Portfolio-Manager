@@ -39,8 +39,8 @@ uv run flask run
 
 # Frontend (new terminal)
 cd frontend
-npm install
-npm start
+pnpm install
+pnpm start
 ```
 
 ## Documentation

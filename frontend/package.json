@@ -2,6 +2,7 @@
   "name": "investment-portfolio-manager",
   "version": "1.7.0",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "dependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.2",
@@ -27,6 +28,7 @@
     "webpack-cli": "^7.0.2"
   },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
     "analyze": "webpack-bundle-analyzer dist/main.js.LICENSE.txt --mode static",
