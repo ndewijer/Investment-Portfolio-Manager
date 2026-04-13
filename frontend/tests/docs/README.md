@@ -25,17 +25,17 @@ frontend/tests/docs/
 cd frontend
 
 # Run all unit tests with coverage
-npm test
+pnpm test
 
 # Run tests in watch mode
-npm run test:watch
+pnpm run test:watch
 
 # Generate HTML coverage report
-npm run test:coverage
+pnpm run test:coverage
 open coverage/index.html
 
 # Run for CI/CD
-npm run test:ci
+pnpm run test:ci
 ```
 
 **E2E Tests (Playwright):**
@@ -43,16 +43,16 @@ npm run test:ci
 cd frontend
 
 # Run all E2E tests (headless)
-npm run test:e2e
+pnpm run test:e2e
 
 # Run with interactive UI
-npm run test:e2e:ui
+pnpm run test:e2e:ui
 
 # Run in headed mode (see browser)
-npm run test:e2e:headed
+pnpm run test:e2e:headed
 
 # Debug mode (step through tests)
-npm run test:e2e:debug
+pnpm run test:e2e:debug
 ```
 
 ### Coverage Status
@@ -322,7 +322,7 @@ Tests run automatically before commits (if configured in `.pre-commit-config.yam
   hooks:
     - id: jest-tests
       name: Frontend Unit Tests
-      entry: bash -c 'cd frontend && npm test -- --testPathIgnorePatterns=e2e'
+      entry: bash -c 'cd frontend && pnpm test -- --testPathIgnorePatterns=e2e'
       language: system
       pass_filenames: false
 ```
@@ -333,8 +333,8 @@ Tests run on every push/PR:
 - name: Run tests with coverage
   run: |
     cd frontend
-    npm ci
-    npm test -- --testPathIgnorePatterns=e2e
+    pnpm install --frozen-lockfile
+    pnpm test -- --testPathIgnorePatterns=e2e
 ```
 
 **PR Merge Requirements**:
@@ -411,7 +411,7 @@ await act(async () => {
 ## Troubleshooting
 
 ### "Coverage threshold not met"
-1. Run `npm test` to see current coverage
+1. Run `pnpm test` to see current coverage
 2. Identify files below threshold
 3. Add tests OR exclude from coverage if UI/infrastructure
 
@@ -448,6 +448,6 @@ When adding new tests:
 
 ---
 
-**Version**: 1.3.5+
-**Last Updated**: 2025-12-18
+**Version**: 1.7.0
+**Last Updated**: 2026-04-13
 **Maintainer**: @ndewijer

@@ -5,7 +5,7 @@
 ### 1. Terminal Output (Default)
 Run tests and see coverage in the terminal:
 ```bash
-npm test
+pnpm test
 ```
 
 Look for the **"All files"** row at the top:
@@ -19,7 +19,7 @@ All files                     |   90.74 |    84.83 |    81.3 |   93.11 | ← TOT
 ### 2. HTML Report (Interactive)
 Generate an interactive HTML report:
 ```bash
-npm run test:coverage
+pnpm run test:coverage
 ```
 
 Then open `coverage/index.html` in your browser:
@@ -36,7 +36,7 @@ Features:
 ### 3. JSON Summary (Machine-Readable)
 Generate a machine-readable summary:
 ```bash
-npm run test:coverage:summary
+pnpm run test:coverage:summary
 ```
 
 Creates `coverage/coverage-summary.json`:
@@ -88,7 +88,7 @@ repos:
     hooks:
       - id: jest-coverage
         name: Jest Coverage Check
-        entry: bash -c 'cd frontend && npm test -- --testPathIgnorePatterns=e2e'
+        entry: bash -c 'cd frontend && pnpm test -- --testPathIgnorePatterns=e2e'
         language: system
         pass_filenames: false
         always_run: true
@@ -99,7 +99,7 @@ Or create `.husky/pre-commit` (if using Husky):
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-cd frontend && npm test -- --testPathIgnorePatterns=e2e
+cd frontend && pnpm test -- --testPathIgnorePatterns=e2e
 ```
 
 ### 3. CI/CD Pipeline Alerts
@@ -116,9 +116,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
-        run: cd frontend && npm ci
+        run: cd frontend && pnpm install --frozen-lockfile
       - name: Run tests with coverage
-        run: cd frontend && npm test -- --testPathIgnorePatterns=e2e
+        run: cd frontend && pnpm test -- --testPathIgnorePatterns=e2e
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
         with:
@@ -132,8 +132,8 @@ test:coverage:
   stage: test
   script:
     - cd frontend
-    - npm ci
-    - npm test -- --testPathIgnorePatterns=e2e
+    - pnpm install --frozen-lockfile
+    - pnpm test -- --testPathIgnorePatterns=e2e
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
   artifacts:
     reports:
@@ -171,7 +171,7 @@ Create `scripts/check-coverage-change.sh`:
 #!/bin/bash
 
 # Get current coverage
-CURRENT=$(npm test -- --testPathIgnorePatterns=e2e --coverageReporters=json-summary 2>&1 | grep -o 'All files.*' | awk '{print $4}')
+CURRENT=$(pnpm test -- --testPathIgnorePatterns=e2e --coverageReporters=json-summary 2>&1 | grep -o 'All files.*' | awk '{print $4}')
 
 # Compare with baseline (stored in git)
 BASELINE=$(cat coverage-baseline.txt)
@@ -212,7 +212,7 @@ fi
 
 ## Current Coverage Status
 
-**Last Updated**: 2024-12-18
+**Last Updated**: 2026-04-13
 
 | Metric | Current | Threshold | Status |
 |--------|---------|-----------|--------|
@@ -235,7 +235,7 @@ See `package.json` → `jest.collectCoverageFrom` for full list.
 ## Troubleshooting
 
 ### "Coverage threshold not met" error
-1. Run `npm test` to see current coverage
+1. Run `pnpm test` to see current coverage
 2. Identify files below threshold in the report
 3. Add tests for uncovered code OR
 4. Exclude files from coverage if they're infrastructure/UI
@@ -243,16 +243,16 @@ See `package.json` → `jest.collectCoverageFrom` for full list.
 ### Coverage reports not generating
 1. Ensure `coverage` directory exists and is writable
 2. Check `.gitignore` includes `/coverage/` (reports shouldn't be committed)
-3. Run `npm test -- --coverage --verbose` for detailed output
+3. Run `pnpm test -- --coverage --verbose` for detailed output
 
 ### Pre-commit hook failing
-1. Test manually: `npm test -- --testPathIgnorePatterns=e2e`
+1. Test manually: `pnpm test -- --testPathIgnorePatterns=e2e`
 2. If passing manually but failing in hook, check Node version
-3. Ensure all dependencies are installed: `npm ci`
+3. Ensure all dependencies are installed: `pnpm install --frozen-lockfile`
 
 ## Best Practices
 
-1. **Run tests before committing**: `npm test`
+1. **Run tests before committing**: `pnpm test`
 2. **Check coverage for new code**: Aim for 90%+ on new files
 3. **Don't game the numbers**: Write meaningful tests, not just for coverage
 4. **Review coverage reports**: Use HTML report to find gaps
@@ -261,6 +261,6 @@ See `package.json` → `jest.collectCoverageFrom` for full list.
 
 ---
 
-**Version**: 1.3.5+
-**Last Updated**: 2025-12-18
+**Version**: 1.7.0
+**Last Updated**: 2026-04-13
 **Maintainer**: @ndewijer
