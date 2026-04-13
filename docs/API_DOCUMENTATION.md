@@ -1,62 +1,60 @@
 # API Documentation
 
-This document provides comprehensive information about the Investment Portfolio Manager REST API, implemented using Flask-RESTX with automatic Swagger/OpenAPI documentation.
+This document provides comprehensive information about the Investment Portfolio Manager REST API, implemented as a Go backend using the Chi router.
 
 ---
 
 ## Overview
 
-The Investment Portfolio Manager provides a comprehensive REST API for managing investment portfolios, funds, transactions, and Interactive Brokers (IBKR) integration. The API is built with Flask-RESTX and includes automatic Swagger UI documentation.
+The Investment Portfolio Manager provides a comprehensive REST API for managing investment portfolios, funds, transactions, and Interactive Brokers (IBKR) integration. The API is built with Go using the [Chi](https://github.com/go-chi/chi) router and follows a Handler -> Service -> Repository layered architecture.
 
 ### Key Features
 
-- **Automatic Documentation**: Interactive Swagger UI at `/api/docs`
-- **Type-Safe Schemas**: Request/response models with validation
-- **Comprehensive Coverage**: 72 endpoints across 7 namespaces
-- **Service Layer Architecture**: Business logic separated from HTTP interface
+- **Layered Architecture**: Handler -> Service -> Repository separation of concerns
+- **Type-Safe Request Parsing**: Strongly-typed Go request structs with validation
+- **Comprehensive Coverage**: 70+ endpoints across 7 route groups
+- **Middleware Stack**: Request ID injection, logging, CORS, panic recovery, UUID validation, API key authentication
 - **Error Handling**: Standardized error responses with appropriate HTTP status codes
-- **Logging**: Comprehensive request/response logging for debugging
+- **Structured Logging**: Per-request logging with request IDs for debugging and tracing
 
 ---
 
 ## Accessing the API
-
-### Swagger UI
-
-The interactive API documentation is available at:
-
-```
-http://localhost:5001/api/docs
-```
-
-The Swagger UI provides:
-- Complete endpoint documentation
-- Request/response schemas
-- Interactive testing interface
-- Example values for all parameters
-- HTTP status code descriptions
 
 ### Base URL
 
 All API endpoints are prefixed with `/api`:
 
 ```
-http://localhost:5001/api/{namespace}/{endpoint}
+http://localhost:5000/api/{group}/{endpoint}
+```
+
+The Go backend listens on port `5000` by default (configurable via `SERVER_PORT` environment variable).
+
+### Health Check
+
+Verify the API is running:
+
+```bash
+curl http://localhost:5000/api/system/health
 ```
 
 ---
 
-## API Namespaces
+## API Route Groups
 
-The API is organized into 7 logical namespaces:
+The API is organized into 7 logical route groups:
 
 ### 1. System (`/api/system`)
 
 System health and version information.
 
 **Endpoints**: 2
-- `GET /api/system/health` - Health check
-- `GET /api/system/version` - Application version and database status
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/system/health` | Health check |
+| GET | `/api/system/version` | Application version and database status |
 
 **Use Cases**:
 - Monitoring system availability
@@ -67,12 +65,23 @@ System health and version information.
 
 Portfolio management and analytics.
 
-**Endpoints**: 14
-- CRUD operations for portfolios
-- Portfolio summary and history
-- Fund-portfolio relationships
-- Archive/unarchive portfolios
-- Portfolio fund value history
+**Endpoints**: 13
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/portfolio` | List all portfolios |
+| POST | `/api/portfolio` | Create portfolio |
+| GET | `/api/portfolio/{id}` | Get portfolio by ID |
+| PUT | `/api/portfolio/{id}` | Update portfolio |
+| DELETE | `/api/portfolio/{id}` | Delete portfolio |
+| POST | `/api/portfolio/{id}/archive` | Archive portfolio |
+| POST | `/api/portfolio/{id}/unarchive` | Unarchive portfolio |
+| GET | `/api/portfolio/summary` | Portfolio summary (materialized) |
+| GET | `/api/portfolio/history` | Portfolio history (materialized) |
+| GET | `/api/portfolio/funds` | List all portfolio-fund relationships |
+| GET | `/api/portfolio/funds/{id}` | Funds in a portfolio |
+| POST | `/api/portfolio/funds` | Add fund to portfolio |
+| DELETE | `/api/portfolio/fund/{id}` | Remove fund from portfolio |
 
 **Use Cases**:
 - Creating and managing investment portfolios
@@ -84,12 +93,21 @@ Portfolio management and analytics.
 
 Investment fund and stock management.
 
-**Endpoints**: 13
-- CRUD operations for funds
-- Price history and updates
-- Symbol information lookup
-- Fund usage checking
-- Bulk price updates
+**Endpoints**: 11
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/fund` | List all funds |
+| POST | `/api/fund` | Create fund |
+| GET | `/api/fund/{id}` | Get fund details |
+| PUT | `/api/fund/{id}` | Update fund |
+| DELETE | `/api/fund/{id}` | Delete fund |
+| GET | `/api/fund/{id}/check-usage` | Check if fund is in use |
+| GET | `/api/fund/fund-prices/{id}` | Price history for a fund |
+| POST | `/api/fund/fund-prices/{id}/update` | Update fund prices (Yahoo Finance) |
+| GET | `/api/fund/history/{portfolioId}` | Historical fund values for portfolio |
+| GET | `/api/fund/symbol/{symbol}` | Look up trading symbol |
+| POST | `/api/fund/update-all-prices` | Update prices for all funds (API key required) |
 
 **Use Cases**:
 - Adding new funds or stocks
@@ -97,14 +115,20 @@ Investment fund and stock management.
 - Looking up fund information by symbol
 - Checking if a fund can be safely deleted
 
-### 4. Transaction (`/api/transactions`)
+### 4. Transaction (`/api/transaction`)
 
 Transaction recording and management.
 
-**Endpoints**: 5
-- CRUD operations for transactions
-- Buy, sell, dividend, and fee transactions
-- Automatic realized gain/loss calculation
+**Endpoints**: 6
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/transaction` | List all transactions |
+| POST | `/api/transaction` | Create transaction |
+| GET | `/api/transaction/{id}` | Get transaction by ID |
+| PUT | `/api/transaction/{id}` | Update transaction |
+| DELETE | `/api/transaction/{id}` | Delete transaction |
+| GET | `/api/transaction/portfolio/{id}` | Transactions for a portfolio |
 
 **Use Cases**:
 - Recording buy/sell transactions
@@ -112,15 +136,21 @@ Transaction recording and management.
 - Calculating realized gains and losses
 - Managing transaction history
 
-### 5. Dividend (`/api/dividends`)
+### 5. Dividend (`/api/dividend`)
 
 Dividend tracking and reinvestment.
 
-**Endpoints**: 6
-- CRUD operations for dividends
-- Cash and stock dividend support
-- Reinvestment tracking
-- Fund and portfolio dividend queries
+**Endpoints**: 7
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/dividend` | List all dividends |
+| POST | `/api/dividend` | Create dividend |
+| GET | `/api/dividend/{id}` | Get dividend by ID |
+| PUT | `/api/dividend/{id}` | Update dividend |
+| DELETE | `/api/dividend/{id}` | Delete dividend |
+| GET | `/api/dividend/portfolio/{id}` | Dividends for a portfolio |
+| GET | `/api/dividend/fund/{id}` | Dividends for a fund |
 
 **Use Cases**:
 - Recording dividend payments
@@ -132,12 +162,28 @@ Dividend tracking and reinvestment.
 Interactive Brokers integration.
 
 **Endpoints**: 19
-- Configuration management
-- Transaction import via Flex Query
-- Transaction inbox management
-- Portfolio allocation
-- Dividend matching
-- Bulk operations
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/ibkr/config` | Get IBKR configuration status |
+| POST | `/api/ibkr/config` | Create or update IBKR configuration |
+| DELETE | `/api/ibkr/config` | Delete IBKR configuration |
+| POST | `/api/ibkr/config/test` | Test IBKR connection |
+| POST | `/api/ibkr/import` | Trigger IBKR Flex report import |
+| GET | `/api/ibkr/portfolios` | Available portfolios for allocation |
+| GET | `/api/ibkr/dividend/pending` | Pending dividends for matching |
+| GET | `/api/ibkr/inbox` | List imported IBKR transactions |
+| GET | `/api/ibkr/inbox/count` | Count of IBKR inbox transactions |
+| POST | `/api/ibkr/inbox/bulk-allocate` | Bulk allocate transactions |
+| GET | `/api/ibkr/inbox/{id}` | Get IBKR transaction details |
+| DELETE | `/api/ibkr/inbox/{id}` | Delete IBKR transaction |
+| POST | `/api/ibkr/inbox/{id}/allocate` | Allocate transaction to portfolios |
+| POST | `/api/ibkr/inbox/{id}/unallocate` | Unallocate a processed transaction |
+| GET | `/api/ibkr/inbox/{id}/allocations` | Get allocation details |
+| PUT | `/api/ibkr/inbox/{id}/allocations` | Modify allocation percentages |
+| GET | `/api/ibkr/inbox/{id}/eligible-portfolios` | Get eligible portfolios for transaction |
+| POST | `/api/ibkr/inbox/{id}/ignore` | Mark transaction as ignored |
+| POST | `/api/ibkr/inbox/{id}/match-dividend` | Match dividend to existing records |
 
 **Use Cases**:
 - Importing transactions from Interactive Brokers
@@ -149,14 +195,23 @@ Interactive Brokers integration.
 
 Development and debugging utilities with comprehensive CSV import capabilities.
 
-**Endpoints**: 15
-- System logs viewing and clearing
-- Logging configuration management
-- Exchange rate management
-- Fund price management
-- CSV template generation
-- CSV transaction and fund price imports
-- Database introspection utilities
+**Endpoints**: 13
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/developer/logs` | Get system logs (cursor-based) |
+| GET | `/api/developer/logs/filter-options` | Distinct values for log filter picklists |
+| DELETE | `/api/developer/logs` | Clear all system logs |
+| GET | `/api/developer/system-settings/logging` | Get logging configuration |
+| PUT | `/api/developer/system-settings/logging` | Update logging configuration |
+| GET | `/api/developer/csv/fund-prices/template` | CSV template for fund price import |
+| GET | `/api/developer/csv/transactions/template` | CSV template for transaction import |
+| GET | `/api/developer/exchange-rate` | Get exchange rate for currency pair |
+| POST | `/api/developer/exchange-rate` | Set exchange rate for currency pair |
+| GET | `/api/developer/fund-price` | Get fund price for specific date |
+| POST | `/api/developer/fund-price` | Set fund price for specific date |
+| POST | `/api/developer/import-fund-prices` | Import fund prices from CSV |
+| POST | `/api/developer/import-transactions` | Import transactions from CSV |
 
 **Key Features**:
 - **CSV Import Validation**: Centralized UTF-8 encoding and header validation
@@ -182,7 +237,7 @@ All creation endpoints follow a similar pattern:
 
 **Request**:
 ```http
-POST /api/{namespace}
+POST /api/{group}
 Content-Type: application/json
 
 {
@@ -205,23 +260,23 @@ Content-Type: application/json
 
 **Single Resource**:
 ```http
-GET /api/{namespace}/{id}
+GET /api/{group}/{id}
 ```
 
 **Collection**:
 ```http
-GET /api/{namespace}
+GET /api/{group}
 ```
 
 **With Filters**:
 ```http
-GET /api/{namespace}?filter1=value1&filter2=value2
+GET /api/{group}?filter1=value1&filter2=value2
 ```
 
 ### Updating Resources
 
 ```http
-PUT /api/{namespace}/{id}
+PUT /api/{group}/{id}
 Content-Type: application/json
 
 {
@@ -232,30 +287,43 @@ Content-Type: application/json
 ### Deleting Resources
 
 ```http
-DELETE /api/{namespace}/{id}
+DELETE /api/{group}/{id}
 ```
 
 ---
 
 ## Request/Response Models
 
-All endpoints use typed request and response models defined in Flask-RESTX. These models:
+All endpoints use strongly-typed Go request structs for parsing and validation. These are defined in the `internal/api/request/` package and ensure:
 
-- **Validate Input**: Ensure required fields are present and correctly typed
-- **Document API**: Automatically appear in Swagger UI
-- **Type Safety**: Prevent common API integration errors
+- **Validate Input**: Required fields are checked and types enforced at the handler level
+- **Type Safety**: Go's type system prevents common API integration errors
+- **Clear Contracts**: Request struct definitions serve as documentation for expected payloads
 
-### Example Model Definition
+### Example Request Struct
 
-```python
-portfolio_model = ns.model('Portfolio', {
-    'id': fields.String(required=True, description='Portfolio UUID'),
-    'name': fields.String(required=True, description='Portfolio name'),
-    'description': fields.String(description='Portfolio description'),
-    'exclude_from_overview': fields.Boolean(description='Exclude from overview'),
-    'is_archived': fields.Boolean(description='Archive status'),
-    'created_at': fields.DateTime(description='Creation timestamp')
-})
+```go
+// internal/api/request/portfolio.go
+type CreatePortfolioRequest struct {
+    Name                string `json:"name"`
+    Description         string `json:"description"`
+    ExcludeFromOverview bool   `json:"exclude_from_overview"`
+}
+```
+
+### Example Response Helper
+
+```go
+// internal/api/response/response.go
+func RespondJSON(w http.ResponseWriter, status int, data interface{}) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(status)
+    json.NewEncoder(w).Encode(data)
+}
+
+func RespondError(w http.ResponseWriter, status int, message string) {
+    RespondJSON(w, status, map[string]string{"error": message})
+}
 ```
 
 ---
@@ -317,22 +385,22 @@ The API uses standard HTTP status codes and returns consistent error responses:
 
 The API currently implements:
 
-- **API Key Protection**: Certain endpoints (e.g., bulk price updates) require API key authentication
-- **IBKR Token Encryption**: Flex API tokens are encrypted at rest
-- **Input Validation**: All inputs validated via Flask-RESTX models
+- **API Key Protection**: Certain endpoints (e.g., bulk price updates) require API key authentication via middleware
+- **IBKR Token Encryption**: Flex API tokens are encrypted at rest using Fernet symmetric encryption
+- **Input Validation**: All inputs validated via typed Go request structs and middleware (e.g., UUID path parameter validation)
 
 ### API Key Usage
 
-Endpoints marked with `security='apikey'` require an API key:
+Endpoints protected by the API key middleware require an `X-API-Key` header:
 
 ```http
-GET /api/fund/update-all-prices
+POST /api/fund/update-all-prices
 X-API-Key: your-api-key-here
 ```
 
 Configure the API key in `.env`:
 ```
-API_KEY=your-secure-api-key
+INTERNAL_API_KEY=your-secure-api-key
 ```
 
 ---
@@ -408,7 +476,7 @@ Response: `[{ "id": "portfolio-fund-uuid", ... }]`
 
 2. **Create Transaction**:
 ```http
-POST /api/transactions
+POST /api/transaction
 Content-Type: application/json
 
 {
@@ -488,33 +556,6 @@ Content-Type: application/json
 
 ---
 
-## Migration from Legacy API
-
-### Coexistence
-
-The Swagger API coexists with the legacy Blueprint routes during the transition period:
-
-- **Legacy Routes**: Continue to work at their original paths (e.g., `/portfolios`)
-- **Swagger Routes**: Available with `/api` prefix (e.g., `/api/portfolio`)
-
-### Key Differences
-
-| Aspect | Legacy API | Swagger API |
-|--------|-----------|-------------|
-| **Base Path** | `/` | `/api/` |
-| **Documentation** | Manual/none | Automatic Swagger UI |
-| **Validation** | Manual | Automatic via models |
-| **Type Safety** | Limited | Comprehensive |
-| **Error Responses** | Varied | Standardized |
-
-### Compatibility Notes
-
-1. **Response Format**: Response formats are consistent across all Swagger API endpoints
-
-2. **Business Logic**: All APIs use the same service layer, ensuring consistent behavior
-
----
-
 ## Query Parameters
 
 Many endpoints support optional query parameters for filtering and pagination:
@@ -531,7 +572,7 @@ Many endpoints support optional query parameters for filtering and pagination:
 ### Example
 
 ```http
-GET /api/transactions?portfolio_id=uuid&start_date=2024-01-01&end_date=2024-12-31&type=buy
+GET /api/transaction?portfolio_id=uuid&start_date=2024-01-01&end_date=2024-12-31&type=buy
 ```
 
 ---
@@ -569,12 +610,12 @@ The API does not currently implement rate limiting.
 
 All resources use UUIDs as identifiers. Always store the complete UUID:
 
-```python
-# Good
-portfolio_id = "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+```go
+// Good
+portfolioID := "f47ac10b-58cc-4372-a567-0e02b2c3d479"
 
-# Bad
-portfolio_id = "f47ac10b"  # Truncated
+// Bad
+portfolioID := "f47ac10b" // Truncated
 ```
 
 ### 2. Handle Errors Gracefully
@@ -604,7 +645,7 @@ try {
 
 ### 3. Validate Input Before Sending
 
-Use the Swagger UI or model definitions to understand required fields:
+Use the endpoint tables and request struct definitions to understand required fields:
 
 ```javascript
 // Always include required fields
@@ -650,36 +691,27 @@ if (response.status === 409) {
 
 ## Testing the API
 
-### Using Swagger UI
-
-1. Navigate to `http://localhost:5001/api/docs`
-2. Expand an endpoint
-3. Click "Try it out"
-4. Fill in parameters
-5. Click "Execute"
-6. View the response
-
 ### Using cURL
 
 ```bash
 # GET request
-curl http://localhost:5001/api/portfolio
+curl http://localhost:5000/api/portfolio
 
 # POST request
-curl -X POST http://localhost:5001/api/portfolio \
+curl -X POST http://localhost:5000/api/portfolio \
   -H "Content-Type: application/json" \
   -d '{"name": "Test Portfolio", "description": "Testing"}'
 
 # With authentication
-curl http://localhost:5001/api/fund/update-all-prices \
+curl -X POST http://localhost:5000/api/fund/update-all-prices \
   -H "X-API-Key: your-api-key"
 ```
 
 ### Using Postman
 
-1. Import the OpenAPI spec from `/api/docs`
-2. Postman will create a complete collection
-3. Set the base URL to `http://localhost:5001`
+1. Set the base URL to `http://localhost:5000`
+2. Create requests using the endpoint tables above
+3. Set `Content-Type: application/json` for POST/PUT requests
 4. Start testing endpoints
 
 ---
@@ -693,13 +725,13 @@ curl http://localhost:5001/api/fund/update-all-prices \
 
 ```bash
 # List all portfolios to verify UUIDs
-curl http://localhost:5001/api/portfolio
+curl http://localhost:5000/api/portfolio
 ```
 
 ### Issue: "Validation error" (400)
 
 **Cause**: Missing required fields or invalid data types
-**Solution**: Check Swagger UI for required fields and types
+**Solution**: Check the request struct definitions in `internal/api/request/` for required fields and types
 
 ### Issue: "Internal Server Error" (500)
 
@@ -709,24 +741,30 @@ curl http://localhost:5001/api/portfolio
 2. Check database connectivity
 3. Verify environment variables are set correctly
 
-### Issue: Swagger UI Not Loading
+### Issue: API Not Responding
 
-**Cause**: Flask-RESTX not properly initialized
+**Cause**: Server not started or port conflict
 **Solution**:
-1. Verify Flask-RESTx is installed: `pip list | grep Flask-RESTx`
-2. Check `run.py` for proper API initialization
+1. Verify the server is running: `docker compose ps`
+2. Check port availability: `lsof -i :5000`
 3. Restart the backend: `docker compose restart backend`
 
 ---
 
 ## Version History
 
-### Version 1.3.3 - Swagger Implementation
+### Version 1.3.3 - Initial API Documentation
 
-- **Initial Release**: Complete Swagger/OpenAPI documentation
+- **Initial Release**: Complete API documentation
 - **Coverage**: 72 endpoints across 7 namespaces
-- **Features**: Interactive Swagger UI, typed models, error handling
-- **Compatibility**: Coexists with legacy Blueprint routes
+- **Features**: Typed models, error handling
+
+### Version 2.0.0 - Go Backend Migration
+
+- **Backend Rewrite**: Migrated from Python/Flask to Go/Chi
+- **Same API Contract**: All endpoints maintain the same request/response format
+- **Middleware Stack**: Request ID injection, logging, CORS, panic recovery, UUID validation
+- **Performance**: Compiled binary with lower memory footprint
 
 ---
 
@@ -746,6 +784,7 @@ Planned improvements for future versions:
 ## Related Documentation
 
 - **Architecture**: `docs/ARCHITECTURE.md` - System architecture overview
+- **Configuration**: `docs/CONFIGURATION.md` - Environment variables and configuration
 - **IBKR Integration**: `docs/IBKR_FEATURES.md` - Interactive Brokers integration details
 - **Security**: `docs/SECURITY.md` - Security best practices
 - **Testing**: `docs/TESTING.md` - API testing guide
@@ -758,7 +797,7 @@ Planned improvements for future versions:
 
 If you encounter API issues:
 
-1. Check the Swagger UI for correct request format
+1. Check the endpoint tables above for correct request format
 2. Review server logs for errors
 3. Create an issue on GitHub with:
    - Endpoint being called
@@ -772,5 +811,5 @@ API improvements and additions are welcome! See `CONTRIBUTING.md` for guidelines
 
 ---
 
-**Last Updated**: 2026-01-07 (Version 1.4.0)
+**Last Updated**: 2026-04-13 (Version 2.0.0)
 **Maintained By**: @ndewijer

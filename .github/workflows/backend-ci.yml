@@ -2,44 +2,146 @@ name: Backend CI
 
 on:
   push:
+    branches: [main, master]
     paths:
       - 'backend/**'
-      - 'pyproject.toml'
-      - 'uv.lock'
-    branches: [ main ]
   pull_request:
+    branches: [main, master]
     paths:
       - 'backend/**'
-      - 'pyproject.toml'
-      - 'uv.lock'
-    branches: [ main ]
 
 jobs:
-  test:
+  test-and-lint:
+    name: Test & Lint
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-      with:
-        version: "0.5.17"
-        enable-cache: true
-        cache-dependency-glob: "uv.lock"
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.2'
+          cache: true
+          cache-dependency-path: backend/go.sum
 
-    - name: Set up Python
-      run: uv python install 3.13
+      - name: Verify dependencies
+        working-directory: ./backend
+        run: |
+          go mod download
+          go mod verify
 
-    - name: Install dependencies
-      run: uv sync --frozen
+      - name: Check golden schema is in sync with migrations
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...HEAD)
+          else
+            CHANGED=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || true)
+          fi
+          MIGRATIONS_CHANGED=$(echo "$CHANGED" | grep '^backend/internal/database/migrations/' || true)
+          if [ -n "$MIGRATIONS_CHANGED" ]; then
+            GOLDEN_CHANGED=$(echo "$CHANGED" | grep '^backend/internal/database/testdata/golden_schema.sql' || true)
+            if [ -z "$GOLDEN_CHANGED" ]; then
+              echo "Migration files changed but golden_schema.sql was not updated."
+              echo "Run: cd backend && go test ./internal/database/... -update-golden"
+              exit 1
+            fi
+          fi
 
-    - name: Run tests with coverage
-      run: uv run pytest tests/api tests/services --cov=app/api --cov=app/services --cov-fail-under=90 --tb=short -q
-      working-directory: ./backend
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9.2.0
+        with:
+          version: latest
+          args: --timeout=5m
+          working-directory: ./backend
 
-    - name: Run linting
-      run: |
-        uv run ruff check .
-        uv run ruff format --check .
-      working-directory: ./backend
+      - name: Run tests with race detector
+        working-directory: ./backend
+        run: go test -race -v ./...
+
+      - name: Generate coverage report
+        working-directory: ./backend
+        run: go test -coverpkg=./internal/... -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Check coverage threshold
+        working-directory: ./backend
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+          echo "Total coverage: ${COVERAGE}%"
+          THRESHOLD=80
+          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+            echo "Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi
+          echo "Coverage ${COVERAGE}% meets threshold ${THRESHOLD}%"
+
+      - name: Upload coverage to GitHub
+        working-directory: ./backend
+        run: |
+          echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          go tool cover -func=coverage.out >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.2'
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        working-directory: ./backend
+        run: govulncheck ./...
+
+  build-binary:
+    name: Build Binary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.2'
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Read version
+        id: version
+        run: |
+          if [ -f backend/VERSION ]; then
+            VERSION=$(cat backend/VERSION)
+          else
+            VERSION="dev"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Build binary
+        working-directory: ./backend
+        run: |
+          go build -ldflags "-X github.com/ndewijer/Investment-Portfolio-Manager/backend/internal/version.Version=${{ steps.version.outputs.version }}" -o bin/server ./cmd/server/main.go
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ipm-backend-${{ steps.version.outputs.version }}
+          path: backend/bin/server
+          retention-days: 7

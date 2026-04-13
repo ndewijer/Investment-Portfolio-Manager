@@ -61,7 +61,7 @@ sleep 3
 # Test 1: Backend health (from inside container)
 echo -e "${BLUE}⏳ Waiting for backend to be ready (testing from inside container)...${NC}"
 for i in {1..60}; do
-    if docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/system/health')" > /dev/null 2>&1; then
+    if docker compose exec -T backend wget -qO- http://localhost:5000/api/system/health > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Backend is healthy${NC}"
         break
     fi
@@ -80,7 +80,7 @@ done
 
 # Test 2: Verify backend response
 echo -e "${BLUE}🔍 Verifying backend response...${NC}"
-HEALTH=$(docker compose exec -T backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/health').read().decode())")
+HEALTH=$(docker compose exec -T backend wget -qO- http://localhost:5000/api/system/health)
 echo "Backend response: $HEALTH"
 
 if ! echo "$HEALTH" | grep -q '"status"[[:space:]]*:[[:space:]]*"healthy"'; then
@@ -110,10 +110,63 @@ if ! echo "$PROXY_RESPONSE" | grep -q '"status"[[:space:]]*:[[:space:]]*"healthy
 fi
 echo -e "${GREEN}✅ Frontend proxy working${NC}"
 
-# Test 5: Verify database was seeded with funds
-echo -e "${BLUE}📊 Verifying database seeding...${NC}"
-FUNDS_RESPONSE=$(curl -s ${TEST_URL}/api/fund)
-echo "Funds response: $FUNDS_RESPONSE"
+# Test 5: Create test data via API and verify write path
+echo -e "${BLUE}📊 Creating test data via API...${NC}"
+API_URL="${TEST_URL}/api"
+
+# Create a test portfolio
+PORTFOLIO_RESPONSE=$(curl -s -X POST "${API_URL}/portfolio" \
+    -H "Content-Type: application/json" \
+    -d '{"name": "Test Portfolio", "description": "Integration test portfolio"}')
+echo "Create portfolio response: $PORTFOLIO_RESPONSE"
+
+PORTFOLIO_ID=$(echo "$PORTFOLIO_RESPONSE" | grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+
+if [ -z "$PORTFOLIO_ID" ]; then
+    echo -e "${RED}❌ Failed to create test portfolio${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Portfolio created (ID: $PORTFOLIO_ID)${NC}"
+
+# Create test funds
+create_fund() {
+    local name="$1" isin="$2" symbol="$3" currency="$4" exchange="$5" div_type="$6" inv_type="$7"
+    local response
+    response=$(curl -s -X POST "${API_URL}/fund" \
+        -H "Content-Type: application/json" \
+        -d "{\"name\": \"${name}\", \"isin\": \"${isin}\", \"symbol\": \"${symbol}\", \"currency\": \"${currency}\", \"exchange\": \"${exchange}\", \"dividendType\": \"${div_type}\", \"investmentType\": \"${inv_type}\"}")
+    echo "$response"
+}
+
+FUND1_RESPONSE=$(create_fund "Vanguard Total Stock Market ETF" "US9229087690" "VTI" "USD" "NYSE" "CASH" "FUND")
+FUND1_ID=$(echo "$FUND1_RESPONSE" | grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+
+FUND2_RESPONSE=$(create_fund "Amundi Prime All Country World UCITS ETF Acc" "LU2089238203" "WEBG" "EUR" "AMS" "NONE" "FUND")
+FUND2_ID=$(echo "$FUND2_RESPONSE" | grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+
+FUND3_RESPONSE=$(create_fund "Apple Inc." "US0378331005" "AAPL" "USD" "NASDAQ" "CASH" "STOCK")
+FUND3_ID=$(echo "$FUND3_RESPONSE" | grep -o '"id"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+
+if [ -z "$FUND1_ID" ] || [ -z "$FUND2_ID" ] || [ -z "$FUND3_ID" ]; then
+    echo -e "${RED}❌ Failed to create one or more test funds${NC}"
+    echo "Fund1: $FUND1_RESPONSE"
+    echo "Fund2: $FUND2_RESPONSE"
+    echo "Fund3: $FUND3_RESPONSE"
+    exit 1
+fi
+echo -e "${GREEN}✅ Test funds created${NC}"
+
+# Assign funds to portfolio
+for FUND_ID in "$FUND1_ID" "$FUND2_ID" "$FUND3_ID"; do
+    ASSIGN_RESPONSE=$(curl -s -X POST "${API_URL}/portfolio/${PORTFOLIO_ID}/fund" \
+        -H "Content-Type: application/json" \
+        -d "{\"portfolioId\": \"${PORTFOLIO_ID}\", \"fundId\": \"${FUND_ID}\"}")
+done
+echo -e "${GREEN}✅ Funds assigned to portfolio${NC}"
+
+# Test 6: Verify data can be read back
+echo -e "${BLUE}🔍 Verifying test data via read endpoints...${NC}"
+FUNDS_RESPONSE=$(curl -s ${API_URL}/fund)
 
 if ! echo "$FUNDS_RESPONSE" | grep -q "Vanguard Total Stock Market ETF"; then
     echo -e "${RED}❌ Expected fund 'Vanguard Total Stock Market ETF' not found${NC}"
@@ -129,20 +182,20 @@ if ! echo "$FUNDS_RESPONSE" | grep -q "Apple Inc."; then
     echo -e "${RED}❌ Expected fund 'Apple Inc.' not found${NC}"
     exit 1
 fi
-echo -e "${GREEN}✅ Database seeded correctly with expected funds${NC}"
+echo -e "${GREEN}✅ All test funds verified via read endpoint${NC}"
 
-# Test 6: Verify portfolios were seeded
-echo -e "${BLUE}💼 Verifying portfolios were seeded...${NC}"
-PORTFOLIOS_RESPONSE=$(curl -s ${TEST_URL}/api/portfolio)
+# Test 7: Verify portfolios
+echo -e "${BLUE}💼 Verifying portfolios...${NC}"
+PORTFOLIOS_RESPONSE=$(curl -s ${API_URL}/portfolio)
 PORTFOLIO_COUNT=$(echo "$PORTFOLIOS_RESPONSE" | grep -o '"id"[[:space:]]*:' | wc -l | tr -d '[:space:]')
 
 if [ "$PORTFOLIO_COUNT" -lt 1 ]; then
-    echo -e "${RED}❌ No portfolios found in seeded database${NC}"
+    echo -e "${RED}❌ No portfolios found${NC}"
     exit 1
 fi
-echo -e "${GREEN}✅ Portfolios seeded (found $PORTFOLIO_COUNT portfolios)${NC}"
+echo -e "${GREEN}✅ Portfolios verified (found $PORTFOLIO_COUNT portfolios)${NC}"
 
-# Test 7 (Optional): Run E2E tests against Docker stack
+# Test 8 (Optional): Run E2E tests against Docker stack
 if [ "${RUN_E2E_TESTS}" = "true" ]; then
     echo -e "${BLUE}🎭 Running Playwright E2E tests against Docker stack...${NC}"
 

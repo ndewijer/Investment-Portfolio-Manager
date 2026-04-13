@@ -8,65 +8,108 @@
 - ApexCharts (vanilla) for interactive time-series charts
 
 ## Backend
-- Flask/Gunicorn WSGI server
-- SQLite database with SQLAlchemy ORM
+- Go HTTP server using [Chi](https://github.com/go-chi/chi) router
+- SQLite database with pure Go driver (`modernc.org/sqlite`)
 - RESTful API design
-- Service layer architecture pattern
-- Comprehensive logging system
+- Handler -> Service -> Repository layered architecture
+- Structured logging system with database-configurable levels
 
-### Service Layer Pattern
+### Layered Architecture
 
-The backend follows a service layer architecture to separate concerns and improve testability:
+The backend follows a Handler -> Service -> Repository pattern to separate concerns and improve testability:
 
-- **Routes** (`backend/app/routes/`): Handle HTTP requests/responses, input validation, and error formatting
-- **Services** (`backend/app/services/`): Contain business logic, database operations, and complex workflows
-- **Models** (`backend/app/models/`): Define database schema and relationships
+```
+HTTP Request → Router → Handler → Service → Repository → Database
+                ↓
+          Middleware (request ID injection, real IP extraction, logging, CORS, panic recovery, UUID validation, API key authentication)
+```
+
+- **Handlers** (`backend/internal/api/handlers/`): Parse HTTP requests, call services, write responses. No business logic.
+- **Services** (`backend/internal/service/`): Business logic, validation, orchestration. Services may call other services and multiple repositories. Own transaction boundaries for write operations.
+- **Repositories** (`backend/internal/repository/`): Data access. Each repository maps to one database table/domain. Accepts `*sql.DB` or `*sql.Tx` so services can compose multiple repository calls in a single transaction.
+- **Middleware** (`backend/internal/api/middleware/`): Cross-cutting concerns: request logging, CORS, panic recovery, UUID path parameter validation, API key authentication.
 
 **Benefits:**
 - Business logic isolated from HTTP concerns
-- Services can be tested independently without HTTP mocking
-- Routes remain thin and focused on API contract
+- Services can be tested independently with real database calls (no mocks)
+- Handlers remain thin and focused on API contract
 - Reusable logic across different endpoints
+- Write operations follow a consistent pattern: begin transaction, call repositories with `*sql.Tx`, commit or rollback
 
 **Example:**
-```python
-# Route (thin)
-@portfolio.route('/portfolio/<id>', methods=['DELETE'])
-def delete_portfolio(id):
-    return PortfolioService.delete_portfolio(id)
+```go
+// Handler (thin) — internal/api/handlers/portfolios.go
+func (h *PortfolioHandler) DeletePortfolio(w http.ResponseWriter, r *http.Request) {
+    id := chi.URLParam(r, "portfolioId")
+    err := h.portfolioService.DeletePortfolio(r.Context(), id)
+    if err != nil {
+        response.HandleServiceError(w, err)
+        return
+    }
+    w.WriteHeader(http.StatusNoContent)
+}
 
-# Service (business logic)
-class PortfolioService:
-    @staticmethod
-    def delete_portfolio(portfolio_id):
-        # Check usage, validate, delete, log
-        ...
+// Service (business logic) — internal/service/portfolio_service.go
+func (s *PortfolioService) DeletePortfolio(ctx context.Context, id string) error {
+    // Check usage, validate, delete, log
+    // ...
+}
 ```
 
+### Middleware Stack
+
+The Chi router applies middleware in order. The backend uses:
+
+1. **Request ID** — Injects a unique request ID into each request context and response header
+2. **Real IP** — Extracts the client's real IP from proxy headers
+3. **Request Logger** — Logs method, path, status, and duration for every request
+4. **CORS** — Handles cross-origin requests based on `CORS_ALLOWED_ORIGINS` or `DOMAIN` env vars
+5. **Panic Recovery** — Catches panics and returns 500 instead of crashing
+6. **UUID Validation** — Validates UUID path parameters before handlers execute
+7. **API Key Auth** — Protects specific endpoints (e.g., scheduled price updates) behind `X-API-Key` header
+
 ## Automated Tasks
-- Daily fund price updates (weekdays at 23:55)
-- Weekly IBKR transaction imports (Tue-Sat between 06:30 and 08:30)
+- Daily fund price updates (weekdays at 00:55 UTC)
+- Weekly IBKR transaction imports (Tue-Sat between 05:30 and 07:30 UTC, retries hourly)
+- Both use `SkipIfStillRunning` to prevent overlap and have 15-minute timeouts
 - Protected endpoints with API key authentication
-- Scheduled tasks run with application context
+- Scheduled tasks run in-process via `robfig/cron`
 
 ## Security
 - API key authentication for automated tasks
-- Time-based token validation
+- IBKR credentials encrypted at rest using Fernet symmetric encryption
+- Encryption key resolved in priority order: `IBKR_ENCRYPTION_KEY` env var -> `data/.ibkr_encryption_key` file -> auto-generated on first run
 - Protected endpoints for system tasks
 
 ## Project Structure
 ```
 Investment-Portfolio-Manager/
 ├── backend/
-│   ├── app/
-│   │   ├── models/      # Database models
-│   │   ├── routes/      # API endpoints
-│   │   └── services/    # Business logic
-│   ├── data/
-│   │   ├── seed/        # Seed data
-│   │   ├── exports/     # Exported data
-│   │   └── imports/     # Import staging
-│   └── tests/
+│   ├── cmd/server/main.go          # Entry point — wires dependencies, starts server
+│   ├── internal/
+│   │   ├── api/
+│   │   │   ├── router.go           # Route definitions (Chi)
+│   │   │   ├── handlers/           # HTTP handlers, one file per domain
+│   │   │   ├── middleware/          # CORS, logging, UUID validation, API key auth
+│   │   │   ├── request/            # Request parsing types, one file per domain
+│   │   │   └── response/           # Shared response helpers
+│   │   ├── model/                  # Domain model types
+│   │   ├── service/                # Business logic, one file per domain
+│   │   ├── repository/             # Database access, one file per domain
+│   │   ├── database/
+│   │   │   ├── database.go         # Connection setup
+│   │   │   ├── migrate.go          # Migration runner
+│   │   │   └── migrations/         # Goose SQL migration files
+│   │   ├── config/                 # Environment-based configuration
+│   │   ├── logging/                # Structured logging with DB-configurable levels
+│   │   ├── validation/             # Input validation helpers
+│   │   ├── apperrors/              # Typed application errors
+│   │   ├── yahoo/                  # Yahoo Finance price client
+│   │   ├── ibkr/                   # IBKR Flex report client
+│   │   ├── version/                # Build-time version injection
+│   │   └── testutil/               # Shared test helpers and DB setup
+│   └── data/
+│       └── portfolio_manager.db    # SQLite database (gitignored)
 └── frontend/
     ├── public/
     └── src/
@@ -75,6 +118,21 @@ Investment-Portfolio-Manager/
         ├── context/     # React contexts
         └── utils/       # Helper functions
 ```
+
+## Key Design Decisions
+
+### Pure Go SQLite
+
+Uses `modernc.org/sqlite` — a pure Go SQLite implementation requiring no CGO. This simplifies cross-compilation and Docker builds at the cost of slightly lower performance than CGO-based drivers. For a single-user portfolio app, this is the right trade-off.
+
+### Repository + Service Pattern
+
+Repositories handle raw SQL. Services own the business rules and transaction boundaries. This keeps SQL out of handlers and makes services testable with real database calls (no mocks).
+
+Write operations follow a consistent pattern:
+1. Service begins transaction
+2. Service calls one or more repositories with the `*sql.Tx`
+3. Service commits or rolls back
 
 ## Key Components
 - Portfolio Management System
@@ -174,22 +232,22 @@ The system includes integration with Interactive Brokers (IBKR) Flex Web Service
 
 ### Components
 
-#### IBKR Flex Service
-- `backend/app/services/ibkr_flex_service.py`
+#### IBKR Flex Client
+- `backend/internal/ibkr/` package
 - Handles API communication with IBKR Flex Web Service
 - Manages token encryption/decryption using Fernet
 - Implements 24-hour response caching to avoid duplicate API calls
 - Parses XML responses into transaction records
 
 #### IBKR Transaction Processing
-- `backend/app/services/ibkr_transaction_service.py`
+- `backend/internal/service/ibkr_transaction_service.go`
 - Validates user allocations (must sum to 100%)
 - Creates or updates Fund records based on IBKR data
 - Generates Transaction records across multiple portfolios
 - Handles dividend matching to existing Dividend records
 
-#### API Routes
-- `backend/app/routes/ibkr_routes.py`
+#### API Handlers
+- `backend/internal/api/handlers/ibkr.go`
 - Configuration management (`/api/ibkr/config`)
 - Manual import trigger (`/api/ibkr/import`)
 - Inbox management (`/api/ibkr/inbox`)
@@ -264,7 +322,7 @@ For detailed implementation, see [IBKR Transaction Lifecycle Documentation](IBKR
 
 ### Security
 - IBKR Flex tokens are encrypted at rest using Fernet encryption
-- Encryption key stored in environment variable `IBKR_ENCRYPTION_KEY`
+- Encryption key resolved in priority order: `IBKR_ENCRYPTION_KEY` env var -> `data/.ibkr_encryption_key` file -> auto-generated on first run
 - Tokens are write-only in the UI (never displayed after saving)
 - All IBKR operations are logged for audit trail
 
@@ -275,8 +333,9 @@ For detailed implementation, see [IBKR Transaction Lifecycle Documentation](IBKR
 - Manual imports can bypass cache for testing
 
 ### Scheduled Tasks
-- Weekly import runs Tuesday - Saturday between 06:30 and 08:30 (if auto-import enabled)
+- Weekly import runs Tuesday - Saturday between 05:30 and 07:30 UTC (if auto-import enabled)
 - Uses same workflow as manual imports
+- Both use `SkipIfStillRunning` to prevent overlap and have 15-minute timeouts
 - Results logged for monitoring
 
 See [IBKR Setup Guide](IBKR_SETUP.md) for detailed configuration instructions.
@@ -294,7 +353,7 @@ The materialized view feature dramatically improves portfolio history query perf
 ### Components
 
 #### PortfolioHistoryMaterialized Model
-- `backend/app/models.py`
+- `backend/internal/model/portfolio_history_materialized.go`
 - Stores pre-calculated daily portfolio metrics
 - Database fields (snake_case): portfolio_id, date, value, cost, realized_gain, unrealized_gain, total_dividends, total_sale_proceeds, total_original_cost, total_gain_loss, is_archived, calculated_at
 - API response fields (camelCase): totalValue, totalCost, totalRealizedGainLoss, totalUnrealizedGainLoss, totalDividends, totalSaleProceeds, totalOriginalCost, totalGainLoss, isArchived
@@ -302,20 +361,20 @@ The materialized view feature dramatically improves portfolio history query perf
 - Unique constraint on (portfolio_id, date)
 - CASCADE delete when portfolio is deleted
 
-**Note on Field Naming**: The internal database and Python code use snake_case (following Python conventions), while the API responses use camelCase (following JavaScript conventions). The conversion happens at the API boundary in `PortfolioService.get_portfolio_history()`.
+**Note on Field Naming**: The internal database and Go code use snake_case, while the API responses use camelCase (following JavaScript conventions). The conversion happens at the API boundary in the service layer's JSON serialization.
 
-#### PortfolioHistoryMaterializedService
-- `backend/app/services/portfolio_history_materialized_service.py`
+#### MaterializedService
+- `backend/internal/service/materialized_service.go`
 - Manages materialized view lifecycle
 - Key methods:
-  - `check_materialized_coverage()` - Determines if date range is fully cached
-  - `get_materialized_history()` - Retrieves cached portfolio history
-  - `materialize_portfolio_history()` - Calculates and stores portfolio data
-  - `invalidate_materialized_history()` - Removes stale cache entries
-  - `materialize_all_portfolios()` - Batch materialization
+  - `CheckMaterializedCoverage()` - Determines if date range is fully cached
+  - `GetMaterializedHistory()` - Retrieves cached portfolio history
+  - `MaterializePortfolioHistory()` - Calculates and stores portfolio data
+  - `InvalidateMaterializedHistory()` - Removes stale cache entries
+  - `MaterializeAllPortfolios()` - Batch materialization
 
 #### Smart Query Router
-- Integrated into `PortfolioService.get_portfolio_history()`
+- Integrated into portfolio service's history endpoint
 - Automatically detects complete materialized coverage
 - Routes to fast path (materialized) or slow path (on-demand) transparently
 - No API changes required - optimization is invisible to consumers
@@ -349,47 +408,36 @@ CREATE INDEX idx_portfolio_history_mat_date
 
 ### Workflow
 
-1. **Initial Setup**: Run `flask materialize-history` to populate cache
-2. **Query Optimization**: Subsequent history queries use cached data automatically
+1. **Automatic on Startup**: Migrations run automatically via Goose on server start, creating the table if needed
+2. **Query Optimization**: History queries use cached data automatically when available
 3. **Automatic Invalidation**: Cache invalidated when source data changes:
-   - Transaction created/updated/deleted → invalidates from transaction.date forward
-   - Dividend created/updated/deleted → invalidates from ex_dividend_date forward
-   - Fund price updated → invalidates for all portfolios holding that fund
+   - Transaction created/updated/deleted -> invalidates from transaction.date forward
+   - Dividend created/updated/deleted -> invalidates from ex_dividend_date forward
+   - Fund price updated -> invalidates for all portfolios holding that fund
 4. **Recalculation**: Next query recalculates missing data and updates cache
-
-### CLI Commands
-
-- `flask materialize-history` - Populate materialized view for all portfolios
-- `flask materialize-history --portfolio-id=<id>` - Materialize specific portfolio
-- `flask materialize-history --force` - Force recalculation of existing data
-- `flask materialized-stats` - View cache statistics and coverage
-- `flask invalidate-materialized-history --portfolio-id=<id> --from-date=YYYY-MM-DD` - Manual invalidation
 
 ### Cache Invalidation Strategy
 
 The system uses **application-level triggers** for cache invalidation:
 
-```python
-# In TransactionService.create_transaction()
-transaction = Transaction(...)
-db.session.commit()
-
-# Automatically invalidate materialized view
-PortfolioHistoryMaterializedService.invalidate_from_transaction(transaction)
+```go
+// In TransactionService.CreateTransaction()
+// After committing the transaction:
+s.materializedService.InvalidateFromDate(ctx, portfolioID, transaction.Date)
 ```
 
 **Advantages:**
 - Easy to test and debug
-- Async recalculation possible
 - Full control over invalidation logic
 - Visible in application logs
+- Services own the invalidation responsibility
 
 ### Coverage Detection
 
 The service intelligently detects cache coverage:
-- **Complete Coverage**: All requested dates are materialized → use fast path
-- **No Coverage**: No materialized data exists → use on-demand calculation
-- **Partial Coverage**: Some dates materialized → currently falls back to on-demand (future: hybrid approach)
+- **Complete Coverage**: All requested dates are materialized -> use fast path
+- **No Coverage**: No materialized data exists -> use on-demand calculation
+- **Partial Coverage**: Some dates materialized -> currently falls back to on-demand (future: hybrid approach)
 
 ### Storage Requirements
 
@@ -402,12 +450,11 @@ Typical storage per portfolio:
 
 **Recommended Schedule:**
 - **Automatic**: Cache invalidated on writes (transactions, dividends, prices)
-- **Weekly**: Run `flask materialize-history --force` via cron to fill any gaps
-- **Monitoring**: Check `flask materialized-stats` for coverage metrics
+- **On-demand**: Materialization happens transparently when history is queried
 
 ### Future Enhancements
 
-1. **Background Jobs**: Async recalculation via Celery/RQ
+1. **Background Jobs**: Async recalculation via goroutines
 2. **Incremental Updates**: Only recalculate affected date ranges
 3. **Hybrid Queries**: Combine materialized and on-demand for partial coverage
 4. **Real-time Push**: WebSocket updates when recalculation completes
@@ -426,15 +473,15 @@ The system includes a version checking mechanism that compares the application v
 ### Response Format
 ```json
 {
-  "app_version": "1.3.0",
-  "db_version": "1.1.2",
+  "app_version": "2.0.0",
+  "db_version": "2.0.0",
   "features": {
-    "ibkr_integration": false,
+    "ibkr_integration": true,
     "realized_gain_loss": true,
     "exclude_from_overview": true
   },
-  "migration_needed": true,
-  "migration_message": "Database schema (v1.1.2) is behind application version (v1.3.0). Run 'flask db upgrade' to enable new features."
+  "migration_needed": false,
+  "migration_message": null
 }
 ```
 
@@ -469,5 +516,5 @@ if (!versionInfo.features.ibkr_integration) {
 
 ---
 
-**Last Updated**: 2026-03-27 (Version 2.0.0)
+**Last Updated**: 2026-04-13 (Version 2.0.0)
 **Maintained By**: @ndewijer

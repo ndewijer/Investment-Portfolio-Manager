@@ -5,32 +5,32 @@
 ### Prerequisites
 - Docker and Docker Compose
 - Node.js 23+
-- Python 3.13+
-- **uv** package manager
+- Go 1.26+
+- [golangci-lint](https://golangci-lint.run/)
 
-### Install uv
+### Install golangci-lint
 ```bash
-# macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
+# macOS (Homebrew)
+brew install golangci-lint
 
-# Windows
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# Linux / macOS (install script)
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
 
 # Verify
-uv --version
+golangci-lint --version
 ```
 
 ### Setup Steps
 1. **Install pre-commit hooks**:
 ```bash
-uv tool install pre-commit
+pip install pre-commit
 pre-commit install
 ```
 
 2. **Install dependencies**:
 ```bash
-# Backend (from root)
-uv sync --frozen
+# Backend (from backend/)
+cd backend && go mod download
 
 # Frontend
 cd frontend && pnpm install
@@ -38,13 +38,16 @@ cd frontend && pnpm install
 
 ## Code Style
 - Frontend: Biome (lint + format)
-- Backend: Ruff (linting and formatting)
+- Backend: golangci-lint (linting), `go fmt` / `goimports` (formatting)
 - Pre-commit hooks enforce style
 
 ## Testing
 ```bash
 # Backend
-uv run pytest backend/tests/ --cov=backend/app
+cd backend && go test -race ./...
+
+# Or using Make from project root
+make test
 
 # Frontend
 cd frontend && pnpm test
@@ -57,9 +60,9 @@ cd frontend && pnpm test
 4. Run linting and tests:
    ```bash
    # Backend
-   uv run ruff check backend/
-   uv run ruff format backend/
-   uv run pytest backend/tests/
+   cd backend
+   golangci-lint run --timeout=5m
+   go test -race ./...
 
    # Frontend
    cd frontend
@@ -77,5 +80,5 @@ cd frontend && pnpm test
 
 ---
 
-**Last Updated**: 2026-03-02 (Version 1.6.0)
+**Last Updated**: 2026-04-13 (Version 2.0.0)
 **Maintained By**: @ndewijer

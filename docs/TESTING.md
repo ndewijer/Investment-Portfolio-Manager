@@ -1,6 +1,6 @@
 # Testing Framework Guide
 
-This guide documents the pytest testing framework and provides guidance for adding new tests.
+This guide documents the testing framework and provides guidance for adding new tests.
 
 ---
 
@@ -9,7 +9,7 @@ This guide documents the pytest testing framework and provides guidance for addi
 - [Overview](#overview)
 - [Getting Started](#getting-started)
 - [Test Structure](#test-structure)
-- [Available Fixtures](#available-fixtures)
+- [Test Helpers and Utilities](#test-helpers-and-utilities)
 - [Running Tests](#running-tests)
 - [Writing New Tests](#writing-new-tests)
 - [Best Practices](#best-practices)
@@ -19,52 +19,40 @@ This guide documents the pytest testing framework and provides guidance for addi
 
 ## Overview
 
-The Investment Portfolio Manager uses **pytest** for its testing framework, chosen for its:
+The Investment Portfolio Manager uses **Go's built-in `testing` package** for backend testing, chosen for its:
 
-- **Simplicity**: Easy to write and understand tests
-- **Powerful fixtures**: Reusable test components
-- **Great ecosystem**: Extensive plugin support
-- **Clear output**: Readable test results
+- **Zero Dependencies**: Part of the Go standard library
+- **Speed**: Tests run fast with in-memory SQLite databases
+- **Isolation**: Each test gets its own database instance via `testutil.SetupTestDB()`
+- **Subtests**: `t.Run()` for organized, hierarchical test groups
+- **Clear output**: Built-in verbose and short modes
 
 ### Coverage
 
-- **Service Tests**: Comprehensive coverage across all major services
-  - **Excellent Coverage Services** (95%+):
-    - `ibkr_flex_service.py`: 97% (56 tests) ✅
-    - `price_update_service.py`: 98% (17 tests) ✅
-    - `fund_matching_service.py`: 100% (27 tests) ✅
-    - `symbol_lookup_service.py`: 100% (20 tests) ✅
-    - `system_service.py`: 100% ✅
-    - `ibkr_config_service.py`: 100% ✅
-  - **High Coverage Services** (90%+):
-    - `dividend_service.py`: 92% (21 tests) ✅
-    - `portfolio_service.py`: 92% (46 tests) ✅
-    - `transaction_service.py`: 91% (26 tests) ✅
-    - `logging_service.py`: 96% ✅
-    - `fund_service.py`: 94% ✅
-  - **Target Coverage Services** (85%+):
-    - `ibkr_transaction_service.py`: 89% (40 tests) ✅
-    - `developer_service.py`: 99% ✅
-  - **New Services** (75%+):
-    - `portfolio_history_materialized_service.py`: 79% (13 tests) ⚡ (v1.4.0 - Performance optimization)
+- **Handler Tests**: HTTP handler tests covering all route groups
+  - Portfolio handlers: comprehensive CRUD + archive/unarchive + fund management
+  - Fund handlers: CRUD + price updates + symbol lookup + usage checking
+  - Transaction handlers: CRUD + portfolio-specific queries
+  - Dividend handlers: CRUD + portfolio/fund-specific queries
+  - IBKR handlers: config management + import + inbox + allocation + dividend matching
+  - Developer handlers: logs + settings + CSV import + exchange rates + fund prices
+  - System handlers: health check + version
 
-- **Route Tests**: Complete coverage of all route error paths
-  - `ibkr_routes.py`: 100% ✅
-  - `portfolio_routes.py`: 100% ✅
-  - `transaction_routes.py`: 100% ✅
-  - `dividend_routes.py`: 100% ✅
-  - `system_routes.py`: 100% ✅
-  - `fund_routes.py`: 96% ✅
-  - `developer_routes.py`: 91% ✅
+- **Service Tests**: Business logic coverage across all major services
+  - Portfolio service: CRUD, archive, fund management, summary, history
+  - Fund service: CRUD, price updates, usage checking, symbol lookup
+  - Transaction service: CRUD, gain/loss calculation, portfolio queries
+  - Dividend service: CRUD, portfolio/fund queries, reinvestment
+  - IBKR services: config, flex client, transaction processing, allocation
+  - Materialized service: cache management, invalidation, coverage detection
+  - Developer service: logging, exchange rates, CSV import
 
-- **Critical Bugs Fixed Through Testing**: 5 bugs
+- **Critical Bugs Found Through Testing**: 5 bugs
   - ReinvestmentStatus enum vs string mismatch
   - Dividend share calculation error
   - Cost basis calculation error
   - Validation bypassing with zero values
   - UNIQUE constraint errors with invalid cache
-
-**Overall Test Coverage**: 669+ tests across routes and services, **90.05%** overall coverage
 
 ### Goals
 
@@ -72,6 +60,7 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 - **Document behavior**: Tests serve as executable documentation
 - **Enable refactoring**: Confidence to improve code
 - **Comprehensive coverage**: Maintain high test coverage across the codebase
+- **No mocks**: Tests use real SQLite databases (in-memory, per-test) for realistic behavior
 
 ---
 
@@ -79,29 +68,42 @@ The Investment Portfolio Manager uses **pytest** for its testing framework, chos
 
 ### Prerequisites
 
-- Python 3.13+
-- Virtual environment activated
-- pytest and dependencies installed
+- Go 1.26+
+- Make (for convenience targets)
 
-### Installation
+### Running Tests
 
 ```bash
+# From project root using Make
+make test              # Run all tests with race detector
+make test-short        # Skip slow tests
+make test-verbose      # Verbose output
+
+# From backend directory using Go directly
 cd backend
-source .venv/bin/activate
-
-# Install test dependencies
-pip install -r requirements.txt
-
-# Verify installation
-pytest --version
+go test ./...                              # Run all tests
+go test -race ./...                        # With race detector
+go test ./internal/service/...             # Specific package
+go test -run TestCreatePortfolio ./...     # Specific test
+go test -v ./internal/api/handlers/...    # Verbose for handlers
 ```
 
-### Dependencies
+### Coverage
 
-```
-pytest==8.4.2           # Test framework
-pytest-flask==1.3.0     # Flask integration
-pytest-cov==7.0.0       # Coverage reporting
+```bash
+# Using Make targets
+make coverage              # Run tests with coverage summary
+make coverage-html         # Generate HTML coverage report
+make coverage-func         # Per-function coverage
+make coverage-by-file      # Per-file coverage sorted by %
+make coverage-gaps         # Files below 100% coverage
+make coverage-threshold    # Check coverage meets 75% threshold (CI)
+
+# Using Go directly
+cd backend
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out -o coverage.html
+go tool cover -func=coverage.out
 ```
 
 ---
@@ -112,191 +114,169 @@ pytest-cov==7.0.0       # Coverage reporting
 
 ```
 backend/
-├── app/                    # Application code
-│   ├── models.py
-│   ├── routes/
-│   └── services/
-├── tests/                  # Test suite
-│   ├── __init__.py        # Package marker
-│   ├── conftest.py        # Shared fixtures
-│   ├── services/          # Service layer tests
-│   │   ├── test_dividend_service.py
-│   │   ├── test_fund_matching_service.py
-│   │   ├── test_fund_service.py
-│   │   ├── test_ibkr_config_service.py
-│   │   ├── test_ibkr_flex_service.py
-│   │   ├── test_ibkr_transaction_service.py
-│   │   ├── test_logging_service.py
-│   │   ├── test_portfolio_service.py
-│   │   ├── test_portfolio_history_materialized_service.py
-│   │   ├── test_price_update_service.py
-│   │   ├── test_symbol_lookup_service.py
-│   │   └── test_transaction_service.py
-│   └── docs/              # Test documentation
-│       ├── README.md      # Documentation index
-│       ├── services/      # Service test documentation
-│       │   ├── DIVIDEND_SERVICE_TESTS.md
-│       │   ├── FUND_MATCHING_SERVICE_TESTS.md
-│       │   ├── FUND_SERVICE_TESTS.md
-│       │   ├── IBKR_CONFIG_SERVICE_TESTS.md
-│       │   ├── IBKR_FLEX_SERVICE_TESTS.md
-│       │   ├── IBKR_TRANSACTION_SERVICE_TESTS.md
-│       │   ├── PORTFOLIO_SERVICE_TESTS.md
-│       │   ├── PORTFOLIO_HISTORY_MATERIALIZED_SERVICE_TESTS.md
-│       │   ├── PRICE_UPDATE_SERVICE_TESTS.md
-│       │   ├── SYMBOL_LOOKUP_SERVICE_TESTS.md
-│       │   └── TRANSACTION_SERVICE_TESTS.md
-│       ├── phases/        # Development phase documentation
-│       │   ├── BUG_FIXES_1.3.3.md
-│       │   └── PHASE_3_SUMMARY.md
-│       └── infrastructure/ # Testing infrastructure docs
-│           ├── PORTFOLIO_PERFORMANCE_TESTS.md
-│           └── TESTING_INFRASTRUCTURE.md
-├── pytest.ini             # Pytest configuration
-└── requirements.txt       # Dependencies
+├── internal/
+│   ├── api/
+│   │   └── handlers/
+│   │       ├── portfolios.go
+│   │       ├── portfolios_test.go       # Handler tests (external _test package)
+│   │       ├── funds.go
+│   │       ├── funds_test.go
+│   │       ├── transactions.go
+│   │       ├── transactions_test.go
+│   │       ├── dividends.go
+│   │       ├── dividends_test.go
+│   │       ├── ibkr.go
+│   │       ├── ibkr_test.go
+│   │       ├── developer.go
+│   │       ├── developer_test.go
+│   │       ├── system.go
+│   │       ├── system_test.go
+│   │       └── shared_test.go           # Internal test helpers
+│   ├── service/
+│   │   ├── portfolio_service.go
+│   │   ├── portfolio_service_test.go
+│   │   ├── fund_service.go
+│   │   ├── fund_service_test.go
+│   │   ├── transaction_service.go
+│   │   ├── transaction_service_test.go
+│   │   ├── dividend_service.go
+│   │   ├── dividend_service_test.go
+│   │   ├── ibkr_config_service.go
+│   │   ├── ibkr_config_service_test.go
+│   │   ├── ibkr_transaction_service.go
+│   │   ├── ibkr_transaction_service_test.go
+│   │   ├── materialized_service.go
+│   │   ├── materialized_service_test.go
+│   │   └── ...
+│   └── testutil/
+│       ├── database.go                  # Test database setup (in-memory SQLite)
+│       ├── factories.go                 # Builder pattern for test data
+│       ├── helpers.go                   # Service factory helpers
+│       └── http_helpers.go              # HTTP request/response test helpers
+└── Makefile                             # Test and coverage targets
 ```
 
 ### Test Organization
 
 Tests are organized by:
 
-1. **Category**: Services, Routes, Models (in subdirectories)
-2. **Module**: `test_<module_name>.py`
-3. **Class**: `Test<FeatureName>` (optional grouping)
-4. **Function**: `test_<specific_behavior>`
+1. **Package**: Tests live alongside the code they test (`_test.go` suffix)
+2. **Function**: `TestFeatureName_SpecificBehavior`
+3. **Subtests**: `t.Run("description", func(t *testing.T) { ... })` for grouping related cases
 
 **Example**:
-```python
-# tests/services/test_portfolio_service.py
-class TestPortfolioHistoryPerformance:
-    def test_get_portfolio_history_query_count(self):
-        pass
+```go
+// internal/api/handlers/portfolios_test.go
+func TestPortfolioHandler_GetAllPortfolios(t *testing.T) {
+    t.Run("returns empty list when no portfolios exist", func(t *testing.T) {
+        // ...
+    })
 
-    def test_get_portfolio_history_execution_time(self):
-        pass
+    t.Run("returns all portfolios", func(t *testing.T) {
+        // ...
+    })
+}
 
-class TestPortfolioHistoryCorrectness:
-    def test_portfolio_history_returns_data(self):
-        pass
+func TestPortfolioHandler_GetPortfolio(t *testing.T) {
+    t.Run("returns portfolio by ID", func(t *testing.T) {
+        // ...
+    })
+
+    t.Run("returns 404 for non-existent portfolio", func(t *testing.T) {
+        // ...
+    })
+}
 ```
 
 ---
 
-## Available Fixtures
+## Test Helpers and Utilities
 
-Fixtures are reusable components defined in `tests/conftest.py`.
+Test utilities are defined in `backend/internal/testutil/`.
 
-### `app` (session scope)
+### `SetupTestDB(t)` — In-Memory Database
 
-**Purpose**: Flask application instance for testing
-
-**Scope**: Session - created once per test run
+**Purpose**: Creates an isolated in-memory SQLite database for each test with the full production schema applied.
 
 **Usage**:
-```python
-def test_something(app):
-    assert app.config["TESTING"] == True
+```go
+func TestSomething(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    // db is automatically cleaned up when the test ends via t.Cleanup()
+}
 ```
 
-**Configuration**:
-- Uses existing database (can be configured for test DB)
-- TESTING mode enabled
-- Same configuration as production app
+**Key Properties**:
+- Uses in-memory SQLite for speed
+- Full production schema created for each test
+- Automatic cleanup via `t.Cleanup()`
+- Complete test isolation — no shared state between tests
 
-### `client` (session scope)
+### Builder Pattern Factories
 
-**Purpose**: Test client for HTTP requests
-
-**Scope**: Session - created once per test run
+**Purpose**: Fluent builders for creating test data with sensible defaults.
 
 **Usage**:
-```python
-def test_api_endpoint(client):
-    response = client.get('/api/portfolio')
-    assert response.status_code == 200
+```go
+// Create a portfolio with defaults
+portfolio := testutil.NewPortfolio().Build(t, db)
+
+// Create a portfolio with custom values
+portfolio := testutil.NewPortfolio().
+    WithName("Custom Portfolio").
+    WithDescription("Testing").
+    Archived().
+    Build(t, db)
+
+// Create a fund with custom values
+fund := testutil.NewFund().
+    WithSymbol("AAPL").
+    WithCurrency("USD").
+    Build(t, db)
+
+// Create a transaction
+transaction := testutil.NewTransaction().
+    WithPortfolioFundID(pf.ID).
+    WithType("buy").
+    WithShares(100).
+    WithCostPerShare(150.00).
+    Build(t, db)
 ```
 
-**Use for**:
-- Integration tests
-- API endpoint testing
-- End-to-end request/response validation
+**Benefits**:
+- Self-documenting test setup
+- Sensible defaults for optional fields
+- Readable at a glance
+- Consistent test data creation across all test files
 
-### `app_context` (function scope)
+### Service Factory Helpers
 
-**Purpose**: Application context for database operations
-
-**Scope**: Function - created for each test
+**Purpose**: Convenience functions to create fully-wired service instances for testing.
 
 **Usage**:
-```python
-def test_database_query(app_context):
-    from app.models import Portfolio
-    portfolios = Portfolio.query.all()
-    assert len(portfolios) > 0
+```go
+db := testutil.SetupTestDB(t)
+ps := testutil.NewTestPortfolioService(t, db)
+fs := testutil.NewTestFundService(t, db)
+ms := testutil.NewTestMaterializedService(t, db)
 ```
 
-**Required for**:
-- Database queries
-- Service layer calls
-- Any code requiring Flask context
+### HTTP Request Helpers
 
-### `query_counter` (function scope)
-
-**Purpose**: Counts SQL queries executed during test
-
-**Scope**: Function - created for each test
-
-**Attributes**:
-- `count` (int): Current query count
-- `queries` (list): List of SQL statements
-- `reset()`: Reset counter to zero
+**Purpose**: Helpers for creating HTTP requests with Chi URL parameters and parsing responses.
 
 **Usage**:
-```python
-def test_query_efficiency(app_context, query_counter):
-    query_counter.reset()
+```go
+// Create a request with URL parameters (Chi-compatible)
+req := testutil.NewRequestWithURLParams(
+    http.MethodGet,
+    "/api/portfolio/"+id,
+    map[string]string{"portfolioId": id},
+)
 
-    # Execute code
-    result = PortfolioService.get_portfolio_history()
-
-    # Verify query count
-    print(f"Queries: {query_counter.count}")
-    assert query_counter.count < 100
+// Assert row counts in the database
+testutil.AssertRowCount(t, db, "portfolio", 1)
 ```
-
-**Use for**:
-- Performance tests
-- Query optimization validation
-- Regression prevention
-
-### `timer` (function scope)
-
-**Purpose**: Measures execution time
-
-**Scope**: Function - created for each test
-
-**Methods**:
-- `start()`: Start timer
-- `stop()`: Stop timer and return elapsed seconds
-- `elapsed` (property): Current elapsed time
-
-**Usage**:
-```python
-def test_performance(app_context, timer):
-    timer.start()
-
-    # Execute code
-    result = PortfolioService.get_portfolio_history()
-
-    elapsed = timer.stop()
-    print(f"Time: {elapsed:.3f}s")
-    assert elapsed < 1.0
-```
-
-**Use for**:
-- Performance benchmarks
-- Execution time validation
-- Speed regression tests
 
 ---
 
@@ -306,146 +286,182 @@ def test_performance(app_context, timer):
 
 ```bash
 # Run all tests
-pytest
+make test
 
 # Run with verbose output
-pytest -v
+make test-verbose
 
-# Run with output capture disabled (see print statements)
-pytest -s
+# Run tests skipping slow tests (tagged with t.Skip for short mode)
+make test-short
 
 # Run specific test file
-pytest tests/services/test_portfolio_service.py
+cd backend && go test ./internal/service/ -run TestPortfolioService
 
 # Run specific test function
-pytest tests/services/test_portfolio_service.py::test_get_portfolio_history_query_count
+cd backend && go test ./internal/api/handlers/ -run TestPortfolioHandler_GetAllPortfolios
 
-# Run specific test class
-pytest tests/services/test_portfolio_service.py::TestPortfolioHistoryPerformance
+# Run specific subtest
+cd backend && go test ./internal/api/handlers/ -run "TestPortfolioHandler_GetAllPortfolios/returns_empty_list"
+
+# Run all handler tests
+cd backend && go test ./internal/api/handlers/...
 
 # Run all service tests
-pytest tests/services/
-
-# Run specific service tests
-pytest tests/services/test_logging_service.py
+cd backend && go test ./internal/service/...
 ```
 
 ### Coverage Reports
 
 ```bash
-# Run with coverage (automatically enabled in pytest.ini)
-pytest
+# Run with coverage summary
+make coverage
 
 # Generate HTML coverage report
-pytest --cov=app --cov-report=html
-open htmlcov/index.html
+make coverage-html
+open backend/coverage.html
 
-# Show missing lines
-pytest --cov=app --cov-report=term-missing
+# Per-function coverage
+make coverage-func
+
+# Show files below 100% coverage
+make coverage-gaps
+
+# Check coverage meets 75% threshold
+make coverage-threshold
 ```
 
-### Markers
+### Race Detector
+
+The default `make test` target includes the `-race` flag to detect data races:
 
 ```bash
-# Run only performance tests
-pytest -m performance
-
-# Run only unit tests
-pytest -m unit
-
-# Run only integration tests
-pytest -m integration
+make test  # Includes -race by default
 ```
 
 ---
 
 ## Writing New Tests
 
-### Test Template
+### Handler Test Template
 
-```python
-"""
-Module for testing [feature name].
+```go
+func TestNewHandler_Endpoint(t *testing.T) {
+    // WHY: Verify that the endpoint correctly handles [scenario]
 
-Brief description of what this module tests.
-"""
+    t.Run("returns expected result for valid input", func(t *testing.T) {
+        // Setup
+        db := testutil.SetupTestDB(t)
+        svc := testutil.NewTestSomeService(t, db)
+        handler := handlers.NewSomeHandler(svc)
 
-import pytest
-from app.services.some_service import SomeService
+        // Create test data
+        item := testutil.NewItem().WithName("Test").Build(t, db)
 
+        // Build request
+        req := testutil.NewRequestWithURLParams(
+            http.MethodGet,
+            "/api/items/"+item.ID,
+            map[string]string{"itemId": item.ID},
+        )
+        w := httptest.NewRecorder()
 
-class TestFeatureName:
-    """Test suite for [feature]."""
+        // Execute
+        handler.GetItem(w, req)
 
-    def test_basic_functionality(self, app_context):
-        """Test that basic feature works correctly."""
-        # Arrange
-        expected_result = "something"
+        // Assert
+        assert.Equal(t, http.StatusOK, w.Code)
 
-        # Act
-        result = SomeService.some_method()
+        var result model.Item
+        err := json.NewDecoder(w.Body).Decode(&result)
+        require.NoError(t, err)
+        assert.Equal(t, "Test", result.Name)
+    })
 
-        # Assert
-        assert result == expected_result
+    t.Run("returns 404 for non-existent item", func(t *testing.T) {
+        db := testutil.SetupTestDB(t)
+        svc := testutil.NewTestSomeService(t, db)
+        handler := handlers.NewSomeHandler(svc)
 
-    def test_edge_case(self, app_context):
-        """Test edge case handling."""
-        # Test edge case
-        pass
+        req := testutil.NewRequestWithURLParams(
+            http.MethodGet,
+            "/api/items/"+testutil.MakeID(),
+            map[string]string{"itemId": testutil.MakeID()},
+        )
+        w := httptest.NewRecorder()
+
+        handler.GetItem(w, req)
+
+        assert.Equal(t, http.StatusNotFound, w.Code)
+    })
+}
 ```
 
-### Performance Test Template
+### Service Test Template
 
-```python
-class TestPerformance:
-    """Performance benchmarks for [feature]."""
+```go
+func TestSomeService_Method(t *testing.T) {
+    t.Run("performs expected operation", func(t *testing.T) {
+        // Setup
+        db := testutil.SetupTestDB(t)
+        svc := testutil.NewTestSomeService(t, db)
 
-    def test_query_count(self, app_context, query_counter):
-        """Test that query count is within target."""
-        query_counter.reset()
+        // Create test data
+        item := testutil.NewItem().WithName("Test").Build(t, db)
 
-        # Execute feature
-        result = SomeService.expensive_operation()
+        // Execute
+        result, err := svc.GetItem(context.Background(), item.ID)
 
-        # Verify
-        print(f"\n✓ Query count: {query_counter.count}")
-        assert query_counter.count < 50, \
-            f"Too many queries: {query_counter.count}"
+        // Assert
+        require.NoError(t, err)
+        assert.Equal(t, "Test", result.Name)
+    })
 
-    def test_execution_time(self, app_context, timer):
-        """Test that execution completes quickly."""
-        timer.start()
+    t.Run("returns error for non-existent item", func(t *testing.T) {
+        db := testutil.SetupTestDB(t)
+        svc := testutil.NewTestSomeService(t, db)
 
-        # Execute feature
-        result = SomeService.expensive_operation()
+        _, err := svc.GetItem(context.Background(), testutil.MakeID())
 
-        elapsed = timer.stop()
-        print(f"\n✓ Execution time: {elapsed:.3f}s")
-        assert elapsed < 1.0, \
-            f"Too slow: {elapsed:.3f}s"
+        assert.Error(t, err)
+        assert.True(t, errors.Is(err, apperrors.ErrItemNotFound))
+    })
+}
 ```
 
-### Integration Test Template
+### Table-Driven Test Template
 
-```python
-class TestAPIEndpoint:
-    """Integration tests for [endpoint]."""
+```go
+func TestValidation(t *testing.T) {
+    tests := []struct {
+        name           string
+        input          string
+        expectedStatus int
+        expectedError  string
+    }{
+        {"empty ID", "", http.StatusBadRequest, "ID is required"},
+        {"invalid UUID", "not-a-uuid", http.StatusBadRequest, "invalid UUID format"},
+        {"non-existent", testutil.MakeID(), http.StatusNotFound, "not found"},
+    }
 
-    def test_endpoint_success(self, client):
-        """Test successful API response."""
-        response = client.get('/api/endpoint')
+    for _, tc := range tests {
+        t.Run(tc.name, func(t *testing.T) {
+            db := testutil.SetupTestDB(t)
+            svc := testutil.NewTestSomeService(t, db)
+            handler := handlers.NewSomeHandler(svc)
 
-        assert response.status_code == 200
-        data = response.get_json()
-        assert 'expected_field' in data
+            req := testutil.NewRequestWithURLParams(
+                http.MethodGet,
+                "/api/items/"+tc.input,
+                map[string]string{"itemId": tc.input},
+            )
+            w := httptest.NewRecorder()
 
-    def test_endpoint_validation(self, client):
-        """Test input validation."""
-        response = client.post('/api/endpoint', json={
-            'invalid': 'data'
+            handler.GetItem(w, req)
+
+            assert.Equal(t, tc.expectedStatus, w.Code)
         })
-
-        assert response.status_code == 400
+    }
+}
 ```
 
 ---
@@ -455,186 +471,209 @@ class TestAPIEndpoint:
 ### 1. Test Naming
 
 **Good**:
-```python
-def test_get_portfolio_history_returns_list_of_daily_values():
-    pass
+```go
+func TestPortfolioService_DeletePortfolio_ReturnsErrorWhenFundsAttached(t *testing.T) {}
 
-def test_portfolio_fund_history_filters_by_date_range():
-    pass
+func TestTransactionHandler_CreateTransaction_ValidatesCostPerShare(t *testing.T) {}
 ```
 
 **Bad**:
-```python
-def test_history():  # Too vague
-    pass
+```go
+func TestDelete(t *testing.T) {}    // Too vague
 
-def test_func1():  # Meaningless name
-    pass
+func TestFunc1(t *testing.T) {}     // Meaningless name
 ```
 
-### 2. Arrange-Act-Assert Pattern
+### 2. WHY Comments
 
-```python
-def test_something(app_context):
-    # Arrange: Set up test data
-    portfolio_id = "some-id"
-    start_date = "2024-01-01"
+Document the purpose of test groups with WHY comments:
 
-    # Act: Execute the code under test
-    result = PortfolioService.get_portfolio_history(
-        start_date=start_date
-    )
+```go
+func TestPortfolioHandler_ArchivePortfolio(t *testing.T) {
+    // WHY: Archiving should set is_archived=true and still allow read access
+    // but prevent new transactions from being added.
 
-    # Assert: Verify the results
-    assert isinstance(result, list)
-    assert len(result) > 0
+    t.Run("archives portfolio successfully", func(t *testing.T) {
+        // ...
+    })
+}
 ```
 
-### 3. One Assertion Per Test (When Possible)
+### 3. One Assertion Focus Per Subtest
 
 **Good**:
-```python
-def test_returns_list(app_context):
-    result = PortfolioService.get_portfolio_history()
-    assert isinstance(result, list)
+```go
+t.Run("returns list of portfolios", func(t *testing.T) {
+    result, err := svc.GetAllPortfolios(ctx)
+    require.NoError(t, err)
+    assert.Len(t, result, 2)
+})
 
-def test_list_not_empty(app_context):
-    result = PortfolioService.get_portfolio_history()
-    assert len(result) > 0
+t.Run("portfolios contain expected fields", func(t *testing.T) {
+    result, err := svc.GetAllPortfolios(ctx)
+    require.NoError(t, err)
+    assert.NotEmpty(t, result[0].ID)
+    assert.NotEmpty(t, result[0].Name)
+})
 ```
 
 **Acceptable** (related assertions):
-```python
-def test_response_structure(app_context):
-    result = PortfolioService.get_portfolio_history()
-    assert isinstance(result, list)
-    assert len(result) > 0
-    assert 'date' in result[0]
+```go
+t.Run("response structure is correct", func(t *testing.T) {
+    result, err := svc.GetAllPortfolios(ctx)
+    require.NoError(t, err)
+    assert.Len(t, result, 2)
+    assert.NotEmpty(t, result[0].ID)
+    assert.NotEmpty(t, result[0].Name)
+})
 ```
 
-### 4. Use Descriptive Assertion Messages
+### 4. Test Edge Cases
 
-```python
-# Good
-assert query_counter.count < 100, \
-    f"Too many queries: {query_counter.count} (target: < 100)"
+```go
+t.Run("handles empty portfolio with no transactions", func(t *testing.T) {
+    // Test empty case
+})
 
-assert elapsed < 1.0, \
-    f"Too slow: {elapsed:.3f}s (target: < 1.0s)"
+t.Run("handles missing price data gracefully", func(t *testing.T) {
+    // Test missing data
+})
 
-# Bad
-assert query_counter.count < 100
-assert elapsed < 1.0
+t.Run("handles date range boundaries correctly", func(t *testing.T) {
+    // Test boundaries
+})
 ```
 
-### 5. Test Edge Cases
+### 5. Use Builder Factories for Test Data
 
-```python
-def test_empty_portfolio(app_context):
-    """Test behavior with no transactions."""
-    # Test empty case
+```go
+// Good: Clear, self-documenting
+portfolio := testutil.NewPortfolio().
+    WithName("Test Portfolio").
+    Archived().
+    Build(t, db)
 
-def test_missing_price_data(app_context):
-    """Test behavior when price data unavailable."""
-    # Test missing data
-
-def test_date_range_boundaries(app_context):
-    """Test start and end date edge cases."""
-    # Test boundaries
+// Bad: Manual SQL inserts scattered through tests
+db.Exec("INSERT INTO portfolio (id, name, is_archived) VALUES (?, ?, ?)", id, "Test", true)
 ```
 
-### 6. Use Fixtures for Shared Setup
+### 6. Test Isolation
 
-```python
-# In conftest.py
-@pytest.fixture
-def sample_portfolio(app_context):
-    """Create a sample portfolio for testing."""
-    portfolio = Portfolio(name="Test Portfolio")
-    db.session.add(portfolio)
-    db.session.commit()
-    return portfolio
+Every test gets its own database instance. Never rely on state from another test:
 
-# In test file
-def test_with_sample(sample_portfolio):
-    assert sample_portfolio.name == "Test Portfolio"
+```go
+// Good: Each subtest creates its own DB
+t.Run("first test", func(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    testutil.NewPortfolio().Build(t, db)
+    testutil.AssertRowCount(t, db, "portfolio", 1)
+})
+
+t.Run("second test starts clean", func(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    testutil.AssertRowCount(t, db, "portfolio", 0)
+})
 ```
 
 ---
 
 ## Examples
 
-### Example 1: Service Layer Test
+### Example 1: Handler Test with HTTP Response Verification
 
-```python
-def test_calculate_portfolio_fund_values(app_context):
-    """Test fund value calculation."""
-    from app.models import PortfolioFund, Portfolio
+```go
+func TestPortfolioHandler_CreatePortfolio(t *testing.T) {
+    t.Run("creates portfolio successfully", func(t *testing.T) {
+        db := testutil.SetupTestDB(t)
+        ps := testutil.NewTestPortfolioService(t, db)
+        fs := testutil.NewTestFundService(t, db)
+        ms := testutil.NewTestMaterializedService(t, db)
+        handler := handlers.NewPortfolioHandler(ps, fs, ms)
 
-    # Get a real portfolio fund
-    portfolio = Portfolio.query.filter_by(is_archived=False).first()
-    if not portfolio:
-        pytest.skip("No portfolio found")
+        body := `{"name": "Test Portfolio", "description": "Testing"}`
+        req := httptest.NewRequest(http.MethodPost, "/api/portfolio", strings.NewReader(body))
+        req.Header.Set("Content-Type", "application/json")
+        w := httptest.NewRecorder()
 
-    # Calculate values
-    result = PortfolioService.calculate_portfolio_fund_values(
-        portfolio.funds
-    )
+        handler.CreatePortfolio(w, req)
 
-    # Verify structure
-    assert isinstance(result, list)
-    for fund in result:
-        assert 'fund_id' in fund
-        assert 'total_shares' in fund
-        assert 'current_value' in fund
-        assert isinstance(fund['current_value'], (int, float))
+        assert.Equal(t, http.StatusCreated, w.Code)
+
+        var result model.Portfolio
+        err := json.NewDecoder(w.Body).Decode(&result)
+        require.NoError(t, err)
+        assert.Equal(t, "Test Portfolio", result.Name)
+        assert.NotEmpty(t, result.ID)
+    })
+}
 ```
 
-### Example 2: Performance Test
+### Example 2: Service Test with Error Verification
 
-```python
-def test_portfolio_summary_performance(
-    app_context, query_counter, timer
-):
-    """Test portfolio summary performance."""
-    query_counter.reset()
-    timer.start()
+```go
+func TestPortfolioService_DeletePortfolio(t *testing.T) {
+    t.Run("returns error when portfolio has funds", func(t *testing.T) {
+        db := testutil.SetupTestDB(t)
+        ps := testutil.NewTestPortfolioService(t, db)
 
-    # Execute
-    result = PortfolioService.get_portfolio_summary()
+        portfolio := testutil.NewPortfolio().Build(t, db)
+        fund := testutil.NewFund().Build(t, db)
+        testutil.NewPortfolioFund().
+            WithPortfolioID(portfolio.ID).
+            WithFundID(fund.ID).
+            Build(t, db)
 
-    elapsed = timer.stop()
+        err := ps.DeletePortfolio(context.Background(), portfolio.ID)
 
-    # Verify results
-    assert isinstance(result, list)
-
-    # Verify performance
-    print(f"\n✓ Queries: {query_counter.count}")
-    print(f"✓ Time: {elapsed:.3f}s")
-
-    assert query_counter.count < 100
-    assert elapsed < 0.5
+        assert.Error(t, err)
+        // Portfolio should still exist
+        testutil.AssertRowCount(t, db, "portfolio", 1)
+    })
+}
 ```
 
-### Example 3: API Integration Test
+### Example 3: Table-Driven Validation Test
 
-```python
-def test_portfolio_history_endpoint(client):
-    """Test /api/portfolio-history endpoint."""
-    # Make request
-    response = client.get('/api/portfolio-history?days=30')
+```go
+func TestTransactionHandler_CreateTransaction_Validation(t *testing.T) {
+    tests := []struct {
+        name           string
+        body           string
+        expectedStatus int
+    }{
+        {
+            name:           "missing type",
+            body:           `{"portfolio_fund_id": "some-id", "date": "2024-01-15", "shares": 100}`,
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name:           "negative shares",
+            body:           `{"portfolio_fund_id": "some-id", "date": "2024-01-15", "type": "buy", "shares": -1}`,
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name:           "invalid date format",
+            body:           `{"portfolio_fund_id": "some-id", "date": "not-a-date", "type": "buy", "shares": 100}`,
+            expectedStatus: http.StatusBadRequest,
+        },
+    }
 
-    # Verify response
-    assert response.status_code == 200
+    for _, tc := range tests {
+        t.Run(tc.name, func(t *testing.T) {
+            db := testutil.SetupTestDB(t)
+            svc := testutil.NewTestTransactionService(t, db)
+            handler := handlers.NewTransactionHandler(svc)
 
-    data = response.get_json()
-    assert isinstance(data, list)
-    assert len(data) <= 31  # 30 days + today
+            req := httptest.NewRequest(http.MethodPost, "/api/transaction", strings.NewReader(tc.body))
+            req.Header.Set("Content-Type", "application/json")
+            w := httptest.NewRecorder()
 
-    # Verify structure
-    if len(data) > 0:
-        assert 'date' in data[0]
-        assert 'portfolios' in data[0]
+            handler.CreateTransaction(w, req)
+
+            assert.Equal(t, tc.expectedStatus, w.Code)
+        })
+    }
+}
 ```
 
 ---
@@ -1019,9 +1058,9 @@ Frontend tests run automatically in GitHub Actions (`.github/workflows/frontend-
 ```
 
 **CI Requirements for PR Merge:**
-- ✅ All tests pass
-- ✅ Linting passes
-- ✅ Coverage thresholds met (when enabled)
+- All tests pass
+- Linting passes
+- Coverage thresholds met (when enabled)
 
 ### Known Issues
 
@@ -1141,8 +1180,8 @@ This script automatically:
 docker compose build
 docker compose up -d
 
-# Test backend directly (from inside container using Python)
-docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/health').read().decode())"
+# Test backend directly (from inside container)
+docker compose exec backend wget -qO- http://localhost:5000/api/system/health
 
 # Test frontend serves static content
 curl http://localhost/
@@ -1162,19 +1201,17 @@ docker compose down -v
 ### Architecture Note
 
 **IMPORTANT**: The backend port 5000 is NOT exposed to the host. The backend is only accessible:
-- From inside the Docker network (via `docker compose exec` using Python's urllib)
+- From inside the Docker network (via `docker compose exec`)
 - Through the frontend Nginx proxy at `http://localhost/api/`
 
 This is the production architecture and what the tests verify.
-
-**Note**: The backend container does not include curl. To test the backend from inside the container, use Python's `urllib.request` module which is part of the standard library.
 
 ### CI/CD Integration
 
 Docker tests run automatically in GitHub Actions (`.github/workflows/docker-test.yml`) when:
 - Dockerfiles are modified
 - docker-compose.yml changes
-- Python dependencies change (pyproject.toml, uv.lock)
+- Go module dependencies change (go.mod, go.sum)
 - Nginx configuration changes
 
 **Test Jobs:**
@@ -1184,33 +1221,33 @@ Docker tests run automatically in GitHub Actions (`.github/workflows/docker-test
 ### Test Coverage
 
 #### Container Build
-- ✅ Backend builds successfully with uv and Python 3.13
-- ✅ Frontend builds successfully with Node 24
-- ✅ Multi-stage builds optimize image size
-- ✅ Dependencies install correctly
+- Backend builds successfully with Go multi-stage build
+- Frontend builds successfully with Node 24
+- Multi-stage builds optimize image size
+- Dependencies install correctly
 
 #### Container Startup
-- ✅ Backend starts and creates database
-- ✅ Frontend starts and serves static files
-- ✅ Services connect via Docker network
-- ✅ Auto-generated INTERNAL_API_KEY works
+- Backend starts and creates database
+- Frontend starts and serves static files
+- Services connect via Docker network
+- Auto-generated INTERNAL_API_KEY works
 
 #### Health Checks
-- ✅ Backend health endpoint returns 200
-- ✅ Backend health response includes database status
-- ✅ Backend version endpoint returns version info
-- ✅ Health checks complete within 60 seconds
+- Backend health endpoint returns 200
+- Backend health response includes database status
+- Backend version endpoint returns version info
+- Health checks complete within 60 seconds
 
 #### Frontend-Backend Integration
-- ✅ Frontend serves index page
-- ✅ Frontend proxies /api/ requests to backend
-- ✅ Nginx template substitution works correctly
-- ✅ API responses return through proxy
+- Frontend serves index page
+- Frontend proxies /api/ requests to backend
+- Nginx template substitution works correctly
+- API responses return through proxy
 
 #### Custom Configuration
-- ✅ Custom BACKEND_HOST values work
-- ✅ Custom container names work correctly
-- ✅ Environment variable substitution works
+- Custom BACKEND_HOST values work
+- Custom container names work correctly
+- Environment variable substitution works
 
 ### Hybrid Testing Approach
 
@@ -1218,10 +1255,9 @@ The Docker integration test workflow uses a **three-layer testing approach**:
 
 **Step 1: Backend Health (Internal)**
 - Tests backend independently from inside container network
-- Uses `docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/system/health')"`
+- Uses `docker compose exec -T backend wget -qO- http://localhost:5000/api/system/health`
 - Catches backend-specific failures (database, startup, configuration)
 - Verifies backend is healthy before testing integration
-- Note: Uses Python's urllib since curl is not available in the backend container
 
 **Step 2: Frontend Serves Static Content**
 - Tests frontend container independently from host
@@ -1276,14 +1312,13 @@ docker compose down -v
 - Check backend logs: `docker compose logs backend`
 - Verify database directory permissions
 - Ensure INTERNAL_API_KEY is generated
-- Test backend from inside container: `docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/health').read().decode())"`
+- Test backend from inside container: `docker compose exec backend wget -qO- http://localhost:5000/api/system/health`
 
 **Frontend proxy fails:**
 - Check BACKEND_HOST environment variable
 - Verify nginx template substitution in logs: `docker compose logs frontend`
 - Check network connectivity between containers: `docker network inspect investment-portfolio-manager_app-network`
 - Test frontend serves static files: `curl http://localhost/`
-- Test backend directly from inside: `docker compose exec backend python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:5000/api/system/health').read().decode())"`
 
 **Containers won't start:**
 - Check port conflicts: `lsof -i :80` (backend port 5000 is internal only)
@@ -1309,55 +1344,52 @@ docker compose down -v
 
 - [Docker Configuration Guide](DOCKER.md)
 - [CI/CD Workflows](.github/workflows/docker-test.yml)
-- [Health Check API](../backend/app/api/system_namespace.py)
 
 ---
 
 ## Troubleshooting
 
-### Issue: Import Errors
+### Issue: Import Errors (Backend)
 
-**Problem**: `ImportError: cannot import name 'create_app'`
+**Problem**: Package not found or compilation errors
 
 **Solution**:
-- Ensure `PYTHONPATH` includes backend directory
-- Run pytest from backend directory
-- Check conftest.py imports
+- Ensure you're running from the correct directory
+- Run `go mod tidy` to clean up dependencies
+- Check that the module path is correct in `go.mod`
 
-### Issue: Database Not Found
+### Issue: Database Schema Errors
 
-**Problem**: `No such table` errors
+**Problem**: `no such table` or schema-related errors in tests
 
 **Solution**:
 ```bash
-# Ensure database exists
+# Test database setup creates schema automatically via testutil.SetupTestDB()
+# If schema is out of date, check internal/testutil/database.go
 cd backend
-source .venv/bin/activate
-python run.py  # Creates tables if needed
-pytest
+go test ./internal/testutil/ -v
 ```
-
-### Issue: Fixture Not Found
-
-**Problem**: `fixture 'query_counter' not found`
-
-**Solution**:
-- Ensure conftest.py exists in tests directory
-- Check fixture name spelling
-- Verify conftest.py is not excluded in pytest.ini
 
 ### Issue: Tests Hang
 
 **Problem**: Tests don't complete
 
 **Solution**:
-- Check for infinite loops
-- Verify database queries don't timeout
-- Use pytest timeout plugin:
+- Check for infinite loops or blocking operations
+- Use the `-timeout` flag to set a maximum test duration:
   ```bash
-  pip install pytest-timeout
-  pytest --timeout=30
+  go test -timeout 30s ./...
   ```
+- Check for unclosed database connections
+
+### Issue: Race Conditions
+
+**Problem**: Tests fail intermittently with race detector
+
+**Solution**:
+- Always run with `-race` flag during development: `go test -race ./...`
+- Ensure no shared mutable state between tests
+- Use `testutil.SetupTestDB(t)` for isolated database instances per test
 
 ---
 
@@ -1367,20 +1399,22 @@ When adding new features:
 
 1. **Write tests first** (TDD) or alongside implementation
 2. **Test happy path and edge cases**
-3. **Add performance tests** for expensive operations
-4. **Update this documentation** with new patterns
-5. **Maintain test coverage** above 70%
+3. **Use builder factories** for test data setup
+4. **Include WHY comments** explaining test purpose
+5. **Maintain test coverage** above 75% (enforced in CI)
+6. **Use table-driven tests** for validation and edge case scenarios
 
 ---
 
 ## Resources
 
-- [Pytest Documentation](https://docs.pytest.org/)
-- [Flask Testing Guide](https://flask.palletsprojects.com/en/latest/testing/)
-- [pytest-flask Plugin](https://pytest-flask.readthedocs.io/)
-- [Coverage.py Documentation](https://coverage.readthedocs.io/)
+- [Go Testing Documentation](https://pkg.go.dev/testing)
+- [Go Test Flags](https://pkg.go.dev/cmd/go/internal/test)
+- [testify/assert](https://pkg.go.dev/github.com/stretchr/testify/assert) - Assertion library
+- [testify/require](https://pkg.go.dev/github.com/stretchr/testify/require) - Fatal assertion library
+- [httptest](https://pkg.go.dev/net/http/httptest) - HTTP testing utilities
 
 ---
 
-**Last Updated**: 2026-03-02 (Version 1.6.0)
+**Last Updated**: 2026-04-13 (Version 2.0.0)
 **Maintained By**: @ndewijer

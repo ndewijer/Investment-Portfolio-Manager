@@ -5,6 +5,34 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-04-13
+
+### Changed
+- **Complete backend rewrite from Python/Flask to Go** — The backend has been rewritten from the ground up in Go, replacing the Python/Flask/SQLAlchemy/Gunicorn stack with Go/Chi/pure-Go-SQLite. All 70+ API endpoints are maintained with the same contracts.
+- **Database migrations** — Switched from Alembic (Python) to Goose (Go). Migrations run automatically on startup.
+- **Scheduled tasks** — Replaced APScheduler with robfig/cron. Same schedules: daily fund price updates (weekdays 00:55 UTC), IBKR imports (Tue-Sat 05:30-07:30 UTC).
+- **Testing** — Replaced pytest with Go's testing package. Real SQLite databases per test (no mocks). 80% coverage threshold enforced in CI.
+- **Code quality** — Replaced Ruff with golangci-lint. Added govulncheck security scanning.
+- **CI/CD** — Backend CI now runs Go test/lint/coverage/security-scan/build. Added binary artifact upload.
+- **Docker** — Backend image reduced from Python 3.13-slim (~150MB) to Alpine + Go binary (~30MB).
+- **No seed data** — Fresh installations start with an empty database. The `flask seed-db` command has been removed.
+
+### Added
+- **Security scanning** — govulncheck runs in CI to detect known vulnerabilities in Go dependencies.
+- **Golden schema validation** — CI and pre-commit check that migration changes are accompanied by golden schema updates.
+- **Configuration documentation** — New `docs/CONFIGURATION.md` with all environment variables and their resolution order.
+
+### Removed
+- Python backend (`backend/app/`, `backend/tests/`, `backend/migrations/`)
+- Python tooling (`pyproject.toml`, `uv.lock`, Ruff, pytest)
+- `flask seed-db` sample data seeding command
+- `docs/DISABLED_ENDPOINTS.md` (Python-specific)
+
+### Migration
+- For users upgrading from v1.x, see [Migration Guide](docs/MIGRATION_GUIDE.md)
+- The Python backend code is preserved at the `v1.7.0-python-final` tag
+- Database is compatible — same SQLite schema, Goose picks up where Alembic left off
+
 ## [1.7.0] - 2026-03-13
 
 ### Fixed

@@ -9,8 +9,6 @@ on:
       - 'frontend/Dockerfile'
       - 'frontend/nginx.conf'
       - 'docker-compose.yml'
-      - 'pyproject.toml'
-      - 'uv.lock'
       - '.github/workflows/docker-test.yml'
   push:
     branches:
@@ -30,13 +28,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Setup Node.js for E2E tests
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -74,7 +72,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -104,12 +102,12 @@ jobs:
         run: |
           echo "Testing backend with custom container name..."
           for i in {1..60}; do
-            if docker compose exec -T backend python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/system/health')" > /dev/null 2>&1; then
-              echo "✅ Backend is healthy"
+            if docker compose exec -T backend wget -qO- http://localhost:5000/api/system/health > /dev/null 2>&1; then
+              echo "Backend is healthy"
               break
             fi
             if [ $i -eq 60 ]; then
-              echo "❌ Backend health check timeout"
+              echo "Backend health check timeout"
               docker compose logs backend
               exit 1
             fi
