@@ -1,0 +1,52 @@
+version: "2"
+run:
+  tests: true
+linters:
+  enable:
+    - gocyclo       # Cyclomatic complexity
+    - funlen        # Function length
+    - gosec         # Security issues
+    - misspell      # Spelling mistakes
+    - prealloc      # Suggest preallocations
+    - revive        # Replacement for golint
+    - errcheck      # Check error returns
+    - gosec         # Security issues
+    - staticcheck   # Static analysis
+    - govet         # Go vet checks
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    funlen:
+      lines: 100
+      statements: 50
+    gocyclo:
+      min-complexity: 15
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - funlen
+        path: _test\.go
+      - linters:
+          - staticcheck
+        text: "SA5011"
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt         # Formatting
+    - goimports     # Import organization
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

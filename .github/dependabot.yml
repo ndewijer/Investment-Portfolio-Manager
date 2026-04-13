@@ -1,21 +1,18 @@
 version: 2
 updates:
-  # Python dependencies
-  - package-ecosystem: "pip"
+  # Go module dependencies
+  - package-ecosystem: "gomod"
     directory: "/backend"
     schedule:
       interval: "monthly"
-    # Group minor and patch updates together
     groups:
-      python-packages:
+      go-packages:
         patterns:
           - "*"
         update-types:
           - "minor"
           - "patch"
-    # Limit number of open PR's
     open-pull-requests-limit: 10
-    # Add labels and assignees
     labels:
       - "dependencies"
       - "backend"
@@ -49,3 +46,5 @@ updates:
     labels:
       - "dependencies"
       - "ci"
+    reviewers:
+      - "ndewijer"

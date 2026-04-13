@@ -20,22 +20,16 @@ Access at http://localhost
 
 No configuration needed! On first startup:
 - Database migrations run automatically
-- Sample data is seeded automatically
 - Frontend uses relative URLs that nginx proxies to the backend
 
 ### Local Development
-**Prerequisites**: Python 3.13+, Node.js 23+, uv
+**Prerequisites**: Go 1.26+, Node.js 24+, pnpm
 
 ```bash
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
 # Backend
-uv sync --frozen
 cd backend
-uv run flask db upgrade
-uv run flask seed-db
-uv run flask run
+cp .env.example .env
+go run -ldflags "-X github.com/ndewijer/Investment-Portfolio-Manager/backend/internal/version.Version=$(cat VERSION)" ./cmd/server/main.go
 
 # Frontend (new terminal)
 cd frontend
@@ -43,17 +37,29 @@ pnpm install
 pnpm start
 ```
 
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| **Backend** | Go 1.26, Chi router, pure Go SQLite |
+| **Frontend** | React 19, Webpack 5, ApexCharts |
+| **Database** | SQLite with materialized views |
+| **Production** | Nginx (frontend) + Go binary (backend) |
+| **Containers** | Docker Compose, multi-stage builds |
+| **Testing** | Go test (80%+ coverage), Vitest, Playwright |
+| **Code Quality** | golangci-lint (Go), Biome (JS) |
+
 ## Documentation
 ### Architecture
 - [Architecture](docs/ARCHITECTURE.md)
 - [Data Models](docs/MODELS.md)
+- [Configuration](docs/CONFIGURATION.md)
 
 ### Features
 - [IBKR Flex Integration Setup](docs/IBKR_SETUP.md)
 
 ### Contributing
 - [Contributing](docs/CONTRIBUTING.md)
-- [Docker Setup](docs/DOCKER.md)
 
 #### Frontend Development
 - [CSS](docs/CSS.md)
@@ -62,20 +68,20 @@ pnpm start
 - [Development Guide](docs/DEVELOPMENT.md)
 - [Data Management](docs/DATA.md)
 
-
-
-
-
-
 ## Features
 - Portfolio management with transaction tracking
 - Cash and stock dividend processing
 - Automated daily fund price updates
-- **IBKR Flex integration for automatic transaction imports (v1.3.0+)**
+- IBKR Flex integration for automatic transaction imports
 - Fund price history and currency conversion
 - CSV import/export functionality
 - System logging and monitoring
 - Protected API endpoints for automated tasks
+- Materialized views for optimized portfolio queries
+
+## Upgrading from v1.x
+
+See the [Migration Guide](docs/MIGRATION_GUIDE.md) for upgrading from the Python/Flask backend to the Go backend. The Python backend code is preserved at the [`v1.7.0-python-final`](../../tree/v1.7.0-python-final) tag.
 
 ## License
 Apache License, Version 2.0

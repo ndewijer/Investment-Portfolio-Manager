@@ -1,49 +1,41 @@
 # Multi-stage build for optimal image size
-FROM python:3.13-slim AS builder
+FROM golang:1.26-alpine AS builder
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
-# Set working directory
 WORKDIR /app
 
-# Copy dependency files from project root
-COPY pyproject.toml uv.lock ./
+# Download dependencies first (cached layer)
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Install dependencies (production only)
-RUN uv sync --frozen --no-dev
+# Copy source and build
+COPY . .
+ARG VERSION=dev
+RUN go build \
+    -ldflags "-X github.com/ndewijer/Investment-Portfolio-Manager/backend/internal/version.Version=${VERSION}" \
+    -o server \
+    ./cmd/server/main.go
 
-# Install gunicorn (Docker-only dependency)
-RUN uv pip install gunicorn==23.0.0
+# Final stage — minimal image
+FROM alpine:3.23
 
-# Final stage
-FROM python:3.13-slim
+# ca-certificates for outbound HTTPS (Yahoo Finance, IBKR)
+RUN apk add --no-cache ca-certificates tzdata
 
-# Set working directory
 WORKDIR /app
 
-# Copy virtual environment from builder
-COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder /app/server ./server
 
-# Copy backend application code
-COPY backend/ ./
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    FLASK_APP=run.py \
-    DB_DIR=/data/db \
-    LOG_DIR=/data/logs \
-    DOMAIN=localhost \
-    PATH="/app/.venv/bin:$PATH"
-
-# Create directories
-RUN mkdir -p $DB_DIR $LOG_DIR
-
-# Copy entrypoint script
-COPY backend/docker-entrypoint.sh /entrypoint.sh
+# Copy entrypoint
+COPY docker-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
+ENV DB_DIR=/data/db \
+    LOG_DIR=/data/logs \
+    DOMAIN=localhost
+
+RUN mkdir -p /data/db /data/logs
 
 EXPOSE 5000
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]
+CMD ["/app/server"]

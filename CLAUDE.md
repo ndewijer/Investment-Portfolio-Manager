@@ -2,16 +2,26 @@
 
 ## Development Tools
 
-**This project uses UV for Python package management and pnpm for Node.js package management.**
+**This project uses Go for the backend and pnpm for Node.js package management.**
 
-### Running Python Commands
-- Use `uv run python` instead of `python` or `python3`
-- Use `uv run pytest` instead of `pytest`
+### Backend Development
+- Backend code is in `backend/` with `go.mod` at `backend/go.mod`
+- Run from repo root using Make targets, or `cd backend` for direct Go commands
 - Examples:
   ```bash
-  uv run python script.py
-  uv run pytest tests/
-  uv run flask materialize-history
+  make run           # Run backend with version injection
+  make test          # Run all tests with race detector
+  make test-short    # Run tests skipping slow tests
+  make lint          # Run golangci-lint
+  make coverage      # Run tests with coverage summary
+  make ci-local      # Run full CI pipeline locally
+  ```
+- Direct Go commands (from `backend/`):
+  ```bash
+  cd backend
+  go test -race ./...
+  go build ./cmd/server/main.go
+  golangci-lint run --timeout=5m
   ```
 
 ### Frontend Development
@@ -25,10 +35,13 @@
   pnpm run start
   ```
 
-### Backend Development
-- All backend Python commands should use `uv run`
-- Virtual environments are managed by UV automatically
-- No need to activate venv manually
+### Docker
+```bash
+make docker-build   # Build images
+make docker-up      # Start containers
+make docker-down    # Stop containers
+make docker-logs    # Follow logs
+```
 
 ## Memory System
 

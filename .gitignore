@@ -1,9 +1,3 @@
-# Virtual Environment
-.venv/
-venv/
-env/
-ENV/
-
 # Environment variables
 .env
 .flaskenv
@@ -12,18 +6,6 @@ local_files/
 # Docker
 docker-compose.override.yml
 
-# Testing & Coverage
-.coverage
-.coverage.*
-htmlcov/
-.pytest_cache/
-coverage.xml
-*.cover
-results.json
-
-# Ruff
-.ruff_cache
-
 # IDE
 .idea/
 .vscode/
@@ -31,13 +13,41 @@ results.json
 *.swo
 .DS_Store
 
-backend.zip
-frontend.zip
+# SQLite database files
+*.db
+*.db-wal
+*.db-shm
 
-portfolio_manager.db
-app.log
-.ibkr_encryption_key
+# Go build artifacts
+backend/bin/
+backend/tmp/
 
+# Go test coverage
+backend/coverage.out
+backend/coverage.html
+backend/coverage_*.out
+backend/coverage_*.html
+*.coverprofile
+*.test
+
+# Logs
+logs/
+*.log
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+
+# Pre-commit cache
+.pre-commit-cache/
+
+# Node
+node_modules/
+
+# Claude
 .claudememory
 .kiro
 .claude

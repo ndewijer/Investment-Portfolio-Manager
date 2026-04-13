@@ -15,17 +15,17 @@ The Investment Portfolio Manager uses a **version-based feature flag system** to
 
 **Backend Version**: `backend/VERSION`
 ```
-1.3.1
+2.0.0
 ```
 - Single source of truth for application version
 - Updated when releasing new features
-- Read by `get_app_version()` in `system_routes.py`
+- Injected at build time via `-ldflags` in Go (see `version` package)
 
 **Frontend Version**: `frontend/package.json`
 ```json
 {
   "name": "investment-portfolio-manager",
-  "version": "1.3.1",
+  "version": "2.0.0",
   ...
 }
 ```
@@ -33,56 +33,53 @@ The Investment Portfolio Manager uses a **version-based feature flag system** to
 - Updated whenever backend version changes
 - **Important**: While backend and frontend are in the same repository, versions must match
 
-**Database Version**: Stored in `alembic_version` table
-```sql
-SELECT version_num FROM alembic_version
-```
-- Managed by Alembic migrations
-- Updated automatically when running `flask db upgrade`
-- Read by `get_db_version()` in `system_routes.py`
+**Database Version**: Managed by Goose migrations
+- Goose tracks applied migrations in the `goose_db_version` table
+- Migrations run automatically on server startup
+- The application maps Goose migration state to a semantic version for feature flag evaluation
 
 ### 2. Feature Flag System
 
-**Location**: `backend/app/routes/system_routes.py`
-
-**Function**: `check_feature_availability(db_version)`
+**Location**: `backend/internal/service/system_service.go`
 
 Returns a dictionary of features based on database schema version:
 
-```python
-def check_feature_availability(db_version):
-    """
-    Check which features are available based on database version.
-
-    Returns:
-        dict: Feature availability flags
-    """
-    features = {
-        "ibkr_integration": False,
-        "realized_gain_loss": False,
-        "exclude_from_overview": False,
+```go
+func (s *SystemService) CheckFeatureAvailability(dbVersion string) map[string]bool {
+    features := map[string]bool{
+        "ibkr_integration":     false,
+        "realized_gain_loss":   false,
+        "exclude_from_overview": false,
     }
 
-    # Parse version
-    version_parts = db_version.split(".")
-    major = int(version_parts[0])
-    minor = int(version_parts[1])
-    patch = int(version_parts[2]) if len(version_parts) >= 3 else 0
+    // Parse version
+    parts := strings.Split(dbVersion, ".")
+    major, _ := strconv.Atoi(parts[0])
+    minor, _ := strconv.Atoi(parts[1])
+    patch := 0
+    if len(parts) >= 3 {
+        patch, _ = strconv.Atoi(parts[2])
+    }
 
-    # Version 1.1.0+: exclude_from_overview
-    if major >= 1 and minor >= 1:
-        features["exclude_from_overview"] = True
+    // Version 1.1.0+: exclude_from_overview
+    if major >= 1 && minor >= 1 {
+        features["exclude_from_overview"] = true
+    }
 
-    # Version 1.1.1+: realized_gain_loss
-    if major >= 1 and minor >= 1:
-        if minor > 1 or (minor == 1 and patch >= 1):
-            features["realized_gain_loss"] = True
+    // Version 1.1.1+: realized_gain_loss
+    if major >= 1 && minor >= 1 {
+        if minor > 1 || (minor == 1 && patch >= 1) {
+            features["realized_gain_loss"] = true
+        }
+    }
 
-    # Version 1.3.0+: IBKR integration
-    if major >= 1 and minor >= 3:
-        features["ibkr_integration"] = True
+    // Version 1.3.0+: IBKR integration
+    if major >= 1 && minor >= 3 {
+        features["ibkr_integration"] = true
+    }
 
     return features
+}
 ```
 
 ### 3. Frontend Context
@@ -99,8 +96,8 @@ const fetchVersionInfo = async () => {
 
 // Response structure:
 {
-  "app_version": "1.3.0",
-  "db_version": "1.3.0",
+  "app_version": "2.0.0",
+  "db_version": "2.0.0",
   "features": {
     "ibkr_integration": true,
     "realized_gain_loss": true,
@@ -127,8 +124,8 @@ if (features.ibkr_integration) {
 **Response**:
 ```json
 {
-  "app_version": "1.3.0",
-  "db_version": "1.3.0",
+  "app_version": "2.0.0",
+  "db_version": "2.0.0",
   "features": {
     "ibkr_integration": true,
     "realized_gain_loss": true,
@@ -139,20 +136,22 @@ if (features.ibkr_integration) {
 }
 ```
 
-**When migration needed** (app_version ≠ db_version):
+**When migration needed** (app_version != db_version):
 ```json
 {
-  "app_version": "1.3.1",
-  "db_version": "1.3.0",
+  "app_version": "2.1.0",
+  "db_version": "2.0.0",
   "features": {
     "ibkr_integration": true,
     "realized_gain_loss": true,
     "exclude_from_overview": true
   },
   "migration_needed": true,
-  "migration_message": "Database schema (v1.3.0) is behind application version (v1.3.1). Run 'flask db upgrade' to enable new features."
+  "migration_message": "Database schema (v2.0.0) is behind application version (v2.1.0). Restart the server to apply pending migrations."
 }
 ```
+
+**Note**: In the Go backend, migrations run automatically on startup. If a migration is pending, restarting the server will apply it. There is no manual `flask db upgrade` equivalent.
 
 ## Adding a New Feature with Schema Change
 
@@ -173,118 +172,76 @@ For schema changes, bump **minor** or **patch** depending on scope.
 
 #### 2. Create Database Migration
 
-```bash
-cd backend
-source .venv/bin/activate
-flask db revision -m "add_ibkr_enabled_field"
-```
+Create a new SQL migration file in `backend/internal/database/migrations/`:
 
-Edit the generated migration file:
-```python
-"""
-Add enabled field to ibkr_config table.
+```sql
+-- +goose Up
+-- Add enabled column to ibkr_config table.
 
-Revision ID: 1.3.1
-Revises: 1.3.0
-Create Date: 2025-11-06
-"""
+ALTER TABLE ibkr_config ADD COLUMN enabled BOOLEAN DEFAULT TRUE;
 
-import sqlalchemy as sa
-from alembic import op
+UPDATE ibkr_config SET enabled = TRUE WHERE enabled IS NULL;
 
-revision = "1.3.1"
-down_revision = "1.3.0"
-branch_labels = None
-depends_on = None
-
-
-def upgrade():
-    """Add enabled column to ibkr_config table."""
-    conn = op.get_bind()
-    inspector = sa.inspect(conn)
-    columns = [col["name"] for col in inspector.get_columns("ibkr_config")]
-
-    if "enabled" not in columns:
-        op.add_column(
-            "ibkr_config",
-            sa.Column("enabled", sa.Boolean(), nullable=True),
-        )
-
-        # Set default value: enabled=True for existing configs
-        op.execute(
-            """
-            UPDATE ibkr_config
-            SET enabled = TRUE
-            WHERE enabled IS NULL
-            """
-        )
-
-        # Make column non-nullable after setting defaults
-        op.alter_column("ibkr_config", "enabled", nullable=False)
-
-
-def downgrade():
-    """Remove enabled column from ibkr_config table."""
-    op.drop_column("ibkr_config", "enabled")
+-- +goose Down
+-- SQLite does not support DROP COLUMN directly.
+-- For downgrade, recreate the table without the column if needed.
 ```
 
 **Key Points**:
-- Use version number as revision ID
-- Check if column exists before adding (idempotent)
+- Use Goose `-- +goose Up` / `-- +goose Down` directives
+- Migrations run automatically on next server start
 - Set sensible defaults for existing data
-- Include both upgrade and downgrade
+- Include both upgrade and downgrade sections
+
+For complex migrations that require application logic, use Go-coded migrations registered via `registerGoMigrationVersion`.
 
 #### 3. Update Model
 
-```python
-# backend/app/models.py
+```go
+// backend/internal/model/ibkr_config.go
 
-class IBKRConfig(db.Model):
-    """IBKR Flex Web Service configuration."""
-
-    __tablename__ = "ibkr_config"
-
-    id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
-    flex_token = db.Column(db.String(500), nullable=False)
-    flex_query_id = db.Column(db.String(100), nullable=False)
-    token_expires_at = db.Column(db.DateTime, nullable=True)
-    last_import_date = db.Column(db.DateTime, nullable=True)
-    auto_import_enabled = db.Column(db.Boolean, default=False, nullable=False)
-    enabled = db.Column(db.Boolean, default=True, nullable=False)  # NEW
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    updated_at = db.Column(
-        db.DateTime,
-        default=db.func.current_timestamp(),
-        onupdate=db.func.current_timestamp(),
-    )
+type IBKRConfig struct {
+    ID                string     `json:"id"`
+    FlexToken         string     `json:"-"`
+    FlexQueryID       string     `json:"flexQueryId"`
+    TokenExpiresAt    *time.Time `json:"tokenExpiresAt,omitempty"`
+    LastImportDate    *time.Time `json:"lastImportDate,omitempty"`
+    AutoImportEnabled bool       `json:"autoImportEnabled"`
+    Enabled           bool       `json:"enabled"`  // NEW
+    CreatedAt         time.Time  `json:"createdAt"`
+    UpdatedAt         time.Time  `json:"updatedAt"`
+}
 ```
 
 #### 4. Update Feature Flags (Optional)
 
 If the new feature needs a separate flag (not always necessary):
 
-```python
-# backend/app/routes/system_routes.py
+```go
+// backend/internal/service/system_service.go
 
-def check_feature_availability(db_version):
-    features = {
-        "ibkr_integration": False,
-        "ibkr_enable_toggle": False,  # NEW
-        "realized_gain_loss": False,
-        "exclude_from_overview": False,
+func (s *SystemService) CheckFeatureAvailability(dbVersion string) map[string]bool {
+    features := map[string]bool{
+        "ibkr_integration":    false,
+        "ibkr_enable_toggle":  false,  // NEW
+        "realized_gain_loss":  false,
+        "exclude_from_overview": false,
     }
 
-    # ... version parsing ...
+    // ... version parsing ...
 
-    # Version 1.3.0+: IBKR integration
-    if major >= 1 and minor >= 3:
-        features["ibkr_integration"] = True
+    // Version 1.3.0+: IBKR integration
+    if major >= 1 && minor >= 3 {
+        features["ibkr_integration"] = true
 
-        # Version 1.3.1+: IBKR enable/disable toggle
-        if minor > 3 or (minor == 3 and patch >= 1):
-            features["ibkr_enable_toggle"] = True
+        // Version 1.3.1+: IBKR enable/disable toggle
+        if minor > 3 || (minor == 3 && patch >= 1) {
+            features["ibkr_enable_toggle"] = true
+        }
+    }
 
     return features
+}
 ```
 
 **Note**: For simple column additions, you might not need a new feature flag. Just check if `ibkr_integration` is enabled.
@@ -339,18 +296,14 @@ const { features } = useApp();
 
 ```bash
 # Backup database first!
-cp backend/data/db/portfolio_manager.db backend/data/db/portfolio_manager.db.backup
+cp data/portfolio_manager.db data/portfolio_manager.db.backup
 
-# Run migration
+# Restart server — migrations apply automatically
 cd backend
-source .venv/bin/activate
-flask db upgrade
+go run ./cmd/server/main.go
 
-# Check version
-flask shell
->>> from app.routes.system_routes import get_db_version
->>> get_db_version()
-'1.3.1'
+# Verify via API
+curl http://localhost:5000/api/system/version
 ```
 
 #### 8. Update Documentation
@@ -368,11 +321,11 @@ Use this checklist when adding a new feature with schema changes to ensure nothi
 - [ ] Determine if feature flag is needed
 
 ### Database Changes
-- [ ] Create Alembic migration with version number as revision ID
-- [ ] Make migration idempotent (check if table/column exists)
+- [ ] Create Goose migration file in `backend/internal/database/migrations/`
+- [ ] Make migration idempotent where possible
 - [ ] Set appropriate defaults for existing data
 - [ ] Test both upgrade and downgrade
-- [ ] Update models.py with new schema
+- [ ] Update model structs in `backend/internal/model/`
 
 ### Version Updates (CRITICAL - Often Missed!)
 - [ ] Update `backend/VERSION` file to new version
@@ -380,8 +333,8 @@ Use this checklist when adding a new feature with schema changes to ensure nothi
 - [ ] Verify both versions match exactly
 
 ### Feature Flag (if needed)
-- [ ] Add feature flag to `SystemService.check_feature_availability()`
-- [ ] Add version check logic (e.g., `if major >= 1 and minor >= 4`)
+- [ ] Add feature flag to `SystemService.CheckFeatureAvailability()`
+- [ ] Add version check logic
 - [ ] Test feature flag returns correct value
 
 ### Documentation
@@ -393,7 +346,7 @@ Use this checklist when adding a new feature with schema changes to ensure nothi
 
 ### Testing
 - [ ] Write comprehensive tests for new functionality
-- [ ] Test migration upgrade/downgrade cycle
+- [ ] Test migration applies correctly on server restart
 - [ ] Verify feature flag works correctly
 - [ ] Test with both old and new schema versions
 
@@ -423,7 +376,7 @@ Use this checklist when adding a new feature with schema changes to ensure nothi
 | 1.3.0 | 2024-11 | IBKR Flex integration |
 | 1.3.1 | 2024-11-07 | IBKR enable/disable toggle, bulk transaction processing, allocation presets, mobile UI fixes, chart improvements |
 | 1.4.0 | 2026-01-11 | Portfolio history materialized view for 160x performance improvement, CLI management tools |
-| 2.0.0 | 2026-03-27 | Migrated charting from Recharts to ApexCharts: native zoom/pan/pinch, dark mode support, React 19 Strict Mode compatibility, ValueChart reduced from ~1,455 to ~320 lines |
+| 2.0.0 | 2026-03-27 | Backend rewritten from Python/Flask to Go/Chi. Same API contract, same database schema. Goose replaces Alembic for migrations (run automatically on startup). ApexCharts replaces Recharts for charting. |
 
 ## Best Practices
 
@@ -434,7 +387,7 @@ Use this checklist when adding a new feature with schema changes to ensure nothi
 **When bumping version**:
 1. Update `backend/VERSION`
 2. Update `frontend/package.json` version field
-3. Create database migration with matching revision ID (if schema changes)
+3. Create database migration if schema changes (in `backend/internal/database/migrations/`)
 4. Commit all version changes together
 
 **Why this matters**:
@@ -442,32 +395,32 @@ Use this checklist when adding a new feature with schema changes to ensure nothi
 - Version mismatch indicates incomplete/broken update
 - Simplifies deployment and rollback procedures
 - Clear correlation between frontend features and backend capabilities
-- Easier for users to report issues ("I'm on version 1.3.1")
+- Easier for users to report issues ("I'm on version 2.0.0")
 
 **Example version update**:
 ```bash
 # Update backend
-echo "1.3.1" > backend/VERSION
+echo "2.1.0" > backend/VERSION
 
 # Update frontend (edit package.json)
-# Change: "version": "1.3.0" → "version": "1.3.1"
+# Change: "version": "2.0.0" → "version": "2.1.0"
 
 # Commit together
 git add backend/VERSION frontend/package.json
-git commit -m "Bump version to 1.3.1"
+git commit -m "Bump version to 2.1.0"
 ```
 
 **If repositories separate in the future**: This requirement may be relaxed, allowing independent versioning. Update this document accordingly.
 
 ### When to Add a Feature Flag
 
-✅ **Add feature flag when**:
+Add feature flag when:
 - Feature requires new database tables
 - Feature requires new columns that change app behavior
 - Feature is opt-in and not universally available
 - Feature can be disabled without breaking existing functionality
 
-❌ **Don't add feature flag when**:
+Don't add feature flag when:
 - Bug fixes with no schema change
 - Performance improvements with no schema change
 - Adding indexes or constraints
@@ -475,28 +428,23 @@ git commit -m "Bump version to 1.3.1"
 
 ### Migration Best Practices
 
-1. **Always backup before migrating**
+1. **Always backup before upgrading**
    ```bash
-   cp data/db/portfolio_manager.db data/db/portfolio_manager.db.backup
+   cp data/portfolio_manager.db data/portfolio_manager.db.backup
    ```
 
-2. **Make migrations idempotent**
-   - Check if column/table exists before adding
-   - Use `IF NOT EXISTS` where possible
+2. **Migrations run automatically on startup**
+   - No manual commands needed
+   - Just restart the server
 
 3. **Set sensible defaults**
    - For existing data, set appropriate default values
    - Consider backwards compatibility
 
-4. **Test both upgrade and downgrade**
-   ```bash
-   flask db upgrade    # Test upgrade
-   flask db downgrade  # Test downgrade
-   flask db upgrade    # Upgrade again
-   ```
-
-5. **Version numbers match revision IDs**
-   - Makes it easy to track: `db_version = "1.3.1"` → revision `"1.3.1"`
+4. **Test migrations thoroughly**
+   - Create a test database with realistic data
+   - Start the server and verify migrations apply cleanly
+   - Check the version endpoint: `curl http://localhost:5000/api/system/version`
 
 ### Frontend Feature Checking
 
@@ -514,21 +462,12 @@ const { features } = useApp();
 
 ### Backend Feature Checking
 
-```python
-# GOOD: Check if table/column exists before querying
-from app.models import IBKRConfig
-
-try:
-    config = IBKRConfig.query.first()
-    if config and hasattr(config, 'enabled'):
-        is_enabled = config.enabled
-except Exception:
-    is_enabled = False
-
-# BETTER: Use feature flags
-features = check_feature_availability(get_db_version())
-if features['ibkr_integration']:
-    config = IBKRConfig.query.first()
+```go
+// Use feature flags from the system service
+features := systemService.CheckFeatureAvailability(dbVersion)
+if features["ibkr_integration"] {
+    // Enable IBKR-related functionality
+}
 ```
 
 ## Troubleshooting
@@ -539,8 +478,8 @@ if features['ibkr_integration']:
 
 **Solution**:
 ```bash
-docker compose exec backend flask db upgrade
-docker compose restart
+# Restart the backend — migrations apply automatically
+docker compose restart backend
 ```
 
 ### Feature not showing after migration
@@ -549,23 +488,23 @@ docker compose restart
 
 **Solution**: Refresh browser or check `AppContext` is re-fetching
 
-### Migration fails
+### Migration fails on startup
 
 **Cause**: Schema change conflicts with existing data
 
 **Solution**:
-1. Check migration file logic
+1. Check backend logs: `docker compose logs backend`
 2. Backup and restore if needed
-3. Fix migration script and try again
+3. Fix migration file and rebuild
 
 ## References
 
-- [Alembic Documentation](https://alembic.sqlalchemy.org/)
+- [Goose Documentation](https://pressly.github.io/goose/)
 - [Semantic Versioning](https://semver.org/)
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - [DEVELOPMENT.md](DEVELOPMENT.md)
 
 ---
 
-**Last Updated**: 2026-01-11 (Version 1.4.0)
+**Last Updated**: 2026-04-13 (Version 2.0.0)
 **Maintained By**: @ndewijer

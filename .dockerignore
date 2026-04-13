@@ -1,21 +1,28 @@
-node_modules
-npm-debug.log
-build
 .git
+.github
 .gitignore
+.DS_Store
 README.md
+CHANGELOG.md
+CLAUDE.md
+docs/
+node_modules
+*.md
 
-# Python
-**/.venv
-**/__pycache__
-**/*.pyc
-**/*.pyo
-**/*.pyd
-.pytest_cache
-.coverage
-htmlcov
+# Go artifacts
+backend/bin/
+backend/tmp/
+backend/coverage.*
+backend/coverage_*.*
+*.test
+*.coverprofile
+
+# IDE
+.idea/
+.vscode/
 
 # Development files
-**/tests/
-**/.mypy_cache/
-**/*.egg-info/
+.pre-commit-config.yaml
+.golangci.yml
+.claude/
+.claudememory/

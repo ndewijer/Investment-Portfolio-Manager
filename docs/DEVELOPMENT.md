@@ -2,35 +2,34 @@
 
 ## Prerequisites
 - Docker and Docker Compose (recommended)
-- Node.js 23+ and Python 3.13+ (for local development)
+- Go 1.26+ (for local backend development)
+- Node.js 23+ (for local frontend development)
+- [golangci-lint](https://golangci-lint.run/) (for backend linting)
 
 ## Local Development
 
 ### Backend Setup
 
-#### Using uv (Recommended)
+#### Using Make (Recommended)
 ```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install all dependencies (from project root)
-uv sync --frozen
-
-# Run Flask
-cd backend
-uv run flask run
+# From project root
+make deps       # Download and tidy Go dependencies
+make run        # Run backend with version injection
+make test       # Run all tests with race detector
+make lint       # Run golangci-lint
 ```
 
-#### Using pip (Deprecated - will be removed in v1.4.0)
+#### Using Go Directly
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r dev-requirements.txt
-flask run
+go run ./cmd/server/main.go
+
+# Or build and run
+go build -o bin/server ./cmd/server/main.go
+./bin/server
 ```
 
-**Note**: All dependencies are managed in `pyproject.toml`. Requirements files are kept for backward compatibility only.
+The server runs on `http://localhost:5000` by default. The database is created automatically on first run with all migrations applied.
 
 ### Frontend Setup
 ```bash
@@ -59,7 +58,7 @@ This will:
 ```bash
 # Terminal 1: Start backend
 cd backend
-uv run python run.py
+go run ./cmd/server/main.go
 
 # Terminal 2: Start frontend
 cd frontend
@@ -77,8 +76,8 @@ pnpm run test:e2e
 
 ## Development Tools
 - Biome for frontend (linting and formatting)
-- Ruff for backend (linting and formatting)
-- uv for Python package management
+- golangci-lint for backend (linting)
+- `go fmt` / `goimports` for backend formatting
 - Pre-commit hooks for code quality
 
 ### Pre-commit Hooks
@@ -94,7 +93,7 @@ pre-commit install
 **Available Hooks:**
 - **Code formatting**: Trailing whitespace, end-of-file fixer
 - **Validation**: YAML and JSON syntax checking
-- **Python**: Ruff linting and formatting, pytest tests
+- **Backend**: golangci-lint, go test
 - **Frontend**: Biome (lint + format)
 - **Docker**: Integration tests (when Docker-related files change)
 
@@ -104,7 +103,7 @@ The Docker integration test hook runs automatically when you modify Docker-relat
 - `backend/Dockerfile`
 - `frontend/Dockerfile`
 - `docker-compose.yml`
-- `pyproject.toml` / `uv.lock`
+- `backend/go.mod` / `backend/go.sum`
 - `frontend/nginx.conf`
 
 **How it works:**
@@ -140,10 +139,10 @@ git commit --no-verify
 ```
 
 **Expected Behavior:**
-- ⚠️ If Docker isn't installed: Hook skips with warning message
-- 🐳 If Docker is installed: Runs integration test (waits up to 60 seconds for backend)
-- ✅ Success: Containers build, all health checks pass, cleanup completes
-- ❌ Failure: Shows detailed error messages and container logs, prevents commit
+- If Docker isn't installed: Hook skips with warning message
+- If Docker is installed: Runs integration test (waits up to 60 seconds for backend)
+- Success: Containers build, all health checks pass, cleanup completes
+- Failure: Shows detailed error messages and container logs, prevents commit
 
 **Troubleshooting:**
 ```bash
@@ -160,41 +159,42 @@ git commit --no-verify  # Use sparingly!
 
 ## Dependency Management
 
-### Adding Dependencies
-**Production** (pinned version):
+### Backend (Go Modules)
+
+**Adding Dependencies:**
 ```bash
-# 1. Edit pyproject.toml [project.dependencies], add: "package==1.2.3"
-# 2. Update lock and sync
-uv lock
-uv sync --frozen
+cd backend
+go get github.com/some/package@v1.2.3
+go mod tidy
 ```
 
-**Development** (flexible range):
+**Updating Dependencies:**
 ```bash
-# 1. Edit pyproject.toml [dependency-groups.dev], add: "package>=1.0.0,<2.0.0"
-# 2. Update lock and sync
-uv lock
-uv sync --frozen
-```
-
-### Updating Dependencies
-```bash
+cd backend
 # Update all to latest compatible versions
-uv lock --upgrade
-uv sync
+go get -u ./...
+go mod tidy
 
 # Update specific package
-uv lock --upgrade-package package-name
-uv sync
+go get -u github.com/some/package
+go mod tidy
 ```
 
-### Common Commands
-| Task | Command |
-|------|---------|
-| Install dependencies | `uv sync --frozen` |
-| Run tests | `uv run pytest backend/tests/` |
-| Run Flask | `cd backend && uv run flask run` |
-| Run linting | `uv run ruff check backend/` |
+### Common Make Targets
+
+| Target | Description |
+|--------|-------------|
+| `make run` | Run the application with version injection |
+| `make build` | Build binary to `bin/server` |
+| `make test` | Run all tests with race detector |
+| `make test-short` | Skip slow tests |
+| `make lint` | Run golangci-lint |
+| `make coverage` | Run tests with coverage summary |
+| `make coverage-html` | Generate HTML coverage report |
+| `make fmt` | Format code |
+| `make deps` | Download and tidy dependencies |
+| `make ci-local` | Run full CI pipeline locally |
+| `make clean` | Remove build artifacts and coverage files |
 
 ## Environment Setup
 ```bash
@@ -202,40 +202,36 @@ uv sync
 INTERNAL_API_KEY=your-secure-key-here  # For automated tasks
 IBKR_ENCRYPTION_KEY=<auto-generated>   # Optional: Encrypts IBKR tokens
 
-# Paths
-DB_DIR=/path/to/data/db
-LOG_DIR=/path/to/data/logs
+# Server
+SERVER_PORT=5000                       # HTTP server port (default: 5000)
+SERVER_HOST=0.0.0.0                    # HTTP server bind address
 
-# Development/Debugging
-FLASK_LOG_RESPONSE_TIME=true           # Optional: Log response times in terminal
+# Database
+DB_PATH=./data/portfolio_manager.db    # Path to SQLite database file
+DB_DIR=/path/to/data/db                # Directory for database file (Docker, takes precedence over DB_PATH)
+
+# Logging
+LOG_DIR=./data/logs                    # Directory for log files
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000  # Comma-separated list of allowed origins
+DOMAIN=example.com                          # Generates http:// and https:// origins
 ```
 
-**📖 Security Configuration:**
+See [docs/CONFIGURATION.md](CONFIGURATION.md) for the complete environment variable reference.
+
+**Security Configuration:**
 See [docs/SECURITY.md](SECURITY.md) for complete information on:
 - API key management
 - IBKR token encryption
 - Key generation and rotation
 - Backup and migration procedures
 
-### Response Time Logging
+### Structured Logging
 
-Enable detailed request logging with response times for debugging and performance monitoring.
+The Go backend uses structured logging with database-configurable levels. Logging levels and categories can be adjusted at runtime via the `/api/developer/system-settings/logging` endpoints.
 
-**Configuration:**
-```bash
-# In .env file
-FLASK_LOG_RESPONSE_TIME=true
-```
-
-**Output Format:**
-```
-127.0.0.1 - - [09/Jan/2026 19:56:14] "GET /api/portfolio/history HTTP/1.1" 200 - 45ms
-127.0.0.1 - - [09/Jan/2026 19:56:15] "POST /api/transactions HTTP/1.1" 201 - 123ms
-```
-
-**Behavior:**
-- **Enabled (`true`)**: Replaces default Flask/Werkzeug logging with custom format including response time
-- **Disabled (`false` or not set)**: Uses standard Flask/Werkzeug logging without timing
+Each request gets a unique request ID injected by middleware, making it easy to trace individual requests through the log output.
 
 **Use Cases:**
 - Performance profiling during development
@@ -243,80 +239,67 @@ FLASK_LOG_RESPONSE_TIME=true
 - Monitoring request patterns
 - Testing optimization improvements
 
-**Note**: This is a development feature. In production, consider using proper APM tools (Application Performance Monitoring) like New Relic, DataDog, or Prometheus.
-
 ## Automated Tasks
 The application includes automated tasks for:
-- Daily fund price updates (weekdays at 23:55)
+- Daily fund price updates (weekdays at 00:55 UTC)
+- Weekly IBKR transaction imports (Tue-Sat between 05:30 and 07:30 UTC)
 - System maintenance and cleanup
 
 These tasks require:
 - Valid INTERNAL_API_KEY in environment
-- Proper application context
-- Database access
+- Scheduled via in-process `robfig/cron`
+- Both use `SkipIfStillRunning` to prevent overlap
+- 15-minute timeouts per task
 
 ## Database Management
 
 ### Version Control
-The application uses a centralized version management system:
+The application uses Goose for database migrations. Migrations are embedded in the Go binary and run automatically on server startup.
+
 ```bash
 # Check current version
 cat backend/VERSION
 
-# Create new migration
-flask db revision -m "description"
-
-# Apply migrations
-flask db upgrade
-
-# Rollback if needed
-flask db downgrade
+# Migrations run automatically on startup
+# No manual migration commands needed
 ```
 
 ### Database Setup
 ```bash
-# Fresh installation
-flask db upgrade   # Creates and initializes database
+# Fresh installation — just start the server
+cd backend
+go run ./cmd/server/main.go
+# Database is created and all migrations applied automatically
 
-# Development reset
-flask db downgrade base  # Reset to empty state
-flask db upgrade        # Apply all migrations
-flask seed-db           # Add sample data
-
-# Update seed price data
-flask update-seed-prices          # Fetch latest year of prices from yfinance
-flask update-seed-prices --days 730  # Fetch 2 years of historical data
+# Inspect the database
+sqlite3 ./data/portfolio_manager.db ".tables"
+sqlite3 ./data/portfolio_manager.db ".schema funds"
 ```
 
 ### Migration Development
+Migrations are managed by Goose and stored in `backend/internal/database/migrations/`. Both SQL and Go-coded migrations are supported.
+
 When creating new migrations:
 1. Update VERSION file with new version
-2. Create migration script
-3. Include proper error handling for:
-   - Existing tables/indexes
-   - Missing tables/indexes
-   - Transaction management
+2. Create migration file in `backend/internal/database/migrations/`
+3. Include proper error handling
 
-Example migration pattern:
-```python
-from sqlalchemy.exc import OperationalError
+Example SQL migration:
+```sql
+-- +goose Up
+CREATE TABLE IF NOT EXISTS new_table (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-def upgrade():
-    try:
-        # Create tables/indexes
-    except OperationalError as e:
-        if "already exists" not in str(e):
-            raise e
-
-def downgrade():
-    try:
-        # Drop tables/indexes
-    except OperationalError as e:
-        if "no such table" not in str(e):
-            raise e
+-- +goose Down
+DROP TABLE IF EXISTS new_table;
 ```
+
+Go-coded migrations are available for operations that require application logic (e.g., data backfills). These are registered via `registerGoMigrationVersion` in the `database` package and run automatically alongside SQL migrations.
 
 ---
 
-**Last Updated**: 2026-03-02 (Version 1.6.0)
+**Last Updated**: 2026-04-13 (Version 2.0.0)
 **Maintained By**: @ndewijer
