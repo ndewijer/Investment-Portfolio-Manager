@@ -43,14 +43,6 @@ make docker-down    # Stop containers
 make docker-logs    # Follow logs
 ```
 
-## Memory System
+## Library Documentation
 
-This project uses Claude's `.claudememory/` system for persistent context across sessions.
-
-**Key Documentation Files:**
-- `.claudememory/project_context.md` - Technology stack, architecture patterns, database info
-- `.claudememory/development_workflow.md` - Development processes and documentation maintenance
-- `.claudememory/release_process.md` - PR and release management
-- `.claudememory/testing_documentation.md` - Testing strategy and documentation
-
-**Note**: The `.claudememory/` directory is gitignored and managed by Claude Code automatically.
+Always use Context7 MCP tools to resolve library IDs and get current library docs when generating code, doing setup/configuration, or referencing library/API documentation.

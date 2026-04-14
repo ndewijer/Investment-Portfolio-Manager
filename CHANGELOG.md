@@ -5,6 +5,15 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-04-14
+
+### Fixed
+- **Transaction fund name missing after create/edit** — Create and update transaction endpoints now return enriched `TransactionResponse` (with `fundName`) instead of bare `Transaction` model, so the frontend table renders correctly without a page refresh ([#203](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/203))
+- **Flaky CI proxy health check** — Added retry loop for the frontend proxy health check in the Docker custom-hostname CI test, preventing spurious curl exit code 56 failures ([#203](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/203))
+
+### Changed
+- **Removed `.claudememory/` system** — Migrated persistent context to Claude Code's built-in memory system; removed `.claudememory/` references from `CLAUDE.md`
+
 ## [2.0.0] - 2026-04-13
 
 ### Frontend: "Financial Precision" Design System ([#175](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/175), [#177](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/177))
