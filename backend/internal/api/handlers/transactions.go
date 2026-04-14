@@ -103,7 +103,7 @@ func (h *TransactionHandler) GetTransaction(w http.ResponseWriter, r *http.Reque
 //
 // Endpoint: POST /api/transaction
 // Request Body: CreateTransactionRequest (portfolioFundId, date, type, shares, costPerShare)
-// Response: 201 Created with Transaction
+// Response: 201 Created with TransactionResponse
 // Error: 400 Bad Request if validation fails or request body is invalid
 // Error: 500 Internal Server Error if creation fails
 func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +144,7 @@ func (h *TransactionHandler) CreateTransaction(w http.ResponseWriter, r *http.Re
 //
 // Endpoint: PUT /api/transaction/{uuid}
 // Request Body: UpdateTransactionRequest (all fields optional)
-// Response: 200 OK with updated Transaction
+// Response: 200 OK with updated TransactionResponse
 // Error: 400 Bad Request if transaction ID is invalid (validated by middleware) or validation fails
 // Error: 404 Not Found if transaction not found
 // Error: 500 Internal Server Error if update fails

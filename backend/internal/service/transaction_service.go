@@ -93,10 +93,10 @@ func (s *TransactionService) GetTransaction(transactionID string) (model.Transac
 // For sell transactions, validates sufficient shares and automatically creates
 // a RealizedGainLoss record with the calculated cost basis and gain/loss.
 //
-// Returns the created transaction on success.
+// Returns an enriched TransactionResponse on success.
 // Returns ErrInsufficientShares if selling more shares than currently held.
 // Returns an error if date parsing fails or database insertion fails.
-func (s *TransactionService) CreateTransaction(ctx context.Context, req request.CreateTransactionRequest) (*model.Transaction, error) {
+func (s *TransactionService) CreateTransaction(ctx context.Context, req request.CreateTransactionRequest) (*model.TransactionResponse, error) {
 	txLog.DebugContext(ctx, "creating transaction", "portfolioFundID", req.PortfolioFundID, "type", req.Type)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -149,7 +149,12 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, req request.
 	}
 
 	txLog.InfoContext(ctx, "transaction created", "transactionID", transaction.ID, "type", transaction.Type, "shares", transaction.Shares)
-	return transaction, nil
+
+	resp, err := s.GetTransaction(transaction.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get created transaction response: %w", err)
+	}
+	return &resp, nil
 }
 
 // UpdateTransaction updates an existing transaction with the provided changes.
@@ -164,7 +169,7 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, req request.
 // earlier of old/new dates, and both old and new portfolio-funds are regenerated
 // separately (Issue #35, Edge Case 3).
 //
-// Returns the updated transaction on success.
+// Returns an enriched TransactionResponse on success.
 // Returns ErrTransactionNotFound if the transaction does not exist.
 // Returns ErrInsufficientShares if selling more shares than currently held.
 //
@@ -173,7 +178,7 @@ func (s *TransactionService) UpdateTransaction(
 	ctx context.Context,
 	id string,
 	req request.UpdateTransactionRequest,
-) (*model.Transaction, error) {
+) (*model.TransactionResponse, error) {
 	txLog.DebugContext(ctx, "updating transaction", "transactionID", id)
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -238,7 +243,12 @@ func (s *TransactionService) UpdateTransaction(
 	}
 
 	txLog.InfoContext(ctx, "transaction updated", "transactionID", id)
-	return &transaction, nil
+
+	resp, err := s.GetTransaction(id)
+	if err != nil {
+		return nil, fmt.Errorf("get updated transaction response: %w", err)
+	}
+	return &resp, nil
 }
 
 // DeleteTransaction removes a transaction from the system with proper cleanup.

@@ -275,6 +275,7 @@ func TestTransactionHandler_GetTransaction(t *testing.T) {
 	})
 }
 
+//nolint:gocyclo // Test function with multiple subtests and assertions.
 func TestTransactionHandler_CreateTransaction(t *testing.T) {
 	setupHandler := func(t *testing.T) (*TransactionHandler, *sql.DB) {
 		t.Helper()
@@ -307,7 +308,7 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 			t.Errorf("Expected 201, got %d: %s", w.Code, w.Body.String())
 		}
 
-		var response model.Transaction
+		var response model.TransactionResponse
 		//nolint:errcheck // Test assertion - decode failure would cause test to fail anyway
 		json.NewDecoder(w.Body).Decode(&response)
 
@@ -316,6 +317,9 @@ func TestTransactionHandler_CreateTransaction(t *testing.T) {
 		}
 		if response.PortfolioFundID != pf.ID {
 			t.Errorf("Expected portfolioFundId %s, got %s", pf.ID, response.PortfolioFundID)
+		}
+		if response.FundName != fund.Name {
+			t.Errorf("Expected fundName %s, got %s", fund.Name, response.FundName)
 		}
 		if response.Type != "buy" {
 			t.Errorf("Expected type buy, got %s", response.Type)
@@ -539,12 +543,15 @@ func TestTransactionHandler_UpdateTransaction(t *testing.T) {
 			t.Errorf("Expected 200, got %d: %s", w.Code, w.Body.String())
 		}
 
-		var response model.Transaction
+		var response model.TransactionResponse
 		//nolint:errcheck // Test assertion - decode failure would cause test to fail anyway
 		json.NewDecoder(w.Body).Decode(&response)
 
 		if response.ID != tx.ID {
 			t.Errorf("Expected transaction ID %s, got %s", tx.ID, response.ID)
+		}
+		if response.FundName != fund.Name {
+			t.Errorf("Expected fundName %s, got %s", fund.Name, response.FundName)
 		}
 		if response.Shares != 75.0 {
 			t.Errorf("Expected shares 75.0, got %f", response.Shares)
@@ -583,7 +590,7 @@ func TestTransactionHandler_UpdateTransaction(t *testing.T) {
 			t.Errorf("Expected 200, got %d: %s", w.Code, w.Body.String())
 		}
 
-		var response model.Transaction
+		var response model.TransactionResponse
 		//nolint:errcheck // Test assertion - decode failure would cause test to fail anyway
 		json.NewDecoder(w.Body).Decode(&response)
 
