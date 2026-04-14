@@ -116,9 +116,18 @@ jobs:
 
       - name: Test frontend proxy with custom backend name
         run: |
-          RESPONSE=$(curl -s http://localhost/api/system/health)
-          echo "Proxied health response: $RESPONSE"
-          echo "$RESPONSE" | jq -e '.status == "healthy"' || exit 1
+          echo "Testing proxied health endpoint through nginx..."
+          for i in {1..30}; do
+            RESPONSE=$(curl -s --max-time 5 http://localhost/api/system/health) && \
+              echo "$RESPONSE" | jq -e '.status == "healthy"' > /dev/null 2>&1 && \
+              echo "Proxied health response: $RESPONSE" && exit 0
+            echo "Attempt $i: proxy not ready yet, retrying..."
+            sleep 2
+          done
+          echo "Frontend proxy health check timeout"
+          echo "Last response: $RESPONSE"
+          docker compose logs frontend
+          exit 1
 
       - name: Check backend logs on failure
         if: failure()
