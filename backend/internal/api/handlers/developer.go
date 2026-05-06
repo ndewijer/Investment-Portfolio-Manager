@@ -449,8 +449,8 @@ func getClientIP(r *http.Request) *string {
 func (h *DeveloperHandler) ImportFundPrices(w http.ResponseWriter, r *http.Request) {
 	devLog.DebugContext(r.Context(), "import fund prices request")
 
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10 MB limit
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)        // 10 MB limit
+	if err := r.ParseMultipartForm(10 << 20); err != nil { // #nosec G120 -- body bounded by MaxBytesReader above
 		response.RespondError(w, http.StatusBadRequest, "failed to parse form", err.Error())
 		return
 	}
@@ -509,8 +509,8 @@ func (h *DeveloperHandler) ImportFundPrices(w http.ResponseWriter, r *http.Reque
 func (h *DeveloperHandler) ImportTransactions(w http.ResponseWriter, r *http.Request) {
 	devLog.DebugContext(r.Context(), "import transactions request")
 
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10 MB limit
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20)        // 10 MB limit
+	if err := r.ParseMultipartForm(10 << 20); err != nil { // #nosec G120 -- body bounded by MaxBytesReader above
 		response.RespondError(w, http.StatusBadRequest, "failed to parse form", err.Error())
 		return
 	}
