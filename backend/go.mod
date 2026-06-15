@@ -1,6 +1,6 @@
 module github.com/ndewijer/Investment-Portfolio-Manager/backend
 
-go 1.26.2
+go 1.26.4
 
 require (
 	github.com/fernet/fernet-go v0.0.0-20240119011108-303da6aec611

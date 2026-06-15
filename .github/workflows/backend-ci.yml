@@ -24,7 +24,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26.2'
+          go-version: '1.26.4'
           cache: true
           cache-dependency-path: backend/go.sum
 
@@ -97,7 +97,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26.2'
+          go-version: '1.26.4'
           cache: true
           cache-dependency-path: backend/go.sum
 
@@ -119,7 +119,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26.2'
+          go-version: '1.26.4'
           cache: true
           cache-dependency-path: backend/go.sum
 
