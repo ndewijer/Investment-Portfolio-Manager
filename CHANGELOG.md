@@ -5,10 +5,22 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.2] - 2026-06-15
+## [2.0.2] - 2026-06-16
+
+Security patch release resolving all open Dependabot advisories across the frontend and backend.
 
 ### Security
-- **Resolved 20 Dependabot advisories in frontend dependencies** — Bumped `axios` to 1.17.0 (full MITM via prototype pollution, NO_PROXY/Proxy-Authorization leaks, ReDoS), `react-router`/`react-router-dom` to 7.17.0 (unauth RCE via turbo-stream deserialization, DoS, open redirect), and `webpack-dev-server` to 5.2.4 (cross-origin source exposure). Added pnpm `overrides` to patch transitive deps: `shell-quote` 1.8.4 (critical), `ws` 8.21.0, `qs` 6.15.2, `uuid` 11.1.1, `fast-uri` 3.1.2, and `@babel/plugin-transform-modules-systemjs` 7.29.7
+- **Frontend: resolved 20 Dependabot advisories** — Bumped `axios` to 1.17.0 (full MITM via prototype pollution, NO_PROXY/Proxy-Authorization leaks, ReDoS), `react-router`/`react-router-dom` to 7.17.0 (unauth RCE via turbo-stream deserialization, DoS, open redirect), and `webpack-dev-server` to 5.2.4 (cross-origin source exposure). Added pnpm `overrides` to patch transitive deps: `shell-quote` 1.8.4 (critical), `ws` 8.21.0, `qs` 6.15.2, `uuid` 11.1.1, `fast-uri` 3.1.2, and `@babel/plugin-transform-modules-systemjs` 7.29.7 ([#209](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/209))
+- **Backend: Go toolchain 1.26.2 → 1.26.4** — Patches 4 Go standard-library advisories: GO-2026-4918 (`net/http`), GO-2026-4971 (`net`), GO-2026-5037 (`crypto/x509`), GO-2026-5039 (`net/textproto`) ([#210](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/210))
+- **Backend: removed deprecated `chi/middleware.RealIP`** — It rewrote `RemoteAddr` from spoofable `X-Forwarded-For` / `X-Real-IP` headers ([GHSA-3fxj-6jh8-hvhx](https://github.com/advisories/GHSA-3fxj-6jh8-hvhx)); the request logger already derives the client IP directly from those headers, so logging is unchanged and `RemoteAddr` now reflects the real TCP peer ([#210](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/210))
+- **Backend dependency bumps** — `go-chi/chi/v5` 5.2.5 → 5.3.0, `modernc.org/sqlite` 1.50.0 → 1.52.0, `golang.org/x/sync` 0.20.0 → 0.21.0 ([#211](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/211)), and `golangci/golangci-lint-action` 9.2.0 → 9.2.1 ([#206](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/206))
+
+### Fixed
+- **CI: `docker-integration-test` 20-minute hang** — The E2E phase now runs Playwright inside its official prebaked Docker image (`mcr.microsoft.com/playwright`) instead of installing browsers on the host, which reproducibly hung the runner during browser provisioning until the job timeout ([#212](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/212))
+
+### Changed
+- **Pinned backend Docker builder to `golang:1.26.4-alpine`** — The floating `golang:1.26-alpine` tag could lag the `go` directive in `go.mod` and break `go mod download` ([#210](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/210))
+- **`Docker Integration Tests` workflow now triggers on changes to its own test script** ([#212](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/212))
 
 ## [2.0.1] - 2026-04-14
 
