@@ -199,23 +199,37 @@ echo -e "${GREEN}✅ Portfolios verified (found $PORTFOLIO_COUNT portfolios)${NC
 if [ "${RUN_E2E_TESTS}" = "true" ]; then
     echo -e "${BLUE}🎭 Running Playwright E2E tests against Docker stack...${NC}"
 
-    # Check if Playwright is available
-    if ! command -v pnpm &> /dev/null; then
-        echo -e "${YELLOW}⚠️  pnpm not available - skipping E2E tests${NC}"
-    else
-        # Install Playwright browsers if needed (will skip if already installed)
-        echo -e "${BLUE}📦 Ensuring Playwright browsers are installed...${NC}"
-        cd frontend && pnpm exec playwright install chromium --with-deps > /dev/null 2>&1
+    # Run Playwright inside its official image instead of installing browsers on
+    # the host. `playwright install [--with-deps]` reproducibly hung CI runners
+    # for ~20 min while provisioning the browser; the official image ships
+    # Chromium + all OS deps prebaked (PLAYWRIGHT_BROWSERS_PATH=/ms-playwright).
+    #
+    # The container joins the running compose network and targets the frontend
+    # service directly (works identically on Linux CI and local macOS, unlike
+    # --network host). The project's own node_modules is mounted so the test
+    # files, config, and @playwright/test version match the image tag below.
+    PW_VERSION=$(node -p "require('./frontend/node_modules/@playwright/test/package.json').version" 2>/dev/null || echo "1.59.1")
+    PW_IMAGE="mcr.microsoft.com/playwright:v${PW_VERSION}-noble"
 
-        # Run E2E tests against Docker stack
-        if PLAYWRIGHT_BASE_URL="${TEST_URL}" pnpm run test:e2e; then
-            echo -e "${GREEN}✅ E2E tests passed${NC}"
-        else
-            echo -e "${RED}❌ E2E tests failed${NC}"
-            cd ..
-            exit 1
-        fi
-        cd ..
+    FRONTEND_CID=$(docker compose ps -q frontend)
+    if [ -z "$FRONTEND_CID" ]; then
+        echo -e "${RED}❌ Could not find running frontend container for E2E${NC}"
+        exit 1
+    fi
+    PW_NETWORK=$(docker inspect "$FRONTEND_CID" \
+        --format '{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' | head -1)
+
+    echo -e "${BLUE}   image=${PW_IMAGE} network=${PW_NETWORK} baseURL=http://frontend:80${NC}"
+    if docker run --rm --network "${PW_NETWORK}" \
+        -v "$(pwd)/frontend:/work" -w /work \
+        -e CI=true \
+        -e PLAYWRIGHT_BASE_URL="http://frontend:80" \
+        "${PW_IMAGE}" \
+        npx --no-install playwright test; then
+        echo -e "${GREEN}✅ E2E tests passed${NC}"
+    else
+        echo -e "${RED}❌ E2E tests failed${NC}"
+        exit 1
     fi
 else
     echo -e "${YELLOW}ℹ️  Skipping E2E tests (set RUN_E2E_TESTS=true to run them)${NC}"
