@@ -9,6 +9,7 @@ on:
       - 'frontend/Dockerfile'
       - 'frontend/nginx.conf'
       - 'docker-compose.yml'
+      - 'scripts/test-docker-integration.sh'
       - '.github/workflows/docker-test.yml'
   push:
     branches:
@@ -20,6 +21,7 @@ on:
       - 'frontend/Dockerfile'
       - 'frontend/nginx.conf'
       - 'docker-compose.yml'
+      - 'scripts/test-docker-integration.sh'
 
 jobs:
   docker-integration-test:
