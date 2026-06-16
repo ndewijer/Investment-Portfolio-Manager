@@ -22,6 +22,9 @@ Security patch release resolving all open Dependabot advisories across the front
 - **Pinned backend Docker builder to `golang:1.26.4-alpine`** — The floating `golang:1.26-alpine` tag could lag the `go` directive in `go.mod` and break `go mod download` ([#210](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/210))
 - **`Docker Integration Tests` workflow now triggers on changes to its own test script** ([#212](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/212))
 
+### Dependency Updates
+- **Frontend `javascript-packages` group (14 updates)** — `react`/`react-dom` 19.2.4 → 19.2.7, `vite` 8.0.10 → 8.0.16, `webpack` 5.105.4 → 5.107.2, `webpack-cli` 7.0.2 → 7.0.3, `@babel/core`/`preset-env`/`preset-react` → 7.29.7, `@vitejs/plugin-react` 6.0.1 → 6.0.2, `date-fns` 4.1.0 → 4.4.0, `jsdom` 29.0.1 → 29.1.1, `html-webpack-plugin` 5.6.6 → 5.6.7, `@fortawesome/react-fontawesome` 3.3.0 → 3.3.1, `dotenv` 17.4.0 → 17.4.2 ([#213](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/213))
+
 ## [2.0.1] - 2026-04-14
 
 ### Fixed
