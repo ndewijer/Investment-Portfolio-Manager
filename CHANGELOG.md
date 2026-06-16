@@ -5,6 +5,11 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-06-15
+
+### Security
+- **Resolved 20 Dependabot advisories in frontend dependencies** — Bumped `axios` to 1.17.0 (full MITM via prototype pollution, NO_PROXY/Proxy-Authorization leaks, ReDoS), `react-router`/`react-router-dom` to 7.17.0 (unauth RCE via turbo-stream deserialization, DoS, open redirect), and `webpack-dev-server` to 5.2.4 (cross-origin source exposure). Added pnpm `overrides` to patch transitive deps: `shell-quote` 1.8.4 (critical), `ws` 8.21.0, `qs` 6.15.2, `uuid` 11.1.1, `fast-uri` 3.1.2, and `@babel/plugin-transform-modules-systemjs` 7.29.7
+
 ## [2.0.1] - 2026-04-14
 
 ### Fixed

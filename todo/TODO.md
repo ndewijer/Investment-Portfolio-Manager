@@ -36,6 +36,6 @@ If you encounter these, fix them:
 
 ---
 
-**Last Updated**: 2026-04-14
-**Current Version**: 2.0.1
+**Last Updated**: 2026-06-15
+**Current Version**: 2.0.2
 **Philosophy**: Feature complete - only add what's needed
