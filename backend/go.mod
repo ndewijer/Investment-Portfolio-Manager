@@ -4,14 +4,14 @@ go 1.26.4
 
 require (
 	github.com/fernet/fernet-go v0.0.0-20240119011108-303da6aec611
-	github.com/go-chi/chi/v5 v5.2.5
+	github.com/go-chi/chi/v5 v5.3.0
 	github.com/go-chi/cors v1.2.2
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.27.1
 	github.com/robfig/cron/v3 v3.0.1
-	golang.org/x/sync v0.20.0
-	modernc.org/sqlite v1.50.0
+	golang.org/x/sync v0.21.0
+	modernc.org/sqlite v1.52.0
 )
 
 require (
@@ -23,7 +23,7 @@ require (
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
-	modernc.org/libc v1.72.2 // indirect
+	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
