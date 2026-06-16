@@ -1,5 +1,7 @@
 # Multi-stage build for optimal image size
-FROM golang:1.26-alpine AS builder
+# Pinned to match the go directive in go.mod (>= 1.26.4); the floating
+# golang:1.26-alpine tag can lag behind and fail `go mod download`.
+FROM golang:1.26.4-alpine AS builder
 
 WORKDIR /app
 

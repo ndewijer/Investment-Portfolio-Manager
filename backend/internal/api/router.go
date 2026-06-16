@@ -32,7 +32,10 @@ func NewRouter(
 
 	// Global middleware
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	// NOTE: chi's middleware.RealIP is intentionally not used — it is deprecated as
+	// vulnerable to IP spoofing (GHSA-3fxj-6jh8-hvhx) because it rewrites RemoteAddr
+	// from untrusted X-Forwarded-For / X-Real-IP headers. The logger derives the
+	// client IP directly from those headers instead (see middleware.clientIP).
 	r.Use(custommiddleware.Logger)
 	r.Use(middleware.Recoverer)
 
