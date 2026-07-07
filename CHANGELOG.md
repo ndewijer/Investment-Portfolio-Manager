@@ -5,6 +5,21 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-07-07
+
+Security patch release resolving all 10 open frontend Dependabot advisories, plus consolidated backend and CI dependency bumps from the open Dependabot PRs.
+
+### Security
+- **Frontend: resolved 10 Dependabot advisories** — Bumped `webpack-dev-server` to 5.2.5 (HMR WebSocket interception via permissive user proxies, [GHSA-mx8g-39q3-5c79](https://github.com/advisories/GHSA-mx8g-39q3-5c79)), and added pnpm `overrides` to patch transitive deps: `undici` 7.28.0 (resolves 6 advisories — SOCKS5 TLS cert validation bypass [GHSA-vmh5-mc38-953g] and cross-origin routing [GHSA-hm92-r4w5-c3mj] (both high), Set-Cookie header injection [GHSA-p88m-4jfj-68fv], cache whitespace bypass [GHSA-pr7r-676h-xcf6], SameSite downgrade [GHSA-g8m3-5g58-fq7m], response queue poisoning [GHSA-35p6-xmwp-9g52]), `form-data` 4.0.6 (CRLF injection via unescaped multipart field names, high, [GHSA-hmw2-7cc7-3qxx]), `http-proxy-middleware` 2.0.10 (Host-header-driven backend routing bypass, [GHSA-64mm-vxmg-q3vj]), and `launch-editor` 2.14.1 (NTLMv2 hash disclosure via UNC path handling on Windows, [GHSA-v6wh-96g9-6wx3])
+- **Backend: `github.com/pressly/goose/v3` 3.27.1 → 3.27.2** — Upgrades bundled `golang.org/x/crypto` and `golang.org/x/net` to address upstream security advisories ([#216](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/216))
+
+### Fixed
+- **Funds & Stocks: type accent color now consistent** — On the Funds & Stocks page, the card hover border and the "Fund"/"Stock" badge were always blue regardless of investment type. Both now match the type accent used by the thick left border and the Add buttons — yellow for funds, blue for stocks — in light and dark mode
+
+### Dependency Updates
+- **Backend `go-packages` group** — `modernc.org/sqlite` 1.52.0 → 1.53.0 ([#216](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/216))
+- **CI: `actions/checkout` 6 → 7** ([#214](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/214)) and **`golangci/golangci-lint-action` 9.2.1 → 9.3.0** ([#215](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/215))
+
 ## [2.0.2] - 2026-06-16
 
 Security patch release resolving all open Dependabot advisories across the frontend and backend.

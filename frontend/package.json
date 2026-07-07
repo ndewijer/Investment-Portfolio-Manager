@@ -1,6 +1,6 @@
 {
   "name": "investment-portfolio-manager",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "private": true,
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
@@ -67,7 +67,7 @@
     "jsdom": "^29.1.1",
     "vitest": "^4.0.18",
     "webpack-bundle-analyzer": "^5.3.0",
-    "webpack-dev-server": "^5.2.4"
+    "webpack-dev-server": "^5.2.5"
   },
   "pnpm": {
     "overrides": {
@@ -79,7 +79,11 @@
       "qs": "^6.15.2",
       "uuid": "^11.1.1",
       "@babel/plugin-transform-modules-systemjs": "^7.29.4",
-      "fast-uri": "^3.1.2"
+      "fast-uri": "^3.1.2",
+      "undici": "^7.28.0",
+      "form-data": "^4.0.6",
+      "http-proxy-middleware": "^2.0.10",
+      "launch-editor": "^2.14.1"
     }
   }
 }
