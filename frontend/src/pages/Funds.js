@@ -290,9 +290,7 @@ const Funds = () => {
             >
               <div className="modern-portfolio-card-header">
                 <h3 className="modern-portfolio-card-title">{fund.name}</h3>
-                <span
-                  className={`modern-portfolio-card-badge ${(fund.investmentType || 'FUND') === 'STOCK' ? '' : ''}`}
-                >
+                <span className="modern-portfolio-card-badge">
                   {(fund.investmentType || 'FUND') === 'STOCK' ? 'Stock' : 'Fund'}
                 </span>
               </div>

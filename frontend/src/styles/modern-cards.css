@@ -320,9 +320,17 @@
 }
 
 .modern-fund-card:hover {
-  border-color: var(--color-primary);
   box-shadow: var(--shadow-xl);
   transform: translateY(-4px);
+}
+
+/* Hover border matches the investment type accent (yellow funds, blue stocks) */
+.modern-fund-card.fund-type:hover {
+  border-color: var(--color-warning);
+}
+
+.modern-fund-card.stock-type:hover {
+  border-color: var(--color-primary);
 }
 
 .modern-fund-card:hover::before {
@@ -331,6 +339,12 @@
 
 .modern-fund-card.fund-type::before {
   background: linear-gradient(180deg, var(--color-warning), var(--color-warning-light));
+}
+
+/* Type badge matches the accent color: yellow for funds, blue (default) for stocks */
+.modern-fund-card.fund-type .modern-portfolio-card-badge {
+  background: var(--color-warning-alpha);
+  color: var(--color-warning-dark);
 }
 
 .modern-fund-card.stock-type::before {
@@ -445,6 +459,11 @@
 [data-theme="dark"] .modern-portfolio-card-badge {
   background: var(--color-primary-alpha);
   color: var(--color-primary);
+}
+
+[data-theme="dark"] .modern-fund-card.fund-type .modern-portfolio-card-badge {
+  background: var(--color-warning-alpha);
+  color: var(--color-warning);
 }
 
 [data-theme="dark"] .modern-portfolio-card-badge.positive {
