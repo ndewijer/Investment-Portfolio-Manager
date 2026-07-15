@@ -5,6 +5,20 @@ All notable changes to the Investment Portfolio Manager project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-07-15
+
+Patch release fixing the fund detail chart in Safari/Firefox, the empty Portfolio field on IBKR transaction allocations, and a Go standard-library security advisory.
+
+### Security
+- **Backend: Go toolchain 1.26.4 → 1.26.5** — Patches GO-2026-5856 (Encrypted Client Hello privacy leak in `crypto/tls`), flagged by `govulncheck`. Bumped everywhere the toolchain is pinned: `go.mod`, the builder Dockerfile, and the `setup-go` steps in CI ([#218](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/218))
+
+### Fixed
+- **Fund detail chart rendered no lines in Safari/Firefox** — `FundDetail` formatted each price date with `toLocaleDateString()` before the chart re-parsed it with `new Date()`. In non-US locales (e.g. nl-NL) this produced strings like `"10-7-2026"` that Safari/Firefox cannot parse, yielding `NaN` timestamps and a blank chart. The raw ISO date is now passed through, which parses consistently across browsers ([#218](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/218))
+- **IBKR transaction allocations showed an empty Portfolio field** — The allocation response serialized the field as `PortfolioName` (capital P) while the frontend read `portfolioName`; the JSON tag now matches the camelCase convention used elsewhere ([#218](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/218))
+
+### Changed
+- **Pinned backend Docker builder to `golang:1.26.5-alpine`** — Kept in lockstep with the `go` directive in `go.mod` ([#218](https://github.com/ndewijer/Investment-Portfolio-Manager/pull/218))
+
 ## [2.0.3] - 2026-07-07
 
 Security patch release resolving all 10 open frontend Dependabot advisories, plus consolidated backend and CI dependency bumps from the open Dependabot PRs.
