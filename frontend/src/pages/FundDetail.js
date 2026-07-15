@@ -175,7 +175,10 @@ const FundDetail = () => {
       .slice() // Create a copy to avoid mutating the original array
       .reverse() // Reverse to get oldest to newest
       .map((price) => ({
-        date: new Date(price.date).toLocaleDateString(),
+        // Keep the raw ISO date string; ValueChart parses it with new Date().
+        // Do NOT use toLocaleDateString() here — locale formats like "10-7-2026" (nl-NL)
+        // are unparseable by new Date() in Safari/Firefox, yielding NaN timestamps and no line.
+        date: price.date,
         price: price.price, // Use 'price' as the dataKey to match fund data structure
       }));
   };

@@ -72,7 +72,7 @@ type IBKRAllocation struct {
 // Fees are aggregated from separate fee transactions and included in the AllocatedCommission field.
 type IBKRTransactionAllocationResponse struct {
 	PortfolioID          string  `json:"portfolioId"`
-	PortfolioName        string  `json:"PortfolioName"`
+	PortfolioName        string  `json:"portfolioName"`
 	AllocationPercentage float64 `json:"allocationPercentage"`
 	AllocatedAmount      float64 `json:"allocatedAmount"`
 	AllocatedShares      float64 `json:"allocatedShares"`
