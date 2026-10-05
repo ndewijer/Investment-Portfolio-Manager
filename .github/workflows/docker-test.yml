@@ -2,15 +2,6 @@ name: Docker Integration Tests
 
 on:
   pull_request:
-    paths:
-      - 'backend/**'
-      - 'frontend/src/**'
-      - 'frontend/e2e/**'
-      - 'frontend/Dockerfile'
-      - 'frontend/nginx.conf'
-      - 'docker-compose.yml'
-      - 'scripts/test-docker-integration.sh'
-      - '.github/workflows/docker-test.yml'
   push:
     branches:
       - main
@@ -22,9 +13,40 @@ on:
       - 'frontend/nginx.conf'
       - 'docker-compose.yml'
       - 'scripts/test-docker-integration.sh'
+      - '.github/workflows/docker-test.yml'
 
 jobs:
+  # Workflows always run on PRs so required checks always report; jobs below
+  # are skipped (which satisfies the required check) when nothing relevant changed.
+  changes:
+    name: Detect docker changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            docker:
+              - 'backend/**'
+              - 'frontend/src/**'
+              - 'frontend/e2e/**'
+              - 'frontend/Dockerfile'
+              - 'frontend/nginx.conf'
+              - 'docker-compose.yml'
+              - 'scripts/test-docker-integration.sh'
+              - '.github/workflows/docker-test.yml'
+
   docker-integration-test:
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -69,6 +91,8 @@ jobs:
           retention-days: 7
 
   docker-custom-hostname-test:
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
