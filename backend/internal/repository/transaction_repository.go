@@ -132,13 +132,12 @@ func (r *TransactionRepository) GetTransactions(pfIDs []string, startDate, endDa
 //   - pfIDs is empty
 //   - no transactions are found
 //   - database query fails
-//   - date parsing fails
 func (r *TransactionRepository) GetOldestTransaction(pfIDs []string) time.Time {
 	txnLog.Debug("getting oldest transaction", "pf_count", len(pfIDs))
 	if len(pfIDs) == 0 {
 		return time.Time{}
 	}
-	var oldestDateStr sql.NullString
+	var oldestDate sql.NullTime
 
 	oldestTransactionPlaceholders := make([]string, len(pfIDs))
 	for i := range oldestTransactionPlaceholders {
@@ -156,16 +155,13 @@ func (r *TransactionRepository) GetOldestTransaction(pfIDs []string) time.Time {
 		oldestTransactionArgs[i] = id
 	}
 
-	err := r.getQuerier().QueryRow(oldestTransactionQuery, oldestTransactionArgs...).Scan(&oldestDateStr)
-	if err != nil || !oldestDateStr.Valid {
-		return time.Time{}
-	}
-	oldestDate, err := time.Parse("2006-01-02", oldestDateStr.String)
-	if err != nil {
+	// MIN() keeps the column's declared type (modernc.org/sqlite v1.54.0+), so _texttotime auto-parses it.
+	err := r.getQuerier().QueryRow(oldestTransactionQuery, oldestTransactionArgs...).Scan(&oldestDate)
+	if err != nil || !oldestDate.Valid {
 		return time.Time{}
 	}
 
-	return oldestDate.UTC()
+	return oldestDate.Time.UTC()
 }
 
 // GetTransactionsPerPortfolio retrieves all transactions for a specific portfolio or all transactions if portfolioId is empty.
