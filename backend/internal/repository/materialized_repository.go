@@ -320,28 +320,18 @@ func (r *MaterializedRepository) GetLatestMaterializedDate(portfolioIDs []string
 		) per_portfolio
 	`, strings.Join(placeholders, ","))
 
-	// MAX() aggregates lose column type information, so _texttotime won't
-	// auto-parse them. Scan into strings and parse manually.
-	var dateStr, calcStr sql.NullString
-	if err := r.getQuerier().QueryRow(query, args...).Scan(&dateStr, &calcStr); err != nil {
+	// MIN()/MAX() aggregates keep the column's declared type (modernc.org/sqlite v1.54.0+),
+	// so _texttotime auto-parses them into time.Time.
+	var date, calc sql.NullTime
+	if err := r.getQuerier().QueryRow(query, args...).Scan(&date, &calc); err != nil {
 		return time.Time{}, time.Time{}, false, fmt.Errorf("failed to get latest materialized date: %w", err)
 	}
 
-	if !dateStr.Valid || !calcStr.Valid {
+	if !date.Valid || !calc.Valid {
 		return time.Time{}, time.Time{}, false, nil
 	}
 
-	latestDate, err = time.Parse("2006-01-02", dateStr.String)
-	if err != nil {
-		return time.Time{}, time.Time{}, false, fmt.Errorf("failed to parse materialized date: %w", err)
-	}
-
-	latestCalc, err = time.Parse("2006-01-02 15:04:05", calcStr.String)
-	if err != nil {
-		return time.Time{}, time.Time{}, false, fmt.Errorf("failed to parse calculated_at: %w", err)
-	}
-
-	return latestDate, latestCalc, true, nil
+	return date.Time, calc.Time, true, nil
 }
 
 // GetLatestSourceDates returns the most recent modification timestamps from the three
@@ -368,41 +358,28 @@ func (r *MaterializedRepository) GetLatestSourceDates(portfolioIDs []string) (la
 	allArgs = append(allArgs, args...)
 	allArgs = append(allArgs, args...)
 
-	// MAX() aggregates lose column type information, so _texttotime won't
-	// auto-parse them. Use COALESCE to empty string and parse manually.
+	// MAX() aggregates keep the column's declared type (modernc.org/sqlite v1.54.0+),
+	// so _texttotime auto-parses them into time.Time. NULL means no rows.
 	query := fmt.Sprintf(`
 		SELECT
-			COALESCE((SELECT MAX(t.created_at) FROM "transaction" t
+			(SELECT MAX(t.created_at) FROM "transaction" t
 				JOIN portfolio_fund pf ON t.portfolio_fund_id = pf.id
-				WHERE pf.portfolio_id IN (%s)), ''),
-			COALESCE((SELECT MAX(fp.date) FROM fund_price fp
+				WHERE pf.portfolio_id IN (%s)),
+			(SELECT MAX(fp.date) FROM fund_price fp
 				JOIN portfolio_fund pf ON fp.fund_id = pf.fund_id
-				WHERE pf.portfolio_id IN (%s)), ''),
-			COALESCE((SELECT MAX(d.created_at) FROM dividend d
+				WHERE pf.portfolio_id IN (%s)),
+			(SELECT MAX(d.created_at) FROM dividend d
 				JOIN portfolio_fund pf ON d.portfolio_fund_id = pf.id
-				WHERE pf.portfolio_id IN (%s)), '')
+				WHERE pf.portfolio_id IN (%s))
 	`, inClause, inClause, inClause)
 
-	var txnStr, priceStr, divStr string
-	if err := r.getQuerier().QueryRow(query, allArgs...).Scan(&txnStr, &priceStr, &divStr); err != nil {
+	var txn, price, div sql.NullTime
+	if err := r.getQuerier().QueryRow(query, allArgs...).Scan(&txn, &price, &div); err != nil {
 		return time.Time{}, time.Time{}, time.Time{}, fmt.Errorf("failed to get latest source dates: %w", err)
 	}
 
-	if txnStr != "" {
-		if parsed, err := time.Parse("2006-01-02 15:04:05", txnStr); err == nil {
-			latestTxn = parsed
-		}
-	}
-	if priceStr != "" {
-		if parsed, err := time.Parse("2006-01-02", priceStr); err == nil {
-			latestPrice = parsed
-		}
-	}
-	if divStr != "" {
-		if parsed, err := time.Parse("2006-01-02 15:04:05", divStr); err == nil {
-			latestDiv = parsed
-		}
-	}
+	// Zero value when not Valid
+	latestTxn, latestPrice, latestDiv = txn.Time, price.Time, div.Time
 
 	return latestTxn, latestPrice, latestDiv, nil
 }
