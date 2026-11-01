@@ -10,7 +10,7 @@
     "@fortawesome/free-solid-svg-icons": "^7.3.1",
     "@fortawesome/react-fontawesome": "^3.5.0",
     "@testing-library/react": "^16.3.3",
-    "apexcharts": "^5.10.4",
+    "apexcharts": "^8.5.0",
     "axios": "^1.20.0",
     "babel-loader": "^10.1.1",
     "css-loader": "^7.1.5",
